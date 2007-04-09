@@ -1,0 +1,13 @@
+Resolution:800x600
+Color, stencil, depth: 16, 0, 16
+Fullscreen - no
+VSync - no
+RENDERER:GeForce 6200/AGP/SSE2
+VENDOR:NVIDIA Corporation
+OpenGL VERSION:2.0.1
+Core object has been created.
+	Trying to open :FieldstoneBumpDOT3.jpg-unknown(should be resolved)
+	Trying to open :SHL_PP_D3BM.frag-unknown(should be resolved)
+	Trying to open :Fieldstone.jpg-unknown(should be resolved)
+	Trying to open :SHL_PP_D3BM.vert-unknown(should be resolved)
+	Trying to open :teapot.chunk-unknown(should be resolved)
