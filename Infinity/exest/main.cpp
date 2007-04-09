@@ -4,7 +4,7 @@ class Exest: public Framework
 {
 	private:
 		glRenderer	renderer_;
-		glTexture	*image_[2];
+		glTexture2D	*image_[2];
 	protected:
 		void OnCreate()
 		{
