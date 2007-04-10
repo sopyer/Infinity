@@ -4,13 +4,13 @@ class Exest: public Framework
 {
 	private:
 		glRenderer	renderer_;
-		glTexture2D	*image_[2];
+		glTexture2DPtr	image_[2];
 	protected:
 		void OnCreate()
 		{
 			vfsAddRoot("D:\\Temp\\ExestData");
-			image_[0] = loadPngTexture("pngtest.png");
-			image_[1] = loadJpegTexture("highlight.jpg");
+			image_[0] = glTexture2DPtr(loadPngTexture("pngtest.png"));
+			image_[1] = glTexture2DPtr(loadJpegTexture("highlight.jpg"));
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(90.0, (float)width_/height_,1,2048); 
@@ -18,8 +18,8 @@ class Exest: public Framework
 		
 		void OnDestroy()
 		{
-			delete image_[0];
-			delete image_[1];
+			//delete image_[0];
+			//delete image_[1];
 		}
 
 		void OnRender()
@@ -46,7 +46,7 @@ class Exest: public Framework
 				glEnable(GL_TEXTURE_2D);
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				renderer_.setTexture(GL_TEXTURE0, image_[0]);
+				renderer_.setTexture(GL_TEXTURE0, image_[0].get());
 				glBegin(GL_QUADS);
 					glTexCoord2f(0, 1);
 					glVertex3f(-1, 0, 0);
