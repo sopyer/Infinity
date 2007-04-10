@@ -77,8 +77,9 @@ Framework::~Framework()
 
 int GLFWCALL Framework::closeCallback()
 {
-	Framework::getRef().OnDestroy();
-	return GL_TRUE;
+	//Framework::getRef().OnDestroy();
+	Framework::getRef().close();
+	return GL_FALSE;
 }
 
 void Framework::close()
@@ -102,6 +103,6 @@ void Framework::run()
 		// Check if ESC key was pressed or window was closed
 	}
 
-	if( glfwGetWindowParam( GLFW_OPENED ) )
+	//if( glfwGetWindowParam( GLFW_OPENED ) )
 		OnDestroy();
 }
