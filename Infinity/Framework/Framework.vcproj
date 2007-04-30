@@ -278,6 +278,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\loadMesh.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\loadOgreMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\loadPng.cpp"
 				>
 			</File>

@@ -5,10 +5,12 @@ class Exest: public Framework
 	private:
 		glRenderer	renderer_;
 		glTexture2DPtr	image_[2];
+		MeshPtr		mesh;
 	protected:
 		void OnCreate()
 		{
 			vfsAddRoot("D:\\Temp\\ExestData");
+			mesh = loadMesh("sky.mesh");
 			image_[0] = glTexture2DPtr(loadPngTexture("pngtest.png"));
 			image_[1] = glTexture2DPtr(loadJpegTexture("highlight.jpg"));
 			glMatrixMode(GL_PROJECTION);
@@ -57,6 +59,13 @@ class Exest: public Framework
 					glTexCoord2f(1, 1);
 					glVertex3f(1, 0, 0);
 				glEnd();
+			renderer_.endRenderPass();
+			renderer_.beginRenderPass();
+				glScalef(1, 1, -1);
+				renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 3, SubMesh::decl_);
+				renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
 			renderer_.endRenderPass();
 			glFlush();
 		}

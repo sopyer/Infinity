@@ -1,7 +1,7 @@
 #include "Framework.h"
 #include <cstring>
 
-char string[1024];
+static char string[1024];
 int len;
 
 glShader* loadShader(const char* path)

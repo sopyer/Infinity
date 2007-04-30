@@ -1,6 +1,6 @@
 #include "glClasses.h"
 
-void addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
+void glRenderer::addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, buffer->handle_);
 	for(GLuint i=0; i<numEntries; i++)

@@ -6,6 +6,17 @@
 #	include <string>
 //#	include "..\Utils\iniparser\iniparser.h"
 
+#include <vector>
+#include <map>
+#include <string>
+
+namespace utils
+{
+	using std::vector;
+	using std::map;
+	using std::string;
+}
+
 typedef boost::shared_ptr<void> MemoryView;
 
 class File
