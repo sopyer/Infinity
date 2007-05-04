@@ -1,4 +1,307 @@
 #include <framework.h>
+#include <glm\glmext.h>
+
+class FirstPersonCamera1
+{
+	public:
+		GLfloat m_MaxPitchRate;
+		GLfloat m_MaxHeadingRate;
+		GLfloat m_HeadingDegrees;
+		GLfloat m_PitchDegrees;
+		GLfloat m_MaxForwardVelocity;
+		GLfloat m_ForwardVelocity;
+		glm::__quatGTX m_qHeading;
+		glm::__quatGTX m_qPitch;
+		glm::vec3 m_Position;
+		glm::vec3 m_DirectionVector;
+
+
+		glm::vec3 look, up, right, position; 
+		glm::mat4 matrix;
+
+		void SetPerspective()
+		{
+			glm::mat4 Matrix;
+			glm::__quatGTX q;
+
+			// Make the Quaternions that will represent our rotations
+			m_qPitch = glm::angleAxisGTX(m_PitchDegrees, 1.0f, 0.0f, 0.0f );
+			m_qHeading = glm::angleAxisGTX(m_HeadingDegrees, 0.0f, 1.0f, 0.0f);
+			
+			// Combine the pitch and heading rotations and store the results in q
+			q = glm::crossGTX(m_qPitch, m_qHeading);
+			Matrix = matrix = glm::mat4GTX(q);
+
+			// Let OpenGL set our new prespective on the world!
+			//glMultMatrixf(Matrix);
+			
+			// Create a matrix from the pitch Quaternion and get the j vector 
+			// for our direction.
+			Matrix = glm::mat4GTX(m_qPitch);
+			m_DirectionVector.y = Matrix[1][2];
+
+			// Combine the heading and pitch rotations and make a matrix to get
+			// the i and j vectors for our direction.
+			q = m_qHeading * m_qPitch;
+			Matrix = glm::mat4GTX(q);
+			m_DirectionVector.x = Matrix[0][2];
+			m_DirectionVector.z = Matrix[2][2];
+
+			// Scale the direction by our speed.
+			m_DirectionVector *= m_ForwardVelocity;
+
+			// Increment our position by the vector
+			m_Position.x += m_DirectionVector.x;
+			m_Position.y += m_DirectionVector.y;
+			m_Position.z += m_DirectionVector.z;
+
+			// Translate to our new position.
+			//glTranslatef(-m_Position.x, -m_Position.y, m_Position.z);
+			matrix *= /*matrix */ glm::translateGTX(-m_Position.x, -m_Position.y, -m_Position.z);
+			//matrix = /*matrix */ glm::translateGTX(m_Position.x, m_Position.y, -m_Position.z)*matrix;
+		}
+
+		void ChangePitch(GLfloat degrees)
+		{
+			if(fabs(degrees) < fabs(m_MaxPitchRate))
+			{
+				// Our pitch is less than the max pitch rate that we 
+				// defined so lets increment it.
+				m_PitchDegrees += degrees;
+			}
+			else
+			{
+				// Our pitch is greater than the max pitch rate that
+				// we defined so we can only increment our pitch by the 
+				// maximum allowed value.
+				if(degrees < 0)
+				{
+					// We are pitching down so decrement
+					m_PitchDegrees -= m_MaxPitchRate;
+				}
+				else
+				{
+					// We are pitching up so increment
+					m_PitchDegrees += m_MaxPitchRate;
+				}
+			}
+
+			// We don't want our pitch to run away from us. Although it
+			// really doesn't matter I prefer to have my pitch degrees
+			// within the range of -360.0f to 360.0f
+			if(m_PitchDegrees > 360.0f)
+			{
+				m_PitchDegrees -= 360.0f;
+			}
+			else if(m_PitchDegrees < -360.0f)
+			{
+				m_PitchDegrees += 360.0f;
+			}
+		}
+
+		void ChangeHeading(GLfloat degrees)
+		{
+			if(fabs(degrees) < fabs(m_MaxHeadingRate))
+			{
+				// Our Heading is less than the max heading rate that we 
+				// defined so lets increment it but first we must check
+				// to see if we are inverted so that our heading will not
+				// become inverted.
+				if(m_PitchDegrees > 90 && m_PitchDegrees < 270 || (m_PitchDegrees < -90 && m_PitchDegrees > -270))
+				{
+					m_HeadingDegrees -= degrees;
+				}
+				else
+				{
+					m_HeadingDegrees += degrees;
+				}
+			}
+			else
+			{
+				// Our heading is greater than the max heading rate that
+				// we defined so we can only increment our heading by the 
+				// maximum allowed value.
+				if(degrees < 0)
+				{
+					// Check to see if we are upside down.
+					if((m_PitchDegrees > 90 && m_PitchDegrees < 270) || (m_PitchDegrees < -90 && m_PitchDegrees > -270))
+					{
+						// Ok we would normally decrement here but since we are upside
+						// down then we need to increment our heading
+						m_HeadingDegrees += m_MaxHeadingRate;
+					}
+					else
+					{
+						// We are not upside down so decrement as usual
+						m_HeadingDegrees -= m_MaxHeadingRate;
+					}
+				}
+				else
+				{
+					// Check to see if we are upside down.
+					if(m_PitchDegrees > 90 && m_PitchDegrees < 270 || (m_PitchDegrees < -90 && m_PitchDegrees > -270))
+					{
+						// Ok we would normally increment here but since we are upside
+						// down then we need to decrement our heading.
+						m_HeadingDegrees -= m_MaxHeadingRate;
+					}
+					else
+					{
+						// We are not upside down so increment as usual.
+						m_HeadingDegrees += m_MaxHeadingRate;
+					}
+				}
+			}
+			
+			// We don't want our heading to run away from us either. Although it
+			// really doesn't matter I prefer to have my heading degrees
+			// within the range of -360.0f to 360.0f
+			if(m_HeadingDegrees > 360.0f)
+			{
+				m_HeadingDegrees -= 360.0f;
+			}
+			else if(m_HeadingDegrees < -360.0f)
+			{
+				m_HeadingDegrees += 360.0f;
+			}
+		}
+
+		void ChangeVelocity(GLfloat vel)
+		{
+			if(fabs(vel) < fabs(m_MaxForwardVelocity))
+			{
+				// Our velocity is less than the max velocity increment that we 
+				// defined so lets increment it.
+				m_ForwardVelocity += vel;
+			}
+			else
+			{
+				// Our velocity is greater than the max velocity increment that
+				// we defined so we can only increment our velocity by the 
+				// maximum allowed value.
+				if(vel < 0)
+				{
+					// We are slowing down so decrement
+					m_ForwardVelocity -= -m_MaxForwardVelocity;
+				}
+				else
+				{
+					// We are speeding up so increment
+					m_ForwardVelocity += m_MaxForwardVelocity;
+				}
+			}
+		}
+	public:
+		FirstPersonCamera1()
+		{
+			// Initalize all our member varibles.
+			m_MaxPitchRate			= 180.0f;
+			m_MaxHeadingRate		= 360.0f;
+			m_HeadingDegrees		= 180.0f;
+			m_PitchDegrees			= 0.0f;
+			m_MaxForwardVelocity	= 0.0f;
+			m_ForwardVelocity		= 0.0f;
+		}
+		void move(glm::vec3 dir)
+		{
+			m_Position += dir;
+		}
+		void rotate(float vert, float hor)
+		{
+			ChangePitch(hor);
+			ChangeHeading(vert);
+		}
+		glm::mat4 getMatrix()
+		{
+			SetPerspective();
+			return matrix;
+		}
+};
+// Vertex Array for method II
+GLfloat vertices[] = { -1.0f, 1.0f, 1.0f,    //front
+				        1.0f, 1.0f, 1.0f,    //1
+				        1.0f,-1.0f, 1.0f,    //2
+				       -1.0f,-1.0f, 1.0f,    //3
+				       -1.0f, 1.0f,-1.0f,    //4
+				        1.0f, 1.0f,-1.0f,    //5
+				        1.0f,-1.0f,-1.0f,    //6
+				       -1.0f,-1.0f,-1.0f  }; //7
+
+// Index Array for method II
+GLubyte indices[] = {	0, 1, 2, 3,		//front
+						4, 5, 1, 0,		//top
+						3, 2, 6, 7,		//bottom
+						5, 4, 7, 6,		//back
+						1, 5, 6, 2,		//right
+						4, 0, 3, 7  };	//left
+
+float v[] = 
+{
+	-0.5, -0.5, 0,
+	0, 1, 0,
+	0.5, -0.5, 0
+};
+
+unsigned short ind[3] = {0, 1, 2};
+
+#include <DataPtr.h>
+
+#define MESH_INDICES_MAGIC '10im'
+
+VertexDecl SubMesh::decl_[3]=
+{
+	{USAGE_POSITION, 3, GL_FLOAT, 0, 8*4},
+	{USAGE_NORMAL, 3, GL_FLOAT, 3*4, 8*4},
+	{USAGE_TEXCOORD0, 2, GL_FLOAT, 6*4, 8*4}
+};
+
+void *vv, *ii;
+int numv, numi;
+DataStreamPtr stream;
+
+MeshPtr loadMesh1(const char* path)
+{
+	int magic;
+	MeshPtr mesh;
+	stream = vfsMapFile(path);
+	if(!stream)
+		return mesh;
+	
+	DataPtr ptr(stream->MapStream(), stream->GetSize());
+
+	ptr.read(magic);
+	
+	if(magic == MESH_INDICES_MAGIC) 
+	{
+		int num_surfaces;
+		ptr.read(num_surfaces);
+		mesh = MeshPtr(new Mesh);
+		for(int i = 0; i < num_surfaces; i++) {
+			SubMesh *s = new SubMesh();
+			
+			ptr.move(128);
+			// name
+			//fread(s->name,sizeof(s->name),1,file);
+			
+			// vertexes
+			ptr.read(s->numVert_);
+			numv = s->numVert_;
+			s->vert_.setBufferData(8*4*s->numVert_, vv=ptr.move(8*4*s->numVert_));
+			//mesh_Vertex *vertex = new mesh_Vertex[num_vertex];
+			//fread(vertex,sizeof(mesh_Vertex),num_vertex,file);
+			
+			// triangles
+			//ptr.move(8*4*s->numVert_);
+			ptr.read(s->numInd_);
+			numi = s->numInd_*=3;
+			s->ind_.setBufferData(s->numInd_*4, ii=ptr.move(s->numInd_*4));
+			mesh->push_back(SubMeshPtr(s));
+		}
+	}
+	return mesh;
+}
+
+VertexDecl decl = {USAGE_POSITION, 3, GL_FLOAT, 0, 0};
 
 class Exest: public Framework
 {
@@ -6,16 +309,29 @@ class Exest: public Framework
 		glRenderer	renderer_;
 		glTexture2DPtr	image_[2];
 		MeshPtr		mesh;
+		FirstPersonCamera1	camera;
+		glAttribBuffer	vb;
+		glIndexBuffer	ib;
 	protected:
 		void OnCreate()
 		{
 			vfsAddRoot("D:\\Temp\\ExestData");
-			mesh = loadMesh("sky.mesh");
-			image_[0] = glTexture2DPtr(loadPngTexture("pngtest.png"));
-			image_[1] = glTexture2DPtr(loadJpegTexture("highlight.jpg"));
+			mesh = loadMesh1("sky.mesh");
+			//image_[0] = glTexture2DPtr(loadPngTexture("pngtest.png"));
+			//image_[1] = glTexture2DPtr(loadJpegTexture("highlight.jpg"));
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(90.0, (float)width_/height_,1,2048); 
+			gluPerspective(90.0, (float)width_/height_,1,2048);
+			glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
+			glClearColor(0.0f, 0.0f, 0.0f, 0.5f);				// Black Background
+			glClearDepth(1.0f);									// Depth Buffer Setup
+			glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
+			glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
+			glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
+			//camera.rotate(180, 0);
+			//camera.move(glm::vec3(0, 1, -4)); 
+			vb.setBufferData(sizeof(vertices), vertices);
+			ib.setBufferData(sizeof(indices), indices);
 		}
 		
 		void OnDestroy()
@@ -29,11 +345,12 @@ class Exest: public Framework
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
-			glEnable(GL_DEPTH_TEST);
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0.0f, -1.0f, -4.0f);
+			//glLoadMatrixf(camera.getMatrix());
 			renderer_.beginRenderPass();
+				glEnable(GL_DEPTH_TEST);
 				for(float i = -10; i <= 10; i += 1)
 				{
 					glBegin(GL_LINES);
@@ -44,28 +361,74 @@ class Exest: public Framework
 						glVertex3f(i, 0, 10);
 					glEnd();
 				}
-				glColor3f(1, 1, 1);
-				glEnable(GL_TEXTURE_2D);
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				renderer_.setTexture(GL_TEXTURE0, image_[0].get());
-				glBegin(GL_QUADS);
-					glTexCoord2f(0, 1);
-					glVertex3f(-1, 0, 0);
-					glTexCoord2f(0, 0);
-					glVertex3f(-1, 2, 0);
-					glTexCoord2f(1, 0);
-					glVertex3f(1, 2, 0);
-					glTexCoord2f(1, 1);
-					glVertex3f(1, 0, 0);
-				glEnd();
-			renderer_.endRenderPass();
-			renderer_.beginRenderPass();
-				glScalef(1, 1, -1);
-				renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 3, SubMesh::decl_);
-				renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
+				//glColor3f(1, 1, 1);
+				//glBegin(GL_TRIANGLES);
+				//glVertex3fv(v[0]);
+				//glVertex3fv(v[1]);
+				//glVertex3fv(v[2]);
+				//glEnd();
+				//glScalef(1, 1, -1);
+				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				//glCullFace(GL_FRONT_AND_BACK);
+				//glEnable(GL_VERTEX_ARRAY);
+				//glVertexPointer(3, GL_FLOAT, 0, v);
+				//glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, ind);
+				//glDisaSble(GL_VERTEX_ARRAY);
+				//renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 1, SubMesh::decl_);
+				//renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
+				//renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				//glPushMatrix();
+
+				glDisable(GL_TEXTURE_2D);
+
+				//glTranslatef(3.0f, 0,-10.0f);
+
+				//glRotatef(glfwGetTime()/30.0f,1.0f,0.0f,0.0f);
+				//glRotatef(glfwGetTime()/30.0f,0.0f,1.0f,0.0f);
+				//glRotatef(glfwGetTime()/30.0f,0.0f,0.0f,1.0f);
+				glColor3f(1.0f, 0.0f, 0.0f);
+				//glEnableClientState(GL_VERTEX_ARRAY);
+				//Get our vertex array
+				//glVertexPointer(3, GL_FLOAT, 8*4, vv);
+
+
+				//go through our index array and draw our vertex array
+				//glDrawElements(GL_TRIANGLES, numi, GL_UNSIGNED_INT, ii);
+				
+				renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 1, SubMesh::decl_);
+				renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
 				renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
+				//renderer_.addAttribBuffer(&vb, 1, &decl);
+				//renderer_.setIndexBuffer(0, GL_UNSIGNED_BYTE);
+				//renderer_.drawPrimitives(GL_QUADS, 24, indices);
+
+				// Enable our vertex array
+				//glBindBuffer(GL_ARRAY_BUFFER, vb.handle_);
+				//glEnableClientState(GL_VERTEX_ARRAY);
+				// Get our vertex array
+				//glVertexPointer(3, GL_FLOAT, 0, 0);
+
+
+				//go through our index array and draw our vertex array
+				//glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
+
+				//glPopMatrix();
+
+				//const float ww=1;
+				//glBegin(GL_LINES);
+				//	glColor3f(1,0,0);
+				//	glVertex3f(0,0,0);
+				//	glVertex3f(ww,0,0);
+
+				//	glColor3f(0,1,0);
+				//	glVertex3f(0,0,0);
+				//	glVertex3f(0,ww,0);
+
+				//	glColor3f(0,0,1);
+				//	glVertex3f(0,0,0);
+				//	glVertex3f(0,0,ww);
+				//glEnd();
 			renderer_.endRenderPass();
 			glFlush();
 		}
@@ -74,6 +437,22 @@ class Exest: public Framework
 		{
 			if( glfwGetKey(GLFW_KEY_ESC) )
 				close();
+			if( glfwGetKey(GLFW_KEY_KP_8) )
+				camera.rotate(0, -0.5);
+			if( glfwGetKey(GLFW_KEY_KP_2) )
+				camera.rotate(0, 0.5);
+			if( glfwGetKey(GLFW_KEY_KP_4) )
+				camera.rotate(-0.5, 0);
+			if( glfwGetKey(GLFW_KEY_KP_6) )
+				camera.rotate(0.5, 0);
+			if( glfwGetKey('W') )
+				camera.move(glm::vec3(0.0,0.0,-0.1));
+			if( glfwGetKey('S') )
+				camera.move(glm::vec3(0.0,0.0,0.1));
+			if( glfwGetKey('A') )
+				camera.move(glm::vec3(0.1,0.0,0.0));
+			if( glfwGetKey('D') )
+				camera.move(glm::vec3(-0.1,0.0,0.0));
 		}
 };
 

@@ -6,6 +6,7 @@
 #include <gl\glfw.h>
 #include <loading.h>
 #include <Singleton.h>
+#include <FirstPersonCamera.h>
 
 class Framework:public Singleton<Framework>
 {

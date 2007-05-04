@@ -45,7 +45,7 @@ class glRenderer
 		void setIndexBuffer(glIndexBuffer* buffer, GLenum type)
 		{
 			indType_ = type;
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer->handle_);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer?buffer->handle_:0);
 		}
 		void drawPrimitives(GLenum primType, GLuint indCount, const GLvoid* indices=0)//may be use default start primitive etc.
 		{

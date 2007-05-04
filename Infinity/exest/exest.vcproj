@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils"
+				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

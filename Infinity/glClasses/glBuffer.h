@@ -17,6 +17,7 @@ class glBufferTemplate
 		{
 			glBindBuffer(target, handle_);
 			glBufferData(target, size, data, usage);
+			glBindBuffer(target, 0);
 		}
 		GLvoid* mapBuffer(GLenum mode=GL_WRITE_ONLY)
 		{

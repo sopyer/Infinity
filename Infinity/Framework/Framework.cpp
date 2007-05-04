@@ -5,10 +5,10 @@
 
 #ifdef _DEBUG
 #	include <string>
-#	define START_PROFILE(section) sec=section; time = glfwGetTime()
-#	define END_PROFILE() print("Section %s in %f sec\n", sec.c_str(), glfwGetTime()-time)
-double time=0;
-std::string sec;
+#	define START_PROFILE(section) sec=section; time_ = glfwGetTime()
+#	define END_PROFILE() print("Section %s in %f sec\n", sec.c_str(), glfwGetTime()-time_)
+static double time_=0;
+static std::string sec;
 #endif
 
 static char str[256];

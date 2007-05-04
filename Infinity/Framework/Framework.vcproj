@@ -298,6 +298,14 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Cameras"
+			>
+			<File
+				RelativePath=".\FirstPersonCamera.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\Framework.cpp"
 			>
