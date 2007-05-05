@@ -350,17 +350,6 @@ class Exest: public Framework
 			glTranslatef(0.0f, -1.0f, -4.0f);
 			//glLoadMatrixf(camera.getMatrix());
 			renderer_.beginRenderPass();
-				glEnable(GL_DEPTH_TEST);
-				for(float i = -10; i <= 10; i += 1)
-				{
-					glBegin(GL_LINES);
-						glColor3ub(68, 193, 181);						
-						glVertex3f(-10, 0, i);					
-						glVertex3f(10, 0, i);
-						glVertex3f(i, 0,-10);							
-						glVertex3f(i, 0, 10);
-					glEnd();
-				}
 				//glColor3f(1, 1, 1);
 				//glBegin(GL_TRIANGLES);
 				//glVertex3fv(v[0]);
@@ -378,7 +367,7 @@ class Exest: public Framework
 				//renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
 				//renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				//glPushMatrix();
+				glPushMatrix();
 
 				glDisable(GL_TEXTURE_2D);
 
@@ -395,7 +384,10 @@ class Exest: public Framework
 
 				//go through our index array and draw our vertex array
 				//glDrawElements(GL_TRIANGLES, numi, GL_UNSIGNED_INT, ii);
-				
+				glMultMatrixf(glm::mat4(1,0,0,0,
+										0,0,1,0,
+										0,1,0,0,
+										0,0,0,1));
 				renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 1, SubMesh::decl_);
 				renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
 				renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
@@ -413,22 +405,33 @@ class Exest: public Framework
 				//go through our index array and draw our vertex array
 				//glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
 
-				//glPopMatrix();
+				glPopMatrix();
+				glEnable(GL_DEPTH_TEST);
+				for(float i = -10; i <= 10; i += 1)
+				{
+					glBegin(GL_LINES);
+						glColor3ub(68, 193, 181);						
+						glVertex3f(-10, 0, i);					
+						glVertex3f(10, 0, i);
+						glVertex3f(i, 0,-10);							
+						glVertex3f(i, 0, 10);
+					glEnd();
+				}
 
-				//const float ww=1;
-				//glBegin(GL_LINES);
-				//	glColor3f(1,0,0);
-				//	glVertex3f(0,0,0);
-				//	glVertex3f(ww,0,0);
+				const float ww=1;
+				glBegin(GL_LINES);
+					glColor3f(1,0,0);
+					glVertex3f(0,0,0);
+					glVertex3f(ww,0,0);
 
-				//	glColor3f(0,1,0);
-				//	glVertex3f(0,0,0);
-				//	glVertex3f(0,ww,0);
+					glColor3f(0,1,0);
+					glVertex3f(0,0,0);
+					glVertex3f(0,ww,0);
 
-				//	glColor3f(0,0,1);
-				//	glVertex3f(0,0,0);
-				//	glVertex3f(0,0,ww);
-				//glEnd();
+					glColor3f(0,0,1);
+					glVertex3f(0,0,0);
+					glVertex3f(0,0,ww);
+				glEnd();
 			renderer_.endRenderPass();
 			glFlush();
 		}
