@@ -29,7 +29,9 @@ glShader* loadShader(const char* path)
 
 glProgram* loadProgram(const char* shaders)
 {
-	char* shaderPath=strtok(const_cast<char*>(shaders), ";");
+	char str[1024];
+	strncpy(str, shaders, 1023);
+	char* shaderPath=strtok(str, ";");
 	glProgram *program = new glProgram();
 	while( shaderPath )
 	{

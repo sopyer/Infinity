@@ -306,19 +306,23 @@ VertexDecl decl = {USAGE_POSITION, 3, GL_FLOAT, 0, 0};
 class Exest: public Framework
 {
 	private:
+		GLint timeLoc, tex1Loc, tex0Loc;
 		glRenderer	renderer_;
 		glTexture2DPtr	image_[2];
+		glProgramPtr	prog_;
 		MeshPtr		mesh;
 		FirstPersonCamera1	camera;
-		glAttribBuffer	vb;
-		glIndexBuffer	ib;
+		//glAttribBuffer	vb;
+		//glIndexBuffer	ib;
 	protected:
 		void OnCreate()
 		{
 			vfsAddRoot("D:\\Temp\\ExestData");
 			mesh = loadMesh1("sky.mesh");
-			//image_[0] = glTexture2DPtr(loadPngTexture("pngtest.png"));
-			//image_[1] = glTexture2DPtr(loadJpegTexture("highlight.jpg"));
+			image_[0] = glTexture2DPtr(loadPngTexture("horizon.png"));
+			image_[0]->setWrapMode(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+			image_[1] = glTexture2DPtr(loadPngTexture("clouds.png"));
+			prog_ = glProgramPtr(loadProgram("sky.vert;sky.frag"));
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(90.0, (float)width_/height_,1,2048);
@@ -328,10 +332,18 @@ class Exest: public Framework
 			glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
 			glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
 			glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
+			timeLoc = prog_->getUniformLocation("time");
+			tex0Loc = prog_->getUniformLocation("tex0");
+			tex1Loc = prog_->getUniformLocation("tex1");
+			renderer_.useProgram(prog_.get());
+			renderer_.setUniform1f(timeLoc, glfwGetTime());
+			renderer_.setUniform1i(tex0Loc, 0);
+			renderer_.setUniform1i(tex1Loc, 1);
+			renderer_.useProgram(0);
 			//camera.rotate(180, 0);
 			//camera.move(glm::vec3(0, 1, -4)); 
-			vb.setBufferData(sizeof(vertices), vertices);
-			ib.setBufferData(sizeof(indices), indices);
+			//vb.setBufferData(sizeof(vertices), vertices);
+			//ib.setBufferData(sizeof(indices), indices);
 		}
 		
 		void OnDestroy()
@@ -348,68 +360,30 @@ class Exest: public Framework
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0.0f, -1.0f, -4.0f);
-			//glLoadMatrixf(camera.getMatrix());
 			renderer_.beginRenderPass();
-				//glColor3f(1, 1, 1);
-				//glBegin(GL_TRIANGLES);
-				//glVertex3fv(v[0]);
-				//glVertex3fv(v[1]);
-				//glVertex3fv(v[2]);
-				//glEnd();
-				//glScalef(1, 1, -1);
 				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				//glCullFace(GL_FRONT_AND_BACK);
-				//glEnable(GL_VERTEX_ARRAY);
-				//glVertexPointer(3, GL_FLOAT, 0, v);
-				//glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, ind);
-				//glDisaSble(GL_VERTEX_ARRAY);
-				//renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 1, SubMesh::decl_);
-				//renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
-				//renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				glPushMatrix();
-
-				glDisable(GL_TEXTURE_2D);
-
-				//glTranslatef(3.0f, 0,-10.0f);
-
-				//glRotatef(glfwGetTime()/30.0f,1.0f,0.0f,0.0f);
-				//glRotatef(glfwGetTime()/30.0f,0.0f,1.0f,0.0f);
-				//glRotatef(glfwGetTime()/30.0f,0.0f,0.0f,1.0f);
-				glColor3f(1.0f, 0.0f, 0.0f);
-				//glEnableClientState(GL_VERTEX_ARRAY);
-				//Get our vertex array
-				//glVertexPointer(3, GL_FLOAT, 8*4, vv);
-
-
-				//go through our index array and draw our vertex array
-				//glDrawElements(GL_TRIANGLES, numi, GL_UNSIGNED_INT, ii);
-				glMultMatrixf(glm::mat4(1,0,0,0,
-										0,0,1,0,
-										0,1,0,0,
-										0,0,0,1));
-				renderer_.addAttribBuffer(&(*mesh)[0]->vert_, 1, SubMesh::decl_);
-				renderer_.setIndexBuffer(&(*mesh)[0]->ind_, GL_UNSIGNED_INT);
-				renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
-				//renderer_.addAttribBuffer(&vb, 1, &decl);
-				//renderer_.setIndexBuffer(0, GL_UNSIGNED_BYTE);
-				//renderer_.drawPrimitives(GL_QUADS, 24, indices);
-
-				// Enable our vertex array
-				//glBindBuffer(GL_ARRAY_BUFFER, vb.handle_);
-				//glEnableClientState(GL_VERTEX_ARRAY);
-				// Get our vertex array
-				//glVertexPointer(3, GL_FLOAT, 0, 0);
-
-
-				//go through our index array and draw our vertex array
-				//glDrawElements(GL_QUADS, 24, GL_UNSIGNED_BYTE, indices);
-
-				glPopMatrix();
 				glEnable(GL_DEPTH_TEST);
+				glColor3f(1.0f, 1.0f, 1.0f);
+				renderer_.setTexture(GL_TEXTURE0, image_[0].get());
+				renderer_.setTexture(GL_TEXTURE1, image_[1].get());
+				renderer_.useProgram(prog_.get());
+				renderer_.setUniform1f(timeLoc, glfwGetTime());
+				glPushMatrix();
+					glMultMatrixf(glm::mat4(1,0,0,0,
+											0,0,1,0,
+											0,1,0,0,
+											0,0,0,1));
+					glTranslatef(0,0,-400);
+					renderer_.addAttribBuffer((*mesh)[0]->vert_, 1, SubMesh::decl_);
+					renderer_.setIndexBuffer((*mesh)[0]->ind_, GL_UNSIGNED_INT);
+					renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
+				glPopMatrix();
+				renderer_.useProgram(0);
+				glDisable(GL_TEXTURE_2D);
 				for(float i = -10; i <= 10; i += 1)
 				{
-					glBegin(GL_LINES);
+					//glBegin(GL_LINES);
+					glBegin(GL_QUADS);
 						glColor3ub(68, 193, 181);						
 						glVertex3f(-10, 0, i);					
 						glVertex3f(10, 0, i);
@@ -417,7 +391,6 @@ class Exest: public Framework
 						glVertex3f(i, 0, 10);
 					glEnd();
 				}
-
 				const float ww=1;
 				glBegin(GL_LINES);
 					glColor3f(1,0,0);
@@ -456,6 +429,7 @@ class Exest: public Framework
 				camera.move(glm::vec3(0.1,0.0,0.0));
 			if( glfwGetKey('D') )
 				camera.move(glm::vec3(-0.1,0.0,0.0));
+			//renderer_.setUniform1f();
 		}
 };
 

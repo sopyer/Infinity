@@ -41,8 +41,16 @@ class glRenderer
 			glPopClientAttrib();
 			glPopAttrib();
 		}
-		void addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries, VertexDecl *decl);
-		void setIndexBuffer(glIndexBuffer* buffer, GLenum type)
+		void addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries=0, VertexDecl *decl=0);
+		void addAttribBuffer(glAttribBuffer& buffer, GLuint numEntries, VertexDecl *decl)
+		{
+			addAttribBuffer(&buffer, numEntries, decl);
+		}
+		void setIndexBuffer(glIndexBuffer& buffer, GLenum type)
+		{
+			setIndexBuffer(&buffer, type);
+		}
+		void setIndexBuffer(glIndexBuffer* buffer, GLenum type=0)
 		{
 			indType_ = type;
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer?buffer->handle_:0);
@@ -55,6 +63,14 @@ class glRenderer
 		{
 			glCallList(list->handle_);
 		}
+		void callDisplayList(glDisplayList& list)
+		{
+			glCallList(list.handle_);
+		}
+		void setTexture(GLenum stage, glTexture& texture)
+		{
+			setTexture(stage, &texture);
+		}
 		void setTexture(GLenum stage, glTexture* texture)
 		{
 			glActiveTexture(stage);
@@ -66,6 +82,10 @@ class glRenderer
 		void useProgram(glProgram* program)
 		{
 			glUseProgram((program)?program->handle_:0);
+		}
+		void useProgram(glProgram& program)
+		{
+			glUseProgram(program.handle_);
 		}
 		void setUniform1f(GLint location, GLfloat v0)
 		{

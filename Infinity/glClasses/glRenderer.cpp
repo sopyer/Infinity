@@ -2,6 +2,11 @@
 
 void glRenderer::addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
 {
+	if( !buffer )
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		return;
+	}
 	glBindBuffer(GL_ARRAY_BUFFER, buffer->handle_);
 	for(GLuint i=0; i<numEntries; i++)
 	{
