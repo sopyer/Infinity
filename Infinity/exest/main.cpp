@@ -217,32 +217,6 @@ class FirstPersonCamera1
 			return matrix;
 		}
 };
-// Vertex Array for method II
-GLfloat vertices[] = { -1.0f, 1.0f, 1.0f,    //front
-				        1.0f, 1.0f, 1.0f,    //1
-				        1.0f,-1.0f, 1.0f,    //2
-				       -1.0f,-1.0f, 1.0f,    //3
-				       -1.0f, 1.0f,-1.0f,    //4
-				        1.0f, 1.0f,-1.0f,    //5
-				        1.0f,-1.0f,-1.0f,    //6
-				       -1.0f,-1.0f,-1.0f  }; //7
-
-// Index Array for method II
-GLubyte indices[] = {	0, 1, 2, 3,		//front
-						4, 5, 1, 0,		//top
-						3, 2, 6, 7,		//bottom
-						5, 4, 7, 6,		//back
-						1, 5, 6, 2,		//right
-						4, 0, 3, 7  };	//left
-
-float v[] = 
-{
-	-0.5, -0.5, 0,
-	0, 1, 0,
-	0.5, -0.5, 0
-};
-
-unsigned short ind[3] = {0, 1, 2};
 
 #include <DataPtr.h>
 
@@ -255,15 +229,13 @@ VertexDecl SubMesh::decl_[3]=
 	{USAGE_TEXCOORD0, 2, GL_FLOAT, 6*4, 8*4}
 };
 
-void *vv, *ii;
-int numv, numi;
-DataStreamPtr stream;
+
 
 MeshPtr loadMesh1(const char* path)
 {
 	int magic;
 	MeshPtr mesh;
-	stream = vfsMapFile(path);
+	DataStreamPtr stream = vfsMapFile(path);
 	if(!stream)
 		return mesh;
 	
@@ -280,21 +252,13 @@ MeshPtr loadMesh1(const char* path)
 			SubMesh *s = new SubMesh();
 			
 			ptr.move(128);
-			// name
-			//fread(s->name,sizeof(s->name),1,file);
-			
-			// vertexes
+
 			ptr.read(s->numVert_);
-			numv = s->numVert_;
-			s->vert_.setBufferData(8*4*s->numVert_, vv=ptr.move(8*4*s->numVert_));
-			//mesh_Vertex *vertex = new mesh_Vertex[num_vertex];
-			//fread(vertex,sizeof(mesh_Vertex),num_vertex,file);
-			
-			// triangles
-			//ptr.move(8*4*s->numVert_);
+			s->vert_.setBufferData(8*4*s->numVert_, ptr.move(8*4*s->numVert_));
+
 			ptr.read(s->numInd_);
-			numi = s->numInd_*=3;
-			s->ind_.setBufferData(s->numInd_*4, ii=ptr.move(s->numInd_*4));
+			s->numInd_*=3;
+			s->ind_.setBufferData(s->numInd_*4, ptr.move(s->numInd_*4));
 			mesh->push_back(SubMeshPtr(s));
 		}
 	}
@@ -312,8 +276,6 @@ class Exest: public Framework
 		glProgramPtr	prog_;
 		MeshPtr		mesh;
 		FirstPersonCamera1	camera;
-		//glAttribBuffer	vb;
-		//glIndexBuffer	ib;
 	protected:
 		void OnCreate()
 		{
@@ -342,16 +304,8 @@ class Exest: public Framework
 			renderer_.useProgram(0);
 			//camera.rotate(180, 0);
 			//camera.move(glm::vec3(0, 1, -4)); 
-			//vb.setBufferData(sizeof(vertices), vertices);
-			//ib.setBufferData(sizeof(indices), indices);
 		}
 		
-		void OnDestroy()
-		{
-			//delete image_[0];
-			//delete image_[1];
-		}
-
 		void OnRender()
 		{
 			glClearDepth(1.0);
@@ -361,7 +315,6 @@ class Exest: public Framework
 			glLoadIdentity();
 			glTranslatef(0.0f, -1.0f, -4.0f);
 			renderer_.beginRenderPass();
-				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glEnable(GL_DEPTH_TEST);
 				glColor3f(1.0f, 1.0f, 1.0f);
 				renderer_.setTexture(GL_TEXTURE0, image_[0].get());
@@ -382,8 +335,7 @@ class Exest: public Framework
 				glDisable(GL_TEXTURE_2D);
 				for(float i = -10; i <= 10; i += 1)
 				{
-					//glBegin(GL_LINES);
-					glBegin(GL_QUADS);
+					glBegin(GL_LINES);
 						glColor3ub(68, 193, 181);						
 						glVertex3f(-10, 0, i);					
 						glVertex3f(10, 0, i);
@@ -429,7 +381,6 @@ class Exest: public Framework
 				camera.move(glm::vec3(0.1,0.0,0.0));
 			if( glfwGetKey('D') )
 				camera.move(glm::vec3(-0.1,0.0,0.0));
-			//renderer_.setUniform1f();
 		}
 };
 
