@@ -25,6 +25,7 @@ class Framework:public Singleton<Framework>
 	private:
 		void loadConfig(const char* cfgFile);
 		static int GLFWCALL closeCallback();
+		//static int GLFWCALL mouseMove(int x, int y);
 	protected:
 		int width_;
 		int height_;
