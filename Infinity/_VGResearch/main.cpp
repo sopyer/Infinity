@@ -16,7 +16,7 @@ void main(void)\
 }\
 ";
 
-char* fragSrc = 
+char* fragSrc1 = 
 "\
 void main(void)\
 {\
@@ -24,6 +24,23 @@ void main(void)\
 	if( (pow(uv.s, 2.0)-uv.t)>0.0 ) discard;\
 	gl_FragColor = vec4(1);\
 }\
+",
+*fragSrc = 
+"\
+void main(void)\n\
+{\n\
+  vec2 uv = gl_TexCoord[0].st;\n\
+  float f = pow(uv.s, 2.0)-uv.t;\n\
+  mat2 J = mat2(dFdx(uv), dFdy(uv));\n\
+  vec2 dx = dFdx(uv), dy = dFdy(uv);\n\
+  vec2 dF = vec2(2.0*uv.x, -1.0);\n\
+  float dist = f/length(dF*J);\n\
+  \n\
+  if( dist > 0.0 )\n\
+    discard;\n\
+  float a = clamp(-0.5*dist, 0.0, 1.0);\n\
+	gl_FragColor = vec4(a, 0.0, a, 1.0);\n\
+}\n\
 ";
 
 class VGApp: public Framework
@@ -48,7 +65,7 @@ class VGApp: public Framework
 			PRINT_SHADER_LOG(program_);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(90.0, (float)width_/height_,1,2048); 
+			gluPerspective(35.0, (float)width_/height_,1,2048); 
 		}
 		
 		void OnDestroy()
@@ -77,24 +94,40 @@ class VGApp: public Framework
 				}
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				glColor3f(1, 1, 1);
-				glBegin(GL_TRIANGLES);
-					glTexCoord2f(0, 0);
-					glVertex3f(-1, 1, 3);
-					glTexCoord2f(0.5, 0);
-					glVertex3f(2, 0, 0);
-					glTexCoord2f(1, 1);
-					glVertex3f(1, 2, 2);
-				glEnd();
+				//glBegin(GL_TRIANGLES);
+				//	glTexCoord2f(0, 0);
+				//	glVertex3f(-1, 1, 3);
+				//	glTexCoord2f(0.5, 0);
+				//	glVertex3f(2, 0, 0);
+				//	glTexCoord2f(1, 1);
+				//	glVertex3f(1, 2, 2);
+				//glEnd();
+				glTranslatef(0, 3, 0);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				renderer_.useProgram(&program_);
 				glColor3f(1, 1, 1);
 				glBegin(GL_TRIANGLES);
 					glTexCoord2f(0, 0);
-					glVertex3f(-1, 1, 3);
+					glVertex3f(-1, 0, 0);
 					glTexCoord2f(0.5, 0);
-					glVertex3f(2, 0, 0);
+					glVertex3f(0, 1, 0);
 					glTexCoord2f(1, 1);
-					glVertex3f(1, 2, 2);
+					glVertex3f(1, 0, 0);
+
+					glTexCoord2f(0, 0);
+					glVertex3f(-1, 0, 0);
+					glTexCoord2f(0, 0);
+					glVertex3f(-2, -1, 0);
+					glTexCoord2f(1, 1);
+					glVertex3f(-1, -2, 0);
+
+					glTexCoord2f(0, 0);
+					glVertex3f(-1, 0, 0);
+					glTexCoord2f(1, 1);
+					glVertex3f(-1, -2, 0);
+					glTexCoord2f(1, 1);
+					glVertex3f(1, 0, 0);
+
 				glEnd();
 			renderer_.endRenderPass();
 			glFlush();
