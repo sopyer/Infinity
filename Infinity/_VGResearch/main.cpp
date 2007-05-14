@@ -27,6 +27,7 @@ void main(void)\
 ",
 *fragSrc = 
 "\
+uniform float orient;\n\
 void main(void)\n\
 {\n\
   vec2 uv = gl_TexCoord[0].st;\n\
@@ -35,10 +36,10 @@ void main(void)\n\
   vec2 dx = dFdx(uv), dy = dFdy(uv);\n\
   vec2 dF = vec2(2.0*uv.x, -1.0);\n\
   float dist = f/length(dF*J);\n\
-  \n\
-  if( dist > 0.0 )\n\
+  dist*=orient;\n\
+  if( dist < 0.0 )\n\
     discard;\n\
-  float a = clamp(-0.5*dist, 0.0, 1.0);\n\
+  float a = clamp(dist, 0.0, 1.0);\n\
 	gl_FragColor = vec4(a, 0.0, a, 1.0);\n\
 }\n\
 ";
@@ -50,6 +51,7 @@ class VGApp: public Framework
 		glProgram	program_;
 		glVertexShader	vert_;
 		glFragmentShader frag_;
+		GLint	orient;
 	protected:
 		void OnCreate()
 		{
@@ -62,6 +64,7 @@ class VGApp: public Framework
 			program_.link();
 			PRINT_SHADER_LOG(program_);
 			program_.validate();
+			orient = program_.getUniformLocation("orient");
 			PRINT_SHADER_LOG(program_);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -92,8 +95,8 @@ class VGApp: public Framework
 						glVertex3f(i, 0, 10);
 					glEnd();
 				}
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				glColor3f(1, 1, 1);
+				//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				//glColor3f(1, 1, 1);
 				//glBegin(GL_TRIANGLES);
 				//	glTexCoord2f(0, 0);
 				//	glVertex3f(-1, 1, 3);
@@ -102,32 +105,62 @@ class VGApp: public Framework
 				//	glTexCoord2f(1, 1);
 				//	glVertex3f(1, 2, 2);
 				//glEnd();
-				glTranslatef(0, 3, 0);
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glTranslatef(0, 1, 0);
+				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				renderer_.useProgram(&program_);
-				glColor3f(1, 1, 1);
+				glUniform1f(orient, 0.5);
+				//glColor3f(1, 1, 1);
 				glBegin(GL_TRIANGLES);
+					//glTexCoord2f(0, 0);
+					//glVertex3f(-1, 0, 0);
+					//glTexCoord2f(0.5, 0);
+					//glVertex3f(0, 1, 0);
+					//glTexCoord2f(1, 1);
+					//glVertex3f(1, 0, 0);
+
+					//glTexCoord2f(0, 0);
+					//glVertex3f(-1, 0, 0);
+					//glTexCoord2f(0, 0);
+					//glVertex3f(-2, -1, 0);
+					//glTexCoord2f(1, 1);
+					//glVertex3f(-1, -2, 0);
+
+					//glTexCoord2f(0, 0);
+					//glVertex3f(-1, 0, 0);
+					//glTexCoord2f(1, 1);
+					//glVertex3f(-1, -2, 0);
+					//glTexCoord2f(1, 1);
+					//glVertex3f(1, 0, 0);
+
 					glTexCoord2f(0, 0);
 					glVertex3f(-1, 0, 0);
 					glTexCoord2f(0.5, 0);
-					glVertex3f(0, 1, 0);
+					glVertex3f(-0.5, 1, 0);
 					glTexCoord2f(1, 1);
+					glVertex3f(0, 0, 0);
+					
+					glTexCoord2f(0.5, 0);
+					glVertex3f(-0.5, 1, 0);
+					glTexCoord2f(1, 1);
+					glVertex3f(0, 0, 0);
+					glTexCoord2f(1, 0);
+					glVertex3f(0.5, 1, 0);
+				glEnd();
+				glUniform1f(orient, -0.5);
+				glBegin(GL_TRIANGLES);
+					glTexCoord2f(0, 0);
 					glVertex3f(1, 0, 0);
-
-					glTexCoord2f(0, 0);
-					glVertex3f(-1, 0, 0);
-					glTexCoord2f(0, 0);
-					glVertex3f(-2, -1, 0);
+					glTexCoord2f(0.5, 0);
+					glVertex3f(0.5, -1, 0);
 					glTexCoord2f(1, 1);
-					glVertex3f(-1, -2, 0);
-
+					glVertex3f(0, 0, 0);
+					
+					glTexCoord2f(0, 0.5);
+					glVertex3f(0.5, 1, 0);
+					glTexCoord2f(1, 1);
+					glVertex3f(0, 0, 0);
 					glTexCoord2f(0, 0);
-					glVertex3f(-1, 0, 0);
-					glTexCoord2f(1, 1);
-					glVertex3f(-1, -2, 0);
-					glTexCoord2f(1, 1);
 					glVertex3f(1, 0, 0);
-
 				glEnd();
 			renderer_.endRenderPass();
 			glFlush();
