@@ -109,7 +109,7 @@ class VGApp: public Framework
 				glTranslatef(0, 1, 0);
 				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				renderer_.useProgram(&program_);
-				glUniform1f(orient, 1/*0.5*/);
+				glUniform1f(orient, 0.5);
 				glColor3f(0.2f, 0.7f, 0.4f);
 				glBegin(GL_TRIANGLES);
 					//glTexCoord2f(0, 0);
@@ -133,33 +133,45 @@ class VGApp: public Framework
 					//glTexCoord2f(1, 1);
 					//glVertex3f(1, 0, 0);
 
+					glColor3f(0.2f, 0.7f, 0.4f);
 					glTexCoord2f(0, 0);
 					glVertex3f(-1, 0, 0);
+					glColor3f(0.2f, 0.2f, 0.4f);
 					glTexCoord2f(0.5, 0);
 					glVertex3f(-0.5, 1, 0);
+					glColor3f(0.5f, 0.3f, 0.4f);
 					glTexCoord2f(1, 1);
 					glVertex3f(0, 0, 0);
 					
+					glColor3f(0.2f, 0.2f, 0.4f);
 					glTexCoord2f(0.5, 0);
 					glVertex3f(-0.5, 1, 0);
+					glColor3f(0.5f, 0.3f, 0.4f);
 					glTexCoord2f(1, 1);
 					glVertex3f(0, 0, 0);
+					glColor3f(0.6f, 0.3f, 0.4f);
 					glTexCoord2f(1, 0);
 					glVertex3f(0.5, 1, 0);
 				glEnd();
-				glUniform1f(orient, -1/*0.5*/);
+				glUniform1f(orient, -0.5);
 				glBegin(GL_TRIANGLES);
+					glColor3f(0.5f, 0.8f, 0.4f);
 					glTexCoord2f(0, 0);
 					glVertex3f(1, 0, 0);
+					glColor3f(0.2f, 0.8f, 0.3f);
 					glTexCoord2f(0.5, 0);
 					glVertex3f(0.5, -1, 0);
+					glColor3f(0.5f, 0.3f, 0.4f);
 					glTexCoord2f(1, 1);
 					glVertex3f(0, 0, 0);
 					
+					glColor3f(0.6f, 0.3f, 0.4f);
 					glTexCoord2f(0, 0.5);
 					glVertex3f(0.5, 1, 0);
+					glColor3f(0.5f, 0.3f, 0.4f);
 					glTexCoord2f(1, 1);
 					glVertex3f(0, 0, 0);
+					glColor3f(0.5f, 0.8f, 0.4f);
 					glTexCoord2f(0, 0);
 					glVertex3f(1, 0, 0);
 				glEnd();
