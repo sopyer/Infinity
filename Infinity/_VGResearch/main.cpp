@@ -33,14 +33,15 @@ void main(void)\n\
   vec2 uv = gl_TexCoord[0].st;\n\
   float f = pow(uv.s, 2.0)-uv.t;\n\
   mat2 J = mat2(dFdx(uv), dFdy(uv));\n\
-  vec2 dx = dFdx(uv), dy = dFdy(uv);\n\
+  //vec2 dx = dFdx(uv), dy = dFdy(uv);\n\
   vec2 dF = vec2(2.0*uv.x, -1.0);\n\
   float dist = f/length(dF*J);\n\
   dist*=orient;\n\
   if( dist < 0.0 )\n\
     discard;\n\
-  float a = clamp(dist, 0.0, 1.0);\n\
-	gl_FragColor = vec4(a, 0.0, a, 1.0);\n\
+  //float a = clamp(dist, 0.0, 1.0);\n\
+  float a = smoothstep(0.0, 1.0, dist);\n\
+  gl_FragColor = vec4(gl_Color.rgb*a, gl_Color.a);\n\
 }\n\
 ";
 
@@ -55,11 +56,11 @@ class VGApp: public Framework
 	protected:
 		void OnCreate()
 		{
-			vert_.compile(vertSrc);
+			//vert_.compile(vertSrc);
 			PRINT_SHADER_LOG(vert_);
 			frag_.compile(fragSrc);
 			PRINT_SHADER_LOG(frag_);
-			program_.addShader(&vert_);
+			//program_.addShader(&vert_);
 			program_.addShader(&frag_);
 			program_.link();
 			PRINT_SHADER_LOG(program_);
@@ -108,8 +109,8 @@ class VGApp: public Framework
 				glTranslatef(0, 1, 0);
 				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 				renderer_.useProgram(&program_);
-				glUniform1f(orient, 0.5);
-				//glColor3f(1, 1, 1);
+				glUniform1f(orient, 1/*0.5*/);
+				glColor3f(0.2f, 0.7f, 0.4f);
 				glBegin(GL_TRIANGLES);
 					//glTexCoord2f(0, 0);
 					//glVertex3f(-1, 0, 0);
@@ -146,7 +147,7 @@ class VGApp: public Framework
 					glTexCoord2f(1, 0);
 					glVertex3f(0.5, 1, 0);
 				glEnd();
-				glUniform1f(orient, -0.5);
+				glUniform1f(orient, -1/*0.5*/);
 				glBegin(GL_TRIANGLES);
 					glTexCoord2f(0, 0);
 					glVertex3f(1, 0, 0);
