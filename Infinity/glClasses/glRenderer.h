@@ -61,7 +61,7 @@ class glRenderer
 		}
 		void callDisplayList(glDisplayList* list)
 		{
-			glCallList(list->handle_);
+			glCallList(list?list->handle_:0);
 		}
 		void callDisplayList(glDisplayList& list)
 		{

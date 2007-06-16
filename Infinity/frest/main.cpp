@@ -5,18 +5,20 @@ class Frest: public Framework
 {
 	private:
 		glRenderer	renderer_;
-		glProgram	*program_;
 		glTexture2D	*image_[2];
 		glDisplayList	*ship;
 		float xangle, yangle;
 	protected:
 		void loadShip()
 		{
+			print("Textures\n");
 			//Load the 2 textures up.
 			image_[0] = loadTargaTexture("TEXTURE1.tga");
-			image_[1] = loadTargaTexture("highlight.tga");
-			image_[0]->setWrapMode(GL_CLAMP, GL_CLAMP);
-			image_[1]->setWrapMode(GL_CLAMP, GL_CLAMP);
+			image_[1] = loadTargaTexture("Highlight.tga");
+			if(image_[0])
+				image_[0]->setWrapMode(GL_CLAMP, GL_CLAMP);
+			if(image_[1])
+				image_[1]->setWrapMode(GL_CLAMP, GL_CLAMP);
 			//Setup the first texture unit.
 			renderer_.setTexture(GL_TEXTURE0, image_[0]);
 			//Enable 2D textures.
@@ -44,7 +46,7 @@ class Frest: public Framework
 			//Set to additive. Where the centre (singularity) of the texture appears, will add white
 			//Onto the ship, giving a specular "white out" effect.
 			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-			
+			print("DisplayList\n");
 			//Make the ship display list here.
 			ship = new glDisplayList();
 
@@ -59,6 +61,15 @@ class Frest: public Framework
 			
 			for(GLuint i=0; i<8686; i++)
 			{
+				if(!material_count)
+				{
+					ref_count++;
+					material_count = material_ref[ref_count][1];
+					color_index = material_ref[ref_count][0];
+
+					glColor3f(materials[color_index].diffuse[0], materials[color_index].diffuse[1], materials[color_index].diffuse[2]); 
+				}
+
 				glNormal3f(normals[face_indicies[i][3]] [0], normals[face_indicies[i][3]] [1], normals[face_indicies[i][3]] [2]);
 				glVertex3f(vertices[face_indicies[i][0]] [0], vertices[face_indicies[i][0]] [1], vertices[face_indicies[i][0]] [2]);
 				
@@ -69,25 +80,17 @@ class Frest: public Framework
 				glVertex3f(vertices[face_indicies[i][2]] [0], vertices[face_indicies[i][2]] [1], vertices[face_indicies[i][2]] [2]);
 
 				material_count--;
-
-				if(!material_count)
-				{
-					ref_count++;
-					material_count = material_ref[ref_count][1];
-					color_index = material_ref[ref_count][0];
-
-					glColor3f(materials[color_index].diffuse[0], materials[color_index].diffuse[1], materials[color_index].diffuse[2]); 
-				}
 			}
 			glEnd();
 			ship->end();
+			print("Ship ok.\n");
 		}
 
 		void OnCreate()
 		{
 			xangle = 250;
 			yangle = 30;
-			vfsAddRoot("D:\\Temp\\FrestData");
+			//vfsAddRoot(".\\Data");
 			loadShip();
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -103,6 +106,7 @@ class Frest: public Framework
 
 		void OnRender()
 		{
+			print("UpdateParams\n");
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
@@ -112,6 +116,7 @@ class Frest: public Framework
 			glTranslatef(0.0f, 0.0f, -6.0f);
 			glRotatef(xangle, 1.0f, 0.0f, 0.0f);
 			glRotatef(yangle, 0.0f, 1.0f, 0.0f);
+			print("DrawShip\n");
 			renderer_.beginRenderPass();
 				renderer_.callDisplayList(ship);
 			renderer_.endRenderPass();
@@ -121,9 +126,11 @@ class Frest: public Framework
 		void OnUpdate(float frame_time)
 		{
 			static float lastTime = 0;
+			print("OnUpdateGetKey\n");
 			if( glfwGetKey(GLFW_KEY_ESC) )
 				close();
 
+			print("OnUpdateXANGLE\n");
 			xangle += 20.0f * (frame_time-lastTime);
 			
 			if(xangle >= 360.0f)
@@ -133,6 +140,7 @@ class Frest: public Framework
 
 			yangle += 50.0f * (frame_time-lastTime);
 			
+			print("OnUpdateYANGLE\n");
 			if(yangle >= 360.0f)
 			{
 				yangle -=360.0f;

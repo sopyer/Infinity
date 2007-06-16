@@ -10,6 +10,9 @@ int len;
 #	define END_PROFILE() print("Section %s in %f sec\n", sec.c_str(), glfwGetTime()-time_)
 static double time_=0;
 static std::string sec;
+#else
+#	define START_PROFILE(section)
+#	define END_PROFILE()
 #endif
 
 glShader* loadShader(const char* path)

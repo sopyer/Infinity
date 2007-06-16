@@ -9,9 +9,13 @@
 #	define END_PROFILE() print("Section %s in %f sec\n", sec.c_str(), glfwGetTime()-time_)
 static double time_=0;
 static std::string sec;
+#else
+#	define START_PROFILE(section)
+#	define END_PROFILE()
 #endif
 
 static char str[256];
+static char paths[1024];
 
 void print(const char *s,...)
 {
@@ -36,6 +40,7 @@ void Framework::loadConfig(const char* cfgFile)
 	stencilBits_ = iniparser_getint(dico, "Video:StencilBits", 8);
 	fullscreen_ = iniparser_getboolean(dico, "Video:Fullscreen", false)>0;//to fix stupid MSVC warnings
 	vsync_ = iniparser_getboolean(dico, "Video:VSync", false)>0;//so and here
+	strcpy(paths,iniparser_getstring(dico, "General:Paths", ""));
 	iniparser_freedict(dico);
 }
 
@@ -52,8 +57,19 @@ Framework::Framework()
 	glfwInit();
 	END_PROFILE();
 	START_PROFILE("loadConfig");
-	loadConfig("video.cfg");
+	loadConfig("infinity.cfg");
 	END_PROFILE();
+	print("Resources pathes initializing...");
+	char* path=strtok(paths, ";");
+	while( path )
+	{
+		if( strstr(path, ".zip" ) )
+			vfsAddZip(path);
+		else
+			vfsAddRoot(path);
+		path = strtok(0, ";");
+	}
+
 	START_PROFILE("Window");
 	if( !vsync_ )
 		glfwOpenWindowHint(GLFW_REFRESH_RATE, 0);
@@ -89,14 +105,17 @@ void Framework::close()
 
 void Framework::run()
 {
+	print("OnCreate\n");
 	// Main loop
 	OnCreate();
-	
+	print("MainLoop\n");
 	running_ = true;
 	while( running_ && glfwGetWindowParam( GLFW_OPENED ) )
 	{
+		print("OnUpdate\n");
 		OnUpdate((float)glfwGetTime());
 
+		print("OnRender\n");
 		OnRender();
 		// Swap front and back rendering buffers
 		glfwSwapBuffers();
