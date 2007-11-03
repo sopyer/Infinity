@@ -64,7 +64,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="user32.lib glu32.lib"
+				AdditionalDependencies="user32.lib glu32.lib winmm.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -127,7 +127,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				LinkLibraryDependencies="false"
-				AdditionalDependencies="glu32.lib"
+				AdditionalDependencies="glu32.lib winmm.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

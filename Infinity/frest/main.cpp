@@ -83,6 +83,7 @@ class Frest: public Framework
 			}
 			glEnd();
 			ship->end();
+			print("%x\n", ship->handle_);
 			print("Ship ok.\n");
 		}
 
@@ -117,9 +118,10 @@ class Frest: public Framework
 			glRotatef(xangle, 1.0f, 0.0f, 0.0f);
 			glRotatef(yangle, 0.0f, 1.0f, 0.0f);
 			print("DrawShip\n");
-			renderer_.beginRenderPass();
+			print("%x\n", ship->handle_);
+			//renderer_.beginRenderPass();
 				renderer_.callDisplayList(ship);
-			renderer_.endRenderPass();
+			//renderer_.endRenderPass();
 			glFlush();
 		}
 

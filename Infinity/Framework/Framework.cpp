@@ -105,17 +105,14 @@ void Framework::close()
 
 void Framework::run()
 {
-	print("OnCreate\n");
 	// Main loop
 	OnCreate();
-	print("MainLoop\n");
 	running_ = true;
+	DWORD t0 = timeGetTime();
 	while( running_ && glfwGetWindowParam( GLFW_OPENED ) )
 	{
-		print("OnUpdate\n");
-		OnUpdate((float)glfwGetTime());
+		OnUpdate(/*(float)glfwGetTime()*/(timeGetTime()-t0)*0.001f);
 
-		print("OnRender\n");
 		OnRender();
 		// Swap front and back rendering buffers
 		glfwSwapBuffers();
