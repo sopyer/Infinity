@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include"
+				AdditionalIncludeDirectories="..\freetype\include; ..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;$(NOINHERIT);FTGL_LIBRARY_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,7 +61,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libfreetype.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

@@ -88,11 +88,11 @@ MeshPtr loadMesh1(const char* path)
 			ptr.move(128);
 
 			ptr.read(s->numVert_);
-			s->vert_.setBufferData(8*4*s->numVert_, ptr.move(8*4*s->numVert_));
+			s->vert_.setData(8*4*s->numVert_, ptr.move(8*4*s->numVert_));
 
 			ptr.read(s->numInd_);
 			s->numInd_*=3;
-			s->ind_.setBufferData(s->numInd_*4, ptr.move(s->numInd_*4));
+			s->ind_.setData(s->numInd_*4, ptr.move(s->numInd_*4));
 			mesh->push_back(SubMeshPtr(s));
 		}
 	}

@@ -18,12 +18,12 @@ enum
 #define USAGE_ATTRIB(attr_loc) (attr_loc+USAGE_ATTRIB_BASE)
 #define BUFFER_OFFSET(i) ((char*)0 + (i))
 
-struct VertexDecl
+struct VertexDeclaration
 {
 	int usage_, elCount_, elType_, offset_, stride_;
 };
 
-class glRenderer
+class Render
 {
 	private:
 		int	indType_;
@@ -41,51 +41,51 @@ class glRenderer
 			glPopClientAttrib();
 			glPopAttrib();
 		}
-		void addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries=0, VertexDecl *decl=0);
-		void addAttribBuffer(glAttribBuffer& buffer, GLuint numEntries, VertexDecl *decl)
+		void addAttribBuffer(AttribBuffer* buffer, GLuint numEntries=0, VertexDeclaration *decl=0);
+		void addAttribBuffer(AttribBuffer& buffer, GLuint numEntries, VertexDeclaration *decl)
 		{
 			addAttribBuffer(&buffer, numEntries, decl);
 		}
-		void setIndexBuffer(glIndexBuffer& buffer, GLenum type)
+		void setIndexBuffer(IndexBuffer& buffer, GLenum type)
 		{
 			setIndexBuffer(&buffer, type);
 		}
-		void setIndexBuffer(glIndexBuffer* buffer, GLenum type=0)
+		void setIndexBuffer(IndexBuffer* buffer, GLenum type=0)
 		{
 			indType_ = type;
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer?buffer->handle_:0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer?buffer->mHandle:0);
 		}
 		void drawPrimitives(GLenum primType, GLuint indCount, const GLvoid* indices=0)//may be use default start primitive etc.
 		{
 			glDrawElements(primType, indCount, indType_, indices);
 		}
-		void callDisplayList(glDisplayList* list)
+		void callDisplayList(DisplayList* list)
 		{
-			glCallList(list?list->handle_:0);
+			glCallList(list?list->mHandle:0);
 		}
-		void callDisplayList(glDisplayList& list)
+		void callDisplayList(DisplayList& list)
 		{
-			glCallList(list.handle_);
+			glCallList(list.mHandle);
 		}
-		void setTexture(GLenum stage, glTexture& texture)
+		void setTexture(GLenum stage, Texture& texture)
 		{
 			setTexture(stage, &texture);
 		}
-		void setTexture(GLenum stage, glTexture* texture)
+		void setTexture(GLenum stage, Texture* texture)
 		{
 			glActiveTexture(stage);
 			if( texture )
-				glBindTexture(texture->target_, texture->handle_);
+				glBindTexture(texture->target_, texture->mHandle);
 			else
 				glBindTexture(GL_TEXTURE_2D, 0);
 		}
-		void useProgram(glProgram* program)
+		void useProgram(Program* program)
 		{
-			glUseProgram((program)?program->handle_:0);
+			glUseProgram((program)?*program:0);
 		}
-		void useProgram(glProgram& program)
+		void useProgram(Program& program)
 		{
-			glUseProgram(program.handle_);
+			glUseProgram(program);
 		}
 		void setUniform1f(GLint location, GLfloat v0)
 		{

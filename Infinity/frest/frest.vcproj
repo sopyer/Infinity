@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\glClasses;..\framework;..\utils;..\include"
+				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..\include;..\freetype\include;..\glFont"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -61,6 +61,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				LinkLibraryDependencies="true"
+				UseLibraryDependencyInputs="false"
 				AdditionalDependencies="$(NOINHERIT)"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"

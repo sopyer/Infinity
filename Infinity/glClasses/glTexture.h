@@ -7,7 +7,7 @@
  * атоматичну генерацію mipmap рівнів та параметри 
  * фільтрування.
 **/
-class glTexture
+class Texture
 {
 	public:
 		/**
@@ -18,21 +18,20 @@ class glTexture
 		 * \param magFilter задає фільтр, що використовується при збільшенні
 		 * \param forceMipmap вказує, чи генерувати примусово рівні деталізації
 		**/
-		glTexture(GLenum target, GLint internalFmt, GLint minFilter, GLint magFilter, bool forceMipmap=true)
+		Texture(GLenum target, GLint internalFmt, GLint minFilter, GLint magFilter, bool forceMipmap=true)
 		{
 			internalFormat_ = internalFmt;
 			target_ = target;
-			glGenTextures(1, &handle_);
-			glBindTexture(target, handle_);
+			glGenTextures(1, &mHandle);
+			glBindTexture(target, mHandle);
 			glTexParameteri(target, GL_GENERATE_MIPMAP, forceMipmap);
 			glTexParameteri(target, GL_TEXTURE_MIN_FILTER, minFilter);
 			glTexParameteri(target, GL_TEXTURE_MAG_FILTER, magFilter);
-
 		}
 		/**
 		 * Деструктор
 		**/
-		~glTexture(void){glDeleteTextures(1, &handle_);}
+		~Texture(void){glDeleteTextures(1, &mHandle);}
 		
 	public:
 		/**
@@ -42,7 +41,7 @@ class glTexture
 		/**
 		 * Дескриптор текстури.
 		**/
-		GLuint	handle_;
+		GLuint	mHandle;
 		/**
 		 * Внутрішній формат текстури.
 		**/
@@ -56,7 +55,7 @@ class glTexture
  * Встановлення параметрів розширення координат, а
  * також зображення текстури.
 **/
-class glTexture2D: public glTexture
+class Texture2D: public Texture
 {
 	public:
 		/**
@@ -66,8 +65,8 @@ class glTexture2D: public glTexture
 		 * \param magFilter задає фільтр, що використовується при збільшенні
 		 * \param forceMipmap вказує, чи генерувати примусово рівні деталізації
 		**/
-		glTexture2D(GLint internalFmt, GLint minFilter, GLint magFilter, bool forceMipmap=true):
-		  glTexture(GL_TEXTURE_2D, internalFmt, minFilter, magFilter, forceMipmap){}
+		Texture2D(GLint internalFmt, GLint minFilter, GLint magFilter, bool forceMipmap=true):
+		  Texture(GL_TEXTURE_2D, internalFmt, minFilter, magFilter, forceMipmap){}
 
 		/**
 		 * Задає спосіб розширення текстурних координат за межі [0..1]
@@ -76,7 +75,7 @@ class glTexture2D: public glTexture
 		**/
 		void setWrapMode(GLint wrapS, GLint wrapT)
 		{
-			glBindTexture(target_, handle_);
+			glBindTexture(target_, mHandle);
 			glTexParameteri(target_, GL_TEXTURE_WRAP_S, wrapS);
 			glTexParameteri(target_, GL_TEXTURE_WRAP_T, wrapT);
 		}
@@ -91,7 +90,7 @@ class glTexture2D: public glTexture
 		**/
 		void setImage2D(GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)//maybe this is not usefullas
 		{
-			glBindTexture(target_, handle_);
+			glBindTexture(target_, mHandle);
 			glTexImage2D(target_, 0, internalFormat_, width, height, 0, format, type, pixels);
 		}
 };

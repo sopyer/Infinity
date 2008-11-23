@@ -1,13 +1,13 @@
 #include "glClasses.h"
 
-void glRenderer::addAttribBuffer(glAttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
+void gl::Render::addAttribBuffer(AttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
 {
 	if( !buffer )
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		return;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, buffer->handle_);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer->mHandle);
 	for(GLuint i=0; i<numEntries; i++)
 	{
 		if( decl[i].usage_ >=USAGE_ATTRIB_BASE )

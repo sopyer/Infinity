@@ -160,21 +160,12 @@ void FTFont::BBox( const char* string,
         }
     }
 
-#ifdef _FTGL_NATIVE_
-    llx = totalBBox.lowerX;
-    lly = totalBBox.lowerY;
-    llz = totalBBox.lowerZ;
-    urx = totalBBox.upperX;
-    ury = totalBBox.upperY;
-    urz = totalBBox.upperZ;
-#else
     llx = totalBBox.lower.x;
     lly = totalBBox.lower.y;
     llz = totalBBox.lower.z;
     urx = totalBBox.upper.x;
     ury = totalBBox.upper.y;
     urz = totalBBox.upper.z;
-#endif
 }
 
 
@@ -206,21 +197,12 @@ void FTFont::BBox( const wchar_t* string,
         }
     }
 
-#ifdef _FTGL_NATIVE_
-    llx = totalBBox.lowerX;
-    lly = totalBBox.lowerY;
-    llz = totalBBox.lowerZ;
-    urx = totalBBox.upperX;
-    ury = totalBBox.upperY;
-    urz = totalBBox.upperZ;
-#else
     llx = totalBBox.lower.x;
     lly = totalBBox.lower.y;
     llz = totalBBox.lower.z;
     urx = totalBBox.upper.x;
     ury = totalBBox.upper.y;
     urz = totalBBox.upper.z;
-#endif
 }
 
 
@@ -264,13 +246,10 @@ float FTFont::Advance( const char* string)
 void FTFont::Render( const char* string )
 {
     const unsigned char* c = (unsigned char*)string;
-#ifdef _FTGL_NATIVE_
-	pen.X(0); pen.Y(0);
-    assert(pen.X()==0 && pen.Y()==0);
-#else
+
 	pen.x = 0;
 	pen.y = 0;
-#endif
+
 	while( *c)
     {
         if(CheckGlyph( *c))
@@ -285,12 +264,9 @@ void FTFont::Render( const char* string )
 void FTFont::Render( const wchar_t* string )
 {
     const wchar_t* c = string;
-#ifdef _FTGL_NATIVE_
-	pen.X(0); pen.Y(0);
-#else
+
 	pen.x = 0;
 	pen.y = 0;
-#endif
 
     while( *c)
     {

@@ -7,6 +7,7 @@
 #include <loading.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
+#include <TextureManager.h>
 
 class Framework:public Singleton<Framework>
 {

@@ -1,35 +1,32 @@
-template<GLenum target>
-class glBufferTemplate
+template<GLenum Target>
+class Buffer
 {
 	public:
-		GLuint	handle_;
+		Buffer() {glGenBuffers(1, &mHandle);}
+		~Buffer() {glDeleteBuffers(1, &mHandle);}
+
+		void setData(GLsizeiptr size, GLvoid* data, GLenum usage=GL_STREAM_DRAW)
+		{
+			glBindBuffer(Target, mHandle);
+			glBufferData(Target, size, data, usage);
+			glBindBuffer(Target, 0);
+		}
+
+		GLvoid* map(GLenum mode=GL_WRITE_ONLY)
+		{
+			glBindBuffer(Target, mHandle);
+			return glMapBuffer(Target, mode);
+		}
+
+		void unmap()
+		{
+			glBindBuffer(Target, mHandle);
+			glUnmapBuffer(Target);
+		}
 
 	public:
-		glBufferTemplate()
-		{
-			glGenBuffers(1, &handle_);
-		}
-		~glBufferTemplate()
-		{
-			glDeleteBuffers(1, &handle_);
-		}
-		void setBufferData(GLsizeiptr size, GLvoid* data, GLenum usage=GL_STREAM_DRAW)
-		{
-			glBindBuffer(target, handle_);
-			glBufferData(target, size, data, usage);
-			glBindBuffer(target, 0);
-		}
-		GLvoid* mapBuffer(GLenum mode=GL_WRITE_ONLY)
-		{
-			glBindBuffer(target, handle_);
-			return glMapBuffer(target, mode);
-		}
-		void unmapBuffer()
-		{
-			glBindBuffer(target, handle_);
-			glUnmapBuffer(target_);
-		}
+		GLuint	mHandle;
 };
 
-typedef glBufferTemplate<GL_ARRAY_BUFFER> glAttribBuffer;
-typedef glBufferTemplate<GL_ELEMENT_ARRAY_BUFFER> glIndexBuffer;
+typedef Buffer<GL_ARRAY_BUFFER> AttribBuffer;
+typedef Buffer<GL_ELEMENT_ARRAY_BUFFER> IndexBuffer;

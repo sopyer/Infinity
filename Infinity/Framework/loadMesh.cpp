@@ -36,14 +36,14 @@ MeshPtr loadMesh(const char* path)
 			
 			// vertexes
 			ptr.read(s->numVert_);
-			s->vert_.setBufferData(8*4*s->numVert_, ptr.move(8*4*s->numVert_));
+			s->vert_.setData(8*4*s->numVert_, ptr.move(8*4*s->numVert_));
 			//mesh_Vertex *vertex = new mesh_Vertex[num_vertex];
 			//fread(vertex,sizeof(mesh_Vertex),num_vertex,file);
 			
 			// triangles
 			ptr.read(s->numInd_);
 			s->numInd_*=3;
-			s->ind_.setBufferData(s->numInd_*4, ptr.move(s->numInd_*4));
+			s->ind_.setData(s->numInd_*4, ptr.move(s->numInd_*4));
 			mesh->push_back(SubMeshPtr(s));
 		}
 	}

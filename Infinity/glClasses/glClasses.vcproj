@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\"
+				AdditionalIncludeDirectories=".\; ..\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;GLEW_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -157,6 +157,10 @@
 		<Filter
 			Name="classes"
 			>
+			<File
+				RelativePath=".\Common.h"
+				>
+			</File>
 			<File
 				RelativePath=".\glBuffer.h"
 				>

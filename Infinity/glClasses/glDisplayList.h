@@ -1,17 +1,17 @@
-class glDisplayList
+class DisplayList
 {
 	public:
-		glDisplayList()
+		DisplayList()
 		{
-			handle_ = glGenLists(1);
+			mHandle = glGenLists(1);
 		}
-		~glDisplayList()
+		~DisplayList()
 		{
-			glDeleteLists(handle_, 1);
+			glDeleteLists(mHandle, 1);
 		}
 		void begin()
 		{
-			glNewList(handle_, GL_COMPILE);
+			glNewList(mHandle, GL_COMPILE);
 		}
 		void end()
 		{
@@ -19,5 +19,5 @@ class glDisplayList
 		}
 
 	public:
-		GLuint handle_;
+		GLuint mHandle;
 };

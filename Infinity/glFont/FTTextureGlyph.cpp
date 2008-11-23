@@ -73,23 +73,6 @@ const FTPoint& FTTextureGlyph::Render( const FTPoint& pen)
         activeTextureID = glTextureID;
     }
     
-#ifdef _FTGL_NATIVE_
-    glTranslatef( pen.X(),  pen.Y(), 0.0f);
-
-    glBegin( GL_QUADS);
-        glTexCoord2f( uv[0].X(), uv[0].Y());
-        glVertex2f( pos.X(), pos.Y());
-
-        glTexCoord2f( uv[0].X(), uv[1].Y());
-        glVertex2f( pos.X(), pos.Y() - destHeight);
-
-        glTexCoord2f( uv[1].X(), uv[1].Y());
-        glVertex2f( destWidth + pos.X(), pos.Y() - destHeight);
-        
-        glTexCoord2f( uv[1].X(), uv[0].Y());
-        glVertex2f( destWidth + pos.X(), pos.Y());
-    glEnd();
-#else
     glTranslatef( pen.x,  pen.y, 0.0f);
 
     glBegin( GL_QUADS);
@@ -105,7 +88,7 @@ const FTPoint& FTTextureGlyph::Render( const FTPoint& pen)
         glTexCoord2f( uv[1].x, uv[0].y);
         glVertex2f( destWidth + pos.x, pos.y);
     glEnd();
-#endif
-    return advance;
+
+	return advance;
 }
 

@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Gs"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include;..\utils;..\glClasses;..\vfs;.\glfw;.\glfw\win32;.\iniparser;.\"
+				AdditionalIncludeDirectories="..\include\zlib;..\include;..\utils;..\glClasses;..\vfs;.\glfw;.\glfw\win32;.\iniparser;.\;.\SOIL"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -270,7 +270,7 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Loading"
+			Name="ResourceManagement"
 			>
 			<File
 				RelativePath=".\loading.h"
@@ -300,6 +300,54 @@
 				RelativePath=".\loadTarga.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\ResourceManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TextureManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TextureManager.h"
+				>
+			</File>
+			<Filter
+				Name="SOIL"
+				>
+				<File
+					RelativePath=".\SOIL\image_DXT.c"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\image_DXT.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\SOIL.c"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\SOIL.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\stb_image_aug.c"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\stb_image_aug.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\stbi_DDS_aug.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\stbi_DDS_aug_c.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Cameras"

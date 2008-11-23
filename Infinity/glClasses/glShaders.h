@@ -1,103 +1,59 @@
-#include <cstring>
-
-class glShaderBase
+template <GLenum Type>
+class Shader: public Handle
 {
 	public:
-		~glShaderBase()
-		{
-			glDeleteShader(handle_);
-		}
+		Shader() : Handle(glCreateShader(Type))	{}
+		~Shader() {glDeleteShader(*this);}
+
 		void compile(const GLchar* source)
 		{
 			GLint length = (GLint)strlen(source);
-			glShaderSource(handle_, 1, (const GLchar **)&source, &length);
-			glCompileShader(handle_); 
+			glShaderSource(*this, 1, (const GLchar **)&source, &length);
+			glCompileShader(*this); 
 		}
+
 		GLint getParam(GLenum pname)
 		{
 			GLint param = 0;
-			glGetShaderiv(handle_, pname, &param);
+			glGetShaderiv(*this, pname, &param);
 			return param;
 		}
+
 		void getInfoLog(GLsizei maxLength, GLsizei *length, GLchar *infoLog)
 		{
-			glGetShaderInfoLog(handle_, maxLength, length, infoLog);
-		}
-
-	public:
-		GLuint handle_;  //!< Shader Object
-};
-
-typedef glShaderBase glShader;
-
-//-----------------------------------------------------------------------------
-
-//! \ingroup GLSL
-class glVertexShader : public glShaderBase
-{
-	public:
-		glVertexShader()  //!< Constructor for Vertex Shader
-		{
-			handle_ = glCreateShader(GL_VERTEX_SHADER);
+			glGetShaderInfoLog(*this, maxLength, length, infoLog);
 		}
 };
 
-//-----------------------------------------------------------------------------
+typedef Shader<GL_VERTEX_SHADER>	VertexShader;
+typedef Shader<GL_FRAGMENT_SHADER>	FragmentShader;
 
-//! \ingroup GLSL
-class glFragmentShader : public glShaderBase
+class Program : public Handle
 {
 	public:
-		glFragmentShader() //!< Constructor for Fragment Shader
-		{
-			handle_ = glCreateShader(GL_FRAGMENT_SHADER);
-		}
-};
+		Program() : Handle(glCreateProgram()) {}
+		~Program() {glDeleteProgram(*this);}
 
-class glProgram
-{
-	public:
-		glProgram()
-		{
-			handle_ = glCreateProgram();
-		}
-		~glProgram()
-		{
-			glDeleteProgram(handle_);
-		}
-		void addShader(glShaderBase*	shader)
-		{
-			if( shader )
-				glAttachShader(handle_, shader->handle_);//(shader)?shader->handle_:0
-		}
-		void link()
-		{
-			glLinkProgram(handle_);
-		}
-		void validate()
-		{
-			glValidateProgram(handle_);
-		}
+		void addShader(GLuint handle) {glAttachShader(*this, handle);}
+
+		void addShader(Handle* shader) {if (shader) addShader((GLuint)*shader);}
+		void addShader(Handle& shader) {addShader(&shader);}
+		
+		void link()	{glLinkProgram(*this);}
+		void validate()	{glValidateProgram(*this);}
+
 		GLint getParam(GLenum pname)
 		{
 			GLint param = 0;
-			glGetProgramiv(handle_, pname, &param);
+			glGetProgramiv(*this, pname, &param);
 			return param;
 		}
+
 		void getInfoLog(GLsizei maxLength, GLsizei *length, GLchar *infoLog)
 		{
-			glGetProgramInfoLog(handle_, maxLength, length, infoLog);
-		}
-		GLint getUniformLocation(const GLchar* name)
-		{
-			return glGetUniformLocation(handle_, name);
+			glGetProgramInfoLog(*this, maxLength, length, infoLog);
 		}
 
-		GLint getAttribLocation(const GLchar* name)
-		{
-			return glGetAttribLocation(handle_, name);
-		}
-
-	public:
-		GLuint	handle_;
+		GLint getUniformLocation(const GLchar* name) {return glGetUniformLocation(*this, name);}
+		GLint getAttribLocation(const GLchar* name) {return glGetAttribLocation(*this, name);}
 };

@@ -65,14 +65,9 @@ float FTGlyphContainer::Advance( const unsigned int characterCode, const unsigne
     unsigned int left = charMap->FontIndex( characterCode);
     unsigned int right = charMap->FontIndex( nextCharacterCode);
 
-#ifdef _FTGL_NATIVE_
-    float width = face->KernAdvance( left, right).X();
-	width += glyphs[charMap->GlyphListIndex( characterCode)]->Advance().X();
-#else
     float width = face->KernAdvance( left, right).x;
 	width += glyphs[charMap->GlyphListIndex( characterCode)]->Advance().x;
-#endif
-    
+
     return width;
 }
 

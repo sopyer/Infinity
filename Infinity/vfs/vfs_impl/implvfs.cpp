@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
-#include <zzip\zzip.h>
+//#include <zzip\zzip.h>
 #include "VFSNativeDriver.h"
 #include "VFSZipDriver.h"
 

@@ -3,12 +3,13 @@
 
 #include <boost\shared_ptr.hpp>
 #include <utils.h>
+#include <ResourceManager.h>
 
-typedef boost::shared_ptr<glShader> glShaderPtr;
+typedef boost::shared_ptr<glShaderBase> glShaderPtr;
 typedef boost::shared_ptr<glProgram> glProgramPtr;
 typedef boost::shared_ptr<glTexture2D> glTexture2DPtr;
 
-glShader* loadShader(const char* path);
+glShaderBase* loadShader(const char* path);
 glProgram* loadProgram(const char* shaders);
 glTexture2D* loadTargaTexture(const char* path);
 glTexture2D* loadJpegTexture(const char* path);
