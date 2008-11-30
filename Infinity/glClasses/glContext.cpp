@@ -1,6 +1,6 @@
 #include "glClasses.h"
 
-void gl::Render::addAttribBuffer(AttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
+void gl::Context::addAttribBuffer(AttribBuffer* buffer, GLuint numEntries, VertexDecl *decl)
 {
 	if( !buffer )
 	{

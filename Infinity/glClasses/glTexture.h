@@ -73,7 +73,7 @@ class Texture2D: public Texture
 		 * \param wrapS розширення по осі S(горизонтальна)
 		 * \param wrapT розширення по осі T(вертикальна)
 		**/
-		void setWrapMode(GLint wrapS, GLint wrapT)
+		void setWrap(GLint wrapS, GLint wrapT)
 		{
 			glBindTexture(target_, mHandle);
 			glTexParameteri(target_, GL_TEXTURE_WRAP_S, wrapS);

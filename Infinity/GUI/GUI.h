@@ -530,7 +530,7 @@ protected:
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glPushMatrix();
-		glTranslatef(-width_/2, -height_/2, 0);
+		glTranslatef(-width_/2.0f, -height_/2.0f, 0);
 
 		pai.enter(glm::ivec2(), glm::ivec2(width_, height_));
 		onDraw(pai);

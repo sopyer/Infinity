@@ -50,6 +50,16 @@ class FirstPersonCamera1
 		{
 			pos+=glm::vec3(viewMatrix[1])*(-dist);
 		}
+
+		//void move(glm::vec3 vec)
+		//{
+		//}
+
+		void rotate(float psi, float phi)
+		{
+			rotateLR(psi);
+			rotateUD(phi);
+		}
 };
 
 #include <DataPtr.h>
@@ -104,29 +114,27 @@ VertexDecl decl = {USAGE_POSITION, 3, GL_FLOAT, 0, 0};
 class Exest: public Framework
 {
 	private:
+		TextureManager	mTexMgr;
+		ShaderManager	mShaderMgr;
+		ProgramManager	mProgMgr;
+		
 		GLint timeLoc, tex1Loc, tex0Loc;
 		glRenderer	renderer_;
-		glTexture2DPtr	image_[2];
-		glProgramPtr	prog_;
+		TextureRef	mImage[2];
+		ProgramRef	mProg;
 		MeshPtr		mesh;
 		FirstPersonCamera1	camera;
 	protected:
 		void OnCreate()
 		{
-			vfsAddRoot("D:\\Temp\\ExestData");
-			START_PROFILE("LoadMesh");
 			mesh = loadMesh1("sky.mesh");
-			END_PROFILE();
-			START_PROFILE("LoadTex0");
-			image_[0] = glTexture2DPtr(loadPngTexture("horizon.png"));
-			image_[0]->setWrapMode(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-			END_PROFILE();
-			START_PROFILE("LoadTex1");
-			image_[1] = glTexture2DPtr(loadPngTexture("clouds.png"));
-			END_PROFILE();
-			START_PROFILE("LoadProg");
-			prog_ = glProgramPtr(loadProgram("sky.vert;sky.frag"));
-			END_PROFILE();
+
+			mImage[0].create("horizon.png");
+			mImage[0]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
+			mImage[1].create("clouds.png");
+
+			mProg.create("sky.vert;sky.frag");
+
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(90.0, (float)width_/height_,1,2048);
@@ -136,10 +144,10 @@ class Exest: public Framework
 			glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
 			glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
 			glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-			timeLoc = prog_->getUniformLocation("time");
-			tex0Loc = prog_->getUniformLocation("tex0");
-			tex1Loc = prog_->getUniformLocation("tex1");
-			renderer_.useProgram(prog_.get());
+			timeLoc = mProg->bindUniform("time");
+			tex0Loc = mProg->bindUniform("tex0");
+			tex1Loc = mProg->bindUniform("tex1");
+			renderer_.useProgram(mProg.get());
 			renderer_.setUniform1f(timeLoc, (float)glfwGetTime());
 			renderer_.setUniform1i(tex0Loc, 0);
 			renderer_.setUniform1i(tex1Loc, 1);
@@ -158,12 +166,12 @@ class Exest: public Framework
 			glLoadMatrixf(camera.getViewMatrix());
 			glTranslatef(-camera.pos[0], -camera.pos[1], -camera.pos[2]);
 			//glTranslatef(0.0f, -1.0f, -4.0f);
-			renderer_.beginRenderPass();
+			renderer_.begin();
 				glDisable(GL_DEPTH_TEST);
 				glColor3f(1.0f, 1.0f, 1.0f);
-				renderer_.setTexture(GL_TEXTURE0, image_[0].get());
-				renderer_.setTexture(GL_TEXTURE1, image_[1].get());
-				renderer_.useProgram(prog_.get());
+				renderer_.setTexture(GL_TEXTURE0, mImage[0].get());
+				renderer_.setTexture(GL_TEXTURE1, mImage[1].get());
+				renderer_.useProgram(mProg.get());
 				renderer_.setUniform1f(timeLoc, (float)glfwGetTime());
 				glPushMatrix();
 					//glLoadIdentity();
@@ -204,7 +212,7 @@ class Exest: public Framework
 					glVertex3f(0,0,0);
 					glVertex3f(0,0,ww);
 				glEnd();
-			renderer_.endRenderPass();
+			renderer_.end();
 			glFlush();
 		}
 
@@ -248,12 +256,13 @@ class Exest: public Framework
 			{
 				int mouseX=0, mouseY=0;
 				glfwGetMousePos(&mouseX, &mouseY);
-				float psi = (mouseX - width_ / 2) * 0.2;
-				float phi = (mouseY - height_ / 2) * 0.2;
+				float psi = (mouseX - width_ / 2) * 0.2f;
+				float phi = (mouseY - height_ / 2) * 0.2f;
 				if(phi < -89) phi = -89;
 				if(phi > 89) phi = 89;
-				camera.rotateLR(psi);
-				camera.rotateUD(-phi);
+				camera.rotate(psi, -phi);
+				//camera.rotateLR(psi);
+				//camera.rotateUD(-phi);
 				glfwSetMousePos(width_ / 2, height_ / 2);
 			} 
 		}

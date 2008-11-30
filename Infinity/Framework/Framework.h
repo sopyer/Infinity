@@ -8,6 +8,10 @@
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
 #include <TextureManager.h>
+#include <ProgramManager.h>
+#include <ShaderManager.h>
+#include <FontManager.h>
+#include <VG.h>
 
 class Framework:public Singleton<Framework>
 {

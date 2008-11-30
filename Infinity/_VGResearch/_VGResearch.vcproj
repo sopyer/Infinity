@@ -40,8 +40,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..\include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;$(NOINHERIT)"
+				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..\include;..\freetype\include;..\glFont"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FTGL_LIBRARY_STATIC;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"

@@ -1,5 +1,4 @@
 #include <framework.h>
-#define FTGL_LIBRARY_STATIC
 #include <FTGLTextureFont.h>
 #include <GUI.h>
 #include <sigslot.h>

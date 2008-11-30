@@ -25,8 +25,7 @@ glShaderBase* loadShader(const byte* text)
 		shader->compile((GLchar*)text);
 		END_PROFILE();
 		START_PROFILE("infoShader");
-		shader->getInfoLog(1023, &len, string);
-		print(string);
+		shader->getLog(1023, &len, string);	print(string);
 		END_PROFILE();
 	}
 	return shader;
@@ -64,10 +63,8 @@ glProgram* loadProgram(const char* shaders)
 		shaderPath = strtok(0, ";");
 	}
 	program->link();
-	program->getInfoLog(1023, &len, string);
-	print(string);
+	program->getLog(1023, &len, string); print(string);
 	program->validate();
-	program->getInfoLog(1023, &len, string);
-	print(string);
+	program->getLog(1023, &len, string); print(string);
 	return program;
 }

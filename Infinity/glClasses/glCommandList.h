@@ -1,11 +1,11 @@
-class DisplayList
+class CommandList
 {
 	public:
-		DisplayList()
+		CommandList()
 		{
 			mHandle = glGenLists(1);
 		}
-		~DisplayList()
+		~CommandList()
 		{
 			glDeleteLists(mHandle, 1);
 		}

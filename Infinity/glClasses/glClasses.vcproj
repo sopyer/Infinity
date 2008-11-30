@@ -166,19 +166,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\glDisplayList.h"
+				RelativePath=".\glCommandList.h"
 				>
 			</File>
 			<File
-				RelativePath=".\glRenderer.cpp"
+				RelativePath=".\glContext.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\glRenderer.h"
+				RelativePath=".\glContext.h"
 				>
 			</File>
 			<File
-				RelativePath=".\glShaders.h"
+				RelativePath=".\glShader.h"
 				>
 			</File>
 			<File

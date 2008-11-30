@@ -3,8 +3,8 @@
 GLchar buf[1024];
 GLsizei len;
 
-#define PRINT_SHADER_LOG(obj)	obj.getInfoLog(1023, &len, buf);\
-	print(#obj##"info\n%s", buf)
+#define PRINT_SHADER_LOG(obj)	obj.getLog(1023, &len, buf);\
+	print(#obj##" info\n%s", buf)
 
 
 char* vertSrc = 
@@ -56,16 +56,13 @@ class VGApp: public Framework
 	protected:
 		void OnCreate()
 		{
-			//vert_.compile(vertSrc);
-			PRINT_SHADER_LOG(vert_);
 			frag_.compile(fragSrc);
 			PRINT_SHADER_LOG(frag_);
-			//program_.addShader(&vert_);
 			program_.addShader(&frag_);
 			program_.link();
 			PRINT_SHADER_LOG(program_);
 			program_.validate();
-			orient = program_.getUniformLocation("orient");
+			orient = program_.bindUniform("orient");
 			PRINT_SHADER_LOG(program_);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -85,7 +82,7 @@ class VGApp: public Framework
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0.0f, -1.0f, -4.0f);
-			renderer_.beginRenderPass();
+			renderer_.begin();
 				for(float i = -10; i <= 10; i += 1)
 				{
 					glBegin(GL_LINES);
@@ -175,7 +172,7 @@ class VGApp: public Framework
 					glTexCoord2f(0, 0);
 					glVertex3f(1, 0, 0);
 				glEnd();
-			renderer_.endRenderPass();
+			renderer_.end();
 			glFlush();
 		}
 

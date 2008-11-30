@@ -41,8 +41,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Gs"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\include\zlib;..\include;..\utils;..\glClasses;..\vfs;.\glfw;.\glfw\win32;.\iniparser;.\;.\SOIL"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT)"
+				AdditionalIncludeDirectories="..\include\zlib;..\include;..\utils;..\glClasses;..\vfs;.\glfw;.\glfw\win32;.\iniparser;.\;.\SOIL;..\freetype\include;..\glFont"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -273,6 +273,14 @@
 			Name="ResourceManagement"
 			>
 			<File
+				RelativePath=".\FontManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\FontManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\loading.h"
 				>
 			</File>
@@ -301,7 +309,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ProgramManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ProgramManager.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ResourceManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ShaderManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ShaderManager.h"
 				>
 			</File>
 			<File
@@ -363,6 +387,14 @@
 		</File>
 		<File
 			RelativePath=".\Framework.h"
+			>
+		</File>
+		<File
+			RelativePath=".\VG.cpp"
+			>
+		</File>
+		<File
+			RelativePath=".\VG.h"
 			>
 		</File>
 	</Files>

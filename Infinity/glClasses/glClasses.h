@@ -5,22 +5,23 @@
 #		define GLEW_STATIC
 #	endif
 #	include <gl\glew.h>
+#	include <cstring>
 
 namespace gl
 {
 #	include <Common.h>
-#	include <glDisplayList.h>
+#	include <glCommandList.h>
 #	include <glTexture.h>
 #	include <glBuffer.h>
-#	include <glShaders.h>
-#	include <glRenderer.h>
+#	include <glShader.h>
+#	include <glContext.h>
 }
-typedef gl::Handle			glShaderBase;
-typedef gl::Render			glRenderer;
+typedef gl::Shader			glShaderBase;
+typedef gl::Context			glRenderer;
 typedef	gl::Texture			glTexture;
 typedef	gl::Texture2D		glTexture2D;
 typedef	gl::Program			glProgram;
-typedef	gl::DisplayList		glDisplayList;
+typedef	gl::CommandList		glDisplayList;
 typedef gl::VertexShader	glVertexShader;
 typedef gl::FragmentShader	glFragmentShader;
 typedef	gl::AttribBuffer	glAttribBuffer;

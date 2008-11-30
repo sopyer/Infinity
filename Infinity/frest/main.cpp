@@ -1,25 +1,33 @@
 #include <framework.h>
 #include "ship_data.h"
-#define FTGL_LIBRARY_STATIC
 #include <FTGLTextureFont.h>
 
 class Frest: public Framework
 {
 	private:
-		TextureManager	texMgr;
-		FTFont*	times;
-		glRenderer	renderer_;
-		glDisplayList	ship;
+		VG				mVG;
+		gl::Context		mContext;
+
+		TextureManager	mTextureMgr;
+		FontManager		mFontMgr;
+		ProgramManager	mProgramMgr;
+		ShaderManager	mShaderMgr;
+
+		FontRef			mTextFont;
 		TextureRef	image;
 		TextureRef	highlight;
+		ProgramRef	mProg;
+
+		glDisplayList	ship;
+		
+		GLint mImageLoc, mHighlightLoc;
+
 		float xangle, yangle;
 		bool	mShowHelp;
 	protected:
+
 		void loadShip()
 		{
-			image.create("texture1.tga");
-			highlight.create("highlight.tga");
-
 			ship.begin();
 			glBegin(GL_TRIANGLES);
 
@@ -57,147 +65,69 @@ class Frest: public Framework
 
 		void OnCreate()
 		{
+			image.create("texture1.tga");
+			highlight.create("highlight.tga");
+
+			loadShip();
+
 			mShowHelp = true;
-			times = new FTGLTextureFont("C:\\WINDOWS\\Fonts\\times.ttf");
-			times->FaceSize(16);
+
 			xangle = 0;
 			yangle = 0;
-			//vfsAddRoot(".\\Data");
-			loadShip();
+			
+			mTextFont.create("C:\\WINDOWS\\Fonts\\times.ttf 16px");
+
+			mProg.create("shader.vert;shader.frag");
+			mImageLoc = mProg->bindUniform("image");
+			mHighlightLoc = mProg->bindUniform("highlight");
+
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(90.0, (float)width_/height_,1,2048); 
-			//makeOrtho();
 		}
 		
-		void OnDestroy()
-		{
-			delete times;
-		}
-
-		void makeOrtho()
-		{
-			int w = width_;
-			int h = height_;
-			GLdouble aspect = (GLdouble)w / (GLdouble)h;
-			// Use the whole window.
-			//glViewport(0, 0, w, h);
-			// We are going to do some 2-D orthographic drawing.
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			GLdouble size = (GLdouble)((w >= h) ? w : h) / 2.0;
-
-			if (w <= h)
-			{
-				aspect = (GLdouble)h/(GLdouble)w;
-				glOrtho(-size, size, -size*aspect, size*aspect, -100000.0, 100000.0);
-			}
-			else
-			{
-				aspect = (GLdouble)w/(GLdouble)h;
-				glOrtho(-size*aspect, size*aspect, -size, size, -100000.0, 100000.0);
-			}
-			// Make the world and window coordinates coincide so that 1.0 in
-			// model space equals one pixel in window space.
-			glScaled(aspect, aspect, 1.0);
-			// Now determine where to draw things.
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-		}
-
 		void OnRender()
 		{
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			
-			glEnable(GL_DEPTH_TEST);
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0.0f, 0.0f, -6.0f);
 			glRotatef(xangle, 1.0f, 0.0f, 0.0f);
 			glRotatef(yangle, 0.0f, 1.0f, 0.0f);
-			//print("DrawShip\n");
-			//print("%x\n", ship->handle_);
-			renderer_.beginRenderPass();
-				glEnable(GL_TEXTURE_2D);
-				if (image)
-					image->setWrapMode(GL_CLAMP, GL_CLAMP);
-				if (highlight)
-					image->setWrapMode(GL_CLAMP, GL_CLAMP);
-				//Setup the first texture unit.
-				renderer_.setTexture(GL_TEXTURE0, image.get());
-				//Enable 2D textures.
-				//Use sphere mapping auto coord generation.
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-				//Turn on auto coord generation. N.B.! This is a per texture unit operation here!
-				//Confused me at first, I thought glEnable was global, but this value is local to each
-				//Texture unit!!!
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				//Multiply this texture by the ships material colors.
-				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);//Why GL_MULT is not work
 
-				//Setup the 2nd texture unit.
-				renderer_.setTexture(GL_TEXTURE1, highlight.get());
-				//Enable 2D textures.
+			mContext.begin();
+				glEnable(GL_DEPTH_TEST);
 				glEnable(GL_TEXTURE_2D);
-				//Again setup sphere mapping, and turn it on.
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP);
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				//Set to additive. Where the centre (singularity) of the texture appears, will add white
-				//Onto the ship, giving a specular "white out" effect.
-				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
-				renderer_.callDisplayList(ship);
-				renderer_.setTexture(GL_TEXTURE1, NULL);
-				renderer_.setTexture(GL_TEXTURE0, NULL);
-				glDisable(GL_TEXTURE_GEN_S);
-				glDisable(GL_TEXTURE_GEN_T);
-			renderer_.endRenderPass();
+
+				if (image) image->setWrap(GL_CLAMP, GL_CLAMP);
+				if (highlight) image->setWrap(GL_CLAMP, GL_CLAMP);
+
+				mContext.setTexture(GL_TEXTURE0, image.get());
+				mContext.setTexture(GL_TEXTURE1, highlight.get());
+				
+				mContext.useProgram(*mProg);
+				mContext.setUniform1i(mImageLoc, 0);
+				mContext.setUniform1i(mHighlightLoc, 1);
+
+				mContext.callCommandList(ship);
+
+				mContext.useProgram(0);
+
+				mContext.setTexture(GL_TEXTURE1, NULL);
+				mContext.setTexture(GL_TEXTURE0, NULL);
+			mContext.end();
 			
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			if (mShowHelp)
 			{
-				glMatrixMode(GL_PROJECTION);
-				glPushMatrix();
-				makeOrtho();
-				renderer_.beginRenderPass();
-				{
-					glColor3f(0.3,1,0.5);
-					glMatrixMode(GL_MODELVIEW);
-					glLoadIdentity();
-					glDisable(GL_DEPTH_TEST);
-					glEnable(GL_TEXTURE_2D);
-					glEnable(GL_BLEND);
-					glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-					glTranslatef(-width_/2, height_/2, 0.0);
-					float x1, y1, z1, x2, y2, z2;
-					/*FTBBox bb = */times->BBox("Hello world", x1, y1, z1, x2, y2, z2);
-					glm::vec2 low(x1, y1), up(x2, y2), pos(0,0);
-					//pos = -(up-low)/2.0f+pos;
-					//glTranslatef(pos.x, pos.y, 0);
-					glPushMatrix();
-					glTranslatef(0, -20, 0);
-					times->Render("Use cursor keys to rotate");
-					glPopMatrix();
-					//glTranslatef(0, -10, 0);
-					//times->Render("or mouse");
-					glPushMatrix();
-					glTranslatef(0, -40, 0);
-					times->Render("or press left mouse button to rotate");
-					glPopMatrix();
-					glPushMatrix();
-					glTranslatef(0, -80, 0);
-					times->Render("Press H to toggle help");
-					glPopMatrix();
-					glDisable(GL_TEXTURE_2D);
-					glDisable(GL_BLEND);
-				}
-				renderer_.endRenderPass();
-				glMatrixMode(GL_PROJECTION);
-				glPopMatrix();
+				mVG.begin();
+					//! Temporary hack to change font color
+					glColor3f(0.3f,1.0f,0.5f);
+					mVG.drawText(*mTextFont, 0, 20, "Use cursor keys or mouse to rotate");
+					mVG.drawText(*mTextFont, 0, 40, "Press H to toggle help");
+					mVG.drawText(*mTextFont, 0, 60, "Press ESC to exit");
+				mVG.end();
 			}
 
 			glFlush();
@@ -217,17 +147,17 @@ class Frest: public Framework
 				manual = true;
 				yangle += 50.0f * (frame_time-lastTime);
 			}
-			else if (glfwGetKey(GLFW_KEY_LEFT))
+			if (glfwGetKey(GLFW_KEY_LEFT))
 			{
 				manual = true;
 				yangle -= 50.0f * (frame_time-lastTime);
 			}
-			else if (glfwGetKey(GLFW_KEY_UP))
+			if (glfwGetKey(GLFW_KEY_UP))
 			{
 				manual = true;
 				xangle -= 50.0f * (frame_time-lastTime);;
 			}
-			else if (glfwGetKey(GLFW_KEY_DOWN))
+			if (glfwGetKey(GLFW_KEY_DOWN))
 			{
 				manual = true;
 				xangle += 50.0f * (frame_time-lastTime);;
@@ -262,8 +192,8 @@ class Frest: public Framework
 				manual = true;
 				int mouseX=0, mouseY=0;
 				glfwGetMousePos(&mouseX, &mouseY);
-				float psi = (mouseX - width_ / 2)*50;
-				float phi = (mouseY - height_ / 2)*50;
+				float psi = (mouseX - width_ / 2)*50.0f;
+				float phi = (mouseY - height_ / 2)*50.0f;
 				yangle += psi * (frame_time-lastTime);
 				xangle += phi * (frame_time-lastTime);
 				
@@ -290,7 +220,6 @@ class Frest: public Framework
 				xangle += 360.0f;
 			}
 
-			
 			if(yangle >= 360.0f)
 			{
 				yangle -=360.0f;
@@ -300,8 +229,11 @@ class Frest: public Framework
 			{
 				yangle +=360.0f;
 			}
+			
 			lastTime = frame_time;
 		}
+	public:
+		Frest(): mVG(width_, height_) {}
 };
 
 int main()

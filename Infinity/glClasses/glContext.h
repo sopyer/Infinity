@@ -23,18 +23,18 @@ struct VertexDeclaration
 	int usage_, elCount_, elType_, offset_, stride_;
 };
 
-class Render
+class Context
 {
 	private:
 		int	indType_;
 	public:
-		void beginRenderPass()
+		void begin()
 		{
 			indType_=0;
 			glPushAttrib(GL_ALL_ATTRIB_BITS);
 			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 		}
-		void endRenderPass()
+		void end()
 		{
 			glUseProgram(0);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -59,11 +59,11 @@ class Render
 		{
 			glDrawElements(primType, indCount, indType_, indices);
 		}
-		void callDisplayList(DisplayList* list)
+		void callCommandList(CommandList* list)
 		{
-			glCallList(list?list->mHandle:0);
+			if (list) glCallList(list->mHandle);
 		}
-		void callDisplayList(DisplayList& list)
+		void callCommandList(CommandList& list)
 		{
 			glCallList(list.mHandle);
 		}
@@ -81,7 +81,7 @@ class Render
 		}
 		void useProgram(Program* program)
 		{
-			glUseProgram((program)?*program:0);
+			if (program) glUseProgram(*program);
 		}
 		void useProgram(Program& program)
 		{

@@ -4,7 +4,8 @@
 
 gl::Texture2D* TextureManager::load(const std::string& name)
 {
-	gl::Texture2D *image = new glTexture2D(GL_RGB8, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+	//Texture format - be careful!!! Can cause troubles
+	gl::Texture2D *image = new gl::Texture2D(GL_RGBA8, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
 	DataStreamPtr fin;
 
