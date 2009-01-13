@@ -103,7 +103,7 @@ glTexture2D* loadJpegTexture(const char* path)
 	{
 		//delete [] input;
 		jpeg_destroy_decompress(&cinfo);
-		print("Greyscale .jpg textures are not supported, please just convert that stream.");
+		logMessage("Greyscale .jpg textures are not supported, please just convert that stream.");
 		return 0;
 	}
 

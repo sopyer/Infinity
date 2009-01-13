@@ -390,6 +390,14 @@
 			>
 		</File>
 		<File
+			RelativePath=".\Timer.h"
+			>
+		</File>
+		<File
+			RelativePath=".\UI.h"
+			>
+		</File>
+		<File
 			RelativePath=".\VG.cpp"
 			>
 		</File>

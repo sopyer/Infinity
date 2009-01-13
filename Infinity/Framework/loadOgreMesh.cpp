@@ -71,7 +71,7 @@ void readFile(DataPtr& ptr)
 		if( id==OGRE_MESH )
 		{
 			DataPtr p(ptr.move(0), len-6);
-			print("OGRE_MESH\n");
+			logMessage("OGRE_MESH\n");
 			readMesh(p);
 			ptr.move(p.tell());
 		}
@@ -93,40 +93,40 @@ void readMesh(DataPtr& ptr)
 		switch( id )
 		{
 			case OGRE_GEOMETRY:
-				print("OGRE_GEOMETRY\n");
+				logMessage("OGRE_GEOMETRY\n");
 				readGeometry(p);
 				break;
 			case OGRE_SUBMESH:
-				print("OGRE_SUBMESH\n");
+				logMessage("OGRE_SUBMESH\n");
 				readSubMesh(p);
 				break;
 			case OGRE_MESH_BOUNDS:
-				print("OGRE_MESH_BOUNDS\n");
+				logMessage("OGRE_MESH_BOUNDS\n");
 				p.move(7*4);
 				break;
 			case OGRE_SKELETON_LINK: 
-				print("OGRE_SKELETON_LINK\n");
+				logMessage("OGRE_SKELETON_LINK\n");
 				p.move(len-6);
 				break;
 			case OGRE_BONE_ASSIGNMENT: 
-				print("OGRE_BONE_ASSIGNMENT\n");
+				logMessage("OGRE_BONE_ASSIGNMENT\n");
 				p.move(len-6);
 				break;
 			case OGRE_MESH_LOD: 
-				print("OGRE_MESH_LOD\n");
+				logMessage("OGRE_MESH_LOD\n");
 				p.move(len-6);
 				break;
 			case OGRE_MESH_SUBMESH_NAME_TABLE:
-				print("OGRE_MESH_SUBMESH_NAME_TABLE\n");
+				logMessage("OGRE_MESH_SUBMESH_NAME_TABLE\n");
 				p.move(len-6);
 				break;
 			case OGRE_MESH_EDGE_LISTS:
-				print("OGRE_MESH_EDGE_LISTS\n");
+				logMessage("OGRE_MESH_EDGE_LISTS\n");
 				p.move(len-6);
 				break;
 			default:
 				ptr.move(-6);
-				print("oops!!!");
+				logMessage("oops!!!");
 				return;
 		}
 		ptr.move(p.tell());
@@ -151,23 +151,23 @@ void readSubMesh(DataPtr& ptr)
 		switch( id )
 		{
 			case OGRE_GEOMETRY:
-				print("OGRE_GEOMETRY\n");
+				logMessage("OGRE_GEOMETRY\n");
 				readGeometry(p);
 				break;
 			case OGRE_SUBMESH_OPERATION:
-				print("OGRE_SUBMESH_OPERATION\n");
+				logMessage("OGRE_SUBMESH_OPERATION\n");
 				p.move(2);
 				break;
 			case OGRE_SUBMESH_BONE_ASSIGNMENT:
-				print("OGRE_SUBMESH_BONE_ASSIGNMENT\n");
+				logMessage("OGRE_SUBMESH_BONE_ASSIGNMENT\n");
 				p.move(len-6);
 				break;
 			case OGRE_SUBMESH_TEXTURE_ALIAS:
-				print("OGRE_SUBMESH_TEXTURE_ALIAS\n");
+				logMessage("OGRE_SUBMESH_TEXTURE_ALIAS\n");
 				p.move(len-6);
 			default:
 				ptr.move(-6);
-				print("oops!!!");
+				logMessage("oops!!!");
 				return;
 		}
 		ptr.move(p.tell());
@@ -187,15 +187,15 @@ void readGeometry(DataPtr& ptr)
 		switch( id )
 		{
 			case OGRE_GEOMETRY_VERTEX_DECLARATION:
-				print("OGRE_GEOMETRY_VERTEX_DECLARATION\n");
+				logMessage("OGRE_GEOMETRY_VERTEX_DECLARATION\n");
 				readGeometryVertexDeclaration(p);
 				break;
 			case OGRE_GEOMETRY_VERTEX_BUFFER:
-				print("OGRE_GEOMETRY_VERTEX_BUFFER\n");
+				logMessage("OGRE_GEOMETRY_VERTEX_BUFFER\n");
 				//readSubMesh(p);
 				//break;
 			default:
-				print("oops!!!");
+				logMessage("oops!!!");
 				p.move(len-6);
 		}
 		ptr.move(p.tell());
@@ -214,11 +214,11 @@ void readGeometryVertexDeclaration(DataPtr& ptr)
 		switch( id )
 		{
 			case OGRE_GEOMETRY_VERTEX_ELEMENT:
-				print("OGRE_GEOMETRY_VERTEX_ELEMENT\n");
+				logMessage("OGRE_GEOMETRY_VERTEX_ELEMENT\n");
 				p.move(10);
 				break;
 			default:
-				print("oops!!!");
+				logMessage("oops!!!");
 				p.move(len-6);
 		}
 		ptr.move(p.tell());

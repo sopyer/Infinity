@@ -1,7 +1,7 @@
 #include <framework.h>
 #include <FTGLTextureFont.h>
 
-class FontApp: public Framework
+class FontApp: public Desktop
 {
 	private:
 		FTFont*	times;
@@ -9,8 +9,8 @@ class FontApp: public Framework
 	protected:
 		void makeOrtho()
 		{
-			int w = width_;
-			int h = height_;
+			int w = mWidth;
+			int h = mHeight;
 			GLdouble aspect = (GLdouble)w / (GLdouble)h;
 			// Use the whole window.
 			glViewport(0, 0, w, h);

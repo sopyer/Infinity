@@ -4,7 +4,7 @@ GLchar buf[1024];
 GLsizei len;
 
 #define PRINT_SHADER_LOG(obj)	obj.getLog(1023, &len, buf);\
-	print(#obj##" info\n%s", buf)
+	logMessage(#obj##" info\n%s", buf)
 
 
 char* vertSrc = 
@@ -45,7 +45,7 @@ void main(void)\n\
 }\n\
 ";
 
-class VGApp: public Framework
+class VGApp: public Stage
 {
 	private:
 		glRenderer	renderer_;
@@ -66,7 +66,7 @@ class VGApp: public Framework
 			PRINT_SHADER_LOG(program_);
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(35.0, (float)width_/height_,1,2048); 
+			gluPerspective(35.0, (float)mWidth/mHeight,1,2048); 
 		}
 		
 		void OnDestroy()
@@ -176,7 +176,7 @@ class VGApp: public Framework
 			glFlush();
 		}
 
-		void OnUpdate(float frame_time)
+		void onUpdate(float frame_time)
 		{
 			if( glfwGetKey(GLFW_KEY_ESC) )
 				close();

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <glClasses.h>
 #include <ResourceManager.h>
 

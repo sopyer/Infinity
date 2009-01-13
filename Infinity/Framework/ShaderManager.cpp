@@ -1,7 +1,7 @@
 #include <ShaderManager.h>
 #include <..\vfs\vfs.h>
 
-void print(const char *s,...);
+void logMessage(const char *s,...);
 static	char	string[1024];
 static	int		len;
 
@@ -13,7 +13,7 @@ glShaderBase* loadShader(const byte* text)
 	{
 		shader->compile((GLchar*)text);
 		shader->getLog(1023, &len, string);
-		print(string);
+		logMessage(string);
 	}
 	return shader;
 }

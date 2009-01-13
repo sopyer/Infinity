@@ -111,7 +111,7 @@ MeshPtr loadMesh1(const char* path)
 
 VertexDecl decl = {USAGE_POSITION, 3, GL_FLOAT, 0, 0};
 
-class Exest: public Framework
+class Exest: public Stage
 {
 	private:
 		TextureManager	mTexMgr;
@@ -137,7 +137,7 @@ class Exest: public Framework
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(90.0, (float)width_/height_,1,2048);
+			gluPerspective(90.0, (float)mWidth/mHeight,1,2048);
 			glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
 			glClearColor(0.0f, 0.0f, 0.0f, 0.5f);				// Black Background
 			glClearDepth(1.0f);									// Depth Buffer Setup
@@ -242,7 +242,7 @@ class Exest: public Framework
 			if(!look && glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT)) 
 			{
 				glfwDisable(GLFW_MOUSE_CURSOR);
-				glfwSetMousePos(width_ / 2, height_ / 2);
+				glfwSetMousePos(mWidth / 2, mHeight/ 2);
 				look = 1;
 			}
 			
@@ -256,14 +256,14 @@ class Exest: public Framework
 			{
 				int mouseX=0, mouseY=0;
 				glfwGetMousePos(&mouseX, &mouseY);
-				float psi = (mouseX - width_ / 2) * 0.2f;
-				float phi = (mouseY - height_ / 2) * 0.2f;
+				float psi = (mouseX - mWidth / 2) * 0.2f;
+				float phi = (mouseY - mHeight / 2) * 0.2f;
 				if(phi < -89) phi = -89;
 				if(phi > 89) phi = 89;
 				camera.rotate(psi, -phi);
 				//camera.rotateLR(psi);
 				//camera.rotateUD(-phi);
-				glfwSetMousePos(width_ / 2, height_ / 2);
+				glfwSetMousePos(mWidth / 2, mHeight / 2);
 			} 
 		}
 };

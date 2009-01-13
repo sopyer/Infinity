@@ -4,29 +4,14 @@
 static char string[1024];
 int len;
 
-#ifdef _DEBUG
-#	include <string>
-#	define START_PROFILE(section) sec=section; time_ = glfwGetTime()
-#	define END_PROFILE() print("Section %s in %f sec\n", sec.c_str(), glfwGetTime()-time_)
-static double time_=0;
-static std::string sec;
-#else
-#	define START_PROFILE(section)
-#	define END_PROFILE()
-#endif
-
 template<typename Type>
 glShaderBase* loadShader(const byte* text)
 {
 	Type*	shader = new Type();
 	if (shader)
 	{
-		START_PROFILE("compileShader");
 		shader->compile((GLchar*)text);
-		END_PROFILE();
-		START_PROFILE("infoShader");
-		shader->getLog(1023, &len, string);	print(string);
-		END_PROFILE();
+		shader->getLog(1023, &len, string);	logMessage(string);
 	}
 	return shader;
 }
@@ -63,8 +48,8 @@ glProgram* loadProgram(const char* shaders)
 		shaderPath = strtok(0, ";");
 	}
 	program->link();
-	program->getLog(1023, &len, string); print(string);
+	program->getLog(1023, &len, string); logMessage(string);
 	program->validate();
-	program->getLog(1023, &len, string); print(string);
+	program->getLog(1023, &len, string); logMessage(string);
 	return program;
 }

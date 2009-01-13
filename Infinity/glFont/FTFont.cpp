@@ -136,6 +136,7 @@ void FTFont::BBox( const char* string,
                    float& llx, float& lly, float& llz, float& urx, float& ury, float& urz)
 {
     FTBBox totalBBox;
+	bool	applyAdvance = false;
 
     if((NULL != string) && ('\0' != *string))
     {
@@ -156,9 +157,19 @@ void FTFont::BBox( const char* string,
                 tempBBox.Move( FTPoint( advance, 0.0f, 0.0f));
                 totalBBox += tempBBox;
                 advance += glyphList->Advance( *c, *(c + 1));
+				applyAdvance = tempBBox.IsEmpty();
             }
         }
-    }
+		
+		//Deal with spaces at the end of string, for spaces BBox.IsEmpty()==true and advance is not apply
+		//That's why we manually do this:
+		if (applyAdvance)
+		{
+			FTBBox tempBBox;
+            tempBBox.Move(FTPoint( advance, 0.0f, 0.0f));
+			totalBBox += tempBBox;
+		}
+	}
 
     llx = totalBBox.lower.x;
     lly = totalBBox.lower.y;

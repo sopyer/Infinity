@@ -1,5 +1,6 @@
 #include "Framework.h"
 #include <DataPtr.h>
+#include <loading.h>
 
 #define MESH_INDICES_MAGIC '10im'
 

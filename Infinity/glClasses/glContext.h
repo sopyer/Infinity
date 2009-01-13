@@ -59,14 +59,6 @@ class Context
 		{
 			glDrawElements(primType, indCount, indType_, indices);
 		}
-		void callCommandList(CommandList* list)
-		{
-			if (list) glCallList(list->mHandle);
-		}
-		void callCommandList(CommandList& list)
-		{
-			glCallList(list.mHandle);
-		}
 		void setTexture(GLenum stage, Texture& texture)
 		{
 			setTexture(stage, &texture);

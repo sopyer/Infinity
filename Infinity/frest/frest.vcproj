@@ -195,6 +195,10 @@
 			RelativePath=".\ship_data.h"
 			>
 		</File>
+		<File
+			RelativePath=".\ThirdPersonCamera.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

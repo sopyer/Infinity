@@ -82,7 +82,7 @@ class FTGL_EXPORT FTBBox
             upper.z = lower.z + depth;
         }
         
-        
+		bool IsEmpty() {return glm::all(glm::equal(lower, upper));}
         /**
          * The bounds of the box
          */
