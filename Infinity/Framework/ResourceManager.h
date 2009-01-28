@@ -22,6 +22,7 @@ public:
 		public:
 			Reference() {}
 			Reference(ResourceType* ptr) : ReferenceBase(ptr) {}
+			Reference(WeakReference weakRef) : ReferenceBase(weakRef) {}
 
 			bool create(const std::string& name) {swap(ManagerType::getRef().get(name)); mName  = name; return get() != 0;}
 			
@@ -60,6 +61,10 @@ public:
 			{
 				ref = Reference(getRef().load(p1));
 				mResources[name] = ref;
+			}
+			else
+			{
+				ref = Reference((*it).second);
 			}
 
 			return ref;

@@ -1,19 +1,25 @@
 #include "VG.h"
-//#include <gl\gl.h>
-//#include <gl\glu.h>
+
+//strange staff fix it!!!!!!!
+//#define _USE_MATH_DEFINES
+#include <cmath>
+#define M_PI       3.14159265358979323846
 
 void VG::begin()
 {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
-	setOrthoProj();
-
-	//Make window coordinate system y axis points down
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	glLoadIdentity();
-	glTranslatef(- (mWidth / 2.0f), mHeight / 2.0f, 0.0f);
-	glScalef(1.0f, -1.0f, 1.0f);
+	//setOrthoProj();
+	setPerspectiveProj();
+
+	//Make window coordinate system y axis points down
+	//glMatrixMode(GL_MODELVIEW);
+	//glPushMatrix();
+	//glLoadIdentity();
+	//glTranslatef(- (mWidth / 2.0f), mHeight / 2.0f, 0.0f);
+	//glScalef(1.0f, -1.0f, 1.0f);
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
@@ -50,13 +56,12 @@ void VG::end()
 void VG::drawText(FTFont& font, GLint x, GLint y, int flags, const char* text)
 {
 	glm::ivec2 extent = getTextExtent(font, text);
-
 	switch (flags & TextAlign::HMask)
 	{
 		case TextAlign::Left:
 			break;
 		case TextAlign::HCenter:
-			x -= extent.x / 2;
+			x -= extent.x/2;
 			break;
 		case TextAlign::Right:
 			x -= extent.x;
@@ -144,6 +149,33 @@ void VG::setOrthoProj()
 	// Now determine where to draw things.
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+}
+
+void VG::setPerspectiveProj()
+{
+	int width = mWidth;
+	int height = mHeight;
+
+	glViewport(0, 0, width, height);
+	
+	// setup matrices: see clutter_setup_viewport for reference
+	float fovy = 60.0f;
+	float zNear = 0.1f, zFar = (float)width;
+	float aspect = 1;//(float)width / height;
+
+	glm::mat4 matProj = glm::perspectiveGTX(fovy, aspect, zNear, zFar);
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(matProj);
+
+	float	z_camera = 0.5f * matProj[0][0];
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glTranslatef(-0.5f, -0.5f, -z_camera);
+	glScalef(1.0f / width,
+			 -1.0f / height,
+			  1.0f / width);
+	glTranslatef(0.0f, -1.0f * height, 0.0f);
 }
 
 #define norm255( i ) ( (float) ( i ) / 255.0f )

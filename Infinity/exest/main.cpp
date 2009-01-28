@@ -1,3 +1,4 @@
+#define GLEW_STATIC
 #include <framework.h>
 #include <glm\glmext.h>
 
@@ -111,12 +112,12 @@ MeshPtr loadMesh1(const char* path)
 
 VertexDecl decl = {USAGE_POSITION, 3, GL_FLOAT, 0, 0};
 
-class Exest: public Stage
+class Exest: public UI::Stage
 {
 	private:
-		TextureManager	mTexMgr;
-		ShaderManager	mShaderMgr;
-		ProgramManager	mProgMgr;
+		//TextureManager	mTexMgr;
+		//ShaderManager	mShaderMgr;
+		//ProgramManager	mProgMgr;
 		
 		GLint timeLoc, tex1Loc, tex0Loc;
 		glRenderer	renderer_;
@@ -124,16 +125,16 @@ class Exest: public Stage
 		ProgramRef	mProg;
 		MeshPtr		mesh;
 		FirstPersonCamera1	camera;
-	protected:
+	public:
 		void OnCreate()
 		{
 			mesh = loadMesh1("sky.mesh");
 
-			mImage[0].create("horizon.png");
+			mImage[0].create("HorizontTex", "horizon.png");
 			mImage[0]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-			mImage[1].create("clouds.png");
+			mImage[1].create("CloudsTex", "clouds.png");
 
-			mProg.create("sky.vert;sky.frag");
+			mProg.create("SkyProg", "sky.vert", "sky.frag");
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -155,8 +156,9 @@ class Exest: public Stage
 			//camera.rotate(180, 0);
 			//camera.move(glm::vec3(0, 1, -4)); 
 		}
-		
-		void OnRender()
+	
+	protected:
+		void paint()
 		{
 			glClearDepth(1.0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -216,7 +218,7 @@ class Exest: public Stage
 			glFlush();
 		}
 
-		void OnUpdate(float frame_time)
+		void onUpdate(float frame_time)
 		{
 			if( glfwGetKey(GLFW_KEY_ESC) )
 				close();

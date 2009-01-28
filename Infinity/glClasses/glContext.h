@@ -73,7 +73,7 @@ class Context
 		}
 		void useProgram(Program* program)
 		{
-			if (program) glUseProgram(*program);
+			glUseProgram(program ? *program : 0);
 		}
 		void useProgram(Program& program)
 		{

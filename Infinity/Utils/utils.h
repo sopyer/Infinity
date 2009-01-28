@@ -10,6 +10,8 @@
 #include <map>
 #include <string>
 
+#define UNUSED(var) ((void)var)
+
 namespace utils
 {
 	using std::vector;

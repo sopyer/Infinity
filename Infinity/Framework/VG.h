@@ -4,7 +4,7 @@
 #include <ProgramManager.h>
 #include <FTGLTextureFont.h>
 
-namespace TextAlign
+struct TextAlign
 {
 	enum
 	{
@@ -12,7 +12,7 @@ namespace TextAlign
 		Left = 1<<2, HCenter = 2<<2, Right = 3<<2,
 		VMask = 3, HMask = 3<<2
 	};
-}
+};
 
 struct Point
 {
@@ -92,6 +92,7 @@ public:
 
 private:
 	void setOrthoProj();
+	void setPerspectiveProj();
 
 private:
 	GLuint	mWidth;

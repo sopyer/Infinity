@@ -381,6 +381,34 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="UI"
+			>
+			<File
+				RelativePath=".\Actor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Actor.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Container.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Stage.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Stage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UI.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\Framework.cpp"
 			>
@@ -390,11 +418,11 @@
 			>
 		</File>
 		<File
-			RelativePath=".\Timer.h"
+			RelativePath=".\Scheduler.h"
 			>
 		</File>
 		<File
-			RelativePath=".\UI.h"
+			RelativePath=".\Timer.h"
 			>
 		</File>
 		<File

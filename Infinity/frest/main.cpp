@@ -4,180 +4,7 @@
 #include "ThirdPersonCamera.h"
 #include <UI.h>
 
-class Label: public UI::Actor
-{
-	public:
-		Label(): mColor(1.0f, 1.0f, 1.0f, 1.0f) {}
-		
-		Label& setFont(FontRef font) {mFont = font; return *this;}
-		Label& setColor(const glm::vec4& color) {mColor = color; return *this;}
-		Label& setText(const char* text) {mText = text; return *this;}
-
-	protected:
-		void onPaint(VG& vg)
-		{
-			glColor4fv(mColor);
-			vg.drawText(*mFont, mPos, mText.c_str());
-		}
-
-	protected:
-		glm::vec4	mColor;
-		FontRef		mFont;
-		std::string	mText;
-};
-
-class Edit: public Label
-{
-	public:
-		Edit(): mCaretPos(0) {}
-	
-	protected:
-		void onKeyUp(uint32 key)
-		{
-			// filter for special keys
-			// Enter, quit edition
-			if (key == GLFW_KEY_ENTER)
-			{
-				return;
-			}
-			// Special keys
-			else if (key >= GLFW_KEY_SPECIAL)
-			{
-				switch (key)
-				{
-				case GLFW_KEY_LEFT :
-					{
-						// move cursor left one char
-						mCaretPos--;
-					} 
-					break;
-				case GLFW_KEY_RIGHT :
-					{
-						// move cursor right one char
-						mCaretPos++;
-					} 
-					break;
-				case GLFW_KEY_HOME :
-					{
-						mCaretPos = 0;
-					} 
-					break;
-				case GLFW_KEY_END :
-					{
-						mCaretPos = mText.length();
-					} 
-					break;
-				case GLFW_KEY_INSERT :
-					{
-					} 
-					break;
-				case GLFW_KEY_DEL :
-					{
-						if (mCaretPos < (int)mText.length())
-							mText.erase(mText.begin()+mCaretPos);
-					} 
-					break;
-				case GLFW_KEY_BACKSPACE :
-					{
-						if (mCaretPos > 0)
-							mText.erase(mText.begin()+mCaretPos-1);
-						mCaretPos--;
-					} 
-					break;
-				default :
-					{
-						// strange key pressed...
-						//mCaretPos--;
-					} 
-					break;
-				}
-			}	
-			// Regular char, append it to the edited string
-			else/* if ( textLength < maxTextLength)*/
-			{
-				std::string::iterator	where = mText.end();
-				if (mCaretPos < (int)mText.length())
-				{
-					where = mText.begin()+mCaretPos;
-				}
-				mText.insert(where, (char)key);
-				mCaretPos++;
-			}
-			mCaretPos = std::min(mCaretPos, (int)mText.length());
-			mCaretPos = std::max(mCaretPos, 0);
-		}
-
-		void onPaint(VG& vg)
-		{
-			Label::onPaint(vg);
-			//Fix me!!!!!: if mCaretPos == 0 the cursor is not drawn
-			//Use font metrics for cursor rendering then text bounding box
-			glm::ivec2	ex = vg.getTextExtent(*mFont, mText.substr(0, mCaretPos).c_str());
-			ex.s += 1;
-			vg.drawRect(mColor, mPos+glm::ivec2(ex.s, 0), mPos+glm::ivec2(ex.s, ex.t));
-		}
-
-	private:
-		int mCaretPos;
-};
-
-class Button: public Label
-{
-	public:
-		Button(): mIsPressed(false), mIsHover(false) {}
-		
-	public:
-		sigslot::signal0<>	onClicked;
-
-	protected:
-		void onTouch(const glm::ivec2& pos, uint32 buttons)
-		{mIsPressed = true;}
-
-		void onUntouch(const glm::ivec2& pos, uint32 buttons)
-		{mIsPressed = false; onClicked.emit();}
-
-		void onEnter()
-		{mIsHover = true;}
-
-		void onLeave()
-		{mIsHover = false; mIsPressed = false;}
-
-		void onPaint(VG& vg)
-		{
-		    vg.drawFrame(Rect(mPos.x, mPos.y, mSize.s, mSize.t), Point(5, 5), mIsHover, mIsPressed, false);
-			glColor4fv(mColor);
-			vg.drawText(*mFont, mPos+mSize/2, TextAlign::HCenter | TextAlign::VCenter, mText.c_str());
-		}
-
-	protected:
-		bool		mIsHover;
-		bool		mIsPressed;
-};
-
-class CheckBox: public Button
-{
-	public:
-		CheckBox(): mIsChecked(false) {}
-		
-		bool isChecked() {return mIsChecked;}
-	protected:
-		void onUntouch(const glm::ivec2& pos, uint32 buttons)
-		{Button::onUntouch(pos, buttons); mIsChecked = !mIsChecked;}
-
-		void onPaint(VG& vg)
-		{
-			///*if (style) */vg.drawFrame( Rect(mPos.x, mPos.y, 16, 16), Point( 5, 5 ), mIsHover, false, false );
-			vg.drawBoolFrame(Rect(mPos.x, mPos.y, 16, 16), Point( 16/6, 16/6 ), mIsHover, mIsChecked, false );
-		    //vg.drawFrame(Rect(mPos.x, mPos.y, 20, 20), Point(5, 5), mIsHover, mIsChecked, false);
-			glColor4fv(mColor);
-			vg.drawText(*mFont, mPos+glm::ivec2(20, 8), TextAlign::Left | TextAlign::VCenter, mText.c_str());
-		}
-
-	private:
-		bool		mIsChecked;
-};
-
-class Frest: public Stage, public sigslot::has_slots<>
+class Frest: public UI::Stage, public sigslot::has_slots<>
 {
 	private:
 		VG				mVG;
@@ -200,11 +27,8 @@ class Frest: public Stage, public sigslot::has_slots<>
 		float xangle, yangle;
 		bool	mShowHelp;
 
-		Button		mButton;
-		CheckBox	mCheck;
-		Label		mLabel;
-		Edit		mEdit;
-		UI::Container	mContainer;
+		Timeline		mUpdater;
+
 	protected:
 		void compileShipList();
 		virtual void paint();
@@ -244,7 +68,6 @@ class Frest: public Stage, public sigslot::has_slots<>
 
 		void onKeyUp(uint32 key)
 		{
-			Stage::onKeyUp(key);
 			switch (key)
 			{
 				case GLFW_KEY_RIGHT:
@@ -256,15 +79,15 @@ class Frest: public Stage, public sigslot::has_slots<>
 			}
 		}
 
-		void onUpdate(float timeSinceLastFrame)
+		void onUpdate(uint32 frame)
 		{
+			float timeSinceLastFrame = 0;
 			static float lastTime = 0;
 			static bool  pressed = false;
 			float xangle = 0; yangle = 0;
 
 			bool manual = false;
 
-			/*
 			static int look = 0;
 			
 			if(!look && glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT)) 
@@ -291,7 +114,7 @@ class Frest: public Stage, public sigslot::has_slots<>
 				
 				glfwSetMousePos(mWidth / 2, mHeight / 2);
 			} 
-			*/
+			
 			if (!mManualRotation)
 			{
 				xangle = mPhiDir * 0.05f * (mTimer.getFrameTime());
@@ -304,8 +127,11 @@ class Frest: public Stage, public sigslot::has_slots<>
 	public:
 		Frest():	mVG(mWidth, mHeight),
 					mPsiDir(1.0f), mPhiDir(1.0f),
-					mManualRotation(false), mShowHelp(true)
+					mManualRotation(false), mShowHelp(true),
+					mUpdater(33)
 		{
+			mUpdater.onFrame.connect(this, &Frest::onUpdate);
+
 			mReflection.create("reflection_texture", "texture1.tga");
 			mHighlight.create("highlight_texture", "highlight.tga");
 
@@ -320,32 +146,6 @@ class Frest: public Stage, public sigslot::has_slots<>
 			mReflectionLoc = mProg->bindUniform("reflection");
 			mHighlightLoc  = mProg->bindUniform("highlight");
 			
-
-			mLabel.setText("Label Test")
-				.setFont(mTextFont)
-				.setPos(glm::ivec2(0, 0));
-
-			mEdit.setText("Edit me!!!")
-				.setFont(mTextFont)
-				.setPos(glm::ivec2(0, 40));
-
-			mContainer.add(mLabel)
-				.add(mEdit)
-				.setPos(glm::ivec2(40, 140));
-
-			mButton.setText("Exit")
-				  .setFont(mTextFont)
-				  .setPos(glm::ivec2(0, 60))
-				  .setSize(glm::ivec2(80, 30));
-			
-			mCheck.setText("Check")
-				  .setFont(mTextFont)
-				  .setPos(glm::ivec2(0, 100))
-				  .setSize(glm::ivec2(80, 30));
-
-			mButton.onClicked.connect<Frest>(this, &Frest::close);
-			add(mButton).add(mCheck).add(mContainer);
-
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(90.0, (float)mWidth/mHeight, 1, 400); 
@@ -395,7 +195,6 @@ void Frest::paint()
 	{
 		mVG.begin();
 			//! Temporary hack to change font color
-			UI::Container::onPaint(mVG);
 			glColor3f(0.3f,1.0f,0.5f);
 			mVG.drawText(*mTextFont, 0, 0, "Use cursor keys or mouse to rotate");
 			mVG.drawText(*mTextFont, 0, 20, "Press H to toggle help");
