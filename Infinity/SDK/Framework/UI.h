@@ -1,8 +1,6 @@
 #ifndef __UI_H_INCLUDED__
 #	define __UI_H_INCLUDED__
 
-#define GLEW_STATIC
-
 #include <sigslot.h>
 #include <gl\glfw.h>
 #include <gl\glew.h>

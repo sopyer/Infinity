@@ -16,7 +16,7 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\..\..\..\objs\release"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -70,7 +70,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\..\..\objs\freetype231.lib"
+				OutputFile="$(OutDir)freetype231.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -91,7 +91,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release Multithreaded|Win32"
-			OutputDirectory=".\..\..\..\objs\release_mt"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -166,7 +166,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release Singlethreaded|Win32"
-			OutputDirectory=".\..\..\..\objs\release_st"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -240,8 +240,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\..\..\..\objs\debug"
-			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)\"
+			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)\"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -267,14 +267,15 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;FT_DEBUG_LEVEL_ERROR;FT_DEBUG_LEVEL_TRACE;FT2_BUILD_LIBRARY;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="_DEBUG;WIN32;_LIB;FT_DEBUG_LEVEL_ERROR;FT_DEBUG_LEVEL_TRACE;FT2_BUILD_LIBRARY;_CRT_SECURE_NO_WARNINGS"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				DisableLanguageExtensions="true"
-				PrecompiledHeaderFile=".\..\..\..\objs\debug/freetype.pch"
-				AssemblerListingLocation=".\..\..\..\objs\debug/"
-				ObjectFile=".\..\..\..\objs\debug/"
-				ProgramDataBaseFileName=".\..\..\..\objs\debug/"
+				PrecompiledHeaderFile="$(IntDir)freetype.pch"
+				AssemblerListingLocation="$(IntDir)"
+				ObjectFile="$(IntDir)"
+				ProgramDataBaseFileName="$(IntDir)"
+				XMLDocumentationFileName="$(IntDir)"
 				WarningLevel="4"
 				DebugInformationFormat="3"
 				CompileAs="0"
@@ -292,7 +293,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="..\..\..\objs\freetype231_D.lib"
+				OutputFile="$(OutDir)freetype231.lib"
 				SuppressStartupBanner="true"
 			/>
 			<Tool
@@ -313,7 +314,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug Singlethreaded|Win32"
-			OutputDirectory=".\..\..\..\objs\debug_st"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -386,7 +387,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug Multithreaded|Win32"
-			OutputDirectory=".\..\..\..\objs\debug_mt"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"

@@ -44,7 +44,7 @@
 // Include files
 #include <windows.h>
 #include <mmsystem.h>
-#include "../../include/GL/glfw.h"
+#include "gl/glfw.h"
 
 
 //========================================================================
