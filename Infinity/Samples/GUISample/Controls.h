@@ -1,6 +1,7 @@
 #pragma once
 
 #include <UI.h>
+#include <cstdlib>
 
 class Image: public UI::Actor
 {
@@ -10,10 +11,10 @@ class Image: public UI::Actor
 		Image& setTexture(TextureRef texture) {mTexture = texture; return *this;}
 
 	protected:
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
 			float w = getWidth(), h = getHeight(),
-				  x = getX(), y = getY();
+				  x = 0, y = 0;
 			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 			glEnable(GL_TEXTURE_2D);
 			glBegin(GL_TRIANGLE_STRIP);
@@ -36,10 +37,10 @@ class Image: public UI::Actor
 class Rectangle: public UI::Actor
 {
 	protected:
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
 			uint32 w = getWidth(), h = getHeight(),
-				   x = getX(), y = getY();
+				   x = 0, y = 0;
 		    vg.drawFrame(Rect(x, y, w, h), Point(5, 5), false, false, false);
 		}
 };
@@ -54,10 +55,10 @@ class Label: public UI::Actor
 		Label& setText(const char* text) {mText = text; return *this;}
 
 	protected:
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
 			glColor4fv(mColor);
-			vg.drawText(*mFont, mX, mY, mText.c_str());
+			vg.drawText(*mFont, 0/*mX*/, 0/*mY*/, mText.c_str());
 		}
 
 	protected:
@@ -80,69 +81,68 @@ class Edit: public Label, public sigslot::has_slots<>
 			mShowCursor = !mShowCursor;
 		}
 
-		void onTouch(float x, float y, uint32 buttons)
+		virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
 		{
 			getStage()->captureFocus(this);
 		}
 		
-		void onFocusIn()
+		virtual void onFocusIn()
 		{
-			mShowCursor = true;
-			mBlinkTimeline.start();
+			showCursor();
 		}
 
-		void onFocusOut()
+		virtual void onFocusOut()
 		{
-			mShowCursor = false;
-			mBlinkTimeline.stop();
+			hideCursor();
 		}
 
-		void onKeyUp(uint32 key)
+		virtual void onKeyDown(const KeyEvent& event/*uint32 key*/)
 		{
+			uint32 key = event.key;
 			// filter for special keys
 			// Enter, quit edition
-			if (key == GLFW_KEY_ENTER)
+			if (key == KeySyms::KeyEnter/*GLFW_KEY_ENTER*/)
 			{
 				return;
 			}
 			// Special keys
-			else if (key >= GLFW_KEY_SPECIAL)
+			else if (key >= KeySyms::KeySpecial/*GLFW_KEY_SPECIAL*/)
 			{
 				switch (key)
 				{
-				case GLFW_KEY_LEFT :
+				case KeySyms::KeyLeft: //GLFW_KEY_LEFT :
 					{
 						// move cursor left one char
 						mCaretPos--;
 					} 
 					break;
-				case GLFW_KEY_RIGHT :
+				case KeySyms::KeyRight: //GLFW_KEY_RIGHT :
 					{
 						// move cursor right one char
 						mCaretPos++;
 					} 
 					break;
-				case GLFW_KEY_HOME :
+				case KeySyms::KeyHome: //GLFW_KEY_HOME :
 					{
 						mCaretPos = 0;
 					} 
 					break;
-				case GLFW_KEY_END :
+				case KeySyms::KeyEnd: //GLFW_KEY_END :
 					{
 						mCaretPos = (int)mText.length();
 					} 
 					break;
-				case GLFW_KEY_INSERT :
+				case KeySyms::KeyInsert: //GLFW_KEY_INSERT :
 					{
 					} 
 					break;
-				case GLFW_KEY_DEL :
+				case KeySyms::KeyDel: //GLFW_KEY_DEL :
 					{
 						if (mCaretPos < (int)mText.length())
 							mText.erase(mText.begin()+mCaretPos);
 					} 
 					break;
-				case GLFW_KEY_BACKSPACE :
+				case KeySyms::KeyBackspace: //GLFW_KEY_BACKSPACE :
 					{
 						if (mCaretPos > 0)
 							mText.erase(mText.begin()+mCaretPos-1);
@@ -156,34 +156,56 @@ class Edit: public Label, public sigslot::has_slots<>
 					} 
 					break;
 				}
+				resetCursor();
 			}	
 			// Regular char, append it to the edited string
-			else/* if ( textLength < maxTextLength)*/
+			else if (event.unicode)
 			{
 				std::string::iterator	where = mText.end();
 				if (mCaretPos < (int)mText.length())
 				{
 					where = mText.begin()+mCaretPos;
 				}
-				mText.insert(where, (char)key);
+				char	c;
+				wchar_t	wc = (wchar_t)event.unicode;
+				_wctomb_l(&c, wc, _create_locale(LC_CTYPE, ".1251"));
+				mText.insert(where, c);
 				mCaretPos++;
+				resetCursor();
 			}
 			mCaretPos = std::min(mCaretPos, (int)mText.length());
 			mCaretPos = std::max(mCaretPos, 0);
 		}
 
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
 			Label::onPaint(vg);
 			//Fix me!!!!!: if mCaretPos == 0 the cursor is not drawn
 			//Use font metrics for cursor rendering then text bounding box
 			if (mShowCursor)
 			{
-				glm::ivec2	pos(mX, mY);
+				glm::ivec2	pos(0, 0);//(mX, mY);
 				glm::ivec2	ex = vg.getTextExtent(*mFont, mText.substr(0, mCaretPos).c_str());
 				ex.s += 1;
 				vg.drawRect(mColor, pos+glm::ivec2(ex.s, mFont->Descender()/*0*/), pos+glm::ivec2(ex.s, mFont->Ascender()/*ex.t*/));
 			}
+		}
+		
+		void showCursor()
+		{
+			mShowCursor = true;
+			mBlinkTimeline.start();
+		}
+
+		void hideCursor()
+		{
+			mShowCursor = false;
+			mBlinkTimeline.stop();
+		}
+
+		void resetCursor()
+		{
+			mShowCursor = true;
 		}
 
 	private:
@@ -202,23 +224,23 @@ class Button: public Label
 		sigslot::signal0<>	onClicked;
 
 	protected:
-		void onTouch(float x, float y, uint32 buttons)
+		virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
 		{mIsPressed = true;}
 
-		void onUntouch(float x, float y, uint32 buttons)
+		virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
 		{mIsPressed = false; onClicked.emit();}
 
-		void onEnter()
+		virtual void onEnter()
 		{mIsHover = true;}
 
-		void onLeave()
+		virtual void onLeave()
 		{mIsHover = false; mIsPressed = false;}
 
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
-		    vg.drawFrame(Rect(mX, mY, mWidth, mHeight), Point(5, 5), mIsHover, mIsPressed, false);
+		    vg.drawFrame(Rect(/*mX, mY,*/0, 0, mWidth, mHeight), Point(5, 5), mIsHover, mIsPressed, false);
 			glColor4fv(mColor);
-			glm::ivec2	mPos(mX, mY), mSize(mWidth, mHeight);
+			glm::ivec2	mPos(/*mX, mY*/0, 0), mSize(mWidth, mHeight);
 			vg.drawText(*mFont, mPos+mSize/2, TextAlign::HCenter | TextAlign::VCenter, mText.c_str());
 		}
 
@@ -234,16 +256,16 @@ class CheckBox: public Button
 		
 		bool isChecked() {return mIsChecked;}
 	protected:
-		void onUntouch(float x, float y, uint32 buttons)
-		{Button::onUntouch(x, y, buttons); mIsChecked = !mIsChecked;}
+		virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
+		{Button::onUntouch(event/*x, y, buttons*/); mIsChecked = !mIsChecked;}
 
-		void onPaint(VG& vg)
+		virtual void onPaint(VG& vg)
 		{
 			///*if (style) */vg.drawFrame( Rect(mPos.x, mPos.y, 16, 16), Point( 5, 5 ), mIsHover, false, false );
-			vg.drawBoolFrame(Rect(mX, mY, 16, 16), Point( 16/6, 16/6 ), mIsHover, mIsChecked, false );
+			vg.drawBoolFrame(Rect(/*mX, mY,*/0, 0, 16, 16), Point( 16/6, 16/6 ), mIsHover, mIsChecked, false );
 		    //vg.drawFrame(Rect(mPos.x, mPos.y, 20, 20), Point(5, 5), mIsHover, mIsChecked, false);
 			glColor4fv(mColor);
-			vg.drawText(*mFont, mX+20, mY+8, TextAlign::Left | TextAlign::VCenter, mText.c_str());
+			vg.drawText(*mFont,/* mX+*/20, /*mY+*/8, TextAlign::Left | TextAlign::VCenter, mText.c_str());
 		}
 
 	private:

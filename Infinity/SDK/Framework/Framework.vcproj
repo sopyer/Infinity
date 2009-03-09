@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Gs"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\glfw;.\glfw\win32;.\iniparser;.\;.\SOIL;..\freetype\include;..\glFont;..;..\glClasses;..\utils"
+				AdditionalIncludeDirectories=".\glfw;.\glfw\win32;.\iniparser;.\;.\SOIL;..\freetype\include;..\glFont;..;..\glClasses;..\utils;..\vfs"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -449,6 +449,14 @@
 			</File>
 			<File
 				RelativePath=".\Container.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Events.h"
+				>
+			</File>
+			<File
+				RelativePath=".\KeySyms.h"
 				>
 			</File>
 			<File

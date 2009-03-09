@@ -1,7 +1,7 @@
 #ifndef _VFS_INCLUDED_H_
 #	define _VFS_INCLUDED_H_
 
-#include "vfs_impl\implvfs.h"
+#include <vfs_impl\implvfs.h>
 #include <boost\shared_ptr.hpp>
 
 typedef boost::shared_ptr<void*> FileViewPtr;

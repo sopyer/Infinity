@@ -1,11 +1,12 @@
 #include <framework.h>
 #include <FTGLTextureFont.h>
 #include "Controls.h"
+#include "Animations.h"
 
-class GUISample: public UI::Stage, public sigslot::has_slots<>
+class GUISample: public UI::Stage
 {
 	public:
-		GUISample():	mVG(mWidth, mHeight), mUpdater(30)
+		GUISample():mUpdater(30), mAnim(2000, 100)
 		{
 			mUpdater.onFrame.connect(this, &GUISample::onUpdate);
 
@@ -31,6 +32,11 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 				  .setPos(0, 60)
 				  .setSize(80, 30);
 			
+			mMoveDog.setText("Move dog;)")
+				  .setFont(mTextFont)
+				  .setPos(100, 60)
+				  .setSize(120, 30);
+
 			mCheck.setText("Check")
 				  .setFont(mTextFont)
 				  .setPos(0, 100)
@@ -39,7 +45,11 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 			mButton.onClicked.connect<GUISample>(this, &GUISample::close);
 			
 			mMenu.setPos(400,20)
-				.setSize(200, 100);
+				.setSize(200, 100)
+				.setZ(300)
+				.setScaleX(2)
+				.setScaleY(2)
+				.setRotation(-60, 0, 1, 0);
 			
 			mCombobox.setPos(400, 300)
 				.setSize(200, 40);
@@ -51,6 +61,7 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 
 			add(mImage);
 			add(mButton);
+			add(mMoveDog);
 			add(mCheck);
 			add(mContainer);
 			add(mMenu);
@@ -59,6 +70,14 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 			mUpdater.onStarted.connect(this, &GUISample::test);
 			mUpdater.onCompleted.connect(this, &GUISample::test);
 			mUpdater.start();
+
+			mMover.setOffset(300, 0)
+				.setTimeline(&mAnim)
+				.setInterpolator(&mItrp)
+				.apply(&mImage);
+
+			mMoveDog.onClicked.connect(this, &GUISample::onMoveDog);
+
 		}
 
 	protected:
@@ -68,25 +87,30 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 
 		void paint()
 		{
-			glClearDepth(1.0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			
-			mVG.begin();
-				UI::Container::onPaint(mVG);
-			mVG.end();
+			//glClearDepth(1.0);
+			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			//
+			//mVG.begin();
+			//	UI::Container::onPaint(mVG);
+			//mVG.end();
 
-			glFlush();
+			//glFlush();
 		}
 
 		void onUpdate(uint32 frame)
 		{
 			//logMessage("Time: %d\n", mTimer.getTime());
-			if( glfwGetKey(GLFW_KEY_ESC) )
+			if( glfwGetKey(KeySyms::KeyESC/*GLFW_KEY_ESC*/) )
 				close();
 		}
 
+		void onMoveDog()
+		{
+			mAnim.stop();
+			mAnim.start();
+		}
+
 	private:
-		VG				mVG;
 		gl::Context		mContext;
 
 		FontRef			mTextFont;
@@ -100,8 +124,12 @@ class GUISample: public UI::Stage, public sigslot::has_slots<>
 		HGroup			mMenu;
 		Layout			mCombobox;
 		Image			mImage;
+		Button			mMoveDog;
 
 		Timeline		mUpdater;
+		Timeline		mAnim;
+		Interpolator	mItrp;
+		OffsetAnimation	mMover;
 };
 
 int main()

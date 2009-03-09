@@ -147,8 +147,9 @@ class Frest: public UI::Stage, public sigslot::has_slots<>
 			mHighlightLoc  = mProg->bindUniform("highlight");
 			
 			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			gluPerspective(90.0, (float)mWidth/mHeight, 1, 400); 
+			//glLoadIdentity();
+			//gluPerspective(90.0, (float)mWidth/mHeight, 1, 400); 
+			glLoadMatrixf(glm::perspectiveGTX(90.0f, (float)mWidth/mHeight, 1.0f, 400.0f));
 		}
 };
 

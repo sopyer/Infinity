@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <boost\smart_ptr.hpp>
-#include "vfs_impl\utils.h"
+#include <vfs_impl\utils.h>
 
 typedef boost::shared_ptr< DataStream > DataStreamPtr;
 

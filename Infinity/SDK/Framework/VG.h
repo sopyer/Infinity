@@ -55,7 +55,7 @@ enum Color
 class VG
 {
 public:
-	VG(GLuint width, GLuint height): mWidth(width), mHeight(height)
+	void create(/*GLuint width, GLuint height*/)//: mWidth(width), mHeight(height)
 	{
 		mWidgetProgram.create("UIProgram", "UI.vert", "UI.frag");
 		
@@ -63,6 +63,8 @@ public:
 		mBorderColorUniform = mWidgetProgram->bindUniform("borderColor");
 		mZonesUniform       = mWidgetProgram->bindUniform("zones");
 	}
+
+	void setSize(GLuint width, GLuint height) {mWidth = width; mHeight = height;}
 
 	void begin();
 	void end();

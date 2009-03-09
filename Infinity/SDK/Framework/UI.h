@@ -17,16 +17,18 @@
 #include <utils.h>
 #include <Timer.h>
 
+#include <Events.h>
+
 namespace UI
 {
 	class Actor;
 	class Container;
 	class Stage;
+}
 
 #	include <Actor.h>
 #	include <Container.h>
 #	include <Stage.h>
-}
 
 
 

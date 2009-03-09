@@ -171,7 +171,8 @@ void VG::setPerspectiveProj()
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glTranslatef(-0.5f, -0.5f, -z_camera);
+	glTranslatef(-0.5f, -0.5f, -z_camera);  //center of coords in top left corner
+	//glTranslatef(0.0f, -1.0f, -z_camera);	//center of coords in center of screen
 	glScalef(1.0f / width,
 			 -1.0f / height,
 			  1.0f / width);

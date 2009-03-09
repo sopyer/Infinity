@@ -58,18 +58,19 @@ private:
 };
 
 //Fix case when duration > numFrames*frameTime
+//Integrate Timer in this class?????
 class Timeline
 {
 public:
 	Timeline(uint32 msFPS):
-		mDuration(1000), mNumFrames(msFPS/1000),
+		mDuration(1000), mNumFrames(msFPS),
 		mCurFrame(0), mFrameTime(1000/msFPS),
 		mLoop(true), mIsPlaying(false)
 	{
 	}
 
 	Timeline(uint32 msDuration, uint32 msFPS):
-		mDuration(msDuration), mNumFrames(msDuration*msFPS/1000),
+		mDuration(msDuration), mNumFrames(msDuration*msFPS / 1000),
 		mCurFrame(0), mFrameTime(1000/msFPS),
 		mLoop(false), mIsPlaying(false)
 	{
@@ -104,6 +105,9 @@ public:
 	{
 		mIsPlaying = false;
 	}
+	
+	uint32 getElapsed() {return mCurFrame * mFrameTime;}
+	uint32 getDuration() {return mDuration;}
 
 public:
 	sigslot::signal1<uint32>	onFrame;
@@ -124,12 +128,11 @@ private:
 
 	void handleTimeout()
 	{
-		if (mIsPlaying)
-			onFrame.emit(mCurFrame);
-		else
+		if (!mIsPlaying)
 			return;
 
 		++mCurFrame;
+		onFrame.emit(mCurFrame);
 		
 		if (mCurFrame == mNumFrames)
 			mCurFrame = 0;
