@@ -18,6 +18,8 @@ namespace UI
 
 			void run();
 			void close();
+			
+			bool isRunning() {return mRunning;}
 
 		protected:
 			int		mBitsPerPixel;
@@ -25,8 +27,6 @@ namespace UI
 			int		mStencilBits;
 			bool	mFullscreen;
 			bool	mVSync;
-			
-			bool	mDoAllocate;
 
 			Timer	mTimer;
 
@@ -66,6 +66,7 @@ namespace UI
 			void handleInput(uint32	frame);
 		
 			Actor* doPick(uint32 x, uint32 y);
+
 			void renderActors();
 			void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
 
@@ -84,6 +85,7 @@ namespace UI
 			Scheduler	mScheduler;
 			Timeline	mInputTicker;
 
+			bool	mDoAllocate;
 			bool	mRunning;
 			Phase	mPhase;
 

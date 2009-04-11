@@ -11,8 +11,6 @@ class ResourceManager : public Singleton<ManagerType>
 private:
 	typedef boost::shared_ptr<ResourceType> ReferenceBase;
 	typedef boost::weak_ptr<ResourceType>	WeakReference;
-	typedef std::map<std::string, WeakReference>	ResourceMap;
-	typedef typename ResourceMap::iterator	ResIt;
 
 public:
 	class Reference : public ReferenceBase
@@ -22,6 +20,7 @@ public:
 		public:
 			Reference() {}
 			Reference(ResourceType* ptr) : ReferenceBase(ptr) {}
+			Reference(const Reference& ref) : ReferenceBase(ref) {}
 			Reference(WeakReference weakRef) : ReferenceBase(weakRef) {}
 
 			bool create(const std::string& name) {swap(ManagerType::getRef().get(name)); mName  = name; return get() != 0;}
@@ -83,6 +82,10 @@ public:
 
 			return ref;
 		}
+
+private:
+	typedef std::map<std::string, /*WeakReference*/Reference>	ResourceMap;
+	typedef typename ResourceMap::iterator	ResIt;
 
 private:
 		ResourceMap	mResources;

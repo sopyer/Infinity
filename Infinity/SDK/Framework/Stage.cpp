@@ -438,9 +438,9 @@ namespace UI
 		green = green << (8 - gMask);
 		blue  = blue  << (8 - bMask);
 
-		color.red   = /*id*10;*/red;
-		color.green = /*0;*/green;
-		color.blue  = /*0;*/blue;
+		color.red   = (uint8)red;
+		color.green = (uint8)green;
+		color.blue  = (uint8)blue;
 		color.alpha = 0xff;
 
 		return color;
@@ -472,9 +472,12 @@ namespace UI
 	{
 		mVG.begin();
 
-		glClearDepth(1.0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearDepth(1.0f);
+		glClearStencil(0);
+		glDepthMask(GL_TRUE);
+		glStencilMask( 0xFF );
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glUseProgram(0);
 		glDisable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
@@ -517,9 +520,13 @@ namespace UI
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		//glClearDepth(1.0);
 		glClear(GL_COLOR_BUFFER_BIT/* | GL_DEPTH_BUFFER_BIT*/);
-		
+		glDepthFunc(GL_LEQUAL);
+		glDepthMask(GL_FALSE);
+	
 		mVG.begin();
-		
+	
+		onPaint(mVG);
+
 		std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
 											end = mRenderQueue.end();
 

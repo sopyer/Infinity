@@ -1,5 +1,7 @@
 #include <framework.h>
 
+#include "path.h"
+
 GLchar buf[1024];
 GLsizei len;
 
@@ -25,7 +27,7 @@ void main(void)\
 	gl_FragColor = vec4(1);\
 }\
 ",
-*fragSrc = 
+*fragSrc =
 "\
 uniform float orient;\n\
 void main(void)\n\
@@ -62,15 +64,58 @@ class VGSample: public UI::Stage
 			
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(35.0, (float)mWidth/mHeight,1,2048); 
-		}
-	protected:
-		void paint()
-		{
-			glClearDepth(1.0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			gluPerspective(35.0, (float)mWidth/mHeight,1,2048);
+
+			maskQuad.create("VG.MaskQuad", "vg.mask.vert", "vg.mask.quad.frag");
+			maskArc.create("VG.MaskArc", "vg.mask.vert", "vg.mask.arc.frag");
+			vg::init(maskQuad, maskArc);
+			program.create("VG.SolidFill", "vg.vert", "vg.paint.solid.frag");
+			uFillColor = program->bindUniform("uFillColor");
 			
-			glEnable(GL_DEPTH_TEST);
+			mPolygon = vg::createPath(1.0f, 0.0f);
+
+			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_CLOSE_PATH};
+			float data[] = {1, 1, 1, 0, 0, 1, 0, 0};
+
+			//ubyte quadTest[] = {VG_QUAD_TO_ABS, VG_CLOSE_PATH};
+			//float quadData[] = {1, 1, 1, 0};
+			ubyte quadTest[] = {VG_QUAD_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_CLOSE_PATH};
+			float quadData[] = {0.5f, 1, 1, 0, 0, 1, 1, 1};
+
+
+			ubyte arcTest[] = {VG_LCCWARC_TO_ABS, VG_CLOSE_PATH};
+			float arcData[] = {0.5, 0.5, 0, 1, 0};
+
+			//mPolygon.appendData(sizeof(segs), segs, data);
+			//mPolygon.appendData(sizeof(quadTest), quadTest, quadData);
+			mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
+
+			glClearDepth(1.0);
+			glClearStencil(0);
+		}
+
+		~VGSample()
+		{
+			vg::destroyPath(mPolygon);
+			vg::deinit();
+		}
+
+
+		//void run()
+		//{
+		//	while (glfwGetWindowParam(GLFW_OPENED))
+		//	{
+		//		render();
+		//		glFlush();
+		//		glfwSwapBuffers();
+		//	}
+		//}
+
+	protected:
+		void onPaint(VG& vg)
+		{
+ 			glStencilMask(0xFF);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0.0f, -1.0f, -4.0f);
@@ -95,12 +140,19 @@ class VGSample: public UI::Stage
 				//	glTexCoord2f(1, 1);
 				//	glVertex3f(1, 2, 2);
 				//glEnd();
-				glTranslatef(0, 1, 0);
+				//glTranslatef(0, 1, 0);
+				glScalef(2, 2, 1);
+				glCullFace(GL_FRONT_AND_BACK);
+				glUseProgram(*program);
+				glUniform4f(uFillColor, 0.45f, 0.33f, 0.89f, 1.0f);
+				mPolygon.draw(program);
 				//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-				mRenderer.useProgram(&mProgram);
-				glColor3f(0.2f, 0.7f, 0.4f);
-				DrawShape2();
-				mRenderer.end();
+				//mRenderer.useProgram(&mProgram);
+				//glColor3f(0.2f, 0.7f, 0.4f);
+				//DrawShape2();
+			//glCullFace(GL_FRONT/*_AND_BACK*/);
+			//mPolygon.drawPath();
+			mRenderer.end();
 			glFlush();
 		}
 
@@ -114,6 +166,14 @@ class VGSample: public UI::Stage
 		void DrawShape2();
 
 	private:
+		vg::Path	mPolygon;
+
+		ProgramRef	program;
+		ProgramRef	maskQuad;
+		ProgramRef	maskArc;
+
+		GLint		uFillColor;
+
 		glRenderer			mRenderer;
 
 		glProgram			mProgram;
@@ -204,5 +264,4 @@ void VGSample::DrawShape2()
 		glTexCoord2f(0, 0);
 		glVertex3f(1, 0, 0);
 	glEnd();
-	mRenderer.end();
 }

@@ -3,9 +3,8 @@
 
 //!!!TODO Make enum
 
-class KeySyms
+struct KeySyms
 {
-public:
 	enum
 	{
 		KeyUnknown     = -1,
