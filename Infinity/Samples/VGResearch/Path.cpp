@@ -44,10 +44,7 @@ namespace vg
 		glUseProgram(*fill);
 
 		glEnable(GL_STENCIL_TEST);
-		//glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		glStencilFunc(GL_EQUAL, 1, 1);
-
-		//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 		glBegin(GL_QUADS);
 		glVertex2f(mImpl->min.x, mImpl->min.y);

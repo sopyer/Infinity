@@ -14,7 +14,7 @@ namespace vg
 
 	struct PathImpl;
 	
-	void init(ProgramRef maskQuad, ProgramRef maskArc);
+	void init(ProgramRef maskQuad, ProgramRef maskCubic, ProgramRef maskArc);
 	void deinit();
 
 	struct Path: public PtrToImpl<PathImpl>
