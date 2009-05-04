@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\glFont;..\..\SDK\FreeType\include;..\..\SDK\vfs"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;GLEW_STATIC;FTGL_LIBRARY_STATIC"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;GLEW_STATIC;FTGL_LIBRARY_STATIC;GLFW_DLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -186,26 +186,6 @@
 		<Filter
 			Name="VG"
 			>
-			<File
-				RelativePath=".\Path.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Path.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PathImpl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PathImpl.h"
-				>
-			</File>
-			<File
-				RelativePath=".\types.h"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

@@ -57,9 +57,9 @@ namespace UI
 			void enterPhase(Phase nextPhase) {mPhase = nextPhase;}
 			void loadConfig(const char* cfgFile);
 
-			static int	closeCallback();
-			static void charCallback(int unicode, int action);
-			static void	keyCallback(int key, int action);
+			static int	GLFWCALL closeCallback();
+			static void GLFWCALL charCallback(int unicode, int action);
+			static void	GLFWCALL keyCallback(int key, int action);
 
 			void handleKeybdEvents();
 			void handleMouseEvents();

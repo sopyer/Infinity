@@ -89,7 +89,7 @@ namespace UI
 		vfsTerminate();
 	}
 
-	int Stage::closeCallback()
+	int GLFWCALL Stage::closeCallback()
 	{
 		Stage::getRef().close();
 		return GL_FALSE;
@@ -117,56 +117,7 @@ namespace UI
 		mFocused = 0; return *this;
 	}
 
-	//void Stage::buttonCallback(int button, int action)
-	//{
-	//	assert(action == GLFW_PRESS || action == GLFW_RELEASE);
-
-	//	int	x, y;
-	//	glfwGetMousePos(&x, &y);
-
-	//	if (Actor*	actor = Stage::getRef().pick((float)x, (float)y))
-	//	{
-	//		ButtonEvent	event;
-	//		//FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//		//Unproject x, y onto plane
-	//		event.button = button;
-	//		event.x = 0;//x;
-	//		event.y = 0;//y;
-
-	//		if (action == GLFW_PRESS)
-	//			actor->onTouch(event/*0, 0, (uint32)button*/);
-	//		else if (action == GLFW_RELEASE)
-	//			actor->onUntouch(event/*0, 0, (uint32)button*/);
-	//	}
-	//}
-
-	//void Stage::moveCallback(int x, int y)
-	//{
-	//	MotionEvent event;
-	//	
-	//	Actor*	actor = Stage::getRef().pick((float)x, (float)y);
-
-	//	if (Stage::getRef().mLastVisited != actor)
-	//	{
-	//		if (Stage::getRef().mLastVisited)
-	//			Stage::getRef().mLastVisited->onLeave();
-	//		if (actor)
-	//			actor->onEnter();
-	//	}
-
-	//	if (actor)
-	//	{
-	//		//FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//		//Unproject x, y onto plane
-	//		event.x = 0;//x;
-	//		event.y = 0;//y;
-	//		actor->onMotion(event);
-	//	}
-
-	//	Stage::getRef().mLastVisited = actor;
-	//}
-
-	void Stage::charCallback(int unicode, int action)
+	void GLFWCALL Stage::charCallback(int unicode, int action)
 	{
 		assert(action == InputState::Pressed || action == InputState::Released);
 		assert(!Stage::getRef().mKeyEvents.empty());
@@ -175,7 +126,7 @@ namespace UI
 		Stage::getRef().mKeyEvents.back().event.unicode = unicode;
 	}
 
-	void Stage::keyCallback(int key, int action)
+	void GLFWCALL Stage::keyCallback(int key, int action)
 	{
 		assert(action == InputState::Pressed || action == InputState::Released);
 
@@ -195,73 +146,6 @@ namespace UI
 		//		Stage::getRef().mFocused->onKeyUp(event/*(uint32)key*/);
 		//}
 	}
-
-	//void Stage::onTouch(const ButtonEvent& event)
-	//{
-	//	//if (Actor*	actor = pick(event.x, event.y))
-	//	//{
-	//	//	ButtonEvent	evtTouch(event);
-
-	//	//	//FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//	//	//Unproject x, y onto plane
-	//	//	evtTouch.x = 0;
-	//	//	evtTouch.y = 0;
-
-	//	//	actor->onTouch(evtTouch);
-	//	//}
-	//}
-
-	//void Stage::onUntouch(const ButtonEvent& event)
-	//{
-	//	//if (Actor*	actor = pick(event.x, event.y))
-	//	//{
-	//	//	ButtonEvent	evtUntouch(event);
-
-	//	//	//FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//	//	//Unproject x, y onto plane
-	//	//	evtUntouch.x = 0;
-	//	//	evtUntouch.y = 0;
-
-	//	//	actor->onUntouch(evtUntouch);
-	//	//}
-	//}
-
-	//void Stage::onMotion(const MotionEvent& event)
-	//{
-	//	//MotionEvent evtMotion(event);
-	//	//
-	//	//Actor*	actor = pick(event.x, event.y);
-
-	//	////FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!
-	//	////Unproject x, y onto plane
-	//	//evtMotion.x = 0;
-	//	//evtMotion.y = 0;
-
-	//	//if (mLastVisited != actor)
-	//	//{
-	//	//	if (mLastVisited)
-	//	//		mLastVisited->onLeave();
-
-	//	//	if (actor)
-	//	//	{
-	//	//		actor->onEnter();
-	//	//		for (int button = 0; button < MouseButtons::Count; ++button)
-	//	//		{
-	//	//			int	curState = mPrevButtonState[button];
-
-	//	//			ButtonEvent evtTouch = {button, evtMotion.mModifiers, evtMotion.x, evtMotion.y};
-
-	//	//			if (curState == InputState::Pressed)
-	//	//				actor->onTouch(evtTouch);
-	//	//		}
-	//	//	}
-	//	//}
-
-	//	//if (actor)
-	//	//	actor->onMotion(evtMotion);
-
-	//	//mLastVisited = actor;
-	//}
 
 	void Stage::handleKeybdEvents()
 	{
@@ -351,11 +235,14 @@ namespace UI
 			if (prevState != curState)
 			{
 				ButtonEvent event = {button, mModifiers, x, y};
-
-				if (curState == InputState::Pressed)
-					actor->onTouch(event);
-				else
-					actor->onUntouch(event);
+				
+				if (actor)
+				{
+					if (curState == InputState::Pressed)
+						actor->onTouch(event);
+					else
+						actor->onUntouch(event);
+				}
 			}
 
 			prevState = curState;
@@ -470,6 +357,7 @@ namespace UI
 	
 	Actor* Stage::doPick(uint32 x, uint32 y)
 	{
+		return 0;
 		mVG.begin();
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);

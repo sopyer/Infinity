@@ -33,11 +33,11 @@ class Context
 			indType_=0;
 			glPushAttrib(GL_ALL_ATTRIB_BITS);
 			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+			glUseProgram(0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		}
 		void end()
 		{
-			glUseProgram(0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glPopClientAttrib();
 			glPopAttrib();
 		}

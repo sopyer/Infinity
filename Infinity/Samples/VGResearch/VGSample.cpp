@@ -1,6 +1,6 @@
 #include <framework.h>
 
-#include "path.h"
+#include <VG\path.h>
 
 GLchar buf[1024];
 GLsizei len;
@@ -103,8 +103,11 @@ class VGSample: public UI::Stage
 			ubyte squadTest[] = {VG_QUAD_TO_ABS, VG_SQUAD_TO_ABS, VG_CLOSE_PATH};
 			float squadData[] = {50, 100, 100, 0, 200, 0};
 
-			ubyte cubicTest[] = {VG_CUBIC_TO_ABS, VG_LINE_TO_ABS, VG_CLOSE_PATH};
-			float cubicData[] = {50, 150, 70, 50, 150, 50, 150, 0};
+			ubyte cubicTest[] = {VG_MOVE_TO_ABS, VG_CUBIC_TO_ABS, VG_CLOSE_PATH};
+			float cubicData[] = {0, 0, 100, 100, 100, 0, -25, -25};
+			//float cubicData[] = {-200, 200, -100, 100, -200, 0, 150, 0};
+			//float cubicData[] = {200, 100, -100, 100, 100, 0, 150, 0};
+			//float cubicData[] = {50, 40, 100, 0, 150, 50, 150, 0};
 
 			//mPolygon.appendData(sizeof(segs), segs, data);
 			//mPolygon.appendData(sizeof(quadTest), quadTest, quadData);

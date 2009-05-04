@@ -13,7 +13,7 @@
 #include <ProgramManager.h>
 #include <ShaderManager.h>
 #include <FontManager.h>
-#include <VG.h>
+#include <VG\VG.h>
 #include <utils.h>
 #include <Timer.h>
 
