@@ -89,13 +89,13 @@ class VGSample: public UI::Stage
 			////float arcData[] = {0.3, 0.3, 0, 0.5, 0, 0, 0, 0.3, 0.3, 0, 0.5, 0};
 			//float arcData[] = {40, 50, 0, 60, 0, /*60, 0,*/ 40, 50, 0, 0, 0};
 
-			//Bug!!!! if main geom actually has zero geometry in fact in covers some pixels on screen
-			ubyte arcTest[] = {/*VG_MOVE_TO_REL,*/ VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_CLOSE_PATH};
-			float arcData[] = {/*-25, -25,*/ 25, 25, 0, 0, 50, 25, 25, 0, 50, 0, 25, 25, 0, 0, -50, 25, 25, 0, -50, 0};
+			//Bug!!!! if main geom actually has zero geometry in fact in covers some pixels on screen - bug was in wrong path points
+			//ubyte arcTest[] = {/*VG_MOVE_TO_REL,*/ VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_SCCWARC_TO_REL, VG_CLOSE_PATH};
+			//float arcData[] = {/*-25, -25,*/ 25, 25, 0, 0, 50, 25, 25, 0, 50, 0, 25, 25, 0, 0, -50, 25, 25, 0, -50, 0};
 
-			//Bug!!!!
-			//ubyte arcTest[] = {/*VG_MOVE_TO_REL,*/ VG_SCCWARC_TO_REL, VG_LINE_TO_REL, VG_SCCWARC_TO_REL, VG_CLOSE_PATH};
-			//float arcData[] = {25, 25, 0, 0, 50, -25, -25, 25, 25, 0, -50, 0};
+			//Bug!!!! - Not a bug but feature :D
+			ubyte arcTest[] = {/*VG_MOVE_TO_REL,*/ VG_SCCWARC_TO_REL, VG_LINE_TO_REL, VG_SCCWARC_TO_REL, VG_CLOSE_PATH};
+			float arcData[] = {25, 25, 0, 0, 50, -25, -25, 25, 25, 0, -50, 0};
 
 			//ubyte arcTest[] = {/*VG_MOVE_TO_REL,*/ VG_SCCWARC_TO_REL, VG_LINE_TO_REL, VG_SCCWARC_TO_REL, VG_CLOSE_PATH};
 			//float arcData[] = {25, 25, 0, 0, 50, 50, -50, 25, 25, 0, -50, 0};
@@ -104,7 +104,7 @@ class VGSample: public UI::Stage
 			float squadData[] = {50, 100, 100, 0, 200, 0};
 
 			ubyte cubicTest[] = {VG_MOVE_TO_ABS, VG_CUBIC_TO_ABS, VG_CLOSE_PATH};
-			float cubicData[] = {0, 0, 100, 100, 100, 0, -25, -25};
+			float cubicData[] = {0, 0, 50, 50, 75, -100, -50, 0};
 			//float cubicData[] = {-200, 200, -100, 100, -200, 0, 150, 0};
 			//float cubicData[] = {200, 100, -100, 100, 100, 0, 150, 0};
 			//float cubicData[] = {50, 40, 100, 0, 150, 50, 150, 0};
@@ -112,9 +112,9 @@ class VGSample: public UI::Stage
 			//mPolygon.appendData(sizeof(segs), segs, data);
 			//mPolygon.appendData(sizeof(quadTest), quadTest, quadData);
 			//mPolygon.appendData(sizeof(lineQuadTest), lineQuadTest, lineQuadData);
-			//mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
+			mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
 			//mPolygon.appendData(sizeof(squadTest), squadTest, squadData);
-			mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
+			//mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
 
 			glClearDepth(1.0);
 			glClearStencil(0);

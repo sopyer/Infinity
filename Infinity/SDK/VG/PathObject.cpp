@@ -63,13 +63,13 @@ namespace vg
 
 	void PathObject::addPathPoint(const glm::vec2& p)
 	{
+		numPathVertices += 1;
 		addPathPoint(vertices, p);
 	}
 
 	void PathObject::addPathPoint(std::vector<glm::vec2>& pts, const glm::vec2& p)
 	{
 		pts.push_back(p);
-		numPathVertices += 1;
 		min = glm::min(min, p);
 		max = glm::max(max, p);
 	}
@@ -219,7 +219,7 @@ namespace vg
 		glm::vec3 tc[4];
 
 		size_t numTri = 0;
-		size_t idxTri[2][3];
+		size_t idxTri[4][3];
 
 		float a[4] = {
 			glm::dot(cp3, glm::cross(cp2, cp1)),	
@@ -295,8 +295,54 @@ namespace vg
 				//!!! TODO !!!
 				//Handle subdivision case
 
-				cubic::calcLoopTC(D, d, tc);
-				cubic::triangulate(a, numTri, idxTri);
+				cubic::calcLoopTC(D, d, tc, t1, t2);
+				if ((t1<=0 || t1>=1) && 0<t2 && t2<1 ||
+					(t2<=0 || t2>=1) && 0<t1 && t1<1)
+				{
+					glm::vec3	cp1[4], cp2[4];
+					glm::vec3	tc1[4], tc2[4];
+
+					cubic::subdivide(cpp, (0<t1 && t1<1)?t1:t2, cp1, cp2);
+					cubic::subdivide(tc, (0<t1 && t1<1)?t1:t2, tc1, tc2);
+					
+					float a[4], D, d[4];
+					
+					cubic::calcDets(cp1, a, d, D);
+					cubic::triangulate(a, numTri, idxTri);
+
+					for (size_t i=0; i<numTri; ++i)
+					{
+						bool doChangeOrient = cubic::calcImplicit(tc1[idxTri[i][0]])<0;
+						addCubicTriangle(
+							glm::vec2(cp1[idxTri[i][0]]), doChangeOrient?changeOrient(tc1[idxTri[i][0]]):tc1[idxTri[i][0]],
+							glm::vec2(cp1[idxTri[i][1]]), doChangeOrient?changeOrient(tc1[idxTri[i][1]]):tc1[idxTri[i][1]],
+							glm::vec2(cp1[idxTri[i][2]]), doChangeOrient?changeOrient(tc1[idxTri[i][2]]):tc1[idxTri[i][2]]
+						);
+					}
+
+					addPathPoint(glm::vec2(cp1[3]));
+
+					cubic::calcDets(cp2, a, d, D);
+					cubic::triangulate(a, numTri, idxTri);
+
+					for (size_t i=0; i<numTri; ++i)
+					{
+						bool doChangeOrient = cubic::calcImplicit(tc2[idxTri[i][0]])<0;
+						addCubicTriangle(
+							glm::vec2(cp2[idxTri[i][0]]), doChangeOrient?changeOrient(tc2[idxTri[i][0]]):tc2[idxTri[i][0]],
+							glm::vec2(cp2[idxTri[i][1]]), doChangeOrient?changeOrient(tc2[idxTri[i][1]]):tc2[idxTri[i][1]],
+							glm::vec2(cp2[idxTri[i][2]]), doChangeOrient?changeOrient(tc2[idxTri[i][2]]):tc2[idxTri[i][2]]
+						);
+					}
+
+					addPathPoint(p3);
+					
+					return;
+				}
+				else
+				{
+					cubic::triangulate(a, numTri, idxTri);
+				}
 			}
 		}
 		else if (d[2]!=0)
@@ -581,12 +627,12 @@ namespace vg
 
 		size_t base = 0;
 		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &vertices[0]);
-		//for(size_t i=0; i<subPathes.size(); ++i)
-		//{
-		//	size_t numPoints = subPathes[i];
-		//	glDrawArrays(GL_TRIANGLE_FAN, base, numPoints);
-		//	base += numPoints;
-		//}
+		for(size_t i=0; i<subPathes.size(); ++i)
+		{
+			size_t numPoints = subPathes[i];
+			glDrawArrays(GL_TRIANGLE_FAN, base, numPoints);
+			base += numPoints;
+		}
 
 		if (!quads.empty())
 		{
@@ -606,11 +652,11 @@ namespace vg
 			glTexCoordPointer(3, GL_FLOAT, 3*sizeof(float), &cubicsTC[0]);
 			glDrawArrays(GL_TRIANGLES, 0, cubics.size());
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glUseProgram(0);
-			glColor4f(1, 0, 0, 1);
-			glColorMask(TRUE, TRUE, TRUE, TRUE);
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glDrawArrays(GL_TRIANGLES, 0, cubics.size());
+			//glUseProgram(0);
+			//glColor4f(1, 0, 0, 1);
+			//glColorMask(TRUE, TRUE, TRUE, TRUE);
+			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			//glDrawArrays(GL_TRIANGLES, 0, cubics.size());
 		}
 
 		if (!arcs.empty())

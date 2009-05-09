@@ -106,7 +106,7 @@ namespace cubic
 		tc[3] = kk0+kk1+kk2+kk3;
 	}
 
-	void calcLoopTC(const float D, const float d[4], glm::vec3 tc[4])
+	void calcLoopTC(const float D, const float d[4], glm::vec3 tc[4], float& t1, float& t2)
 	{
 		assert(D<0 && d[1]!=0);
 
@@ -119,8 +119,10 @@ namespace cubic
 		//			kk2(t2,       1+2.0f*t1*t2,      t1*t2*t2+2.0f*t2),
 		//			kk3(0.0f,     -t2,               -t2*t2);
 
-		float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
-		float t2 = (d[2] - sqrt(-D))/d[1]/2.0f;
+		//!!!!! TODO !!!!!
+		//Calc roots in way similar to serpantine
+		t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
+		t2 = (d[2] - sqrt(-D))/d[1]/2.0f;
 
 		glm::vec3	kk0(t1*t2,      t1*t1*t2,             t2*t2*t1),
 					kk1(-t1-t2,	    -t1*t1-2.0f*t1*t2,    -t2*t2-2.0f*t1*t2),
@@ -185,7 +187,7 @@ namespace cubic
 /*		a[2] =  glm::dot(cp[3], glm::cross(cp[1], cp[0]));
 /*		a[3] = -glm::dot(cp[2], glm::cross(cp[1], cp[0]));
 /****************************************************************************/
-	void triangulate(const float a[4], size_t& numTri, size_t idxTri[2][3])
+	void triangulate(const float a[4], size_t& numTri, size_t idxTri[][3])
 	{
 		//special cases: some of d[] == 0
 		float a0 = a[3]<0?a[0]:-a[0],
@@ -277,5 +279,27 @@ namespace cubic
 				addTri(idxTri[1], 1, 0, 3);
 			}
 		}
+	}
+
+	void subdivide(const glm::vec3 cubic[4], float t, glm::vec3 subCubic1[4], glm::vec3 subCubic2[4])
+	{
+		glm::vec3 p01 = glm::mix(cubic[0], cubic[1], t);
+		glm::vec3 p12 = glm::mix(cubic[1], cubic[2], t);
+		glm::vec3 p23 = glm::mix(cubic[2], cubic[3], t);
+
+		glm::vec3 p012 = glm::mix(p01, p12, t);
+		glm::vec3 p123 = glm::mix(p12, p23, t);
+
+		glm::vec3 p0123 = glm::mix(p012, p123, t);
+
+		subCubic1[0] = cubic[0];
+		subCubic1[1] = p01;
+		subCubic1[2] = p012;
+		subCubic1[3] = p0123;
+
+		subCubic2[0] = p0123;
+		subCubic2[1] = p123;
+		subCubic2[2] = p23;
+		subCubic2[3] = cubic[3];
 	}
 }
