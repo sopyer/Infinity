@@ -3,23 +3,23 @@
 
 namespace vg
 {
-	ProgramRef	maskQuad;
-	ProgramRef	maskCubic;
-	ProgramRef	maskArc;
+	//ProgramRef	maskQuad;
+	//ProgramRef	maskCubic;
+	//ProgramRef	maskArc;
 
-	void init(ProgramRef maskQuad, ProgramRef maskCubic, ProgramRef maskArc)
-	{
-		vg::maskQuad = maskQuad;
-		vg::maskCubic = maskCubic;
-		vg::maskArc = maskArc;
-	}
+	//void init(ProgramRef maskQuad, ProgramRef maskCubic, ProgramRef maskArc)
+	//{
+	//	vg::maskQuad = maskQuad;
+	//	vg::maskCubic = maskCubic;
+	//	vg::maskArc = maskArc;
+	//}
 
-	void deinit()
-	{
-		vg::maskQuad = 0;
-		vg::maskCubic = 0;
-		vg::maskArc = 0;
-	}
+	//void deinit()
+	//{
+	//	vg::maskQuad = 0;
+	//	vg::maskCubic = 0;
+	//	vg::maskArc = 0;
+	//}
 }
 
 namespace vg
@@ -143,63 +143,6 @@ namespace vg
 	glm::vec3 changeOrient(const glm::vec3& tc)
 	{
 		return glm::vec3(-tc.x, -tc.y, tc.z);
-	}
-
-	float cubicSign(const glm::vec3& tc)
-	{
-		return tc.x*tc.x*tc.x - tc.y*tc.z;
-	}
-
-	void PathObject::triangulateCubic(float d[4], const glm::vec2 p[4], glm::vec3 tc[4])
-	{
-		//regular cases
-		if (d[0]<0 && d[3]<0)
-		{
-			if (d[2]<0)
-			{
-				addCubicTriangle(p[0], tc[0], p[2], tc[2], p[3], tc[3]);
-			}
-			else
-			{
-				addCubicTriangle(p[0], tc[0], p[1], tc[1], p[3], tc[3]);
-				if (d[1]>0)
-				{
-					//addCubicTriangle(p[0], tc[0], p[1], tc[1], p[3], tc[3]);
-					tc[0].x = -tc[0].x; tc[0].y = -tc[0].y;
-					tc[2].x = -tc[2].x; tc[2].y = -tc[2].y;
-					tc[3].x = -tc[3].x; tc[3].y = -tc[3].y;
-					addCubicTriangle(p[0], tc[0], p[2], tc[2], p[3], tc[3]);
-				}
-				else
-				{
-					//addCubicTriangle(p[0], tc[0], p[1], tc[1], p[3], tc[3]);
-				}
-			}
-		}
-		else
-		{
-			addCubicTriangle(p[1], tc[1], p[2], tc[2], p[3], tc[3]);
-			if (d[2]<0)
-			{
-				if (d[1]>0)
-				{
-					addCubicTriangle(p[0], tc[0], p[2], tc[2], p[3], tc[3]);
-					//addCubicTriangle(p[1], tc[1], p[2], tc[2], p[3], tc[3]);
-				}
-				else
-				{
-					//assert(0);
-					//addCubicTriangle(p[1], tc[1], p[2], tc[2], p[3], tc[3]);
-				}
-			}
-			else
-			{
-				addCubicTriangle(p[0], tc[0], p[1], tc[1], p[3], tc[3]);
-				//addCubicTriangle(p[1], tc[1], p[2], tc[2], p[3], tc[3]);
-			}
-		}
-
-		//special cases: some of d[] == 0
 	}
 
 	void PathObject::cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3)
@@ -598,79 +541,6 @@ namespace vg
 				}
 			}
 		}
-	}
-
-	void PathObject::maskPathRegion()
-	{
-		if (vertices.empty())
-			return;
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-		glEnable(GL_DEPTH_TEST);
-		glDepthMask(GL_FALSE);
-
-		//!!! TODO !!!
-		//Fix masking with incrementing stencil - different masks for different polies
-		//and may be use different z-buffer to avoid collision with 3D.
-		glEnable(GL_STENCIL_TEST);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
-		glStencilFunc(GL_ALWAYS, 0, 1);
-		glStencilMask(0x01);
-		
-		glCullFace(GL_FRONT_AND_BACK);
-
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-		glUseProgram(0);
-
-		size_t base = 0;
-		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &vertices[0]);
-		for(size_t i=0; i<subPathes.size(); ++i)
-		{
-			size_t numPoints = subPathes[i];
-			glDrawArrays(GL_TRIANGLE_FAN, base, numPoints);
-			base += numPoints;
-		}
-
-		if (!quads.empty())
-		{
-			glUseProgram(*maskQuad);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &quads[0]);
-			glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &quadsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, quads.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
-
-		if (!cubics.empty())
-		{
-			glUseProgram(*maskCubic);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &cubics[0]);
-			glTexCoordPointer(3, GL_FLOAT, 3*sizeof(float), &cubicsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, cubics.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			//glUseProgram(0);
-			//glColor4f(1, 0, 0, 1);
-			//glColorMask(TRUE, TRUE, TRUE, TRUE);
-			//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			//glDrawArrays(GL_TRIANGLES, 0, cubics.size());
-		}
-
-		if (!arcs.empty())
-		{
-			glUseProgram(*maskArc);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &arcs[0]);
-			glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &arcsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, arcs.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
-
-		glPopAttrib();
-		glDisableClientState(GL_VERTEX_ARRAY);
 	}
 
 	bool isValidCommand(int c)

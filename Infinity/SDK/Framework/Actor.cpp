@@ -1,5 +1,5 @@
 #define GLEW_STATIC
-#include <gl\glew.h>
+#include <gl\glee.h>
 #include "UI.h"
 
 namespace UI

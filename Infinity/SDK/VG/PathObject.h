@@ -10,6 +10,7 @@ namespace vg
 {
 	extern const int coordsPerCommand[];
 
+	//!!!! FIX MIN,MAX !!!!//
 	struct PathObject
 	{
 		/* Properties */
@@ -25,7 +26,7 @@ namespace vg
 
 		/* Subdivision */
 		std::vector<glm::vec2>		vertices;
-		std::vector<size_t>			subPathes;
+		std::vector<GLsizei>		subPathes;
 		std::vector<glm::vec2>		quads;
 		std::vector<glm::vec2>		quadsTC;
 		std::vector<glm::vec2>		arcs;
@@ -44,7 +45,7 @@ namespace vg
 		//Path builder data
 		glm::vec2	ptO, ptP;
 		bool		startNewPath;
-		size_t		numPathVertices;
+		GLsizei		numPathVertices;
 
 		//Path builder methods
 		void startPath(const glm::vec2& start);
@@ -56,6 +57,7 @@ namespace vg
 		void cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3);
 		void arcTo(int segment, float rx, float ry, float angle, const glm::vec2& endPt);
 
+		//Helper methods
 		void addTriangle(std::vector<glm::vec2>& pts, 
 						 const glm::vec2& p1,
 						 const glm::vec2& p2,

@@ -207,7 +207,7 @@ static void _glfwTerminateThreads( void )
 
 void _glfwTerminate_atexit( void )
 {
-    glfwTerminate();
+    //glfwTerminate();
 }
 
 

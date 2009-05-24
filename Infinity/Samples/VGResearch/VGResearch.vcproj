@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\glFont;..\..\SDK\FreeType\include;..\..\SDK\vfs"
+				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\glFont;..\..\SDK\FreeType\include;..\..\SDK\vfs;..\..\SDK\VG"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;GLEW_STATIC;FTGL_LIBRARY_STATIC;GLFW_DLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -118,9 +118,15 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\glClasses;..\framework;..\utils;..\include"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				EnableFiberSafeOptimizations="true"
+				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\glFont;..\..\SDK\FreeType\include;..\..\SDK\vfs;..\..\SDK\VG"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;$(NOINHERIT)"
-				RuntimeLibrary="0"
+				StringPooling="true"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="false"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
@@ -182,10 +188,6 @@
 				RelativePath=".\VGSample.cpp"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="VG"
-			>
 		</Filter>
 	</Files>
 	<Globals>

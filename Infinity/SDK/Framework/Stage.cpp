@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <iniparser.h>
 #include <cstdlib>
-#include <gl\glew.h>
+#include <gl\glee.h>
 #include "UI.h"
 #include "Framework.h"
 #include <SOIL.h> // remove later
@@ -70,7 +70,7 @@ namespace UI
 		glfwSetKeyCallback(keyCallback);
 		glfwSetCharCallback(charCallback);
 
-		glewInit();
+//		glewInit();
 
 		mVG.create();
 		mVG.setSize((GLuint)mWidth, (GLuint)mHeight);

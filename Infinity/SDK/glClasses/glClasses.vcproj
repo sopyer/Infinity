@@ -105,7 +105,8 @@
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories=".;..;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;$(NOINHERIT);GLEW_STATIC"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
+				BufferSecurityCheck="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
@@ -146,10 +147,22 @@
 	</References>
 	<Files>
 		<Filter
-			Name="glew"
+			Name="GLee"
 			>
 			<File
-				RelativePath=".\glew\glew.c"
+				RelativePath=".\glee\GLee.c"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						DisableSpecificWarnings="4267;4996"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\glee\GLee.h"
 				>
 			</File>
 		</Filter>
@@ -182,6 +195,14 @@
 			</File>
 			<File
 				RelativePath=".\glTexture.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UniformTable.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UniformTable.h"
 				>
 			</File>
 		</Filter>

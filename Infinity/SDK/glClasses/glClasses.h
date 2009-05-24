@@ -4,7 +4,7 @@
 #	ifndef GLEW_STATIC
 #		define GLEW_STATIC
 #	endif
-#	include <gl\glew.h>
+#	include <gl\glee.h>
 #	include <cstring>
 
 namespace gl
@@ -15,6 +15,7 @@ namespace gl
 #	include <glBuffer.h>
 #	include <glShader.h>
 #	include <glContext.h>
+#	include	<UniformTable.h>
 }
 typedef gl::Shader			glShaderBase;
 typedef gl::Context			glRenderer;

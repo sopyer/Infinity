@@ -104,11 +104,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				AdditionalIncludeDirectories=".;.\lzma;.\zlib123"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_SZ_ONE_DIRECTORY;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;PHYSFS_SUPPORTS_7Z"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool

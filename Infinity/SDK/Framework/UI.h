@@ -3,7 +3,7 @@
 
 #include <sigslot.h>
 #include <gl\glfw.h>
-#include <gl\glew.h>
+#include <gl\glee.h>
 
 #include <..\vfs\vfs.h>
 #include <glClasses.h>

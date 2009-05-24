@@ -40,13 +40,13 @@ class Program : public Handle
 		Program() : Handle(glCreateProgram()) {}
 		~Program() {glDeleteProgram(*this);}
 
-		void addShader(GLuint handle) {glAttachShader(*this, handle);}
+		Program& addShader(GLuint handle) {glAttachShader(*this, handle); return *this;}
 
-		void addShader(Shader* shader) {if (shader) addShader((GLuint)*shader);}
-		void addShader(Shader& shader) {addShader(&shader);}
+		Program& addShader(Shader* shader) {if (shader) addShader((GLuint)*shader); return *this;}
+		Program& addShader(Shader& shader) {addShader(&shader); return *this;}
 		
-		void link()	{glLinkProgram(*this);}
-		void validate()	{glValidateProgram(*this);}
+		Program& link()	{glLinkProgram(*this); return *this;}
+		Program& validate()	{glValidateProgram(*this); return *this;}
 
 		GLint getParam(GLenum pname)
 		{

@@ -103,9 +103,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\include"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;$(NOINHERIT);FTGL_LIBRARY_STATIC;_FTGL_NATIVE_"
-				RuntimeLibrary="0"
+				AdditionalIncludeDirectories="..\freetype\include; ..\include"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;FTGL_LIBRARY_STATIC;$(NOINHERIT)"
+				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
@@ -122,7 +122,6 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libfreetype.lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
