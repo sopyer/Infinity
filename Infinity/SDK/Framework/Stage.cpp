@@ -357,7 +357,6 @@ namespace UI
 	
 	Actor* Stage::doPick(uint32 x, uint32 y)
 	{
-		return 0;
 		mVG.begin();
 
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
