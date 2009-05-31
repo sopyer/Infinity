@@ -13,14 +13,17 @@ namespace vg
 		gl::CommandList	fillProgram;
 		GLuint			colorProgram,
 						linearGradientProgram,
-						radialGradientProgram;
+						radialGradientProgram,
+						patternProgram;
 		glm::vec4		color;
-		//gl::Texture2D	texture;
+		GLuint			texture;
+		VGTilingMode	tilingMode;
 
-		PaintObject(GLuint progColor, GLuint progLinearGrad, GLuint progRadialGrad):
+		PaintObject(GLuint progColor, GLuint progLinearGrad, GLuint progRadialGrad, GLuint progPattern):
 			colorProgram(progColor),
 			linearGradientProgram(progLinearGrad),
-			radialGradientProgram(progRadialGrad)
+			radialGradientProgram(progRadialGrad),
+			patternProgram(progPattern)
 		{
 		}
 	};

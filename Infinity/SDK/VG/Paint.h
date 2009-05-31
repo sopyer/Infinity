@@ -11,5 +11,6 @@ namespace vg
 	struct Paint: public PtrToImpl<PaintObject>
 	{
 		void setColorPaint(const glm::vec4& color);
+		void setPatternPaint(GLuint texture, const glm::vec4& fillColor, VGTilingMode mode);
 	};
 }

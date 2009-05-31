@@ -33,5 +33,6 @@ namespace vg
 			gl::Program	mMaskArc;
 			
 			gl::Program	mFillColor;
+			gl::Program	mFillPattern;
 	};
 }

@@ -70,8 +70,15 @@ namespace vg
 	void PathObject::addPathPoint(std::vector<glm::vec2>& pts, const glm::vec2& p)
 	{
 		pts.push_back(p);
-		min = glm::min(min, p);
-		max = glm::max(max, p);
+		if (pts.size()==1)
+		{
+			max = min = p;
+		}
+		else
+		{
+			min = glm::min(min, p);
+			max = glm::max(max, p);
+		}
 	}
 
 	void PathObject::addSpecialTriangle(

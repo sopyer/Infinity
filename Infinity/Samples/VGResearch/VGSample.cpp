@@ -14,12 +14,15 @@ class VGSample: public UI::Stage
 	public:
 		VGSample()
 		{
+			mPattern.create("PatternFill", "pattern.jpg");
+
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(35.0, (float)mWidth/mHeight,1,2048);
 
 			mFill = mContext.createPaint();
-			mFill.setColorPaint(glm::vec4(0.45f, 0.33f, 0.67f, 1.0f));
+			//mFill.setColorPaint(glm::vec4(0.45f, 0.33f, 0.67f, 1.0f));
+			mFill.setPatternPaint(*mPattern, glm::vec4(1,0,0,1), VG_TILE_REPEAT);
 
 			mPolygon = mContext.createPath(1.0f, 0.0f);
 
@@ -57,19 +60,19 @@ class VGSample: public UI::Stage
 			//float cubicData[] = {200, 100, -100, 100, 100, 0, 150, 0};
 			//float cubicData[] = {50, 40, 100, 0, 150, 50, 150, 0};
 
-			ubyte sampleTest[] = {VG_MOVE_TO_ABS,
+			ubyte sampleTest[] = {/*VG_MOVE_TO_ABS,
 								  VG_LINE_TO_ABS,
 								  VG_LINE_TO_ABS,
 								  VG_LINE_TO_ABS,
-								  VG_CLOSE_PATH,
+								  VG_CLOSE_PATH,*/
 								  VG_MOVE_TO_ABS,
 								  VG_CUBIC_TO_ABS,
 								  VG_CUBIC_TO_ABS, 
 								  VG_CLOSE_PATH};
-			float sampleData[] = {20, 20,
+			float sampleData[] = {/*20, 20,
 								  20, 80,
 								  80, 80,
-								  80, 20,
+								  80, 20,*/
 								  0,  0,
 								  99, 0,  50, 50,  99, 99,
 								  0, 99,  50, 50,  0, 0};
@@ -115,6 +118,7 @@ class VGSample: public UI::Stage
 		vg::Context	mContext;
 		vg::Path	mPolygon;
 		vg::Paint	mFill;
+		TextureRef	mPattern;
 };
 
 int main()

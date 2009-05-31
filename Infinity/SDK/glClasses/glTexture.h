@@ -33,6 +33,8 @@ class Texture
 		**/
 		~Texture(void){glDeleteTextures(1, &mHandle);}
 		
+		operator GLuint() {return mHandle;}
+
 	public:
 		/**
 		 * Тип текстури.

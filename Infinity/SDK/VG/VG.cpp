@@ -33,10 +33,10 @@ void VG::begin()
 	//glDisable(GL_DEPTH_TEST);
 	//glDepthMask( GL_FALSE );
 	
-	glDisable(GL_STENCIL_TEST);
-	glStencilMask( 0 );
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask( GL_FALSE );
+	//glDisable(GL_STENCIL_TEST);
+	//glStencilMask( 0 );
+	//glDisable(GL_DEPTH_TEST);
+	//glDepthMask( GL_FALSE );
 	// Blend on for alpha
     glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

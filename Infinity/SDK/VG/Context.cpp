@@ -6,46 +6,62 @@
 namespace
 {
 	const char* const sourceArcFragSh = 
-		"void main(void)							"
-		"{											"
-		"	vec2 uv = gl_TexCoord[0].st;			"
-		"											"
-		"	if( (uv.s*uv.s + uv.t*uv.t)>1.0 )		"
-		"		discard;							"
-		"											"
-		"	gl_FragColor = vec4(1);					"
-		"}											";
+		"void main(void)											"
+		"{															"
+		"	vec2 uv = gl_TexCoord[0].st;							"
+		"															"
+		"	if( (uv.s*uv.s + uv.t*uv.t)>1.0 )						"
+		"		discard;											"
+		"															"
+		"	gl_FragColor = vec4(1);									"
+		"}															";
 
 	const char* const sourceQuadFragSh = 
-		"void main(void)							"
-		"{											"
-		"	vec2 uv = gl_TexCoord[0].st;			"
-		"											"
-		"	if( (pow(uv.s, 2.0)-uv.t)>0.0 )			"
-		"		discard;							"
-		"											"
-		"	gl_FragColor = vec4(1);					"
-		"}											";
+		"void main(void)											"
+		"{															"
+		"	vec2 uv = gl_TexCoord[0].st;							"
+		"															"
+		"	if( (pow(uv.s, 2.0)-uv.t)>0.0 )							"
+		"		discard;											"
+		"															"
+		"	gl_FragColor = vec4(1);									"
+		"}															";
 
 	const char* const sourceCubicFragSh = 
-		"void main(void)							"
-		"{											"
-		"	vec3 uv = gl_TexCoord[0].stp;			"
-		"											"
-		"	if( (pow(uv.s, 3.0)-uv.t*uv.p)>0.0 )	"
-		"		discard;							"
-		"											"
-		"	gl_FragColor = vec4(1);					"
-		"}											";
+		"void main(void)											"
+		"{															"
+		"	vec3 uv = gl_TexCoord[0].stp;							"
+		"															"
+		"	if( (pow(uv.s, 3.0)-uv.t*uv.p)>0.0 )					"
+		"		discard;											"
+		"															"
+		"	gl_FragColor = vec4(1);									"
+		"}															";
 
 	const char* const sourceColorFillFragSh =
-		"uniform vec4 uFillColor;					"
-		"											"
-		"void main()								"
-		"{											"
-		"	gl_FragColor = uFillColor;				"
-		"}											";
+		"uniform vec4 uFillColor;									"
+		"															"
+		"void main()												"
+		"{															"
+		"	gl_FragColor = uFillColor;								"
+		"}															";
 
+	const char* const sourceFillVertSh =
+		"uniform vec2 uImageDim;									"
+		"															"
+		"void main()												"
+		"{															"
+		"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	"
+		"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	"
+		"}															";
+
+	const char* const sourcePatternFillFragSh =
+		"uniform sampler2D uPattern;								"
+		"															"
+		"void main()												"
+		"{															"
+		"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		"
+		"}															";
 }
 
 namespace vg
@@ -63,12 +79,21 @@ namespace vg
 		mMaskArc.addShader(fsArc).link();
 		mMaskCubic.addShader(fsCubic).link();
 		mMaskQuad.addShader(fsQuad).link();
+		
+		gl::VertexShader	vsFill;
+
+		vsFill.compile(sourceFillVertSh);
 
 		gl::FragmentShader	fsColor;
+		gl::FragmentShader	fsPattern;
 
 		fsColor.compile(sourceColorFillFragSh);
+		fsPattern.compile(sourcePatternFillFragSh);
 
 		mFillColor.addShader(fsColor).link();
+		mFillPattern.addShader(fsPattern)
+					.addShader(vsFill)
+					.link();
 	}
 
 	Path Context::createPath(float scale, float bias)
@@ -86,6 +111,8 @@ namespace vg
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		
+		//glEnable(GL_TEXTURE_2D);
+
 		fill.mObject->fillProgram.execute();
 
 		glEnable(GL_STENCIL_TEST);
@@ -131,7 +158,7 @@ namespace vg
 	{
 		Paint	paint;
 
-		paint.mObject = new PaintObject(mFillColor, 0, 0);
+		paint.mObject = new PaintObject(mFillColor, 0, 0,mFillPattern);
 
 		return paint;
 	}
