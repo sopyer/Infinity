@@ -18,7 +18,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)Temp\Samples\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -40,6 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\glFont;..\..\SDK\FreeType\include;&quot;..\..\SDK\VFS++&quot;;..\..\SDK\VG"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -93,7 +94,7 @@
 		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)Temp\Samples\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
@@ -170,8 +171,16 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\VFSSample.h"
+			RelativePath=".\VFSSample.cpp"
 			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories=""
+				/>
+			</FileConfiguration>
 		</File>
 	</Files>
 	<Globals>

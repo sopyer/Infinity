@@ -1,3 +1,43 @@
 #pragma once
 
 #include <physfs/physfs.h>
+
+class File
+{
+public:
+	File(PHYSFS_file* handle): mHandle(handle){}
+	~File(){}
+
+	PHYSFS_sint64 size() {return PHYSFS_fileLength(mHandle);}
+
+	bool eof() {return PHYSFS_eof(mHandle)!=0;}
+
+	PHYSFS_sint64 tell() {return PHYSFS_tell(mHandle);}
+
+	bool seek(PHYSFS_uint64 pos) {return PHYSFS_seek(mHandle, pos)!=0;}
+
+	PHYSFS_sint64 read(void *buffer, PHYSFS_uint32 objSize, PHYSFS_uint32 objCount)
+	{return PHYSFS_read(mHandle, buffer, objSize, objCount);}
+
+	void close() {PHYSFS_close(mHandle);}
+
+	operator PHYSFS_file* () {return mHandle;}
+
+public:
+	PHYSFS_file*	mHandle;
+};
+
+class VFS
+{
+public:
+	VFS()  {PHYSFS_init(0);}
+	~VFS() {PHYSFS_deinit();}
+
+	bool mount(const char* newDir, const char* mountPoint = 0, int appendToPath = 1)
+	{return PHYSFS_mount(newDir, mountPoint, appendToPath) != 0;}
+
+	bool exist(const char* fname) {return PHYSFS_exists(fname) != 0;}
+
+	File openRead(const char* fname) {return PHYSFS_openRead(fname);}
+	void close(File fileObj) {PHYSFS_close(fileObj);}
+};
