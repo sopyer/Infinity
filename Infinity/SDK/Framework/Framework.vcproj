@@ -336,6 +336,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ResourceHandle.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ResourceManager.h"
 				>
 			</File>

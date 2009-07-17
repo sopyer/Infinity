@@ -43,29 +43,29 @@ public:
 
 struct ButtonEvent
 {
-	uint32	button;
-	uint32	mModifiers;
+	u32	button;
+	u32	mModifiers;
 	float	x, y;
 };
 
 struct MotionEvent
 {
-	uint32	mModifiers;
+	u32	mModifiers;
 	float	x, y;
 };
 
 struct KeyEvent
 {
-	uint32	key;//Value;
-	uint32	modifiers;
+	u32	key;//Value;
+	u32	modifiers;
 	//uint32	hwKeycode;
-	uint32	unicode;//Char;
+	u32	unicode;//Char;
 };
 
 struct ScrollEvent
 {
-	uint32	deltaVert, deltaHorz;
-	uint32	mModifiers;
+	u32	deltaVert, deltaHorz;
+	u32	mModifiers;
 	float	x, y;
 };
 

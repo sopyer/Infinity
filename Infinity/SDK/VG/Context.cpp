@@ -13,7 +13,7 @@ namespace
 		"	if( (uv.s*uv.s + uv.t*uv.t)>1.0 )						"
 		"		discard;											"
 		"															"
-		"	gl_FragColor = vec4(1);									"
+		"	gl_FragColor = vec4(1.0);								"
 		"}															";
 
 	const char* const sourceQuadFragSh = 

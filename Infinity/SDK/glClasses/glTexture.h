@@ -70,6 +70,9 @@ class Texture2D: public Texture
 		Texture2D(GLint internalFmt, GLint minFilter, GLint magFilter, bool forceMipmap=true):
 		  Texture(GL_TEXTURE_2D, internalFmt, minFilter, magFilter, forceMipmap){}
 
+		Texture2D():
+		  Texture(GL_TEXTURE_2D, GL_RGBA8, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true)
+		{}
 		/**
 		 * Задає спосіб розширення текстурних координат за межі [0..1]
 		 * \param wrapS розширення по осі S(горизонтальна)

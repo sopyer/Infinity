@@ -39,7 +39,7 @@ namespace UI
 
 		AllocConsole();
 
-		vfsInit();
+		//vfsInit();
 		glfwInit();
 
 		loadConfig("infinity.cfg");
@@ -49,9 +49,11 @@ namespace UI
 		while( path )
 		{
 			if( strstr(path, ".zip" ) )
-				vfsAddZip(path);
+				//vfsAddZip(path);
+				VFS::mount(path);
 			else
-				vfsAddRoot(path);
+				VFS::mount(path);
+				//vfsAddRoot(path);
 			path = strtok(0, ";");
 		}
 
@@ -86,7 +88,7 @@ namespace UI
 	{
 		mTimer.stop();
 		glfwTerminate();
-		vfsTerminate();
+		//vfsTerminate();
 	}
 
 	int GLFWCALL Stage::closeCallback()
@@ -141,9 +143,9 @@ namespace UI
 		//if (Stage::getRef().mFocused)
 		//{
 		//	if (action == GLFW_PRESS)
-		//		Stage::getRef().mFocused->onKeyDown(event/*(uint32)key*/);
+		//		Stage::getRef().mFocused->onKeyDown(event/*(u32)key*/);
 		//	else if (action == GLFW_RELEASE)
-		//		Stage::getRef().mFocused->onKeyUp(event/*(uint32)key*/);
+		//		Stage::getRef().mFocused->onKeyUp(event/*(u32)key*/);
 		//}
 	}
 
@@ -196,6 +198,10 @@ namespace UI
 
 		glfwGetMousePos(&tx, &ty);
 		
+		//Quick fix for strange behaviour of GLFW
+		tx = glm::clamp<int>(tx, 0, (int)mWidth-1);
+		ty = glm::clamp<int>(ty, 0, (int)mHeight-1);
+
 		Actor* actor = doPick(tx, ty);
 
 		int modState;
@@ -279,7 +285,7 @@ namespace UI
 		}
 	}
 
-	void Stage::handleInput(uint32	frame)
+	void Stage::handleInput(u32	frame)
 	{
 		handleKeybdEvents();
 		handleMouseEvents();
@@ -290,19 +296,19 @@ namespace UI
 		mRunning = false;
 	}
 
-	static const uint32 rMaskUsed = 8;
-	static const uint32 gMaskUsed = 8;
-	static const uint32 bMaskUsed = 8;
+	static const u32 rMaskUsed = 8;
+	static const u32 gMaskUsed = 8;
+	static const u32 bMaskUsed = 8;
 
-	static const uint32 rMask = 7;
-	static const uint32 gMask = 7;
-	static const uint32 bMask = 7;
+	static const u32 rMask = 7;
+	static const u32 gMask = 7;
+	static const u32 bMask = 7;
 
 	/*code from clutter!!!!!!!!!!!!!!!!!!!!LGPL????????????????????????*/
-	Color idToColor(uint32 id)
+	Color idToColor(u32 id)
 	{
 		Color color;
-		uint32 red, green, blue;
+		u32 red, green, blue;
 
 		/* compute the numbers we'll store in the components */
 		red   = (id >> (gMaskUsed+bMaskUsed)) & (0xff >> (8-rMaskUsed));
@@ -325,17 +331,17 @@ namespace UI
 		green = green << (8 - gMask);
 		blue  = blue  << (8 - bMask);
 
-		color.red   = (uint8)red;
-		color.green = (uint8)green;
-		color.blue  = (uint8)blue;
+		color.red   = (u8)red;
+		color.green = (u8)green;
+		color.blue  = (u8)blue;
 		color.alpha = 0xff;
 
 		return color;
 	}
 
-	uint32 pixelToId (uint8 pixel[4])                 
+	u32 pixelToId (u8 pixel[4])                 
 	{
-		uint8  red, green, blue;
+		u8  red, green, blue;
 
 		/* reduce the pixel components to the number of bits actually used of the
 		* 8bits.
@@ -350,12 +356,12 @@ namespace UI
 		blue  = blue  >> (bMaskUsed - bMask);  
 
 		/* combine the correct per component values into the final id */
-		uint32 id =  blue + (green << bMaskUsed) + (red << (bMaskUsed + gMaskUsed));
+		u32 id =  blue + (green << bMaskUsed) + (red << (bMaskUsed + gMaskUsed));
 
 		return id;
 	} 
 	
-	Actor* Stage::doPick(uint32 x, uint32 y)
+	Actor* Stage::doPick(u32 x, u32 y)
 	{
 		mVG.begin();
 
@@ -369,7 +375,7 @@ namespace UI
 		glDisable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
 
-		for(uint32 i = 0; i < mRenderQueue.size(); ++i)
+		for(u32 i = 0; i < mRenderQueue.size(); ++i)
 		{
 			glPushMatrix();
 			glMultMatrixf(mRenderQueue[i].transform);
@@ -384,10 +390,10 @@ namespace UI
 		glGetIntegerv(GL_VIEWPORT, viewport);
 		
 		/* Read the color of the screen co-ords pixel */
-		uint8	pixel[4];
+		u8	pixel[4];
 		glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 		
-		//uint8* p = new uint8[mWidth*mHeight*4];
+		//u8* p = new u8[mWidth*mHeight*4];
 		//glReadPixels (0, 0, mWidth, mHeight, GL_RGBA, GL_UNSIGNED_BYTE, p);
 
 		//SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, mWidth, mHeight, 4, p);		
@@ -397,7 +403,7 @@ namespace UI
 		if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
 			return this;
 
-		uint32 id = pixelToId(pixel);
+		u32 id = pixelToId(pixel);
 		assert(id < mRenderQueue.size());
 		return mRenderQueue[id].actor;
 	}

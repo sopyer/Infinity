@@ -2,7 +2,7 @@ namespace UI
 {
 	struct Color
 	{
-		uint8	red, green, blue, alpha;
+		u8	red, green, blue, alpha;
 	};
 
 	//Determine relayout points, take Clutter as reference

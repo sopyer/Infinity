@@ -21,7 +21,7 @@ namespace vg
 		int		dataHint;
 
 		/* Raw data */
-		std::vector<byte>	segs;
+		std::vector<u8>	segs;
 		std::vector<float>	data;
 
 		/* Subdivision */

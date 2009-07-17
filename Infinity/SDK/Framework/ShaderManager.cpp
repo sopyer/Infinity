@@ -1,12 +1,13 @@
 #include <ShaderManager.h>
-#include <..\vfs\vfs.h>
+#include <..\vfs++\vfs++.h>
+#include <utils.h>
 
 void logMessage(const char *s,...);
 static	char	string[1024];
 static	int		len;
 
 template<typename Type>
-glShaderBase* loadShader(const byte* text)
+glShaderBase* loadShader(const char* text)
 {
 	Type*	shader = new Type();
 	if (text)
@@ -20,14 +21,21 @@ glShaderBase* loadShader(const byte* text)
 
 gl::Shader* ShaderManager::load(const std::string& name)
 {
-	DataStreamPtr	file = vfsMapFile(name.c_str());
-	byte*			data = file ? file->MapStream() : 0;
+	File	src = VFS::openRead(name.c_str());
+	char*	data = new char[src.size()+1];
 	const char*		ext = strrchr(name.c_str(), '.');
+	gl::Shader*	shader=0;
+	
+	src.read(data, src.size(), 1);
+
+	data[src.size()] = 0;
 
 	if( strcmp(ext, ".vert")==0 )
-		return loadShader<gl::VertexShader>(data);
+		shader=loadShader<gl::VertexShader>(data);
 	else if( strcmp(ext, ".frag")==0 )
-		return loadShader<gl::FragmentShader>(data);
+		shader=loadShader<gl::FragmentShader>(data);
 	
-	return 0;
+	delete [] data;
+
+	return shader;
 }

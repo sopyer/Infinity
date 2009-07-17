@@ -63,9 +63,9 @@ namespace UI
 
 			void handleKeybdEvents();
 			void handleMouseEvents();
-			void handleInput(uint32	frame);
+			void handleInput(u32 frame);
 		
-			Actor* doPick(uint32 x, uint32 y);
+			Actor* doPick(u32 x, u32 y);
 
 			void renderActors();
 			void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
@@ -75,7 +75,8 @@ namespace UI
 			//virtual void onMotion(const MotionEvent& event);
 
 		private:
-			TextureManager	mTextureMgr;
+			VFS				mVFS;
+			//TextureManager	mTextureMgr;
 			FontManager		mFontMgr;
 			ProgramManager	mProgramMgr;
 			ShaderManager	mShaderMgr;
@@ -97,7 +98,7 @@ namespace UI
 			float	mPrevX, mPrevY;
 			
 			bool		mAutoRepeat;
-			uint32		mAutoRepeatTime;
+			u32			mAutoRepeatTime;
 			KeyEvent	mEvtKeyAutoRepeat;
 
 			std::queue<KeyQueuedEvent>	mKeyEvents;

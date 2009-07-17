@@ -5,7 +5,7 @@
 #include <gl\glfw.h>
 #include <gl\glee.h>
 
-#include <..\vfs\vfs.h>
+#include <..\vfs++\vfs++.h>
 #include <glClasses.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>

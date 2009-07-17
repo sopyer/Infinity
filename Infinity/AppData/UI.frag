@@ -1,5 +1,3 @@
-#version 120
-
 uniform vec4 fillColor /*= vec4( 1.0, 0.0,0.0,1.0)*/;
 uniform vec4 borderColor /*= vec4( 1.0, 1.0,1.0,1.0)*/;
 uniform vec2 zones;

@@ -19,31 +19,31 @@ namespace utils
 	using std::string;
 }
 
-typedef boost::shared_ptr<void> MemoryView;
+//typedef boost::shared_ptr<void> MemoryView;
 
-//typedef unsigned __int64 uint64;
-//typedef signed   __int64 sint64;
+typedef unsigned __int64 u64;
+typedef signed   __int64 s64;
+
+typedef unsigned int u32;
+typedef signed int   s32;
+
+typedef unsigned short u16;
+typedef signed   short s16;
+
+typedef unsigned char u8;
+typedef signed   char s8;
+
+
+//class File
+//{
+//	private:
+//		HANDLE	hFile;
+//		HANDLE	hMapping;
+//	public:
+//		File(const char *path);
+//		~File();
 //
-//typedef unsigned int uint32;
-//typedef signed int   sint32;
-//
-//typedef unsigned short uint16;
-//typedef signed   short sint16;
-//
-//typedef unsigned char uint8;
-//typedef signed   char sint8;
-
-
-class File
-{
-	private:
-		HANDLE	hFile;
-		HANDLE	hMapping;
-	public:
-		File(const char *path);
-		~File();
-
-		MemoryView MapView(unsigned int offset=0, unsigned int size=0);
-};
+//		MemoryView MapView(unsigned int offset=0, unsigned int size=0);
+//};
 
 #endif

@@ -56,13 +56,16 @@ namespace vg
 		GLint uLocImageDim = glGetUniformLocation(mObject->patternProgram, "uImageDim");
 		glm::vec2	imgDim;
 
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &imgDim.x);
+		glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgDim.y);
+
 		mObject->fillProgram.begin();
 			glUseProgram(mObject->patternProgram);
 			glUniform1i(uLocImage, 0);
-			glBindTexture(GL_TEXTURE_2D, texture);
-			glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &imgDim.x);
-			glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgDim.y);
 			glUniform2fv(uLocImageDim, 1, imgDim);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, texture);
 			setPatternSamplerParams(fillColor, mode);
 		mObject->fillProgram.end();
 

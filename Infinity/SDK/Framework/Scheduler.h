@@ -10,9 +10,9 @@ struct Timeout
 {
 	void (*mTimerFunc)(void*);
 	void*  mUserData;
-	uint32 mScheduledTime;
+	u32 mScheduledTime;
 
-	Timeout(void (*timerFunc)(void*), void* userData, uint32 scheduledTime)
+	Timeout(void (*timerFunc)(void*), void* userData, u32 scheduledTime)
 		:mTimerFunc(timerFunc), mUserData(userData), mScheduledTime(scheduledTime)
 	{}
 
@@ -35,14 +35,14 @@ public:
 		mTimer.stop();
 	}
 
-	void scheduleTask(void (*timerFunc)(void*), void* userData, uint32 relTime)
+	void scheduleTask(void (*timerFunc)(void*), void* userData, u32 relTime)
 	{
 		mTaskQueue.push(Timeout(timerFunc, userData, relTime+mTimer.getTime()));
 	}
 
 	void mainLoop()
 	{
-		uint32 time = mTimer.getTime();
+		u32 time = mTimer.getTime();
 
 		while(!mTaskQueue.empty() && mTaskQueue.top().mScheduledTime <= time)
 		{
@@ -62,14 +62,14 @@ private:
 class Timeline
 {
 public:
-	Timeline(uint32 msFPS):
+	Timeline(u32 msFPS):
 		mDuration(1000), mNumFrames(msFPS),
 		mCurFrame(0), mFrameTime(1000/msFPS),
 		mLoop(true), mIsPlaying(false)
 	{
 	}
 
-	Timeline(uint32 msDuration, uint32 msFPS):
+	Timeline(u32 msDuration, u32 msFPS):
 		mDuration(msDuration), mNumFrames(msDuration*msFPS / 1000),
 		mCurFrame(0), mFrameTime(1000/msFPS),
 		mLoop(false), mIsPlaying(false)
@@ -86,7 +86,7 @@ public:
 			onStarted.emit();
 		}
 		
-		uint32 timeout = 0;
+		u32 timeout = 0;
 
 		if (timeout == 0)
 			timeout = mFrameTime;
@@ -106,11 +106,11 @@ public:
 		mIsPlaying = false;
 	}
 	
-	uint32 getElapsed() {return mCurFrame * mFrameTime;}
-	uint32 getDuration() {return mDuration;}
+	u32 getElapsed() {return mCurFrame * mFrameTime;}
+	u32 getDuration() {return mDuration;}
 
 public:
-	sigslot::signal1<uint32>	onFrame;
+	sigslot::signal1<u32>	onFrame;
 	sigslot::signal0<>			onStarted;
 	sigslot::signal0<>			onCompleted;
 
@@ -121,7 +121,7 @@ private:
 		self.handleTimeout();
 	}
 	
-	void scheduleTimeout(uint32 deltaTime)
+	void scheduleTimeout(u32 deltaTime)
 	{
 		Scheduler::getRef().scheduleTask(&Timeline::onTimeout, this, deltaTime);
 	}
@@ -148,10 +148,10 @@ private:
 	}
 
 private:
-	uint32	mCurFrame;
-	uint32	mFrameTime;
-	uint32	mDuration;
-	uint32	mNumFrames;
+	u32	mCurFrame;
+	u32	mFrameTime;
+	u32	mDuration;
+	u32	mNumFrames;
 
 	bool	mLoop;
 	bool	mIsPlaying;

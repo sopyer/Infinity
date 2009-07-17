@@ -24,6 +24,6 @@ class Singleton
 };
 
 template <typename T>
-T* Singleton<T>::ms_Singleton = NULL;
+T* Singleton<T>::ms_Singleton = 0;
 
 #endif

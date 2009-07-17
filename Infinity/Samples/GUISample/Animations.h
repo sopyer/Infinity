@@ -44,7 +44,7 @@ protected:
 	virtual void applyBehaviour(UI::Actor* actor, float step) = 0;
 
 private:
-	void onFrame(uint32 frame)
+	void onFrame(u32 frame)
 	{
 		float step = (float)mTimeline->getElapsed() / mTimeline->getDuration();
 		forEach(step);

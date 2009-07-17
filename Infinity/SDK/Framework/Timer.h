@@ -11,23 +11,23 @@ public:
 
 	void resetFrame(){mFrameStartTime = getAbsTime();}
 
-	uint32 getFrameTime() {return mFrameStartTime ? getAbsTime() - mFrameStartTime : 0;}
-	uint32 getTime() {return mStartTime ? getAbsTime() - mStartTime : 0;}
+	u32 getFrameTime() {return mFrameStartTime ? getAbsTime() - mFrameStartTime : 0;}
+	u32 getTime() {return mStartTime ? getAbsTime() - mStartTime : 0;}
 
 	void start() {mStartTime = getAbsTime();}
 	void stop() {mStartTime = 0; mFrameStartTime = 0;}
 
 private:
-	uint32 getAbsTime()
+	u32 getAbsTime()
 	{
 		LARGE_INTEGER	time;
 		QueryPerformanceCounter(&time);
-		return uint32(time.QuadPart * 1000 / mFrequency.QuadPart);
+		return u32(time.QuadPart * 1000 / mFrequency.QuadPart);
 	}
 
 private:
-	uint32 mStartTime;
-	uint32 mFrameStartTime;
+	u32 mStartTime;
+	u32 mFrameStartTime;
 
 	LARGE_INTEGER mFrequency;
 };

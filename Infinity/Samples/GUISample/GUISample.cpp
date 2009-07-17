@@ -54,7 +54,7 @@ class GUISample: public UI::Stage
 			mCombobox.setPos(400, 300)
 				.setSize(200, 40);
 			
-			mAvatarImg.create("avatar", "sobachka.png");
+			mAvatarImg.create("sobachka.png");
 			mImage.setTexture(mAvatarImg)
 				.setPos(200, 200)
 				.setSize(60, 80);
@@ -97,7 +97,7 @@ class GUISample: public UI::Stage
 			//glFlush();
 		}
 
-		void onUpdate(uint32 frame)
+		void onUpdate(u32 frame)
 		{
 			//logMessage("Time: %d\n", mTimer.getTime());
 			if( glfwGetKey(KeySyms::KeyESC/*GLFW_KEY_ESC*/) )

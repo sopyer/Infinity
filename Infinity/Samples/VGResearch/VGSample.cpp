@@ -14,16 +14,20 @@ class VGSample: public UI::Stage
 	public:
 		VGSample()
 		{
-			mPattern.create("PatternFill", "pattern.jpg");
+			mPattern.create("pattern.jpg");
+
+			assert(testLoad(mPattern));
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(35.0, (float)mWidth/mHeight,1,2048);
 
 			mFill = mContext.createPaint();
+			assert(testLoad(mPattern));
 			//mFill.setColorPaint(glm::vec4(0.45f, 0.33f, 0.67f, 1.0f));
-			mFill.setPatternPaint(*mPattern, glm::vec4(1,0,0,1), VG_TILE_REPEAT);
+			mFill.setPatternPaint((GLuint)mPattern, glm::vec4(1,0,0,1), VG_TILE_REPEAT);
 
+			assert(testLoad(mPattern));
 			mPolygon = mContext.createPath(1.0f, 0.0f);
 
 			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_CLOSE_PATH};
@@ -91,6 +95,7 @@ class VGSample: public UI::Stage
 
 		~VGSample()
 		{
+			mContext.destroyPaint(mFill);
 			mContext.destroyPath(mPolygon);
 		}
 

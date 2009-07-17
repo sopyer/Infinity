@@ -39,8 +39,8 @@ class Rectangle: public UI::Actor
 	protected:
 		virtual void onPaint(VG& vg)
 		{
-			uint32 w = getWidth(), h = getHeight(),
-				   x = 0, y = 0;
+			u32 w = getWidth(), h = getHeight(),
+			    x = 0, y = 0;
 		    vg.drawFrame(Rect(x, y, w, h), Point(5, 5), false, false, false);
 		}
 };
@@ -76,12 +76,12 @@ class Edit: public Label, public sigslot::has_slots<>
 		}
 	
 	protected:
-		void onBlink(uint32)
+		void onBlink(u32)
 		{
 			mShowCursor = !mShowCursor;
 		}
 
-		virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
+		virtual void onTouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
 		{
 			getStage()->captureFocus(this);
 		}
@@ -96,9 +96,9 @@ class Edit: public Label, public sigslot::has_slots<>
 			hideCursor();
 		}
 
-		virtual void onKeyDown(const KeyEvent& event/*uint32 key*/)
+		virtual void onKeyDown(const KeyEvent& event/*u32 key*/)
 		{
-			uint32 key = event.key;
+			u32 key = event.key;
 			// filter for special keys
 			// Enter, quit edition
 			if (key == KeySyms::KeyEnter/*GLFW_KEY_ENTER*/)
@@ -224,10 +224,10 @@ class Button: public Label
 		sigslot::signal0<>	onClicked;
 
 	protected:
-		virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
+		virtual void onTouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
 		{mIsPressed = true;}
 
-		virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
+		virtual void onUntouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
 		{mIsPressed = false; onClicked.emit();}
 
 		virtual void onEnter()
@@ -256,7 +256,7 @@ class CheckBox: public Button
 		
 		bool isChecked() {return mIsChecked;}
 	protected:
-		virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/)
+		virtual void onUntouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
 		{Button::onUntouch(event/*x, y, buttons*/); mIsChecked = !mIsChecked;}
 
 		virtual void onPaint(VG& vg)
@@ -296,8 +296,8 @@ class HGroup: public UI::Container
 	protected:
 		void onAllocate()
 		{
-			int x = 0, y = 0;
-			int w = getWidth();
+			float x = 0, y = 0;
+			float w = getWidth();
 			ChildsVector::iterator	it = mChilds.begin(),
 									end = mChilds.end();
 			for (; it != end; ++it)
@@ -366,8 +366,8 @@ class Layout: public UI::Container, public sigslot::has_slots<>
 
 		void onAllocate()
 		{
-			int w = getWidth();
-			int h = getHeight();
+			float w = getWidth();
+			float h = getHeight();
 
 			mButton.setSize(h,h)
 				.setPos(w-h, 0);

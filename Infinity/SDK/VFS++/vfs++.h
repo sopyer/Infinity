@@ -1,6 +1,7 @@
 #pragma once
 
 #include <physfs/physfs.h>
+#include <Singleton.h>
 
 class File
 {
@@ -27,17 +28,17 @@ public:
 	PHYSFS_file*	mHandle;
 };
 
-class VFS
+class VFS: public Singleton<VFS>
 {
 public:
 	VFS()  {PHYSFS_init(0);}
 	~VFS() {PHYSFS_deinit();}
 
-	bool mount(const char* newDir, const char* mountPoint = 0, int appendToPath = 1)
+	static bool mount(const char* newDir, const char* mountPoint = 0, int appendToPath = 1)
 	{return PHYSFS_mount(newDir, mountPoint, appendToPath) != 0;}
 
-	bool exist(const char* fname) {return PHYSFS_exists(fname) != 0;}
+	static bool exist(const char* fname) {return PHYSFS_exists(fname) != 0;}
 
-	File openRead(const char* fname) {return PHYSFS_openRead(fname);}
-	void close(File fileObj) {PHYSFS_close(fileObj);}
+	static File openRead(const char* fname) {return PHYSFS_openRead(fname);}
+	static void close(File fileObj) {PHYSFS_close(fileObj);}
 };
