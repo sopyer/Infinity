@@ -59,10 +59,18 @@ class VGSample: public UI::Stage
 			float squadData[] = {50, 100, 100, 0, 200, 0};
 
 			ubyte cubicTest[] = {VG_MOVE_TO_ABS, VG_CUBIC_TO_ABS, VG_CLOSE_PATH};
-			float cubicData[] = {0, 0, 50, 70, 150, -20, 200, 50};
+			//float cubicData[] = {0, 0, 50, 70, 150, -20, 200, 50};
 			//float cubicData[] = {-200, 200, -100, 100, -200, 0, 150, 0};
 			//float cubicData[] = {200, 100, -100, 100, 100, 0, 150, 0};
 			//float cubicData[] = {50, 40, 100, 0, 150, 50, 150, 0};
+			//Loop
+			//float cubicData[] = {0, 0, 60, 50, -10, 50, 50, 0};
+			//Cusp
+			float cubicData[] = {0, 0, 50, 50, 0, 50, 50, 0};
+			//Serpentine
+			//float cubicData[] = {0, 0, 50, 50, 50, 0, 100, 50};
+			//Normal
+			//float cubicData[] = {0, 0, 0, 50, 50, 50, 50, 0};
 
 			ubyte sampleTest[] = {/*VG_MOVE_TO_ABS,
 								  VG_LINE_TO_ABS,
@@ -86,8 +94,8 @@ class VGSample: public UI::Stage
 			//mPolygon.appendData(sizeof(lineQuadTest), lineQuadTest, lineQuadData);
 			//mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
 			//mPolygon.appendData(sizeof(squadTest), squadTest, squadData);
-			//mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
-			mPolygon.appendData(sizeof(sampleTest), sampleTest, sampleData);
+			mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
+			//mPolygon.appendData(sizeof(sampleTest), sampleTest, sampleData);
 
 			glClearDepth(1.0);
 			glClearStencil(0);

@@ -8,7 +8,7 @@ namespace cubic
 		return tc.x*tc.x*tc.x - tc.y*tc.z;
 	}
 
-	void calcDets(const glm::vec3 cp[4], float a[4], float d[4], float& D)
+	void calcDets(const glm::vec2 p[4], float d[4], float& D)
 	{
 		/**********************************************************/
 		/*	Alternative way of calculating di
@@ -25,10 +25,22 @@ namespace cubic
 		/*	float d3 = -glm::dot(b2, glm::cross(b1, b0));
 		/**********************************************************/
 
-		a[0] =  glm::dot(cp[3], glm::cross(cp[2], cp[1]));
-		a[1] = -glm::dot(cp[3], glm::cross(cp[2], cp[0]));
-		a[2] =  glm::dot(cp[3], glm::cross(cp[1], cp[0]));
-		a[3] = -glm::dot(cp[2], glm::cross(cp[1], cp[0]));
+
+		glm::vec3	cp[4] =
+		{
+			glm::vec3(p[0], 1),
+			glm::vec3(p[1], 1),
+			glm::vec3(p[2], 1),
+			glm::vec3(p[3], 1)
+		};
+
+		float a[4] =
+		{
+			 glm::dot(cp[3], glm::cross(cp[2], cp[1])),
+			-glm::dot(cp[3], glm::cross(cp[2], cp[0])),
+			 glm::dot(cp[3], glm::cross(cp[1], cp[0])),
+			-glm::dot(cp[2], glm::cross(cp[1], cp[0]))
+		};
 
 		d[0] = 3*(a[3]+a[2]+a[1]+a[0]);
 		d[1] = 3*(3*a[3]+2*a[2]+a[1]);
@@ -279,27 +291,5 @@ namespace cubic
 				addTri(idxTri[1], 1, 0, 3);
 			}
 		}
-	}
-
-	void subdivide(const glm::vec3 cubic[4], float t, glm::vec3 subCubic1[4], glm::vec3 subCubic2[4])
-	{
-		glm::vec3 p01 = glm::mix(cubic[0], cubic[1], t);
-		glm::vec3 p12 = glm::mix(cubic[1], cubic[2], t);
-		glm::vec3 p23 = glm::mix(cubic[2], cubic[3], t);
-
-		glm::vec3 p012 = glm::mix(p01, p12, t);
-		glm::vec3 p123 = glm::mix(p12, p23, t);
-
-		glm::vec3 p0123 = glm::mix(p012, p123, t);
-
-		subCubic1[0] = cubic[0];
-		subCubic1[1] = p01;
-		subCubic1[2] = p012;
-		subCubic1[3] = p0123;
-
-		subCubic2[0] = p0123;
-		subCubic2[1] = p123;
-		subCubic2[2] = p23;
-		subCubic2[3] = cubic[3];
 	}
 }

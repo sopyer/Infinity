@@ -86,7 +86,15 @@ namespace vg
 							  const glm::vec2& p2, const glm::vec3& tc2,
 							  const glm::vec2& p3, const glm::vec3& tc3);
 	
-		void triangulateCubic(float d[4], const glm::vec2 p[4], glm::vec3 tc[4]);
+		/**********************************************************/
+		/*	Simple is cubic curve such that implicit equation at
+		/*	control points p2 and p3 has the same sign
+		/**********************************************************/
+		template<bool reverse>
+		void addSimpleCubic(const glm::vec2& p1, const glm::vec3& tc1,
+							const glm::vec2& p2, const glm::vec3& tc2,
+							const glm::vec2& p3, const glm::vec3& tc3,
+							const glm::vec2& p4, const glm::vec3& tc4);
 	};
 
 	bool isValidCommand(int c);

@@ -152,6 +152,25 @@ namespace vg
 		return glm::vec3(-tc.x, -tc.y, tc.z);
 	}
 
+	template<bool reverse>
+	void PathObject::addSimpleCubic(const glm::vec2& p1, const glm::vec3& tc1,
+									const glm::vec2& p2, const glm::vec3& tc2,
+									const glm::vec2& p3, const glm::vec3& tc3,
+									const glm::vec2& p4, const glm::vec3& tc4)
+	{
+		//Think about some check for "simplicity"
+
+		//Inequality changed to avoid visual artefacts when value is near zero
+		bool doChangeOrient = cubic::calcImplicit(tc2)<-0.0000001;
+		
+		//To handle case when second control point is near zero
+		doChangeOrient |= cubic::calcImplicit(tc3)<-0.0000001;
+		
+		addCubicTriangle(p1, doChangeOrient?changeOrient(tc1):tc1, p2, doChangeOrient?changeOrient(tc2):tc2, p3, doChangeOrient?changeOrient(tc3):tc3);
+		addCubicTriangle(p3, doChangeOrient?changeOrient(tc3):tc3, p4, doChangeOrient?changeOrient(tc4):tc4, p1, doChangeOrient?changeOrient(tc1):tc1);
+		addPathPoint(reverse?p1:p4);
+	}
+
 	void PathObject::cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3)
 	{
 		if (startNewPath)
@@ -160,46 +179,29 @@ namespace vg
 			addPathPoint(ptO);
 		}
 
-		glm::vec3 cp0(ptO, 1);
-		glm::vec3 cp1(p1, 1);
-		glm::vec3 cp2(p2, 1);
-		glm::vec3 cp3(p3, 1);
+		//Vertices reversed on purpose! So we changed curve parametrization
+		//We subdivide from in order 1 to 0
+		//So we can use simple t2/t1 instead of (t2-t1)/(1-t2)
+		glm::vec2 cp1[4] = {p3, p2, p1, ptO}, cp2[4];
+		glm::vec3 tc1[4], tc2[4];
 
-		glm::vec2 p[4] = {ptO, p1, p2, p3};
-		glm::vec3 tc[4];
+		float d[4], D;
 
-		size_t numTri = 0;
-		size_t idxTri[4][3];
-
-		float a[4] = {
-			glm::dot(cp3, glm::cross(cp2, cp1)),	
-			-glm::dot(cp3, glm::cross(cp2, cp0)),	
-			glm::dot(cp3, glm::cross(cp1, cp0)),
-			-glm::dot(cp2, glm::cross(cp1, cp0))
-		};
-
-		float d[4];
-
-		d[0] = 3*(a[3]+a[2]+a[1]+a[0]);
-		d[1] = 3*(3*a[3]+2*a[2]+a[1]);
-		d[2] = 3*(3*a[3]+a[2]);
-		d[3] = 3*(3*a[3]);
-
-		//following expression has the same sign as d1*d1*(3*d2*d2 - 4*d1*d3)
-		//and later it is reused as discriminant for quadratic equation
-		float D = 3.0f*d[2]*d[2] - 4.0f*d[1]*d[3];
+		cubic::calcDets(cp1, d, D);
 		
-		glm::vec3	cpp[4] = {cp0, cp1, cp2, cp3};
-
-		cubic::calcDets(cpp, a, d, D);
+		float	roots[2];
+		size_t	numRoots = 0;
 
 		//See Loop, Blinn. Rendering resolution independent curves using programmable hardware
+
+		// First calculate t values at which we should subdivide our curve
 		if (d[1] != 0)
 		{
+			float t1, t2;
+
 			if (D>=0)
 			{
-				float t1, t2;
-
+				// Handle serpentine and cusp case
 				if (d[2] == 0)
 				{
 					t1 = -sqrt(D/3.0f)/2.0f/d[1];
@@ -213,123 +215,65 @@ namespace vg
 					t2 = d[3]/3.0f/dd;
 				}
 
-				glm::vec3	kk0(t1*t2,   t1*t1*t1,    t2*t2*t2),
-							kk1(-t1-t2,  -3.0f*t1*t1, -3.0f*t2*t2),
-							kk2(1.0f,    3.0f*t1,     3.0f*t2),
-							kk3(0.0f,    -1.0f,       -1.0f);
-
-				tc[0] = glm::vec3(kk0);
-				tc[1] = glm::vec3(kk0+1.0f/3.0f*kk1);
-				tc[2] = glm::vec3(kk0+2.0f/3.0f*kk1+1.0f/3.0f*kk2);
-				tc[3] = glm::vec3(kk0+kk1+kk2+kk3);
-				
-				cubic::calcSerpentineCuspTC(D, d, tc);
-				cubic::triangulate(a, numTri, idxTri);
+				cubic::calcSerpentineCuspTC(D, d, tc1);
 			}
 			else
 			{
-				//	loop
-				float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
-				float t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
+				// Handle loop case
+				t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
+				t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
 
-				glm::vec3	kk0(t1,       t1*t1,             t1),
-							kk1(-t1*t2-1, -t1*t1*t2-2.0f*t1, -1-2*t1*t2),
-							kk2(t2,       1+2.0f*t1*t2,      t1*t2*t2+2.0f*t2),
-							kk3(0.0f,     -t2,               -t2*t2);
-
-				tc[0] = glm::vec3(kk0);
-				tc[1] = glm::vec3(kk0+1.0f/3.0f*kk1);
-				tc[2] = glm::vec3(kk0+2.0f/3.0f*kk1+1.0f/3.0f*kk2);
-				tc[3] = glm::vec3(kk0+kk1+kk2+kk3);
-				
-				//!!! TODO !!!
-				//Handle subdivision case
-
-				cubic::calcLoopTC(D, d, tc, t1, t2);
-				if ((t1<=0 || t1>=1) && 0<t2 && t2<1 ||
-					(t2<=0 || t2>=1) && 0<t1 && t1<1)
-				{
-					glm::vec3	cp1[4], cp2[4];
-					glm::vec3	tc1[4], tc2[4];
-
-					cubic::subdivide(cpp, (0<t1 && t1<1)?t1:t2, cp1, cp2);
-					cubic::subdivide(tc, (0<t1 && t1<1)?t1:t2, tc1, tc2);
-					
-					float a[4], D, d[4];
-					
-					cubic::calcDets(cp1, a, d, D);
-					cubic::triangulate(a, numTri, idxTri);
-
-					for (size_t i=0; i<numTri; ++i)
-					{
-						bool doChangeOrient = cubic::calcImplicit(tc1[idxTri[i][0]])<0;
-						addCubicTriangle(
-							glm::vec2(cp1[idxTri[i][0]]), doChangeOrient?changeOrient(tc1[idxTri[i][0]]):tc1[idxTri[i][0]],
-							glm::vec2(cp1[idxTri[i][1]]), doChangeOrient?changeOrient(tc1[idxTri[i][1]]):tc1[idxTri[i][1]],
-							glm::vec2(cp1[idxTri[i][2]]), doChangeOrient?changeOrient(tc1[idxTri[i][2]]):tc1[idxTri[i][2]]
-						);
-					}
-
-					addPathPoint(glm::vec2(cp1[3]));
-
-					cubic::calcDets(cp2, a, d, D);
-					cubic::triangulate(a, numTri, idxTri);
-
-					for (size_t i=0; i<numTri; ++i)
-					{
-						bool doChangeOrient = cubic::calcImplicit(tc2[idxTri[i][0]])<0;
-						addCubicTriangle(
-							glm::vec2(cp2[idxTri[i][0]]), doChangeOrient?changeOrient(tc2[idxTri[i][0]]):tc2[idxTri[i][0]],
-							glm::vec2(cp2[idxTri[i][1]]), doChangeOrient?changeOrient(tc2[idxTri[i][1]]):tc2[idxTri[i][1]],
-							glm::vec2(cp2[idxTri[i][2]]), doChangeOrient?changeOrient(tc2[idxTri[i][2]]):tc2[idxTri[i][2]]
-						);
-					}
-
-					addPathPoint(p3);
-					
-					return;
-				}
-				else
-				{
-					cubic::triangulate(a, numTri, idxTri);
-				}
+				cubic::calcLoopTC(D, d, tc1, t1, t2);
 			}
+			
+			//From greater value to lower - due to changed parametrization
+			if (t1<t2)
+				std::swap(t1, t2);
+
+			if (0<t1 && t1<1)
+				roots[numRoots++] = t1;
+
+			if (t1!=t2 && 0<t2 && t2<1)
+				roots[numRoots++] = t2;
 		}
 		else if (d[2]!=0)
 		{
 			//cusp with cusp at infinity
 			float t = d[3]/3.0f/d[2];
 
-			glm::vec3	kk0(t,     t*t*t,     1.0f),
-						kk1(-1.0f, -3.0f*t*t, 0.0f),
-						kk2(0.0f,  3.0f*t,    0.0f),
-						kk3(0.0f,  -1,        0.0f);
-
-			tc[0] = glm::vec3(kk0);
-			tc[1] = glm::vec3(kk0+1.0f/3.0f*kk1);
-			tc[2] = glm::vec3(kk0+2.0f/3.0f*kk1+1.0f/3.0f*kk2);
-			tc[3] = glm::vec3(kk0+kk1+kk2+kk3);
+			roots[numRoots++] = t;
 			
-			cubic::calcInfCuspTC(D, d, tc);
-			cubic::triangulate(a, numTri, idxTri);
+			cubic::calcInfCuspTC(D, d, tc1);
 		}
 		else if (d[3]!=0)
 		{
-			cubic::calcQuadraticTC(tc);
-			cubic::triangulate(a, numTri, idxTri);
+			cubic::calcQuadraticTC(tc1);
 		}
 
-		for (size_t i=0; i<numTri; ++i)
+		// Subdivide curve from in direction from 1 to 0,
+		// which represent normal direction in curve space
+		for(size_t i=0; i<numRoots; ++i)
 		{
-			bool doChangeOrient = cubic::calcImplicit(tc[idxTri[i][0]])<0;
-			addCubicTriangle(
-				p[idxTri[i][0]], doChangeOrient?changeOrient(tc[idxTri[i][0]]):tc[idxTri[i][0]],
-				p[idxTri[i][1]], doChangeOrient?changeOrient(tc[idxTri[i][1]]):tc[idxTri[i][1]],
-				p[idxTri[i][2]], doChangeOrient?changeOrient(tc[idxTri[i][2]]):tc[idxTri[i][2]]
+			float t = i==0?roots[i]:roots[i]/roots[i-1];
+
+			cubic::subdivide(cp1, t, cp1, cp2);
+			cubic::subdivide(tc1, t, tc1, tc2);
+
+			addSimpleCubic<true>(
+				cp2[0], tc2[0],
+				cp2[1], tc2[1],
+				cp2[2], tc2[2],
+				cp2[3], tc2[3]
 			);
 		}
-
-		addPathPoint(p3);
+		
+		// The last or the only part
+		addSimpleCubic<true>(
+			cp1[0], tc1[0],
+			cp1[1], tc1[1],
+			cp1[2], tc1[2],
+			cp1[3], tc1[3]
+		);
 
 		ptP = p2;
 		ptO = p3;
