@@ -21,7 +21,7 @@ namespace vg
 		int		dataHint;
 
 		/* Raw data */
-		std::vector<u8>	segs;
+		std::vector<u8>		segs;
 		std::vector<float>	data;
 
 		/* Subdivision */
@@ -40,7 +40,6 @@ namespace vg
 		PathObject(float pathScale, float pathBias);
 
 		void preprocess(size_t segOffset, size_t dataOffset);
-		void maskPathRegion();
 		
 		//Path builder data
 		glm::vec2	ptO, ptP;
@@ -57,7 +56,7 @@ namespace vg
 		void cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3);
 		void arcTo(int segment, float rx, float ry, float angle, const glm::vec2& endPt);
 
-		//Helper methods
+		//Helper methods for path building
 		void addTriangle(std::vector<glm::vec2>& pts, 
 						 const glm::vec2& p1,
 						 const glm::vec2& p2,

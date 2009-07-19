@@ -52,12 +52,11 @@ namespace cubic
 		D = 3.0f*d[2]*d[2] - 4.0f*d[1]*d[3];
 	}
 
-	void calcSerpentineCuspTC(const float D, const float d[4], glm::vec3 tc[4])
+	//Serpentine and cusp with inflection at infinity
+	void calcSerpentineCuspTC(const float D, const float d[4], glm::vec3 tc[4], float& t1, float& t2)
 	{
 		assert(D>=0 && d[1]!=0);
 
-		//Serpentine and cusp with inflection at infinity
-		
 		/********************************************************/
 		/*			Calculating koeficients in alternative way
 		/*	float ls = d2 - sqrt(d2*d2 - 4.0f/3.0f*d1*d3);
@@ -91,7 +90,6 @@ namespace cubic
 		/*	glm::vec3 texcoo33(-k33, -l33, m33);
 		/********************************************************/
 
-		float t1, t2;
 		float dd = D/3.0f;
 
 		if (d[2] == 0)
@@ -118,11 +116,11 @@ namespace cubic
 		tc[3] = kk0+kk1+kk2+kk3;
 	}
 
+	// Loop case
 	void calcLoopTC(const float D, const float d[4], glm::vec3 tc[4], float& t1, float& t2)
 	{
 		assert(D<0 && d[1]!=0);
 
-		//	loop
 		//float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
 		//float t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
 
@@ -147,12 +145,12 @@ namespace cubic
 		tc[3] = kk0+kk1+kk2+kk3;
 	}
 
-	void calcInfCuspTC(const float D, const float d[4], glm::vec3 tc[4])
+	//Cusp at infinity
+	void calcInfCuspTC(const float D, const float d[4], glm::vec3 tc[4], float& t)
 	{
 		assert(d[1]==0 && d[2]!=0);
 
-		//cusp with cusp at infinity
-		float t = d[3]/3.0f/d[2];
+		t = d[3]/3.0f/d[2];
 
 		glm::vec3	kk0(t,     t*t*t,     1.0f),
 					kk1(-1.0f, -3.0f*t*t, 0.0f),
@@ -165,131 +163,12 @@ namespace cubic
 		tc[3] = kk0+kk1+kk2+kk3;
 	}
 
+	// Quadratic curve
 	void calcQuadraticTC(glm::vec3 tc[4])
 	{
-		// quadratic curve
 		tc[0] = glm::vec3(0.0f,      0.0f,      0.0f);
 		tc[1] = glm::vec3(1.0f/3.0f, 0.0f,      1.0f/3.0f);
 		tc[2] = glm::vec3(2.0f/3.0f, 1.0f/3.0f, 2.0f/3.0f);
 		tc[3] = glm::vec3(1.0f,      1.0f,      1.0f);
-	}
-
-	void addTri(size_t idx[3], size_t i0, size_t i1, size_t i2)
-	{
-		idx[0] = i0; idx[1] = i1; idx[2] = i2;
-	}
-
-/****************************************************************************/
-/*              \  1) /
-/*               \   /
-/*                \1/
-/*                 /
-/*          2)    / \     6)
-/*               /   \
-/*              /     \
-/*             /  7)   \
-/*            /         \
-/*     ------/-----------\--------
-/*         0/             \2
-/*    3)   /       4)      \  5)
-/*        /                 \
-/*
-/*		a[0] =  glm::dot(cp[3], glm::cross(cp[2], cp[1]));
-/*		a[1] = -glm::dot(cp[3], glm::cross(cp[2], cp[0]));
-/*		a[2] =  glm::dot(cp[3], glm::cross(cp[1], cp[0]));
-/*		a[3] = -glm::dot(cp[2], glm::cross(cp[1], cp[0]));
-/****************************************************************************/
-	void triangulate(const float a[4], size_t& numTri, size_t idxTri[][3])
-	{
-		//special cases: some of d[] == 0
-		float a0 = a[3]<0?a[0]:-a[0],
-			  a1 = a[3]<0?a[1]:-a[1],
-			  a2 = a[3]<0?a[2]:-a[2],
-			  a3 = a[3]<0?a[3]:-a[3];
-
-		if (a0==0 || a1==0 || a2==0 || a3==0)
-		{
-			if (a1*a2>0)
-			{
-				numTri = 2;
-				addTri(idxTri[0], 1, 3, 0);
-				addTri(idxTri[1], 2, 3, 0);
-			}
-			else if (a3*a0>0)
-			{
-				numTri = 1;
-				addTri(idxTri[0], a1==0?1:2, 3, 0);
-			}
-			else if (a2*a0>0)
-			{
-				numTri = 1;
-				addTri(idxTri[0], a1==0?1:3, 2, 0);
-			}
-			else if (a3*a2>0)
-			{
-				numTri = 1;
-				addTri(idxTri[0], a1==0?1:0, 2, 3);
-			}
-			else if (a1*a0>0)
-			{
-				numTri = 1;
-				addTri(idxTri[0], a3==0?3:2, 1, 0);
-			}
-			else if (a3*a1>0)
-			{
-				numTri = 1;
-				addTri(idxTri[0], a0==0?0:2, 1, 3);
-			}
-		}
-		//regular cases
-		else if (a0<0 && a3<0)
-		{
-			if (a2<0)
-			{
-				// case 1)
-				numTri = 1;
-				addTri(idxTri[0], 2, 0, 3);
-			}
-			else
-			{
-				numTri = 1;
-				addTri(idxTri[0], 1, 0, 3);
-				if (a1>0)
-				{
-					// case 6)
-					numTri += 1;
-					addTri(idxTri[1], 2, 0, 3);
-				}
-				else
-				{
-					//case 5)
-				}
-			}
-		}
-		else
-		{
-			numTri = 1;
-			addTri(idxTri[0], 1, 2, 3);
-			if (a2<0)
-			{
-				if (a1>0)
-				{
-					// case 2)
-					numTri += 1;
-					addTri(idxTri[1], 2, 0, 3);
-				}
-				else
-				{
-					// case 3)
-					// assert(0) - this should be subdivided
-				}
-			}
-			else
-			{
-				// case 4) and possibly case 7)???????
-				numTri += 1;
-				addTri(idxTri[1], 1, 0, 3);
-			}
-		}
 	}
 }

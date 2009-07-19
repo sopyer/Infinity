@@ -3,27 +3,6 @@
 
 namespace vg
 {
-	//ProgramRef	maskQuad;
-	//ProgramRef	maskCubic;
-	//ProgramRef	maskArc;
-
-	//void init(ProgramRef maskQuad, ProgramRef maskCubic, ProgramRef maskArc)
-	//{
-	//	vg::maskQuad = maskQuad;
-	//	vg::maskCubic = maskCubic;
-	//	vg::maskArc = maskArc;
-	//}
-
-	//void deinit()
-	//{
-	//	vg::maskQuad = 0;
-	//	vg::maskCubic = 0;
-	//	vg::maskArc = 0;
-	//}
-}
-
-namespace vg
-{
 	const int coordsPerCommand[] =
 	{
 	  0, /* VG_CLOSE_PATH */
@@ -120,24 +99,12 @@ namespace vg
 
 	void PathObject::lineTo(const glm::vec2& point)
 	{
-		if (startNewPath)
-		{
-			startNewPath = false;
-			addPathPoint(ptO);
-		}
-
 		ptP = ptO = point;
 		addPathPoint(ptO);
 	}
 
 	void PathObject::quadTo(const glm::vec2& p1, const glm::vec2& p2)
 	{
-		if (startNewPath)
-		{
-			startNewPath = false;
-			addPathPoint(ptO);
-		}
-
 		addPathPoint(p2);
 
 		addQuadTriangle(ptO, glm::vec2(0.0f, 0.0f),
@@ -171,13 +138,13 @@ namespace vg
 		addPathPoint(reverse?p1:p4);
 	}
 
+	//For details of implementation see:
+	//Loop, Blinn. Rendering resolution independent curves using programmable hardware.
 	void PathObject::cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3)
 	{
-		if (startNewPath)
-		{
-			startNewPath = false;
-			addPathPoint(ptO);
-		}
+		float	d[4], D;
+		float	roots[2];
+		size_t	numRoots = 0;
 
 		//Vertices reversed on purpose! So we changed curve parametrization
 		//We subdivide from in order 1 to 0
@@ -185,15 +152,13 @@ namespace vg
 		glm::vec2 cp1[4] = {p3, p2, p1, ptO}, cp2[4];
 		glm::vec3 tc1[4], tc2[4];
 
-		float d[4], D;
-
+		//Handle this as soon as possible - to enable possibility of early return
+		ptP = p2;
+		ptO = p3;
+		
+		// Calc determinant
 		cubic::calcDets(cp1, d, D);
 		
-		float	roots[2];
-		size_t	numRoots = 0;
-
-		//See Loop, Blinn. Rendering resolution independent curves using programmable hardware
-
 		// First calculate t values at which we should subdivide our curve
 		if (d[1] != 0)
 		{
@@ -202,27 +167,11 @@ namespace vg
 			if (D>=0)
 			{
 				// Handle serpentine and cusp case
-				if (d[2] == 0)
-				{
-					t1 = -sqrt(D/3.0f)/2.0f/d[1];
-					t2 = sqrt(D/3.0f)/2.0f/d[1];
-				}
-				else
-				{
-					float dd = 0.5f * (d[2] + glm::sign(d[2])*sqrt(D/3.0f));
-					
-					t1 = dd/d[1];
-					t2 = d[3]/3.0f/dd;
-				}
-
-				cubic::calcSerpentineCuspTC(D, d, tc1);
+				cubic::calcSerpentineCuspTC(D, d, tc1, t1, t2);
 			}
 			else
 			{
 				// Handle loop case
-				t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
-				t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
-
 				cubic::calcLoopTC(D, d, tc1, t1, t2);
 			}
 			
@@ -238,16 +187,21 @@ namespace vg
 		}
 		else if (d[2]!=0)
 		{
-			//cusp with cusp at infinity
-			float t = d[3]/3.0f/d[2];
+			//Handle cusp at infinity case
+			float t;
 
+			cubic::calcInfCuspTC(D, d, tc1, t);
 			roots[numRoots++] = t;
-			
-			cubic::calcInfCuspTC(D, d, tc1);
 		}
 		else if (d[3]!=0)
 		{
+			//Handle quadratic curve case
 			cubic::calcQuadraticTC(tc1);
+		}
+		else
+		{
+			//This is degenarate cases
+			return;
 		}
 
 		// Subdivide curve from in direction from 1 to 0,
@@ -274,21 +228,12 @@ namespace vg
 			cp1[2], tc1[2],
 			cp1[3], tc1[3]
 		);
-
-		ptP = p2;
-		ptO = p3;
 	}
 
 	void PathObject::arcTo(int segment, float rx, float ry, float angle, const glm::vec2& endPt)
 	{
 		assert(segment==VG_SCCWARC_TO || segment==VG_LCCWARC_TO
 				|| segment==VG_SCWARC_TO || segment==VG_LCWARC_TO);
-
-		if (startNewPath)
-		{
-			startNewPath = false;
-			addPathPoint(ptO);
-		}
 
 		bool isCCW      = segment==VG_SCCWARC_TO || segment==VG_LCCWARC_TO;
 		bool isSmallArc = segment==VG_SCCWARC_TO || segment==VG_SCWARC_TO;
@@ -417,6 +362,14 @@ namespace vg
 			}
 			else
 			{
+				//Here starts non control commands
+				//So we can handle start path case
+				if (startNewPath)
+				{
+					startNewPath = false;
+					addPathPoint(ptO);
+				}
+
 				switch (segment)
 				{
 					case VG_LINE_TO:
