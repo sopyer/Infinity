@@ -424,6 +424,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GLFWStage.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GLFWStage.h"
+				>
+			</File>
+			<File
 				RelativePath=".\KeySyms.h"
 				>
 			</File>

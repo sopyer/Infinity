@@ -1,3 +1,18 @@
+#ifndef __ACTOR_H_INCLUDED__
+#	define __ACTOR_H_INCLUDED__
+
+#	include <utils.h>
+#	include <glm\glm.h>
+
+class Actor;
+class VG;
+class Stage;
+class Container;
+
+struct ButtonEvent;
+struct MotionEvent;
+struct KeyEvent;
+
 namespace UI
 {
 	struct Color
@@ -39,7 +54,7 @@ namespace UI
 			
 			Actor&	setParent(Actor& parent) {return setParent(&parent);}
 			//!!!! Resolve add/remove problem while setting parent-child relation
-			Actor&	setParent(Actor* parent) {/*dynamic_cast<Container>(mParent)->remove(this)*/mParent = parent; return *this;}
+			Actor&	setParent(Actor* parent);// {dynamic_cast<Container>(mParent)->remove(this); mParent = parent; return *this;}
 
 			Actor&	setWidth(float w)		{mWidth = w; return *this;}
 			Actor&	setHeight(float h)	{mHeight = h; return *this;}
@@ -61,6 +76,8 @@ namespace UI
 			float	getY() {return mY;}
 			float	getZ() {return mZ;}
 			
+			Actor*	getParent() {return mParent;}
+
 			bool		isEnabled() {return mEnabled;}
 			bool		isVisible() {return mVisible;}
 
@@ -84,16 +101,16 @@ namespace UI
 			//virtual void onUpdate(float timePassed){}
 			
 			virtual void onPaint(VG& vg) {}
-			virtual void onPick(/*VG& vg, */Color color)
-			{
-				glColor4ub(color.red, color.green, color.blue, color.alpha);
-				glBegin(GL_QUADS);
-				glVertex2f(0,0);
-				glVertex2f(mWidth,0);
-				glVertex2f(mWidth,mHeight);
-				glVertex2f(0,mHeight);
-				glEnd();
-			}
+			virtual void onPick(/*VG& vg, */Color color);
+			//{
+			//	glColor4ub(color.red, color.green, color.blue, color.alpha);
+			//	glBegin(GL_QUADS);
+			//	glVertex2f(0,0);
+			//	glVertex2f(mWidth,0);
+			//	glVertex2f(mWidth,mHeight);
+			//	glVertex2f(0,mHeight);
+			//	glEnd();
+			//}
 
 			virtual void onAllocate() {}
 		
@@ -130,3 +147,5 @@ namespace UI
 			bool		mVisible, mEnabled;
 	};
 }
+
+#endif

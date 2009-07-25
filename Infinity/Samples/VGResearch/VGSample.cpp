@@ -9,6 +9,8 @@ GLsizei len;
 #define PRINT_SHADER_LOG(obj)	obj.getLog(1023, &len, buf);\
 	logMessage(#obj##" info\n%s", buf)
 
+float cubicData[] = {0, 0, 50, 50, 67, 20, 48, 30};
+
 class VGSample: public UI::Stage
 {
 	public:
@@ -66,11 +68,13 @@ class VGSample: public UI::Stage
 			//Loop
 			//float cubicData[] = {0, 0, 60, 50, -10, 50, 50, 0};
 			//Cusp
-			float cubicData[] = {0, 0, 50, 50, 0, 50, 50, 0};
+			//float cubicData[] = {0, 0, 50, 50, 0, 50, 50, 0};
 			//Serpentine
 			//float cubicData[] = {0, 0, 50, 50, 50, 0, 100, 50};
 			//Normal
 			//float cubicData[] = {0, 0, 0, 50, 50, 50, 50, 0};
+			//!!!!!BUG!!!!!
+			//float cubicData[] = {0, 0, 50, 50, 70, 0, 45, 30};
 
 			ubyte sampleTest[] = {/*VG_MOVE_TO_ABS,
 								  VG_LINE_TO_ABS,
@@ -115,7 +119,13 @@ class VGSample: public UI::Stage
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(400.0f, 300.0f, -4.0f);
 			glScalef(1, -1, 1);
-			glScalef(2, 2, 1);
+			glScalef(6, 6, 1);
+			glUseProgram(0);
+			glColor4f(1, 0, 0, 1);
+			glBegin(GL_LINE_STRIP);
+			for(size_t i=0; i<4; ++i)
+				glVertex2f(cubicData[i*2], cubicData[i*2+1]);
+			glEnd();
 			glCullFace(GL_FRONT_AND_BACK);
 			mContext.drawPath(mPolygon, mFill);
 			glFlush();
