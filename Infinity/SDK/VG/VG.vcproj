@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..;..\glFont;..\vfs;..\FreeType\include;."
+				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..;..\glFont;..\vfs;..\External\\FreeType\include;.;..\External;..\External\glFont"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLEW_STATIC"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -107,7 +107,7 @@
 				EnableIntrinsicFunctions="true"
 				OmitFramePointers="false"
 				EnableFiberSafeOptimizations="true"
-				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..;..\glFont;..\vfs;..\FreeType\include;."
+				AdditionalIncludeDirectories="..\framework;..\glClasses;..\utils;..;..\glFont;..\vfs;..\External\\FreeType\include;.;..\External;..\External\glFont"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC"
 				ExceptionHandling="1"
 				RuntimeLibrary="2"
