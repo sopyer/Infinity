@@ -11,7 +11,7 @@ GLsizei len;
 
 float cubicData[] = {0, 0, 50, 50, 67, 20, 48, 30};
 
-class VGSample: public UI::Stage
+class VGSample: public UI::GLFWStage
 {
 	public:
 		VGSample()
