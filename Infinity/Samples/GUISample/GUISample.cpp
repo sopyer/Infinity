@@ -3,7 +3,7 @@
 #include "Controls.h"
 #include "Animations.h"
 
-class GUISample: public UI::GLFWStage
+class GUISample: public UI::SDLStage
 {
 	public:
 		GUISample():mUpdater(30), mAnim(2000, 100)

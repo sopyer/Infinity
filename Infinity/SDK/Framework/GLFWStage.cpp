@@ -232,6 +232,7 @@ namespace UI
 			enterPhase(PHASE_ALLOCATE);
 			enterPhase(PHASE_RENDERING);
 			enterPhase(PHASE_DEFAULT);
+			glfwSwapBuffers();
 		}
 	}
 

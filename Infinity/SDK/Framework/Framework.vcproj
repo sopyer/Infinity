@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/Gs"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont"
+				AdditionalIncludeDirectories=".\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -106,7 +106,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=".\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont"
+				AdditionalIncludeDirectories=".\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL;$(NOINHERIT)"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -433,6 +433,14 @@
 			</File>
 			<File
 				RelativePath=".\KeySyms.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SDLStage.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SDLStage.h"
 				>
 			</File>
 			<File

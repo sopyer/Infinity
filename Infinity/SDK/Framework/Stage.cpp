@@ -234,7 +234,6 @@ namespace UI
 			case PHASE_RENDERING:
 				renderActors();
 				glFlush();
-				glfwSwapBuffers();
 				break;
 
 			case PHASE_DEFAULT:

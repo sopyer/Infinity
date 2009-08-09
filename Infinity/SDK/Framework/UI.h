@@ -29,7 +29,6 @@ namespace UI
 #	include <Actor.h>
 #	include <Container.h>
 #	include <GLFWStage.h>
-
-
+#	include <SDLStage.h>
 
 #endif
