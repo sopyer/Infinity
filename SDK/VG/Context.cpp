@@ -170,14 +170,13 @@ namespace vg
 
 	void Context::maskPathRegion(Path path)
 	{
-		if (path.mObject->vertices.empty())
-			return;
+		//if (path.mObject->vertices.empty())
+		//	return;
 
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
 		glEnable(GL_DEPTH_TEST);
-		//glDepthMask(GL_FALSE);
 
 		glCullFace(GL_FRONT_AND_BACK);
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -199,44 +198,46 @@ namespace vg
 
 		glUseProgram(0);
 
-		GLint base = 0;
-		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertices[0]);
-		for(size_t i=0; i<path.mObject->subPathes.size(); ++i)
-		{
-			GLsizei numPoints = path.mObject->subPathes[i];
-			glDrawArrays(GL_TRIANGLE_FAN, base, numPoints);
-			base += numPoints;
-		}
+		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->geomArea[0]);
+		glDrawElements(GL_TRIANGLES, (GLsizei)path.mObject->idxArea.size(), GL_UNSIGNED_INT, &path.mObject->idxArea[0]);
+		//GLint base = 0;
+		//glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertices[0]);
+		//for(size_t i=0; i<path.mObject->subPathes.size(); ++i)
+		//{
+		//	GLsizei numPoints = path.mObject->subPathes[i];
+		//	glDrawArrays(GL_TRIANGLE_FAN, base, numPoints);
+		//	base += numPoints;
+		//}
 
-		if (!path.mObject->quads.empty())
-		{
-			glUseProgram(mMaskQuad);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quads[0]);
-			glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quadsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->quads.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
+		//if (!path.mObject->quads.empty())
+		//{
+		//	glUseProgram(mMaskQuad);
+		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quads[0]);
+		//	glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quadsTC[0]);
+		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->quads.size());
+		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//}
 
-		if (!path.mObject->cubics.empty())
-		{
-			glUseProgram(mMaskCubic);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->cubics[0]);
-			glTexCoordPointer(3, GL_FLOAT, 3*sizeof(float), &path.mObject->cubicsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->cubics.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
+		//if (!path.mObject->cubics.empty())
+		//{
+		//	glUseProgram(mMaskCubic);
+		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->cubics[0]);
+		//	glTexCoordPointer(3, GL_FLOAT, 3*sizeof(float), &path.mObject->cubicsTC[0]);
+		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->cubics.size());
+		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//}
 
-		if (!path.mObject->arcs.empty())
-		{
-			glUseProgram(mMaskArc);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcs[0]);
-			glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcsTC[0]);
-			glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->arcs.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
+		//if (!path.mObject->arcs.empty())
+		//{
+		//	glUseProgram(mMaskArc);
+		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcs[0]);
+		//	glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcsTC[0]);
+		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->arcs.size());
+		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//}
 
 		glPopAttrib();
 		glDisableClientState(GL_VERTEX_ARRAY);

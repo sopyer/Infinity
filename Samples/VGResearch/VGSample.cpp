@@ -93,12 +93,12 @@ class VGSample: public UI::GLFWStage
 								  99, 0,  50, 50,  99, 99,
 								  0, 99,  50, 50,  0, 0};
 
-			//mPolygon.appendData(sizeof(segs), segs, data);
+			mPolygon.appendData(sizeof(segs), segs, data);
 			//mPolygon.appendData(sizeof(quadTest), quadTest, quadData);
 			//mPolygon.appendData(sizeof(lineQuadTest), lineQuadTest, lineQuadData);
 			//mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
 			//mPolygon.appendData(sizeof(squadTest), squadTest, squadData);
-			mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
+			//mPolygon.appendData(sizeof(cubicTest), cubicTest, cubicData);
 			//mPolygon.appendData(sizeof(sampleTest), sampleTest, sampleData);
 
 			glClearDepth(1.0);
@@ -119,13 +119,13 @@ class VGSample: public UI::GLFWStage
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(400.0f, 300.0f, -4.0f);
 			glScalef(1, -1, 1);
-			glScalef(6, 6, 1);
-			glUseProgram(0);
-			glColor4f(1, 0, 0, 1);
-			glBegin(GL_LINE_STRIP);
-			for(size_t i=0; i<4; ++i)
-				glVertex2f(cubicData[i*2], cubicData[i*2+1]);
-			glEnd();
+			//glScalef(6, 6, 1);
+			//glUseProgram(0);
+			//glColor4f(1, 0, 0, 1);
+			//glBegin(GL_LINE_STRIP);
+			//for(size_t i=0; i<4; ++i)
+			//	glVertex2f(cubicData[i*2], cubicData[i*2+1]);
+			//glEnd();
 			glCullFace(GL_FRONT_AND_BACK);
 			mContext.drawPath(mPolygon, mFill);
 			glFlush();

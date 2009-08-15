@@ -9,9 +9,6 @@
 
 namespace vg
 {
-	extern const int coordsPerCommand[];
-
-	//!!!! FIX MIN,MAX !!!!//
 	struct PathObject
 	{
 		/* Properties */
@@ -46,6 +43,7 @@ namespace vg
 		std::vector<glm::vec2>		cubics;
 		std::vector<glm::vec3>		cubicsTC;
 
+		glm::vec2					minSeg, maxSeg;
 		glm::vec2					min, max;
 		glm::vec2					surfMin, surfMax;
 
@@ -58,7 +56,7 @@ namespace vg
 		bool		startNewPath;
 		GLsizei		numPathVertices;
 
-		void lineTo(const glm::vec2& point);
+		//void lineTo(const glm::vec2& point);
 		void quadTo(const glm::vec2& p1, const glm::vec2& p2);
 		void cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3);
 		void arcTo(int segment, float rx, float ry, float angle, const glm::vec2& endPt);
@@ -113,10 +111,11 @@ namespace vg
 		void clear();
 
 		void addSegGeom(GLuint num, glm::vec2 pts[]);
-		void recalcSegmentBBox();
-		void recalcBBox();
+		void recalcSegmentBBox(GLuint num, glm::vec2 pts[]);
+
+		//This is wrong we should check whether strokes is empty
+		bool empty() {return geomArea.empty();}
 	};
 
 	bool isValidCommand(int c);
-	size_t coordCountForData(size_t segCount, const ubyte *segs);
 }

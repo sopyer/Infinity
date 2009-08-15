@@ -3,23 +3,6 @@
 
 namespace vg
 {
-	const int coordsPerCommand[] =
-	{
-	  0, /* VG_CLOSE_PATH */
-	  2, /* VG_MOTE_TO */
-	  2, /* VG_LINE_TO */
-	  1, /* VG_HLINE_TO */
-	  1, /* VG_VLINE_TO */
-	  4, /* VG_QUAD_TO */
-	  6, /* VG_CUBIC_TO */
-	  2, /* VG_SQUAD_TO */
-	  4, /* VG_SCUBIC_TO */
-	  5, /* VG_SCCWARC_TO */
-	  5, /* VG_SCWARC_TO */
-	  5, /* VG_LCCWARC_TO */
-	  5  /* VG_LCWARC_TO */
-	};
-
 	PathObject::PathObject(float pathScale, float pathBias):
 		scale(pathScale), bias(pathBias)
 	{}
@@ -75,10 +58,10 @@ namespace vg
 		cubicsTC.push_back(tc3);
 	}
 
-	void PathObject::lineTo(const glm::vec2& point)
-	{
-		addPathPoint(ptO);
-	}
+	//void PathObject::lineTo(const glm::vec2& point)
+	//{
+	//	addPathPoint(ptO);
+	//}
 
 	void PathObject::quadTo(const glm::vec2& p1, const glm::vec2& p2)
 	{
@@ -305,9 +288,7 @@ namespace vg
 		{
 			int		segment  = segs[s]&0x1E;
 			int		segidx   = segment>>1;
-			bool	relative = segs[s]&1;
 			bool	rel      = segs[s]&1;
-			glm::vec2	pt;
 			
 			if (segment==VG_CLOSE_PATH)
 			{
@@ -342,8 +323,8 @@ namespace vg
 				{
 					case VG_LINE_TO:
 						{
-							float x = iterFloat(data) + rel?xo:0;
-							float y = iterFloat(data) + rel?yo:0;
+							float x = iterFloat(data) + (rel?xo:0);
+							float y = iterFloat(data) + (rel?yo:0);
 							lineTo(x, y);
 							xo = xp = x;
 							yo = yp = y;
@@ -352,7 +333,7 @@ namespace vg
 
 					case VG_HLINE_TO:
 						{
-							float x = iterFloat(data) + rel?xo:0;
+							float x = iterFloat(data) + (rel?xo:0);
 							float y = yo;
 							lineTo(x, y);
 							xo = xp = x;
@@ -363,7 +344,7 @@ namespace vg
 					case VG_VLINE_TO:
 						{
 							float x = xo;
-							float y = iterFloat(data) + rel?yo:0;
+							float y = iterFloat(data) + (rel?yo:0);
 							lineTo(x, y);
 							xo = xp = x;
 							yo = yp = y;
@@ -372,10 +353,10 @@ namespace vg
 
 					case VG_QUAD_TO:
 						{
-							float x1 = iterFloat(data) + rel?xo:0;
-							float y1 = iterFloat(data) + rel?yo:0;
-							float x2 = iterFloat(data) + rel?xo:0;
-							float y2 = iterFloat(data) + rel?yo:0;
+							float x1 = iterFloat(data) + (rel?xo:0);
+							float y1 = iterFloat(data) + (rel?yo:0);
+							float x2 = iterFloat(data) + (rel?xo:0);
+							float y2 = iterFloat(data) + (rel?yo:0);
 							quadTo(x1, y1, x2, y2);
 							xp = x1; yp = y1;
 							xo = x2; yo = y2;
@@ -386,8 +367,8 @@ namespace vg
 						{
 							float x1 = 2*xo - xp;
 							float y1 = 2*yo - yp;
-							float x2 = iterFloat(data) + rel?xo:0;
-							float y2 = iterFloat(data) + rel?yo:0;
+							float x2 = iterFloat(data) + (rel?xo:0);
+							float y2 = iterFloat(data) + (rel?yo:0);
 							quadTo(x1, y1, x2, y2);
 							xp = x1; yp = y1;
 							xo = x2; yo = y2;
@@ -396,12 +377,12 @@ namespace vg
 
 					case VG_CUBIC_TO:
 						{
-							float x1 = iterFloat(data) + rel?xo:0;
-							float y1 = iterFloat(data) + rel?yo:0;
-							float x2 = iterFloat(data) + rel?xo:0;
-							float y2 = iterFloat(data) + rel?yo:0;
-							float x3 = iterFloat(data) + rel?xo:0;
-							float y3 = iterFloat(data) + rel?yo:0;
+							float x1 = iterFloat(data) + (rel?xo:0);
+							float y1 = iterFloat(data) + (rel?yo:0);
+							float x2 = iterFloat(data) + (rel?xo:0);
+							float y2 = iterFloat(data) + (rel?yo:0);
+							float x3 = iterFloat(data) + (rel?xo:0);
+							float y3 = iterFloat(data) + (rel?yo:0);
 							cubicTo(x1, y1, x2, y2, x3, y3);
 							xp = x2; yp = y2;
 							xo = x3; yo = y3;
@@ -412,10 +393,10 @@ namespace vg
 						{
 							float x1 = 2*xo - xp;
 							float y1 = 2*yo - yp;
-							float x2 = iterFloat(data) + rel?xo:0;
-							float y2 = iterFloat(data) + rel?yo:0;
-							float x3 = iterFloat(data) + rel?xo:0;
-							float y3 = iterFloat(data) + rel?yo:0;
+							float x2 = iterFloat(data) + (rel?xo:0);
+							float y2 = iterFloat(data) + (rel?yo:0);
+							float x3 = iterFloat(data) + (rel?xo:0);
+							float y3 = iterFloat(data) + (rel?yo:0);
 							cubicTo(x1, y1, x2, y2, x3, y3);
 							xp = x2; yp = y2;
 							xo = x3; yo = y3;
@@ -430,8 +411,8 @@ namespace vg
 							float rx = iterFloat(data);
 							float ry = iterFloat(data);
 							float angle = iterFloat(data);
-							float xe = iterFloat(data) + rel?xo:0;
-							float ye = iterFloat(data) + rel?yo:0;
+							float xe = iterFloat(data) + (rel?xo:0);
+							float ye = iterFloat(data) + (rel?yo:0);
 							arcTo(segment, rx, ry, angle, xe, ye);
 							xp = xo = xe;
 							yp = yo = ye;
@@ -443,6 +424,7 @@ namespace vg
 				}
 			}
 		}
+
 		if (segmentStarted)
 			endSegment(false);
 	}
@@ -455,15 +437,27 @@ namespace vg
 		geomSegArea.back().x = x;
 		geomSegArea.back().y = y;
 
+		minSeg = maxSeg = geomSegArea.back();
+
 		assert(idxSegArea.empty());
-	
-		idxSegArea.push_back(0);
 	}
 
 	void PathObject::endSegment(bool closePath)
 	{
 		assert(geomSegArea.size()>1);
 		assert(idxSegArea.size()>1);
+
+		//recalc BBox
+		if (empty())
+		{
+			min = minSeg;
+			max = maxSeg;
+		}
+		else
+		{
+			min = glm::min(minSeg, min);
+			max = glm::max(maxSeg, max);
+		}
 
 		if (closePath)
 		{
@@ -480,15 +474,15 @@ namespace vg
 		glm::vec2	pt(x, y);
 
 		addSegGeom(1, &pt);
-		//updateSegBBox(1, &pt);
+		recalcSegmentBBox(1, &pt);
 	}
 
 	void PathObject::quadTo(float x1, float y1, float x2, float y2)
 	{
-		glm::vec2 pts[3] = {getCursor(), glm::vec2(x1, y1), glm::vec2(x2, y2)};
-		
-		addSegGeom(1, pts+2);
-		//updateSegBBox(3, pts);
+		//glm::vec2 pts[3] = {getCursor(), glm::vec2(x1, y1), glm::vec2(x2, y2)};
+		//
+		//addSegGeom(1, pts+2);
+		//recalcSegmentBBox(3, pts);
 
 		//addQuadTriangle(ptO, glm::vec2(0.0f, 0.0f),
 		//				p1,     glm::vec2(0.5f, 0.0f),
@@ -505,16 +499,18 @@ namespace vg
 
 	void PathObject::clear()
 	{
+		geomArea.clear();
+		idxArea.clear();
 	}
 
 	void PathObject::addSegGeom(GLuint num, glm::vec2 pts[])
 	{
 		assert(geomSegArea.size()>0);
-		assert(idxSegArea.size()>0);
 
 		GLuint vertCount = (GLuint)geomSegArea.size();
+		GLuint vertBase  = (GLuint)geomArea.size()+vertCount;
 		GLuint idxCount  = (GLuint)idxSegArea.size();
-
+		
 		geomSegArea.resize(vertCount+num);
 		idxSegArea.resize(idxCount+num*3);
 
@@ -523,28 +519,22 @@ namespace vg
 			geomSegArea[vertCount+i] = pts[i];
 
 			idxSegArea[idxCount+i*3] = 0;
-			idxSegArea[idxCount+i*3+1] = idxSegArea[idxCount+i*3-1];
-			idxSegArea[idxCount] = vertCount+i;
+			idxSegArea[idxCount+i*3+1] = vertBase+i-1;
+			idxSegArea[idxCount+i*3+2] = vertBase+i;
+		}
+ 	}
+
+	void PathObject::recalcSegmentBBox(GLuint num, glm::vec2 pts[])
+	{
+		for (GLuint i=0; i<num; ++i)
+		{
+			minSeg = glm::min(minSeg, pts[i]);
+			maxSeg = glm::max(maxSeg, pts[i]);
 		}
 	}
 
 	bool isValidCommand(int c)
 	{
 		return c>=(VG_CLOSE_PATH >> 1) && c<=(VG_LCWARC_TO >> 1);
-	}
-
-	size_t coordCountForData(size_t segCount, const ubyte *segs)
-	{
-		size_t	count = 0;
-
-		for (size_t s=0; s<segCount; ++s)
-		{
-			ubyte command = ((segs[s] & 0x1E) >> 1);
-			if (!isValidCommand(command))
-				return 0;
-			count += coordsPerCommand[command];
-		}
-
-		return count;
 	}
 }
