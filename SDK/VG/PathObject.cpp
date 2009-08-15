@@ -24,22 +24,6 @@ namespace vg
 		scale(pathScale), bias(pathBias)
 	{}
 	
-	void PathObject::startPath(const glm::vec2& start)
-	{
-		startNewPath = true;
-		numPathVertices = 0;
-		ptP = ptO = start;
-	}
-
-	void PathObject::closePath()
-	{
-		if (numPathVertices > 0)
-			subPathes.push_back(numPathVertices);
-
-		startNewPath = true;
-		numPathVertices = 0;
-	}
-
 	void PathObject::addPathPoint(const glm::vec2& p)
 	{
 		numPathVertices += 1;
@@ -91,15 +75,8 @@ namespace vg
 		cubicsTC.push_back(tc3);
 	}
 
-	void PathObject::moveTo(const glm::vec2& newPos)
-	{
-		closePath();
-		ptP = ptO = newPos;
-	}
-
 	void PathObject::lineTo(const glm::vec2& point)
 	{
-		ptP = ptO = point;
 		addPathPoint(ptO);
 	}
 
@@ -110,8 +87,6 @@ namespace vg
 		addQuadTriangle(ptO, glm::vec2(0.0f, 0.0f),
 						p1,     glm::vec2(0.5f, 0.0f),
 						p2,     glm::vec2(1.0f, 1.0f));
-		ptP = p1;
-		ptO = p2;
 	}
 
 	glm::vec3 changeOrient(const glm::vec3& tc)
@@ -152,10 +127,6 @@ namespace vg
 		glm::vec2 cp1[4] = {p3, p2, p1, ptO}, cp2[4];
 		glm::vec3 tc1[4], tc2[4];
 
-		//Handle this as soon as possible - to enable possibility of early return
-		ptP = p2;
-		ptO = p3;
-		
 		// Calc determinant
 		cubic::calcDets(cp1, d, D);
 		
@@ -314,116 +285,140 @@ namespace vg
 		}
 
 		addPathPoint(endPt);
-		ptP = ptO = endPt;
+	}
+
+	//function with side effect!!!!!
+	float iterFloat(float*& data)
+	{
+		float value = *data; data++;
+		return value;
 	}
 
 	void PathObject::preprocess(size_t segOffset, size_t dataOffset)
 	{
-		struct dataFeeder
-		{
-			dataFeeder(std::vector<float>& source, size_t offset):
-				dataSource(source),
-				ptO(offset)
-			{}
+		float*	data = &PathObject::data[dataOffset];
 
-			glm::vec2	getPoint()
-			{
-				size_t	idx = ptO;
-				ptO += 2;
-				return glm::vec2(dataSource[idx], dataSource[idx+1]);
-			}
+		bool segmentStarted = false;
+		float	xo=0, yo=0, xp=0, yp=0;
 
-			float		getFloat()
-			{
-				return dataSource[ptO++];
-			}
-
-			std::vector<float>&	dataSource;
-			size_t				ptO;
-		};
-
-		dataFeeder	dataSource(data, dataOffset);
-		
-		startPath(glm::vec2());
 		for (size_t s=segOffset; s<segs.size(); ++s)
 		{
-			int		segment = segs[s]&0x1E;
-			int		segidx = segment>>1;
+			int		segment  = segs[s]&0x1E;
+			int		segidx   = segment>>1;
 			bool	relative = segs[s]&1;
+			bool	rel      = segs[s]&1;
 			glm::vec2	pt;
 			
 			if (segment==VG_CLOSE_PATH)
 			{
-				closePath();
+				if (segmentStarted)
+				{
+					endSegment(true);
+					segmentStarted = false;
+				}
 			}
 			else if (segment==VG_MOVE_TO)
 			{
-				moveTo(dataSource.getPoint() + (relative?ptO:glm::vec2()));
+				if (segmentStarted)
+				{
+					endSegment(false);
+					segmentStarted = false;
+				}
+
+				xo = xp = iterFloat(data) + rel?xo:0;
+				yo = yp = iterFloat(data) + rel?yo:0;
 			}
 			else
 			{
 				//Here starts non control commands
 				//So we can handle start path case
-				if (startNewPath)
+				if (!segmentStarted)
 				{
-					startNewPath = false;
-					addPathPoint(ptO);
+					segmentStarted = true;
+					startSegment(xo, yo);
 				}
 
 				switch (segment)
 				{
 					case VG_LINE_TO:
 						{
-							glm::vec2 newPos = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							lineTo(newPos);
+							float x = iterFloat(data) + rel?xo:0;
+							float y = iterFloat(data) + rel?yo:0;
+							lineTo(x, y);
+							xo = xp = x;
+							yo = yp = y;
 						}
 						break;
 
 					case VG_HLINE_TO:
 						{
-							glm::vec2 newPos = glm::vec2(dataSource.getFloat() + (relative?ptO.x:0), ptO.y);
-							lineTo(newPos);
+							float x = iterFloat(data) + rel?xo:0;
+							float y = yo;
+							lineTo(x, y);
+							xo = xp = x;
+							yo = yp = y;
 						}
 						break;
 
 					case VG_VLINE_TO:
 						{
-							glm::vec2 newPos = glm::vec2(ptO.x, dataSource.getFloat() + (relative?ptO.y:0));
-							lineTo(newPos);
+							float x = xo;
+							float y = iterFloat(data) + rel?yo:0;
+							lineTo(x, y);
+							xo = xp = x;
+							yo = yp = y;
 						}
 						break;
 
 					case VG_QUAD_TO:
 						{
-							glm::vec2 p1 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							glm::vec2 p2 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							quadTo(p1, p2);
+							float x1 = iterFloat(data) + rel?xo:0;
+							float y1 = iterFloat(data) + rel?yo:0;
+							float x2 = iterFloat(data) + rel?xo:0;
+							float y2 = iterFloat(data) + rel?yo:0;
+							quadTo(x1, y1, x2, y2);
+							xp = x1; yp = y1;
+							xo = x2; yo = y2;
 						}
 						break;
 
 					case VG_SQUAD_TO:
 						{
-							glm::vec2 p1 = 2.0f*ptO - ptP;
-							glm::vec2 p2 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							quadTo(p1, p2);
+							float x1 = 2*xo - xp;
+							float y1 = 2*yo - yp;
+							float x2 = iterFloat(data) + rel?xo:0;
+							float y2 = iterFloat(data) + rel?yo:0;
+							quadTo(x1, y1, x2, y2);
+							xp = x1; yp = y1;
+							xo = x2; yo = y2;
 						}
 						break;
 
 					case VG_CUBIC_TO:
 						{
-							glm::vec2 p1 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							glm::vec2 p2 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							glm::vec2 p3 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							cubicTo(p1, p2, p3);
+							float x1 = iterFloat(data) + rel?xo:0;
+							float y1 = iterFloat(data) + rel?yo:0;
+							float x2 = iterFloat(data) + rel?xo:0;
+							float y2 = iterFloat(data) + rel?yo:0;
+							float x3 = iterFloat(data) + rel?xo:0;
+							float y3 = iterFloat(data) + rel?yo:0;
+							cubicTo(x1, y1, x2, y2, x3, y3);
+							xp = x2; yp = y2;
+							xo = x3; yo = y3;
 						}
 						break;
 
 					case VG_SCUBIC_TO:
 						{
-							glm::vec2 p1 = 2.0f*ptO - ptP;
-							glm::vec2 p2 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							glm::vec2 p3 = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							cubicTo(p1, p2, p3);
+							float x1 = 2*xo - xp;
+							float y1 = 2*yo - yp;
+							float x2 = iterFloat(data) + rel?xo:0;
+							float y2 = iterFloat(data) + rel?yo:0;
+							float x3 = iterFloat(data) + rel?xo:0;
+							float y3 = iterFloat(data) + rel?yo:0;
+							cubicTo(x1, y1, x2, y2, x3, y3);
+							xp = x2; yp = y2;
+							xo = x3; yo = y3;
 						}
 						break;
 
@@ -432,11 +427,14 @@ namespace vg
 					case VG_LCWARC_TO:
 					case VG_LCCWARC_TO:
 						{
-							float		rx = dataSource.getFloat();
-							float		ry = dataSource.getFloat();
-							float		angle = dataSource.getFloat();
-							glm::vec2	endPt = dataSource.getPoint() + (relative?ptO:glm::vec2());
-							arcTo(segment, rx, ry, angle, endPt);
+							float rx = iterFloat(data);
+							float ry = iterFloat(data);
+							float angle = iterFloat(data);
+							float xe = iterFloat(data) + rel?xo:0;
+							float ye = iterFloat(data) + rel?yo:0;
+							arcTo(segment, rx, ry, angle, xe, ye);
+							xp = xo = xe;
+							yp = yo = ye;
 						}
 						break;
 
@@ -444,6 +442,89 @@ namespace vg
 						assert(0);
 				}
 			}
+		}
+		if (segmentStarted)
+			endSegment(false);
+	}
+
+	void PathObject::startSegment(float x, float y)
+	{
+		assert(geomSegArea.empty());
+
+		geomSegArea.resize(1);
+		geomSegArea.back().x = x;
+		geomSegArea.back().y = y;
+
+		assert(idxSegArea.empty());
+	
+		idxSegArea.push_back(0);
+	}
+
+	void PathObject::endSegment(bool closePath)
+	{
+		assert(geomSegArea.size()>1);
+		assert(idxSegArea.size()>1);
+
+		if (closePath)
+		{
+			geomArea.insert(geomArea.end(), geomSegArea.begin(), geomSegArea.end());
+			idxArea.insert(idxArea.end(), idxSegArea.begin(), idxSegArea.end());
+		}
+
+		geomSegArea.clear();
+		idxSegArea.clear();
+	}
+
+	void PathObject::lineTo(float x, float y)
+	{
+		glm::vec2	pt(x, y);
+
+		addSegGeom(1, &pt);
+		//updateSegBBox(1, &pt);
+	}
+
+	void PathObject::quadTo(float x1, float y1, float x2, float y2)
+	{
+		glm::vec2 pts[3] = {getCursor(), glm::vec2(x1, y1), glm::vec2(x2, y2)};
+		
+		addSegGeom(1, pts+2);
+		//updateSegBBox(3, pts);
+
+		//addQuadTriangle(ptO, glm::vec2(0.0f, 0.0f),
+		//				p1,     glm::vec2(0.5f, 0.0f),
+		//				p2,     glm::vec2(1.0f, 1.0f));
+	}
+
+	void PathObject::cubicTo(float x1, float y1, float x2, float y2, float x3, float y3)
+	{
+	}
+
+	void PathObject::arcTo(u8 segment, float rx, float ry, float angle, float xe, float ye)
+	{
+	}
+
+	void PathObject::clear()
+	{
+	}
+
+	void PathObject::addSegGeom(GLuint num, glm::vec2 pts[])
+	{
+		assert(geomSegArea.size()>0);
+		assert(idxSegArea.size()>0);
+
+		GLuint vertCount = (GLuint)geomSegArea.size();
+		GLuint idxCount  = (GLuint)idxSegArea.size();
+
+		geomSegArea.resize(vertCount+num);
+		idxSegArea.resize(idxCount+num*3);
+
+		for (GLuint i=0; i<num; i++)
+		{
+			geomSegArea[vertCount+i] = pts[i];
+
+			idxSegArea[idxCount+i*3] = 0;
+			idxSegArea[idxCount+i*3+1] = idxSegArea[idxCount+i*3-1];
+			idxSegArea[idxCount] = vertCount+i;
 		}
 	}
 

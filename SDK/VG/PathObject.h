@@ -5,6 +5,7 @@
 #include <Framework.h>
 #include <vg/openvg.h>
 #include ".\types.h"
+#include "VertexTypes.h"
 
 namespace vg
 {
@@ -24,7 +25,18 @@ namespace vg
 		std::vector<u8>		segs;
 		std::vector<float>	data;
 
-		/* Subdivision */
+		/* Rendering Data */
+		std::vector<Vertex>		geomArea;
+		std::vector<GLuint>		idxArea;
+		std::vector<VertexTex2>	geomArcs;
+		std::vector<VertexTex2>	geomQuads;
+		std::vector<VertexTex3>	geomCubics;
+
+		//area geometry of current segment
+		std::vector<Vertex>		geomSegArea;
+		std::vector<GLuint>		idxSegArea;
+		
+
 		std::vector<glm::vec2>		vertices;
 		std::vector<GLsizei>		subPathes;
 		std::vector<glm::vec2>		quads;
@@ -42,15 +54,10 @@ namespace vg
 		void preprocess(size_t segOffset, size_t dataOffset);
 		
 		//Path builder data
-		glm::vec2	ptO, ptP;
+		glm::vec2	ptO;
 		bool		startNewPath;
 		GLsizei		numPathVertices;
 
-		//Path builder methods
-		void startPath(const glm::vec2& start);
-		void closePath();
-
-		void moveTo(const glm::vec2& newPos);
 		void lineTo(const glm::vec2& point);
 		void quadTo(const glm::vec2& p1, const glm::vec2& p2);
 		void cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3);
@@ -94,6 +101,20 @@ namespace vg
 							const glm::vec2& p2, const glm::vec3& tc2,
 							const glm::vec2& p3, const glm::vec3& tc3,
 							const glm::vec2& p4, const glm::vec3& tc4);
+
+		void startSegment(float x, float y);
+		void endSegment(bool closePath);
+
+		void lineTo(float x, float y);
+		void quadTo(float x1, float y1, float x2, float y2);
+		void cubicTo(float x1, float y1, float x2, float y2, float x3, float y3);
+		void arcTo(u8 segment, float rx, float ry, float angle, float xe, float ye);
+
+		void clear();
+
+		void addSegGeom(GLuint num, glm::vec2 pts[]);
+		void recalcSegmentBBox();
+		void recalcBBox();
 	};
 
 	bool isValidCommand(int c);

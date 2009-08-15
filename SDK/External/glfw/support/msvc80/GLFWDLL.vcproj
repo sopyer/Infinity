@@ -168,7 +168,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy ..\..\include\gl\glfw.h ..\..\..\gl"
+				CommandLine="copy ..\..\include\gl\glfw.h ..\..\..\..\gl"
 			/>
 		</Configuration>
 	</Configurations>

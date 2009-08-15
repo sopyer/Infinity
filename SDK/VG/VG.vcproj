@@ -213,6 +213,10 @@
 				RelativePath=".\types.h"
 				>
 			</File>
+			<File
+				RelativePath=".\VertexTypes.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Math"
