@@ -23,17 +23,24 @@ namespace vg
 		std::vector<float>	data;
 
 		/* Rendering Data */
-		std::vector<Vertex>		geomArea;
-		std::vector<GLuint>		idxArea;
-		std::vector<VertexTex2>	geomArcs;
-		std::vector<VertexTex2>	geomQuads;
-		std::vector<VertexTex3>	geomCubics;
 
-		//area geometry of current segment
-		std::vector<Vertex>		geomSegArea;
-		std::vector<GLuint>		idxSegArea;
+		//path region data
+		std::vector<Vertex>			vertRegion;
+		std::vector<GLuint>			idxRegion;
+		std::vector<VertexTex2>		vertQuad;
+
+		//path stroke data
+		//std::vector<VertexStroke>	vertRegion;
+		//std::vector<GLuint>			idxRegion;
+
+		//current subregion geometry
+		std::vector<Vertex>			vertSubRegion;
+		std::vector<GLuint>			idxSubRegion;
 		
+		std::vector<VertexTex2>		vertSubQuad;
 
+		
+		//Old data
 		std::vector<glm::vec2>		vertices;
 		std::vector<GLsizei>		subPathes;
 		std::vector<glm::vec2>		quads;
@@ -113,8 +120,9 @@ namespace vg
 		void addSegGeom(GLuint num, glm::vec2 pts[]);
 		void recalcSegmentBBox(GLuint num, glm::vec2 pts[]);
 
+		glm::vec2	getLastVertex(){return vertSubRegion.back();}
 		//This is wrong we should check whether strokes is empty
-		bool empty() {return geomArea.empty();}
+		bool empty() {return vertRegion.empty();}
 	};
 
 	bool isValidCommand(int c);

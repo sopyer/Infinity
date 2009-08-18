@@ -198,8 +198,19 @@ namespace vg
 
 		glUseProgram(0);
 
-		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->geomArea[0]);
-		glDrawElements(GL_TRIANGLES, (GLsizei)path.mObject->idxArea.size(), GL_UNSIGNED_INT, &path.mObject->idxArea[0]);
+		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertRegion[0]);
+		glDrawElements(GL_TRIANGLES, (GLsizei)path.mObject->idxRegion.size(), GL_UNSIGNED_INT, &path.mObject->idxRegion[0]);
+
+		if (!path.mObject->vertQuad.empty())
+		{
+			glUseProgram(mMaskQuad);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glVertexPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].p);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].tc);
+			glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->vertQuad.size());
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		}
+
 		//GLint base = 0;
 		//glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertices[0]);
 		//for(size_t i=0; i<path.mObject->subPathes.size(); ++i)
@@ -213,8 +224,8 @@ namespace vg
 		//{
 		//	glUseProgram(mMaskQuad);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quads[0]);
-		//	glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->quadsTC[0]);
+		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->quads[0]);
+		//	glTexCoordPointer(2, GL_FLOAT, 0, &path.mObject->quadsTC[0]);
 		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->quads.size());
 		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		//}
@@ -223,8 +234,8 @@ namespace vg
 		//{
 		//	glUseProgram(mMaskCubic);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->cubics[0]);
-		//	glTexCoordPointer(3, GL_FLOAT, 3*sizeof(float), &path.mObject->cubicsTC[0]);
+		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->cubics[0]);
+		//	glTexCoordPointer(3, GL_FLOAT, 0, &path.mObject->cubicsTC[0]);
 		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->cubics.size());
 		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		//}
@@ -233,8 +244,8 @@ namespace vg
 		//{
 		//	glUseProgram(mMaskArc);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		//	glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcs[0]);
-		//	glTexCoordPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->arcsTC[0]);
+		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->arcs[0]);
+		//	glTexCoordPointer(2, GL_FLOAT, 0, &path.mObject->arcsTC[0]);
 		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->arcs.size());
 		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		//}

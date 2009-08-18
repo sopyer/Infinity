@@ -32,8 +32,8 @@ class VGSample: public UI::GLFWStage
 			assert(testLoad(mPattern));
 			mPolygon = mContext.createPath(1.0f, 0.0f);
 
-			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_CLOSE_PATH};
-			float data[] = {100, 100, 100, 0, 0, 100, 0, 0};
+			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, /*VG_LINE_TO_ABS,*/ VG_QUAD_TO_ABS, VG_CLOSE_PATH};
+			float data[] = {150, 100, 150, 0, 50, 100, /*0, 0,*/ 0, 50, 50, 0};
 
 			ubyte quadTest[] = {VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float quadData[] = {50, 100, 100, 0};

@@ -431,21 +431,21 @@ namespace vg
 
 	void PathObject::startSegment(float x, float y)
 	{
-		assert(geomSegArea.empty());
+		assert(vertSubRegion.empty());
 
-		geomSegArea.resize(1);
-		geomSegArea.back().x = x;
-		geomSegArea.back().y = y;
+		vertSubRegion.resize(1);
+		vertSubRegion.back().x = x;
+		vertSubRegion.back().y = y;
 
-		minSeg = maxSeg = geomSegArea.back();
+		minSeg = maxSeg = vertSubRegion.back();
 
-		assert(idxSegArea.empty());
+		assert(idxSubRegion.empty());
 	}
 
 	void PathObject::endSegment(bool closePath)
 	{
-		assert(geomSegArea.size()>1);
-		assert(idxSegArea.size()>1);
+		assert(vertSubRegion.size()>1);
+		assert(idxSubRegion.size()>1);
 
 		//recalc BBox
 		if (empty())
@@ -461,12 +461,14 @@ namespace vg
 
 		if (closePath)
 		{
-			geomArea.insert(geomArea.end(), geomSegArea.begin(), geomSegArea.end());
-			idxArea.insert(idxArea.end(), idxSegArea.begin(), idxSegArea.end());
+			vertRegion.insert(vertRegion.end(), vertSubRegion.begin(), vertSubRegion.end());
+			vertQuad.insert(vertQuad.end(), vertSubQuad.begin(), vertSubQuad.end());
+			idxRegion.insert(idxRegion.end(), idxSubRegion.begin(), idxSubRegion.end());
 		}
 
-		geomSegArea.clear();
-		idxSegArea.clear();
+		vertSubRegion.clear();
+		vertSubQuad.clear();
+		idxSubRegion.clear();
 	}
 
 	void PathObject::lineTo(float x, float y)
@@ -479,10 +481,16 @@ namespace vg
 
 	void PathObject::quadTo(float x1, float y1, float x2, float y2)
 	{
-		//glm::vec2 pts[3] = {getCursor(), glm::vec2(x1, y1), glm::vec2(x2, y2)};
-		//
-		//addSegGeom(1, pts+2);
-		//recalcSegmentBBox(3, pts);
+		glm::vec2 pts[3] = {getLastVertex(), glm::vec2(x1, y1), glm::vec2(x2, y2)};
+		glm::vec2 tc[3] = {glm::vec2(0.0f, 0.0f), glm::vec2(0.5f, 0.0f), glm::vec2(1.0f, 1.0f)};
+		addSegGeom(1, pts+2);
+		recalcSegmentBBox(3, pts);
+
+		for (size_t i=0; i<3; ++i)
+		{
+			VertexTex2	vert = {pts[i], tc[i]};
+			vertSubQuad.push_back(vert);
+		}
 
 		//addQuadTriangle(ptO, glm::vec2(0.0f, 0.0f),
 		//				p1,     glm::vec2(0.5f, 0.0f),
@@ -499,28 +507,29 @@ namespace vg
 
 	void PathObject::clear()
 	{
-		geomArea.clear();
-		idxArea.clear();
+		vertRegion.clear();
+		idxRegion.clear();
+		vertQuad.clear();
 	}
 
 	void PathObject::addSegGeom(GLuint num, glm::vec2 pts[])
 	{
-		assert(geomSegArea.size()>0);
+		assert(vertSubRegion.size()>0);
 
-		GLuint vertCount = (GLuint)geomSegArea.size();
-		GLuint vertBase  = (GLuint)geomArea.size()+vertCount;
-		GLuint idxCount  = (GLuint)idxSegArea.size();
+		GLuint vertCount = (GLuint)vertSubRegion.size();
+		GLuint vertBase  = (GLuint)vertRegion.size()+vertCount;
+		GLuint idxCount  = (GLuint)idxSubRegion.size();
 		
-		geomSegArea.resize(vertCount+num);
-		idxSegArea.resize(idxCount+num*3);
+		vertSubRegion.resize(vertCount+num);
+		idxSubRegion.resize(idxCount+num*3);
 
 		for (GLuint i=0; i<num; i++)
 		{
-			geomSegArea[vertCount+i] = pts[i];
+			vertSubRegion[vertCount+i] = pts[i];
 
-			idxSegArea[idxCount+i*3] = 0;
-			idxSegArea[idxCount+i*3+1] = vertBase+i-1;
-			idxSegArea[idxCount+i*3+2] = vertBase+i;
+			idxSubRegion[idxCount+i*3] = 0;
+			idxSubRegion[idxCount+i*3+1] = vertBase+i-1;
+			idxSubRegion[idxCount+i*3+2] = vertBase+i;
 		}
  	}
 
