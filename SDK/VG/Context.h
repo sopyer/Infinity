@@ -15,6 +15,7 @@ namespace vg
 	{
 		public:
 			Context();
+			~Context();
 
 			Path createPath(float scale, float bias);
 			void drawPath(Path path, ProgramRef fill);
@@ -26,13 +27,5 @@ namespace vg
 
 		private:
 			void maskPathRegion(Path path);
-
-		private:
-			gl::Program	mMaskQuad;
-			gl::Program	mMaskCubic;
-			gl::Program	mMaskArc;
-			
-			gl::Program	mFillColor;
-			gl::Program	mFillPattern;
 	};
 }

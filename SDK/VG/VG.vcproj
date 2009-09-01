@@ -164,6 +164,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\GPUData.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\GPUData.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Paint.cpp"
 				>
 			</File>
@@ -193,6 +201,14 @@
 			</File>
 			<File
 				RelativePath=".\PathObject.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SharedResources.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SharedResources.h"
 				>
 			</File>
 			<File

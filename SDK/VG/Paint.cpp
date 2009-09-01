@@ -4,14 +4,15 @@
 
 #include "Paint.h"
 #include "PaintObject.h"
+#include "SharedResources.h"
 
 namespace vg
 {
 	void Paint::setColorPaint(const glm::vec4& color)
 	{
-		GLint uLocColor = glGetUniformLocation(mObject->colorProgram, "uFillColor");
+		GLint uLocColor = glGetUniformLocation(vg::shared::prgFillColor, "uFillColor");
 		mObject->fillProgram.begin();
-			glUseProgram(mObject->colorProgram);
+			glUseProgram(vg::shared::prgFillColor);
 			glUniform4fv(uLocColor, 1, color);
 			glBindTexture(GL_TEXTURE_2D, 0);
 		mObject->fillProgram.end();
@@ -52,8 +53,8 @@ namespace vg
 
 	void Paint::setPatternPaint(GLuint texture, const glm::vec4& fillColor, VGTilingMode mode)
 	{
-		GLint uLocImage    = glGetUniformLocation(mObject->patternProgram, "uPattern");
-		GLint uLocImageDim = glGetUniformLocation(mObject->patternProgram, "uImageDim");
+		GLint uLocImage    = glGetUniformLocation(vg::shared::prgFillPattern, "uPattern");
+		GLint uLocImageDim = glGetUniformLocation(vg::shared::prgFillPattern, "uImageDim");
 		glm::vec2	imgDim;
 
 		glBindTexture(GL_TEXTURE_2D, texture);
@@ -61,7 +62,7 @@ namespace vg
 		glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgDim.y);
 
 		mObject->fillProgram.begin();
-			glUseProgram(mObject->patternProgram);
+			glUseProgram(vg::shared::prgFillPattern);
 			glUniform1i(uLocImage, 0);
 			glUniform2fv(uLocImageDim, 1, imgDim);
 			glActiveTexture(GL_TEXTURE0);

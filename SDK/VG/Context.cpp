@@ -2,98 +2,18 @@
 #include "Context.h"
 #include "PathObject.h"
 #include "PaintObject.h"
-
-namespace
-{
-	const char* const sourceArcFragSh = 
-		"void main(void)											"
-		"{															"
-		"	vec2 uv = gl_TexCoord[0].st;							"
-		"															"
-		"	if( (uv.s*uv.s + uv.t*uv.t)>1.0 )						"
-		"		discard;											"
-		"															"
-		"	gl_FragColor = vec4(1.0);								"
-		"}															";
-
-	const char* const sourceQuadFragSh = 
-		"void main(void)											"
-		"{															"
-		"	vec2 uv = gl_TexCoord[0].st;							"
-		"															"
-		"	if( (pow(uv.s, 2.0)-uv.t)>0.0 )							"
-		"		discard;											"
-		"															"
-		"	gl_FragColor = vec4(1);									"
-		"}															";
-
-	const char* const sourceCubicFragSh = 
-		"void main(void)											"
-		"{															"
-		"	vec3 uv = gl_TexCoord[0].stp;							"
-		"															"
-		"	if( (pow(uv.s, 3.0)-uv.t*uv.p)>0.0 )					"
-		"		discard;											"
-		"															"
-		"	gl_FragColor = vec4(1);									"
-		"}															";
-
-	const char* const sourceColorFillFragSh =
-		"uniform vec4 uFillColor;									"
-		"															"
-		"void main()												"
-		"{															"
-		"	gl_FragColor = uFillColor;								"
-		"}															";
-
-	const char* const sourceFillVertSh =
-		"uniform vec2 uImageDim;									"
-		"															"
-		"void main()												"
-		"{															"
-		"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	"
-		"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	"
-		"}															";
-
-	const char* const sourcePatternFillFragSh =
-		"uniform sampler2D uPattern;								"
-		"															"
-		"void main()												"
-		"{															"
-		"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		"
-		"}															";
-}
+#include "SharedResources.h"
 
 namespace vg
 {
 	Context::Context()
 	{
-		gl::FragmentShader	fsArc;
-		gl::FragmentShader	fsCubic;
-		gl::FragmentShader	fsQuad;
+		vg::shared::Acquire();
+	}
 
-		fsArc.compile(sourceArcFragSh);
-		fsCubic.compile(sourceCubicFragSh);
-		fsQuad.compile(sourceQuadFragSh);
-
-		mMaskArc.addShader(fsArc).link();
-		mMaskCubic.addShader(fsCubic).link();
-		mMaskQuad.addShader(fsQuad).link();
-		
-		gl::VertexShader	vsFill;
-
-		vsFill.compile(sourceFillVertSh);
-
-		gl::FragmentShader	fsColor;
-		gl::FragmentShader	fsPattern;
-
-		fsColor.compile(sourceColorFillFragSh);
-		fsPattern.compile(sourcePatternFillFragSh);
-
-		mFillColor.addShader(fsColor).link();
-		mFillPattern.addShader(fsPattern)
-					.addShader(vsFill)
-					.link();
+	Context::~Context()
+	{
+		vg::shared::Release();
 	}
 
 	Path Context::createPath(float scale, float bias)
@@ -158,7 +78,7 @@ namespace vg
 	{
 		Paint	paint;
 
-		paint.mObject = new PaintObject(mFillColor, 0, 0,mFillPattern);
+		paint.mObject = new PaintObject();
 
 		return paint;
 	}
@@ -203,7 +123,7 @@ namespace vg
 
 		if (!path.mObject->vertQuad.empty())
 		{
-			glUseProgram(mMaskQuad);
+			glUseProgram(vg::shared::prgMaskQuad);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glVertexPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].p);
 			glTexCoordPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].tc);
@@ -222,7 +142,7 @@ namespace vg
 
 		//if (!path.mObject->quads.empty())
 		//{
-		//	glUseProgram(mMaskQuad);
+		//	glUseProgram(vg::shared::prgMaskQuad);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->quads[0]);
 		//	glTexCoordPointer(2, GL_FLOAT, 0, &path.mObject->quadsTC[0]);
@@ -232,7 +152,7 @@ namespace vg
 
 		//if (!path.mObject->cubics.empty())
 		//{
-		//	glUseProgram(mMaskCubic);
+		//	glUseProgram(vg::shared::prgMaskCubic);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->cubics[0]);
 		//	glTexCoordPointer(3, GL_FLOAT, 0, &path.mObject->cubicsTC[0]);
@@ -242,7 +162,7 @@ namespace vg
 
 		//if (!path.mObject->arcs.empty())
 		//{
-		//	glUseProgram(mMaskArc);
+		//	glUseProgram(vg::shared::prgMaskArc);
 		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		//	glVertexPointer(2, GL_FLOAT, 0, &path.mObject->arcs[0]);
 		//	glTexCoordPointer(2, GL_FLOAT, 0, &path.mObject->arcsTC[0]);

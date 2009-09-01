@@ -1,0 +1,61 @@
+#pragma once
+
+#include <vector>
+#include <glm/glm.h>
+#include <vg/openvg.h>
+#include <utils.h>
+#include ".\types.h"
+
+namespace vg
+{
+	struct Vertex
+	{
+		glm::vec2	p;
+		glm::vec2	n;
+		glm::vec3	tc;
+	};
+
+	struct GPUData
+	{
+		public:
+			enum
+			{
+				REGION = 1,	//(1<<0)
+				STROKE = 2,	//(1<<1)
+				ALL = REGION|STROKE,
+			};
+
+		public:
+			GPUData();
+
+			void begin(float x, float y);
+			void end();
+			
+			void line(float x0, float y0, float x1, float y1);
+			void quad(float x0, float y0, float x1, float y1, float x2, float y2);
+			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3);
+			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
+
+			void append(u32 mode, const GPUData& other);
+
+		public:
+			std::vector<Vertex>	vertices;
+			std::vector<u32>	triIndices;
+			std::vector<u32>	arcIndices;
+			std::vector<u32>	quadIndices;
+			std::vector<u32>	cubicIndices;
+
+		private:
+			u32 addVertex(const Vertex& v);
+
+			void addTri(u32 i0, u32 i1, u32 i2);
+			void addArcTri(u32 i0, u32 i1, u32 i2);
+			void addQuadTri(u32 i0, u32 i1, u32 i2);
+			void addCubicTri(u32 i0, u32 i1, u32 i2);
+
+		private:
+			u32 mBase;
+	};
+
+	void Rasterize(GPUData& data);
+}
