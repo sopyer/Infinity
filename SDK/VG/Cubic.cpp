@@ -8,7 +8,7 @@ namespace cubic
 		return tc.x*tc.x*tc.x - tc.y*tc.z;
 	}
 
-	void calcDets(const glm::vec2 p[4], float d[4], float& D)
+	void calcDets(const glm::vec2 p[4], Determinants& dets/*float d[4], float& D*/)
 	{
 		/**********************************************************/
 		/*	Alternative way of calculating di
@@ -42,20 +42,20 @@ namespace cubic
 			-glm::dot(cp[2], glm::cross(cp[1], cp[0]))
 		};
 
-		d[0] = 3*(a[3]+a[2]+a[1]+a[0]);
-		d[1] = 3*(3*a[3]+2*a[2]+a[1]);
-		d[2] = 3*(3*a[3]+a[2]);
-		d[3] = 3*(3*a[3]);
+		dets.d[0] = 3*(a[3]+a[2]+a[1]+a[0]);
+		dets.d[1] = 3*(3*a[3]+2*a[2]+a[1]);
+		dets.d[2] = 3*(3*a[3]+a[2]);
+		dets.d[3] = 3*(3*a[3]);
 
 		//following expression has the same sign as d1*d1*(3*d2*d2 - 4*d1*d3)
 		//and later it is reused as discriminant for quadratic equation
-		D = 3.0f*d[2]*d[2] - 4.0f*d[1]*d[3];
+		dets.D = 3.0f*dets.d[2]*dets.d[2] - 4.0f*dets.d[1]*dets.d[3];
 	}
 
 	//Serpentine and cusp with inflection at infinity
-	void calcSerpentineCuspTC(const float D, const float d[4], glm::vec3 tc[4], float& t1, float& t2)
+	void calcSerpentineCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2)
 	{
-		assert(D>=0 && d[1]!=0);
+		assert(dets.D>=0 && dets.d[1]!=0);
 
 		/********************************************************/
 		/*			Calculating koeficients in alternative way
@@ -90,19 +90,19 @@ namespace cubic
 		/*	glm::vec3 texcoo33(-k33, -l33, m33);
 		/********************************************************/
 
-		float dd = D/3.0f;
+		float dd = dets.D/3.0f;
 
-		if (d[2] == 0)
+		if (dets.d[2] == 0)
 		{
-			t1 = -sqrt(dd)/2.0f/d[1];
-			t2 = sqrt(dd)/2.0f/d[1];
+			t1 = -sqrt(dd)/2.0f/dets.d[1];
+			t2 = sqrt(dd)/2.0f/dets.d[1];
 		}
 		else
 		{
-			dd = 0.5f * (d[2] + glm::sign(d[2])*sqrt(dd));
+			dd = 0.5f * (dets.d[2] + glm::sign(dets.d[2])*sqrt(dd));
 			
-			t1 = dd/d[1];
-			t2 = d[3]/3.0f/dd;
+			t1 = dd/dets.d[1];
+			t2 = dets.d[3]/3.0f/dd;
 		}
 
 		glm::vec3	kk0(t1*t2,   t1*t1*t1,    t2*t2*t2),
@@ -117,9 +117,9 @@ namespace cubic
 	}
 
 	// Loop case
-	void calcLoopTC(const float D, const float d[4], glm::vec3 tc[4], float& t1, float& t2)
+	void calcLoopTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2)
 	{
-		assert(D<0 && d[1]!=0);
+		assert(dets.D<0 && dets.d[1]!=0);
 
 		//float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
 		//float t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
@@ -131,8 +131,8 @@ namespace cubic
 
 		//!!!!! TODO !!!!!
 		//Calc roots in way similar to serpantine
-		t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
-		t2 = (d[2] - sqrt(-D))/d[1]/2.0f;
+		t1 = (dets.d[2] + sqrt(-dets.D))/dets.d[1]/2.0f;
+		t2 = (dets.d[2] - sqrt(-dets.D))/dets.d[1]/2.0f;
 
 		glm::vec3	kk0(t1*t2,      t1*t1*t2,             t2*t2*t1),
 					kk1(-t1-t2,	    -t1*t1-2.0f*t1*t2,    -t2*t2-2.0f*t1*t2),
@@ -146,11 +146,11 @@ namespace cubic
 	}
 
 	//Cusp at infinity
-	void calcInfCuspTC(const float D, const float d[4], glm::vec3 tc[4], float& t)
+	void calcInfCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t)
 	{
-		assert(d[1]==0 && d[2]!=0);
+		assert(dets.d[1]==0 && dets.d[2]!=0);
 
-		t = d[3]/3.0f/d[2];
+		t = dets.d[3]/3.0f/dets.d[2];
 
 		glm::vec3	kk0(t,     t*t*t,     1.0f),
 					kk1(-1.0f, -3.0f*t*t, 0.0f),
@@ -171,4 +171,11 @@ namespace cubic
 		tc[2] = glm::vec3(2.0f/3.0f, 1.0f/3.0f, 2.0f/3.0f);
 		tc[3] = glm::vec3(1.0f,      1.0f,      1.0f);
 	}
+
+	void changeOrient(glm::vec3& tc)
+	{
+		tc.x = -tc.x;
+		tc.y = -tc.y;
+	}
+
 }

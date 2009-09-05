@@ -35,7 +35,7 @@ namespace vg
 				"	if( (pow(uv.s, 2.0)-uv.t)>0.0 )							"
 				"		discard;											"
 				"															"
-				"	gl_FragColor = vec4(1);									"
+				"	gl_FragColor = vec4(1.0);								"
 				"}															";
 
 			const char* const sourceCubicFragSh = 
@@ -43,10 +43,10 @@ namespace vg
 				"{															"
 				"	vec3 uv = gl_TexCoord[0].stp;							"
 				"															"
-				"	if( (pow(uv.s, 3.0)-uv.t*uv.p)>0.0 )					"
+				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>0.0 )					"
 				"		discard;											"
 				"															"
-				"	gl_FragColor = vec4(1);									"
+				"	gl_FragColor = vec4(1.0);								"
 				"}															";
 
 			const char* const sourceColorFillFragSh =

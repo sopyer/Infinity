@@ -2,6 +2,8 @@
 
 #include <VG\path.h>
 #include <VG\Context.h>
+#include <VG\GPUData.h>
+#include <VG\SharedResources.h>
 
 GLchar buf[1024];
 GLsizei len;
@@ -103,10 +105,20 @@ class VGSample: public UI::GLFWStage
 
 			glClearDepth(1.0);
 			glClearStencil(0);
+
+			vg::shared::Acquire();
+			mRegion.begin(0,0);
+			mRegion.line(150, 100, 150, 0);
+			mRegion.line(150, 0, 50, 100);
+			mRegion.line(50, 100, 50, 0);
+			mRegion.quad(50, 100, 0, 50, 50, 0);
+			mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			mRegion.end();
 		}
 
 		~VGSample()
 		{
+			vg::shared::Release();
 			mContext.destroyPaint(mFill);
 			mContext.destroyPath(mPolygon);
 		}
@@ -127,7 +139,19 @@ class VGSample: public UI::GLFWStage
 			//	glVertex2f(cubicData[i*2], cubicData[i*2+1]);
 			//glEnd();
 			glCullFace(GL_FRONT_AND_BACK);
-			mContext.drawPath(mPolygon, mFill);
+			//mContext.drawPath(mPolygon, mFill);
+			vg::Rasterize(mRegion);
+			glColor4f(1, 1, 1, 1);
+			glUseProgram(0);
+			glEnable(GL_STENCIL_TEST);
+			glStencilFunc(GL_EQUAL, 1, 1);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			glBegin(GL_QUADS);
+			glVertex2f(0,-100);
+			glVertex2f(0,100);
+			glVertex2f(150,100);
+			glVertex2f(150,-100);
+			glEnd();
 			glFlush();
 		}
 
@@ -142,6 +166,7 @@ class VGSample: public UI::GLFWStage
 		vg::Path	mPolygon;
 		vg::Paint	mFill;
 		TextureRef	mPattern;
+		vg::GPUData	mRegion;
 };
 
 int main()

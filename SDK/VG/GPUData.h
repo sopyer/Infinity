@@ -40,7 +40,7 @@ namespace vg
 
 		public:
 			std::vector<Vertex>	vertices;
-			std::vector<u32>	triIndices;
+			std::vector<u32>	regIndices;
 			std::vector<u32>	arcIndices;
 			std::vector<u32>	quadIndices;
 			std::vector<u32>	cubicIndices;
@@ -48,10 +48,16 @@ namespace vg
 		private:
 			u32 addVertex(const Vertex& v);
 
-			void addTri(u32 i0, u32 i1, u32 i2);
+			void addRegTri(u32 i0, u32 i1, u32 i2);
 			void addArcTri(u32 i0, u32 i1, u32 i2);
 			void addQuadTri(u32 i0, u32 i1, u32 i2);
 			void addCubicTri(u32 i0, u32 i1, u32 i2);
+
+			void addSimpleCubic(u32& firstIdx, u32& lastIdx,
+								const glm::vec2& p1, const glm::vec3& tc1,
+								const glm::vec2& p2, const glm::vec3& tc2,
+								const glm::vec2& p3, const glm::vec3& tc3,
+								const glm::vec2& p4, const glm::vec3& tc4);
 
 		private:
 			u32 mBase;

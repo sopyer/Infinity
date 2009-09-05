@@ -100,7 +100,8 @@ namespace vg
 	//Loop, Blinn. Rendering resolution independent curves using programmable hardware.
 	void PathObject::cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3)
 	{
-		float	d[4], D;
+		//float	d[4], D;
+		cubic::Determinants	det;
 		float	roots[2];
 		size_t	numRoots = 0;
 
@@ -111,22 +112,22 @@ namespace vg
 		glm::vec3 tc1[4], tc2[4];
 
 		// Calc determinant
-		cubic::calcDets(cp1, d, D);
+		cubic::calcDets(cp1, det/*d, D*/);
 		
 		// First calculate t values at which we should subdivide our curve
-		if (d[1] != 0)
+		if (det.d[1] != 0)
 		{
 			float t1, t2;
 
-			if (D>=0)
+			if (det.D>=0)
 			{
 				// Handle serpentine and cusp case
-				cubic::calcSerpentineCuspTC(D, d, tc1, t1, t2);
+				cubic::calcSerpentineCuspTC(det,/*D, d, */tc1, t1, t2);
 			}
 			else
 			{
 				// Handle loop case
-				cubic::calcLoopTC(D, d, tc1, t1, t2);
+				cubic::calcLoopTC(det,/*D, d,*/ tc1, t1, t2);
 			}
 			
 			//From greater value to lower - due to changed parametrization
@@ -139,15 +140,15 @@ namespace vg
 			if (t1!=t2 && 0<t2 && t2<1)
 				roots[numRoots++] = t2;
 		}
-		else if (d[2]!=0)
+		else if (det.d[2]!=0)
 		{
 			//Handle cusp at infinity case
 			float t;
 
-			cubic::calcInfCuspTC(D, d, tc1, t);
+			cubic::calcInfCuspTC(det,/*D, d,*/ tc1, t);
 			roots[numRoots++] = t;
 		}
-		else if (d[3]!=0)
+		else if (det.d[3]!=0)
 		{
 			//Handle quadratic curve case
 			cubic::calcQuadraticTC(tc1);
