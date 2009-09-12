@@ -11,6 +11,9 @@ namespace vg
 		GLuint	prgMaskArc = 0;	
 		GLuint	prgFillColor = 0;
 		GLuint	prgFillPattern = 0;
+		GLuint	prgMaskStrokeSeg = 0;
+
+		GLint	locOffsetAttrib = -1;
 
 		namespace
 		{
@@ -21,7 +24,7 @@ namespace vg
 				"{															"
 				"	vec2 uv = gl_TexCoord[0].st;							"
 				"															"
-				"	if( (uv.s*uv.s + uv.t*uv.t)>1.0 )						"
+				"	if( (uv.s*uv.s + uv.t*uv.t)>=1.0 )						"
 				"		discard;											"
 				"															"
 				"	gl_FragColor = vec4(1.0);								"
@@ -32,7 +35,7 @@ namespace vg
 				"{															"
 				"	vec2 uv = gl_TexCoord[0].st;							"
 				"															"
-				"	if( (pow(uv.s, 2.0)-uv.t)>0.0 )							"
+				"	if( (pow(uv.s, 2.0)-uv.t)>=0.0 )						"
 				"		discard;											"
 				"															"
 				"	gl_FragColor = vec4(1.0);								"
@@ -43,7 +46,7 @@ namespace vg
 				"{															"
 				"	vec3 uv = gl_TexCoord[0].stp;							"
 				"															"
-				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>0.0 )					"
+				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					"
 				"		discard;											"
 				"															"
 				"	gl_FragColor = vec4(1.0);								"
@@ -74,6 +77,17 @@ namespace vg
 				"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		"
 				"}															";
 
+			const char* const sourceStrokeVertSh =
+				"attribute vec2 aOffset;									"
+				"															"
+				"void main()												"
+				"{															"
+				"	vec4 pos = gl_Vertex;									"
+				"	pos.xy += aOffset;										"
+				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			"
+				"	gl_TexCoord[0] = gl_MultiTexCoord0;						"
+				"}															";
+
 			void CompileShader(GLuint shader, const char* source)
 			{
 				GLint len = (GLint)strlen(source);
@@ -94,6 +108,7 @@ namespace vg
 				GLuint	fsArc;
 				GLuint	fsCubic;
 				GLuint	fsQuad;
+				GLuint	vsStrokeSeg;
 
 				prgMaskArc = glCreateProgram();
 				fsArc = glCreateShader(GL_FRAGMENT_SHADER);
@@ -115,6 +130,14 @@ namespace vg
 				glAttachShader(prgMaskQuad, fsQuad);
 				glLinkProgram(prgMaskQuad);
 				glDeleteShader(fsQuad);
+				
+				prgMaskStrokeSeg = glCreateProgram();
+				vsStrokeSeg = glCreateShader(GL_VERTEX_SHADER);
+				CompileShader(vsStrokeSeg, sourceStrokeVertSh);
+				glAttachShader(prgMaskStrokeSeg, vsStrokeSeg);
+				glLinkProgram(prgMaskStrokeSeg);
+				locOffsetAttrib = glGetAttribLocation(prgMaskStrokeSeg, "aOffset");
+				glDeleteShader(vsStrokeSeg);
 				
 				prgFillColor = glCreateProgram();
 				fsColor = glCreateShader(GL_FRAGMENT_SHADER);
@@ -148,6 +171,7 @@ namespace vg
 				glDeleteProgram(prgMaskArc);	
 				glDeleteProgram(prgFillColor);
 				glDeleteProgram(prgFillPattern);
+				glDeleteProgram(prgMaskStrokeSeg);
 			}
 		}
 	}

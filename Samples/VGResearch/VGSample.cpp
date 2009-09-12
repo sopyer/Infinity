@@ -141,6 +141,7 @@ class VGSample: public UI::GLFWStage
 			glCullFace(GL_FRONT_AND_BACK);
 			//mContext.drawPath(mPolygon, mFill);
 			vg::Rasterize(mRegion);
+
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
 			glEnable(GL_STENCIL_TEST);
@@ -152,6 +153,36 @@ class VGSample: public UI::GLFWStage
 			glVertex2f(150,100);
 			glVertex2f(150,-100);
 			glEnd();
+
+			glClear(GL_STENCIL_BUFFER_BIT);
+			vg::RasterizeStroke(mRegion);
+			//glStencilFunc(GL_ALWAYS, 1, 1);
+			//glStencilMask(1);
+			//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			//glUseProgram(vg::shared::prgMaskStrokeSeg);
+			//glBegin(GL_TRIANGLE_STRIP);
+			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, 10);
+			//glVertex2f(0, 0);
+			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, 10);
+			//glVertex2f(100, 0);
+			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, -10);
+			//glVertex2f(0, 0);
+			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, -10);
+			//glVertex2f(100, 0);
+			//glEnd();
+
+			glColor4f(1, 0, 0, 1);
+			glUseProgram(0);
+			glEnable(GL_STENCIL_TEST);
+			glStencilFunc(GL_EQUAL, 1, 1);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+			glBegin(GL_QUADS);
+			glVertex2f(-210,-210);
+			glVertex2f(-210,210);
+			glVertex2f(260,210);
+			glVertex2f(260,-210);
+			glEnd();
+
 			glFlush();
 		}
 

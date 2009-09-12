@@ -15,5 +15,8 @@ namespace vg
 		VG_EXPORT GLuint	prgMaskArc;	
 		VG_EXPORT GLuint	prgFillColor;
 		VG_EXPORT GLuint	prgFillPattern;
+		VG_EXPORT GLuint	prgMaskStrokeSeg;
+
+		VG_EXPORT GLint		locOffsetAttrib;
 	}
 }

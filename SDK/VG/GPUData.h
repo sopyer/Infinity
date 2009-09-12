@@ -13,6 +13,25 @@ namespace vg
 		glm::vec2	p;
 		glm::vec2	n;
 		glm::vec3	tc;
+
+		Vertex(const glm::vec2& _p, const glm::vec2& _n, const glm::vec3& _tc):
+			p(_p), n(_n), tc(_tc)
+		{}
+
+		Vertex(const glm::vec2& _p, const glm::vec2& _n):
+			p(_p), n(_n)
+		{}
+
+		Vertex(const glm::vec2& _p, const glm::vec3& _tc):
+			p(_p), tc(_tc)
+		{}
+
+		Vertex(const glm::vec2& _p): p(_p)
+		{}
+
+		Vertex()
+		{
+		}
 	};
 
 	struct GPUData
@@ -44,9 +63,11 @@ namespace vg
 			std::vector<u32>	arcIndices;
 			std::vector<u32>	quadIndices;
 			std::vector<u32>	cubicIndices;
+			std::vector<u32>	strokeIndices;
 
 		private:
 			u32 addVertex(const Vertex& v);
+			u32 addVertices(u32 count, Vertex v[]);
 
 			void addRegTri(u32 i0, u32 i1, u32 i2);
 			void addArcTri(u32 i0, u32 i1, u32 i2);
@@ -64,4 +85,5 @@ namespace vg
 	};
 
 	void Rasterize(GPUData& data);
+	void RasterizeStroke(GPUData& data);
 }

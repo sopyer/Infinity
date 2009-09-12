@@ -27,20 +27,54 @@ namespace vg
 		//	addTri(mBase, mBase+1, last);
 		mBase=-1;
 	}
+
+	glm::vec2 rotate90CW(glm::vec2 vec)
+	{
+		return glm::vec2(vec.y, -vec.x);
+	}
+
+	glm::vec2 rotate90CCW(glm::vec2 vec)
+	{
+		return glm::vec2(-vec.y, vec.x);
+	}
 	
+	glm::vec2 makeNormal(glm::vec2 p1, glm::vec2 p2)
+	{
+		return glm::normalize(rotate90CCW(p2-p1));
+	}
+
 	void GPUData::line(float x0, float y0, float x1, float y1)
 	{
-		Vertex v;
+		glm::vec2	p0(x0, y0), p1(x1, y1), n(makeNormal(p0, p1)), zero;
+		Vertex v[] = {
+			Vertex(p0, zero),
+			Vertex(p0, n),
+			Vertex(p0, -n),
+			Vertex(p1, n),
+			Vertex(p1, -n),
+			Vertex(p1, zero)
+		};
 		
-		v.p = glm::vec2(x0, y0);
-		v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
-		u32 i1 = addVertex(v);
+		//v.p = glm::vec2(x0, y0);
+		//v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
+		//u32 i1 = addVertex(v);
 
-		v.p = glm::vec2(x1, y1);
-		//normal is the same:)
-		u32 i2 = addVertex(v);
+		//v.p = glm::vec2(x1, y1);
+		////normal is the same:)
+		//u32 i2 = addVertex(v);
 
-		addRegTri(mBase, i1, i2);
+		//addRegTri(mBase, i1, i2);
+
+		u32 idx = addVertices(ELEMENT_COUNT(v), v);
+
+		addRegTri(mBase, idx, idx+5);
+
+		u32 ind[] = {
+			idx+1, idx+2, idx+3,
+			idx+2, idx+3, idx+4
+		};
+
+		strokeIndices.insert(strokeIndices.end(), ind, ind+ELEMENT_COUNT(v));
 	}
 
 	void GPUData::quad(float x0, float y0, float x1, float y1, float x2, float y2)
@@ -58,7 +92,7 @@ namespace vg
 		u32 i1 = addVertex(v);
 
 		v.p = glm::vec2(x2, y2);
-		v.n = normalize(glm::vec2(-(y2-y1), x2-x1));  //perpendicular tu the line segment
+		v.n = normalize(glm::vec2(-(y2-y1), x2-x1));  //perpendicular to the line segment
 		v.tc = glm::vec3(1.0f, 1.0f, 0.0f);
 		u32 i2 = addVertex(v);
 		
@@ -204,6 +238,13 @@ namespace vg
 		return idx;
 	}
 
+	u32 GPUData::addVertices(u32 count, Vertex v[])
+	{
+		u32 idx = (u32)vertices.size();
+		vertices.insert(vertices.end(), v, v+count);
+		return idx;
+	}
+
 	void GPUData::addSimpleCubic(u32& firstIdx, u32& lastIdx,
 						const glm::vec2& p1, const glm::vec3& tc1,
 						const glm::vec2& p2, const glm::vec3& tc2,
@@ -299,20 +340,76 @@ namespace vg
 		}
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
 
 		if (!data.quadIndices.empty())
 		{
 			glUseProgram(vg::shared::prgMaskQuad);
-			glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
 			glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
 		}
 
 		if (!data.cubicIndices.empty())
 		{
 			glUseProgram(vg::shared::prgMaskCubic);
-			glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
 			glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
 		}
+
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glPopAttrib();
+		glDisableClientState(GL_VERTEX_ARRAY);
+	}
+
+	void RasterizeStroke(GPUData& data)
+	{
+		if (data.vertices.empty())
+			return;
+
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT_AND_BACK);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 1, 1);
+		glStencilMask(0x01);
+
+		//// Clear stencil
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		//glBegin(GL_QUADS);
+		//glVertex2f(path.mObject->min.x, path.mObject->min.y);
+		//glVertex2f(path.mObject->max.x, path.mObject->min.y);
+		//glVertex2f(path.mObject->max.x, path.mObject->max.y);
+		//glVertex2f(path.mObject->min.x, path.mObject->max.y);
+		//glEnd();
+
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &data.vertices[0].p);
+
+		if (!data.strokeIndices.empty())
+		{
+			glUseProgram(shared::prgMaskStrokeSeg);
+			glEnableVertexAttribArray(shared::locOffsetAttrib);
+			glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &data.vertices[0].n);
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.strokeIndices.size(), GL_UNSIGNED_INT, &data.strokeIndices[0]);
+			glDisableVertexAttribArray(shared::locOffsetAttrib);
+		}
+
+		//glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
+
+		//if (!data.quadIndices.empty())
+		//{
+		//	glUseProgram(vg::shared::prgMaskQuad);
+		//	glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
+		//}
+
+		//if (!data.cubicIndices.empty())
+		//{
+		//	glUseProgram(vg::shared::prgMaskCubic);
+		//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
+		//}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glPopAttrib();

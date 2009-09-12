@@ -10,7 +10,8 @@
 #include <map>
 #include <string>
 
-#define UNUSED(var) ((void)var)
+#define UNUSED(var) ((void)(var))
+#define ELEMENT_COUNT(arr) sizeof(arr)/sizeof(arr[0])
 
 namespace utils
 {
