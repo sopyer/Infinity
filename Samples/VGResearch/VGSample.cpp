@@ -108,12 +108,13 @@ class VGSample: public UI::GLFWStage
 
 			vg::shared::Acquire();
 			mRegion.begin(0,0);
-			mRegion.line(150, 100, 150, 0);
-			mRegion.line(150, 0, 50, 100);
-			mRegion.line(50, 100, 50, 0);
+			mRegion.lineTo(150, 100);
+			mRegion.lineTo(150, 0);
+			mRegion.lineTo(50, 100);
+			//mRegion.lineTo(50, 0);
 			mRegion.quad(50, 100, 0, 50, 50, 0);
-			mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
-			mRegion.end();
+			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			mRegion.end(true);
 		}
 
 		~VGSample()
@@ -154,6 +155,7 @@ class VGSample: public UI::GLFWStage
 			glVertex2f(150,-100);
 			glEnd();
 
+			glClearStencil(0x80);
 			glClear(GL_STENCIL_BUFFER_BIT);
 			vg::RasterizeStroke(mRegion);
 			//glStencilFunc(GL_ALWAYS, 1, 1);
@@ -174,7 +176,7 @@ class VGSample: public UI::GLFWStage
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
 			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_EQUAL, 1, 1);
+			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			glBegin(GL_QUADS);
 			glVertex2f(-210,-210);

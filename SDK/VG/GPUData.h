@@ -34,6 +34,7 @@ namespace vg
 		}
 	};
 
+	//Uses fixed vertex layout!!!!!!!!!!!!!
 	struct GPUData
 	{
 		public:
@@ -48,9 +49,9 @@ namespace vg
 			GPUData();
 
 			void begin(float x, float y);
-			void end();
+			void end(bool closePath = false);
 			
-			void line(float x0, float y0, float x1, float y1);
+			void lineTo(float x1, float y1);
 			void quad(float x0, float y0, float x1, float y1, float x2, float y2);
 			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3);
 			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
@@ -64,10 +65,18 @@ namespace vg
 			std::vector<u32>	quadIndices;
 			std::vector<u32>	cubicIndices;
 			std::vector<u32>	strokeIndices;
+			std::vector<u32>	strokeRQuadIndices;
 
 		private:
 			u32 addVertex(const Vertex& v);
 			u32 addVertices(u32 count, Vertex v[]);
+			
+			const glm::vec2& getCursor()
+			{
+				return vertices[mCursor].p;
+			}
+
+			void addStroke(u32 first, u32 last);
 
 			void addRegTri(u32 i0, u32 i1, u32 i2);
 			void addArcTri(u32 i0, u32 i1, u32 i2);
@@ -81,7 +90,7 @@ namespace vg
 								const glm::vec2& p4, const glm::vec3& tc4);
 
 		private:
-			u32 mBase;
+			u32 mBase, mCursor;
 	};
 
 	void Rasterize(GPUData& data);

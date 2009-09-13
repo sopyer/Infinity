@@ -12,7 +12,9 @@ namespace vg
 		GLuint	prgFillColor = 0;
 		GLuint	prgFillPattern = 0;
 		GLuint	prgMaskStrokeSeg = 0;
-
+		GLuint	prgStrokeMaskQuad = 0;
+		
+		GLint	locOffsetAttribQuad = -1;
 		GLint	locOffsetAttrib = -1;
 
 		namespace
@@ -129,7 +131,6 @@ namespace vg
 				CompileShader(fsQuad, sourceQuadFragSh);
 				glAttachShader(prgMaskQuad, fsQuad);
 				glLinkProgram(prgMaskQuad);
-				glDeleteShader(fsQuad);
 				
 				prgMaskStrokeSeg = glCreateProgram();
 				vsStrokeSeg = glCreateShader(GL_VERTEX_SHADER);
@@ -137,6 +138,14 @@ namespace vg
 				glAttachShader(prgMaskStrokeSeg, vsStrokeSeg);
 				glLinkProgram(prgMaskStrokeSeg);
 				locOffsetAttrib = glGetAttribLocation(prgMaskStrokeSeg, "aOffset");
+				
+				prgStrokeMaskQuad = glCreateProgram();
+				glAttachShader(prgStrokeMaskQuad, vsStrokeSeg);
+				glAttachShader(prgStrokeMaskQuad, fsQuad);
+				glLinkProgram(prgStrokeMaskQuad);
+				locOffsetAttribQuad = glGetAttribLocation(prgStrokeMaskQuad, "aOffset");
+				
+				glDeleteShader(fsQuad);
 				glDeleteShader(vsStrokeSeg);
 				
 				prgFillColor = glCreateProgram();
@@ -172,6 +181,7 @@ namespace vg
 				glDeleteProgram(prgFillColor);
 				glDeleteProgram(prgFillPattern);
 				glDeleteProgram(prgMaskStrokeSeg);
+				glDeleteProgram(prgStrokeMaskQuad);
 			}
 		}
 	}

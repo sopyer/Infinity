@@ -16,7 +16,9 @@ namespace vg
 		VG_EXPORT GLuint	prgFillColor;
 		VG_EXPORT GLuint	prgFillPattern;
 		VG_EXPORT GLuint	prgMaskStrokeSeg;
-
+		VG_EXPORT GLuint	prgStrokeMaskQuad;
+		
+		VG_EXPORT GLint		locOffsetAttribQuad;
 		VG_EXPORT GLint		locOffsetAttrib;
 	}
 }

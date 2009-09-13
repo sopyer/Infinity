@@ -12,19 +12,15 @@ namespace vg
 	void GPUData::begin(float x, float y)
 	{
 		assert(mBase==-1);
-		
-		Vertex v;
-		v.p = glm::vec2(x, y);
-		
-		mBase = addVertex(v);
+		Vertex v(glm::vec2(x, y), glm::vec2());
+		mCursor = mBase = addVertex(v);
 	}
 
-	void GPUData::end()
+	void GPUData::end(bool closePath)
 	{
-		//Is this needed? Seems not if we will create stroke using special methods
-		//u32 last = (u32)triVertice.size();
-		//if (last>mBase)
-		//	addTri(mBase, mBase+1, last);
+		if (closePath)
+			lineTo(vertices[mBase].p.x, vertices[mBase].p.y);
+
 		mBase=-1;
 	}
 
@@ -43,60 +39,66 @@ namespace vg
 		return glm::normalize(rotate90CCW(p2-p1));
 	}
 
-	void GPUData::line(float x0, float y0, float x1, float y1)
+	void GPUData::lineTo(float x1, float y1)
 	{
-		glm::vec2	p0(x0, y0), p1(x1, y1), n(makeNormal(p0, p1)), zero;
+		glm::vec2	p0(getCursor()), p1(x1, y1), n(makeNormal(p0, p1)), zero;
+		//Share the last/first vertex
 		Vertex v[] = {
-			Vertex(p0, zero),
-			Vertex(p0, n),
-			Vertex(p0, -n),
-			Vertex(p1, n),
-			Vertex(p1, -n),
+			Vertex(p0, n), Vertex(p0, -n),
+			Vertex(p1, n), Vertex(p1, -n),
 			Vertex(p1, zero)
 		};
 		
-		//v.p = glm::vec2(x0, y0);
-		//v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
-		//u32 i1 = addVertex(v);
+		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
+		u32 end       = startIdx+4;
 
-		//v.p = glm::vec2(x1, y1);
-		////normal is the same:)
-		//u32 i2 = addVertex(v);
-
-		//addRegTri(mBase, i1, i2);
-
-		u32 idx = addVertices(ELEMENT_COUNT(v), v);
-
-		addRegTri(mBase, idx, idx+5);
-
-		u32 ind[] = {
-			idx+1, idx+2, idx+3,
-			idx+2, idx+3, idx+4
-		};
-
-		strokeIndices.insert(strokeIndices.end(), ind, ind+ELEMENT_COUNT(v));
+		addRegTri(mBase, mCursor, end);
+		addStroke(startIdx, startIdx+3);
+		mCursor = end;
 	}
 
 	void GPUData::quad(float x0, float y0, float x1, float y1, float x2, float y2)
 	{
-		Vertex v;
-		
-		v.p = glm::vec2(x0, y0);
-		v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
-		v.tc = glm::vec3(0.0f, 0.0f, 0.0f);
-		u32 i0 = addVertex(v);
+		glm::vec2	p0(getCursor()), p1(x1, y1), p2(x2, y2);
+		glm::vec2	n01(makeNormal(p0, p1)), n12(makeNormal(p1, p2));
+		float		det(n01.y*n12.x-n01.x*n12.y);
+		glm::vec2	zero, offset(det==0?zero:makeNormal(n01, n12)/det);
 
-		v.p = glm::vec2(x1, y1);
-		v.n = normalize(glm::vec2(0, 0));  //to calc!!!!!
-		v.tc = glm::vec3(0.5f, 0.0f, 0.0f);
-		u32 i1 = addVertex(v);
+		Vertex v[] = {
+			Vertex(p0, n01,    glm::vec3(0.0f, 0.0f, 0.0f)),	Vertex(p0, -n01,    glm::vec3(0.0f, 0.0f, 0.0f)),
+			Vertex(p1, offset, glm::vec3(0.5f, 0.0f, 0.0f)),	Vertex(p1, -offset, glm::vec3(0.5f, 0.0f, 0.0f)),
+			Vertex(p2, n12,    glm::vec3(1.0f, 1.0f, 0.0f)),	Vertex(p2, -n12,    glm::vec3(1.0f, 1.0f, 0.0f)),
+			Vertex(p2, zero)
+		};
 
-		v.p = glm::vec2(x2, y2);
-		v.n = normalize(glm::vec2(-(y2-y1), x2-x1));  //perpendicular to the line segment
-		v.tc = glm::vec3(1.0f, 1.0f, 0.0f);
-		u32 i2 = addVertex(v);
+		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
+		u32 end       = startIdx+6;
+
+		addQuadTri(startIdx, startIdx+2, startIdx+4);
+		addStroke(startIdx, startIdx+5);
+		mCursor = end;
 		
-		addQuadTri(i0, i1, i2);
+		u32 idx[] = {startIdx+1, startIdx+3, startIdx+5};
+		strokeRQuadIndices.insert(strokeRQuadIndices.end(), idx, idx+3);
+
+		//Vertex v;
+		//
+		//v.p = glm::vec2(x0, y0);
+		//v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
+		//v.tc = glm::vec3(0.0f, 0.0f, 0.0f);
+		//u32 i0 = addVertex(v);
+
+		//v.p = glm::vec2(x1, y1);
+		//v.n = normalize(glm::vec2(0, 0));  //to calc!!!!!
+		//v.tc = glm::vec3(0.5f, 0.0f, 0.0f);
+		//u32 i1 = addVertex(v);
+
+		//v.p = glm::vec2(x2, y2);
+		//v.n = normalize(glm::vec2(-(y2-y1), x2-x1));  //perpendicular to the line segment
+		//v.tc = glm::vec3(1.0f, 1.0f, 0.0f);
+		//u32 i2 = addVertex(v);
+		
+		//addQuadTri(i0, i1, i2);
 	}
 
 	void GPUData::cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
@@ -245,6 +247,16 @@ namespace vg
 		return idx;
 	}
 
+	void GPUData::addStroke(u32 start, u32 end)
+	{
+		u32 ind[] = {
+			start,   start+1, end-1,
+			start+1, end-1,   end
+		};
+
+		strokeIndices.insert(strokeIndices.end(), ind, ind+ELEMENT_COUNT(ind));
+	}
+
 	void GPUData::addSimpleCubic(u32& firstIdx, u32& lastIdx,
 						const glm::vec2& p1, const glm::vec3& tc1,
 						const glm::vec2& p2, const glm::vec3& tc2,
@@ -372,8 +384,8 @@ namespace vg
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_ALWAYS, 1, 1);
-		glStencilMask(0x01);
+		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilMask(0xFF);
 
 		//// Clear stencil
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -384,7 +396,7 @@ namespace vg
 		//glVertex2f(path.mObject->min.x, path.mObject->max.y);
 		//glEnd();
 
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &data.vertices[0].p);
 
 		if (!data.strokeIndices.empty())
@@ -396,14 +408,21 @@ namespace vg
 			glDisableVertexAttribArray(shared::locOffsetAttrib);
 		}
 
-		//glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		//glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
 
-		//if (!data.quadIndices.empty())
-		//{
-		//	glUseProgram(vg::shared::prgMaskQuad);
-		//	glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
-		//}
+		//This is not fully correct!!!!!!!!!!!!!!!!!!!
+		if (!data.quadIndices.empty())
+		{
+			glUseProgram(vg::shared::prgStrokeMaskQuad);
+			glEnableVertexAttribArray(shared::locOffsetAttribQuad);
+			glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &data.vertices[0].n);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.strokeRQuadIndices.size(), GL_UNSIGNED_INT, &data.strokeRQuadIndices[0]);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
+			glDisableVertexAttribArray(shared::locOffsetAttribQuad);
+		}
 
 		//if (!data.cubicIndices.empty())
 		//{
