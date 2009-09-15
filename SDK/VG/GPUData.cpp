@@ -6,6 +6,12 @@
 
 namespace vg
 {
+	enum
+	{
+		CW  = 0,
+		CCW = 1
+	};
+
 	GPUData::GPUData(): mBase(-1)
 	{}
 
@@ -19,7 +25,7 @@ namespace vg
 	void GPUData::end(bool closePath)
 	{
 		if (closePath)
-			lineTo(vertices[mBase].p.x, vertices[mBase].p.y);
+			lineTo(data.vertices[mBase].p.x, data.vertices[mBase].p.y);
 
 		mBase=-1;
 	}
@@ -42,7 +48,7 @@ namespace vg
 	void GPUData::lineTo(float x1, float y1)
 	{
 		glm::vec2	p0(getCursor()), p1(x1, y1), n(makeNormal(p0, p1)), zero;
-		//Share the last/first vertex
+
 		Vertex v[] = {
 			Vertex(p0, n), Vertex(p0, -n),
 			Vertex(p1, n), Vertex(p1, -n),
@@ -52,12 +58,13 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+4;
 
-		addRegTri(mBase, mCursor, end);
-		addStroke(startIdx, startIdx+3);
+		addTri<false>(data.fill, mBase, mCursor, end);
+		addStroke(startIdx, startIdx+2);
+
 		mCursor = end;
 	}
 
-	void GPUData::quad(float x0, float y0, float x1, float y1, float x2, float y2)
+	void GPUData::quadTo(float x1, float y1, float x2, float y2)
 	{
 		glm::vec2	p0(getCursor()), p1(x1, y1), p2(x2, y2);
 		glm::vec2	n01(makeNormal(p0, p1)), n12(makeNormal(p1, p2));
@@ -74,31 +81,14 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+6;
 
-		addQuadTri(startIdx, startIdx+2, startIdx+4);
-		addStroke(startIdx, startIdx+5);
+		addTri<false>(data.fill, mBase, startIdx, startIdx+4);
+		addQuad(data.fill, startIdx, startIdx+2, startIdx+4);
+
+		addStroke(startIdx, startIdx+4);
+		addQuad(data.stroke, startIdx, startIdx+2, startIdx+4);
+		addQuad(data.stroke, startIdx+5, startIdx+3, startIdx+1);
+
 		mCursor = end;
-		
-		u32 idx[] = {startIdx+1, startIdx+3, startIdx+5};
-		strokeRQuadIndices.insert(strokeRQuadIndices.end(), idx, idx+3);
-
-		//Vertex v;
-		//
-		//v.p = glm::vec2(x0, y0);
-		//v.n = normalize(glm::vec2(-(y1-y0), x1-x0));  //perpendicular to the line segment
-		//v.tc = glm::vec3(0.0f, 0.0f, 0.0f);
-		//u32 i0 = addVertex(v);
-
-		//v.p = glm::vec2(x1, y1);
-		//v.n = normalize(glm::vec2(0, 0));  //to calc!!!!!
-		//v.tc = glm::vec3(0.5f, 0.0f, 0.0f);
-		//u32 i1 = addVertex(v);
-
-		//v.p = glm::vec2(x2, y2);
-		//v.n = normalize(glm::vec2(-(y2-y1), x2-x1));  //perpendicular to the line segment
-		//v.tc = glm::vec3(1.0f, 1.0f, 0.0f);
-		//u32 i2 = addVertex(v);
-		
-		//addQuadTri(i0, i1, i2);
 	}
 
 	void GPUData::cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
@@ -185,7 +175,7 @@ namespace vg
 			if (i==0)
 				i0=i2;
 			else
-				addRegTri(i0, i1, i2);
+				addTri<false>(data.fill, i0, i1, i2);
 		}
 		
 		// The last or the only part
@@ -198,7 +188,7 @@ namespace vg
 		);
 
 		if (numRoots>0)
-			addRegTri(i0, i1, i2);
+			addTri<false>(data.fill, i0, i1, i2);
 	}
 
 	void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
@@ -214,47 +204,44 @@ namespace vg
 
 	void GPUData::append(u32 mode, const GPUData& other)
 	{
-		vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
+		//vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
 
-		std::transform(	other.regIndices.begin(), other.regIndices.end(),
-						regIndices.end(),
-						AddFunctor((u32)regIndices.size()));
+		//std::transform(	other.regIndices.begin(), other.regIndices.end(),
+		//				regIndices.end(),
+		//				AddFunctor((u32)regIndices.size()));
 
-		std::transform(	other.arcIndices.begin(), other.arcIndices.end(),
-						arcIndices.end(),
-						AddFunctor((u32)arcIndices.size()));
+		//std::transform(	other.arcIndices.begin(), other.arcIndices.end(),
+		//				arcIndices.end(),
+		//				AddFunctor((u32)arcIndices.size()));
 
-		std::transform(	other.quadIndices.begin(), other.quadIndices.end(),
-						quadIndices.end(),
-						AddFunctor((u32)quadIndices.size()));
+		//std::transform(	other.quadIndices.begin(), other.quadIndices.end(),
+		//				quadIndices.end(),
+		//				AddFunctor((u32)quadIndices.size()));
 
-		std::transform(	other.cubicIndices.begin(), other.cubicIndices.end(),
-						cubicIndices.end(),
-						AddFunctor((u32)cubicIndices.size()));
+		//std::transform(	other.cubicIndices.begin(), other.cubicIndices.end(),
+		//				cubicIndices.end(),
+		//				AddFunctor((u32)cubicIndices.size()));
 	}
 
 	u32 GPUData::addVertex(const Vertex& v)
 	{
-		u32 idx = (u32)vertices.size();
-		vertices.push_back(v);
+		u32 idx = (u32)data.vertices.size();
+		data.vertices.push_back(v);
 		return idx;
 	}
 
 	u32 GPUData::addVertices(u32 count, Vertex v[])
 	{
-		u32 idx = (u32)vertices.size();
-		vertices.insert(vertices.end(), v, v+count);
+		u32 idx = (u32)data.vertices.size();
+		data.vertices.insert(data.vertices.end(), v, v+count);
 		return idx;
 	}
 
 	void GPUData::addStroke(u32 start, u32 end)
 	{
-		u32 ind[] = {
-			start,   start+1, end-1,
-			start+1, end-1,   end
-		};
-
-		strokeIndices.insert(strokeIndices.end(), ind, ind+ELEMENT_COUNT(ind));
+		//Order is very important!!!
+		addTri<true>(data.stroke, start, end,     end+1);
+		addTri<true>(data.stroke, end+1, start+1, start);
 	}
 
 	void GPUData::addSimpleCubic(u32& firstIdx, u32& lastIdx,
@@ -282,44 +269,95 @@ namespace vg
 		u32 i3 = addVertex(v3);
 		u32 i4 = addVertex(v4);
 
-		addCubicTri(i1, i2, i3);
-		addCubicTri(i3, i4, i1);
+		addCubic(data.fill, i1, i2, i3);
+		addCubic(data.fill, i3, i4, i1);
 
 		firstIdx = i1;
 		lastIdx  = i4;
 	}
 
-	void GPUData::addRegTri(u32 i0, u32 i1, u32 i2)
+	template<>
+	float GPUData::calcTriOrient<false>(u32 i0, u32 i1, u32 i2)
 	{
-		regIndices.push_back(i0);
-		regIndices.push_back(i1);
-		regIndices.push_back(i2);
+		glm::vec2	v1 = data.vertices[i1].p-data.vertices[i0].p,
+					v2 = data.vertices[i2].p-data.vertices[i0].p;
+		
+		float		det = v1.x*v2.y - v1.y*v2.x;
+
+		return det;
 	}
 
-	void GPUData::addArcTri(u32 i0, u32 i1, u32 i2)
+	template<>
+	float GPUData::calcTriOrient<true>(u32 i0, u32 i1, u32 i2)
 	{
-		arcIndices.push_back(i0);
-		arcIndices.push_back(i1);
-		arcIndices.push_back(i2);
+		glm::vec2	v1 = (data.vertices[i1].p+data.vertices[i1].n)-(data.vertices[i0].p+data.vertices[i0].n),
+					v2 = (data.vertices[i2].p+data.vertices[i2].n)-(data.vertices[i0].p+data.vertices[i0].n);
+		
+		float		det = v1.x*v2.y - v1.y*v2.x;
+
+		return det;
 	}
 
-	void GPUData::addQuadTri(u32 i0, u32 i1, u32 i2)
+	template<bool displaced>
+	void GPUData::addTri(Region& reg, u32 i0, u32 i1, u32 i2)
 	{
-		quadIndices.push_back(i0);
-		quadIndices.push_back(i1);
-		quadIndices.push_back(i2);
+		float det = calcTriOrient<displaced>(i0, i1, i2);
+
+		if (det==0)
+			return;
+
+		std::vector<u32>& indices = reg.indTri[det>0?CCW:CW];
+
+		indices.push_back(i0);
+		indices.push_back(i1);
+		indices.push_back(i2);
 	}
 
-	void GPUData::addCubicTri(u32 i0, u32 i1, u32 i2)
+	void GPUData::addArc(Region& reg, u32 i0, u32 i1, u32 i2)
 	{
-		cubicIndices.push_back(i0);
-		cubicIndices.push_back(i1);
-		cubicIndices.push_back(i2);
+		float det = calcTriOrient<false>(i0, i1, i2);
+
+		if (det==0)
+			return;
+
+		std::vector<u32>& indices = reg.indArc[det>0?CCW:CW];
+
+		indices.push_back(i0);
+		indices.push_back(i1);
+		indices.push_back(i2);
 	}
 
-	void Rasterize(GPUData& data)
+	void GPUData::addQuad(Region& reg, u32 i0, u32 i1, u32 i2)
 	{
-		if (data.vertices.empty())
+		float det = calcTriOrient<false>(i0, i1, i2);
+
+		if (det==0)
+			return;
+
+		std::vector<u32>& indices = reg.indQuad[det>0?CCW:CW];
+
+		indices.push_back(i0);
+		indices.push_back(i1);
+		indices.push_back(i2);
+	}
+
+	void GPUData::addCubic(Region& reg, u32 i0, u32 i1, u32 i2)
+	{
+		float det = calcTriOrient<false>(i0, i1, i2);
+
+		if (det==0)
+			return;
+
+		std::vector<u32>& indices = reg.indCubic[det>0?CCW:CW];
+
+		indices.push_back(i0);
+		indices.push_back(i1);
+		indices.push_back(i2);
+	}
+
+	void RasterizeEvenOdd(std::vector<Vertex>& vtx, Region& data)
+	{
+		if (vtx.empty())
 			return;
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -343,37 +381,38 @@ namespace vg
 		//glEnd();
 
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
-		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &data.vertices[0].p);
 
-		if (!data.regIndices.empty())
-		{
-			glUseProgram(0);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.regIndices.size(), GL_UNSIGNED_INT, &data.regIndices[0]);
-		}
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx[0].p);
+
+		glUseProgram(0);
+		if (!data.indTri[CCW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CCW].size(), GL_UNSIGNED_INT, &data.indTri[CCW][0]);
+		if (!data.indTri[CW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CW].size(), GL_UNSIGNED_INT, &data.indTri[CW][0]);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx[0].tc);
 
-		if (!data.quadIndices.empty())
-		{
-			glUseProgram(vg::shared::prgMaskQuad);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
-		}
+		glUseProgram(vg::shared::prgMaskQuad);
+		if (!data.indQuad[CCW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CCW].size(), GL_UNSIGNED_INT, &data.indQuad[CCW][0]);
+		if (!data.indQuad[CW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CW].size(), GL_UNSIGNED_INT, &data.indQuad[CW][0]);
 
-		if (!data.cubicIndices.empty())
-		{
-			glUseProgram(vg::shared::prgMaskCubic);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
-		}
+		//if (!data.cubicIndices.empty())
+		//{
+		//	glUseProgram(vg::shared::prgMaskCubic);
+		//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
+		//}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		glPopAttrib();
 		glDisableClientState(GL_VERTEX_ARRAY);
 	}
 
-	void RasterizeStroke(GPUData& data)
+	void RasterizeNonZero(std::vector<Vertex>& vtx, Region& data)
 	{
-		if (data.vertices.empty())
+		if (vtx.empty())
 			return;
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -397,32 +436,33 @@ namespace vg
 		//glEnd();
 
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &data.vertices[0].p);
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx[0].p);
 
-		if (!data.strokeIndices.empty())
-		{
-			glUseProgram(shared::prgMaskStrokeSeg);
-			glEnableVertexAttribArray(shared::locOffsetAttrib);
-			glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &data.vertices[0].n);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.strokeIndices.size(), GL_UNSIGNED_INT, &data.strokeIndices[0]);
-			glDisableVertexAttribArray(shared::locOffsetAttrib);
-		}
+		glUseProgram(shared::prgMaskStrokeSeg);
+		glEnableVertexAttribArray(shared::locOffsetAttrib);
+		glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &vtx[0].n);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		if (!data.indTri[CCW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CCW].size(), GL_UNSIGNED_INT, &data.indTri[CCW][0]);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+		if (!data.indTri[CW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CW].size(), GL_UNSIGNED_INT, &data.indTri[CW][0]);
+		glDisableVertexAttribArray(shared::locOffsetAttrib);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &data.vertices[0].tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx[0].tc);
 
 		//This is not fully correct!!!!!!!!!!!!!!!!!!!
-		if (!data.quadIndices.empty())
-		{
-			glUseProgram(vg::shared::prgStrokeMaskQuad);
-			glEnableVertexAttribArray(shared::locOffsetAttribQuad);
-			glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &data.vertices[0].n);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.strokeRQuadIndices.size(), GL_UNSIGNED_INT, &data.strokeRQuadIndices[0]);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.quadIndices.size(), GL_UNSIGNED_INT, &data.quadIndices[0]);
-			glDisableVertexAttribArray(shared::locOffsetAttribQuad);
-		}
+		glUseProgram(vg::shared::prgStrokeMaskQuad);
+		glEnableVertexAttribArray(shared::locOffsetAttribQuad);
+		glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &vtx[0].n);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		if (!data.indQuad[CCW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CCW].size(), GL_UNSIGNED_INT, &data.indQuad[CCW][0]);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+		if (!data.indQuad[CW].empty())
+			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CW].size(), GL_UNSIGNED_INT, &data.indQuad[CW][0]);
+		glDisableVertexAttribArray(shared::locOffsetAttribQuad);
 
 		//if (!data.cubicIndices.empty())
 		//{

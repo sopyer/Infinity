@@ -85,7 +85,7 @@ namespace vg
 				"void main()												"
 				"{															"
 				"	vec4 pos = gl_Vertex;									"
-				"	pos.xy += aOffset;										"
+				"	pos.xy += 5*aOffset;										"
 				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			"
 				"	gl_TexCoord[0] = gl_MultiTexCoord0;						"
 				"}															";

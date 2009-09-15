@@ -33,8 +33,24 @@ namespace vg
 		{
 		}
 	};
+	
+	struct Region
+	{
+		std::vector<u32>	indTri[2];
+		std::vector<u32>	indArc[2];
+		std::vector<u32>	indQuad[2];
+		std::vector<u32>	indCubic[2];
+	};
 
-	//Uses fixed vertex layout!!!!!!!!!!!!!
+	struct GData
+	{
+		std::vector<Vertex>	vertices;
+		Region	fill, stroke;
+	};
+
+	//Uses fixed vertex layout
+	//We share first, last non-displaced vertices
+	//Order of vertices and indices is very important
 	struct GPUData
 	{
 		public:
@@ -52,20 +68,14 @@ namespace vg
 			void end(bool closePath = false);
 			
 			void lineTo(float x1, float y1);
-			void quad(float x0, float y0, float x1, float y1, float x2, float y2);
+			void quadTo(float x1, float y1, float x2, float y2);
 			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3);
 			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
 
 			void append(u32 mode, const GPUData& other);
 
 		public:
-			std::vector<Vertex>	vertices;
-			std::vector<u32>	regIndices;
-			std::vector<u32>	arcIndices;
-			std::vector<u32>	quadIndices;
-			std::vector<u32>	cubicIndices;
-			std::vector<u32>	strokeIndices;
-			std::vector<u32>	strokeRQuadIndices;
+			GData	data;
 
 		private:
 			u32 addVertex(const Vertex& v);
@@ -73,15 +83,19 @@ namespace vg
 			
 			const glm::vec2& getCursor()
 			{
-				return vertices[mCursor].p;
+				return data.vertices[mCursor].p;
 			}
-
+			
+			template<bool displaced>
+			float calcTriOrient(u32 i0, u32 i1, u32 i2);
+			
 			void addStroke(u32 first, u32 last);
-
-			void addRegTri(u32 i0, u32 i1, u32 i2);
-			void addArcTri(u32 i0, u32 i1, u32 i2);
-			void addQuadTri(u32 i0, u32 i1, u32 i2);
-			void addCubicTri(u32 i0, u32 i1, u32 i2);
+			
+			template<bool displaced>
+			void addTri(Region& reg, u32 i0, u32 i1, u32 i2);
+			void addArc(Region& reg, u32 i0, u32 i1, u32 i2);
+			void addQuad(Region& reg, u32 i0, u32 i1, u32 i2);
+			void addCubic(Region& reg, u32 i0, u32 i1, u32 i2);
 
 			void addSimpleCubic(u32& firstIdx, u32& lastIdx,
 								const glm::vec2& p1, const glm::vec3& tc1,
@@ -93,6 +107,6 @@ namespace vg
 			u32 mBase, mCursor;
 	};
 
-	void Rasterize(GPUData& data);
-	void RasterizeStroke(GPUData& data);
+	void RasterizeEvenOdd(std::vector<Vertex>& vtx, Region& data);
+	void RasterizeNonZero(std::vector<Vertex>& vtx, Region& data);
 }

@@ -112,7 +112,8 @@ class VGSample: public UI::GLFWStage
 			mRegion.lineTo(150, 0);
 			mRegion.lineTo(50, 100);
 			//mRegion.lineTo(50, 0);
-			mRegion.quad(50, 100, 0, 50, 50, 0);
+			mRegion.quadTo(0, 50, 50, 0);
+			mRegion.quadTo(100, -50, 50, -100);
 			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
 			mRegion.end(true);
 		}
@@ -128,20 +129,14 @@ class VGSample: public UI::GLFWStage
 		void onPaint(VG& vg)
 		{
  			glStencilMask(0xFF);
+			glClearStencil(0x80);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(400.0f, 300.0f, -4.0f);
-			glScalef(1, -1, 1);
-			//glScalef(6, 6, 1);
-			//glUseProgram(0);
-			//glColor4f(1, 0, 0, 1);
-			//glBegin(GL_LINE_STRIP);
-			//for(size_t i=0; i<4; ++i)
-			//	glVertex2f(cubicData[i*2], cubicData[i*2+1]);
-			//glEnd();
+			glScalef(2, -2, 1);
 			glCullFace(GL_FRONT_AND_BACK);
-			//mContext.drawPath(mPolygon, mFill);
-			vg::Rasterize(mRegion);
+
+			vg::RasterizeEvenOdd(mRegion.data.vertices, mRegion.data.fill);
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
@@ -155,23 +150,9 @@ class VGSample: public UI::GLFWStage
 			glVertex2f(150,-100);
 			glEnd();
 
-			glClearStencil(0x80);
 			glClear(GL_STENCIL_BUFFER_BIT);
-			vg::RasterizeStroke(mRegion);
-			//glStencilFunc(GL_ALWAYS, 1, 1);
-			//glStencilMask(1);
-			//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			//glUseProgram(vg::shared::prgMaskStrokeSeg);
-			//glBegin(GL_TRIANGLE_STRIP);
-			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, 10);
-			//glVertex2f(0, 0);
-			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, 10);
-			//glVertex2f(100, 0);
-			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, -10);
-			//glVertex2f(0, 0);
-			//glVertexAttrib2f(vg::shared::locOffsetAttrib, 0, -10);
-			//glVertex2f(100, 0);
-			//glEnd();
+
+			vg::RasterizeNonZero(mRegion.data.vertices, mRegion.data.stroke);
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
