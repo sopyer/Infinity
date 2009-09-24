@@ -25,7 +25,33 @@ namespace vg
 	void GPUData::end(bool closePath)
 	{
 		if (closePath)
+		{
+			//TODO: do not store fill????
 			lineTo(data.vertices[mBase].p.x, data.vertices[mBase].p.y);
+			addJointBevel(mCursor-2, mBase+1);
+
+			data.offsetFillTri[CCW] = 0;
+			data.countFillTri[CCW] = (GLsizei)data.fill.indTri[CCW].size();
+			data.offsetFillTri[CW] = 0;
+			data.countFillTri[CW] = (GLsizei)data.fill.indTri[CW].size();
+			data.offsetFillQuad[CCW] = 0;
+			data.countFillQuad[CCW] = (GLsizei)data.fill.indQuad[CCW].size();
+			data.offsetFillQuad[CW] = 0;
+			data.countFillQuad[CW] = (GLsizei)data.fill.indQuad[CW].size();
+		}
+
+		data.offsetStrokeTri[CCW] = 0;
+		data.countStrokeTri[CCW] = (GLsizei)data.stroke.indTri[CCW].size();
+		data.offsetStrokeTri[CW] = 0;
+		data.countStrokeTri[CW] = (GLsizei)data.stroke.indTri[CW].size();
+		data.offsetStrokeQuad[CCW] = 0;
+		data.countStrokeQuad[CCW] = (GLsizei)data.stroke.indQuad[CCW].size();
+		data.offsetStrokeQuad[CW] = 0;
+		data.countStrokeQuad[CW] = (GLsizei)data.stroke.indQuad[CW].size();
+		data.offsetJointBevel[CCW] = 0;
+		data.countJointBevel[CCW] = (GLsizei)data.indJointBevel[CCW].size();
+		data.offsetJointBevel[CW] = 0;
+		data.countJointBevel[CW] = (GLsizei)data.indJointBevel[CW].size();
 
 		mBase=-1;
 	}
@@ -58,8 +84,11 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+4;
 
-		addTri<false>(data.fill, mBase, mCursor, end);
+		//addTri<false>(data.fill, mBase, mCursor, end);
+		addPrim(data.fill.indTri, mBase, mCursor, end);
 		addStroke(startIdx, startIdx+2);
+		if (!isFirstPrim(ELEMENT_COUNT(v)))
+			addJointBevel(mCursor-2, startIdx);
 
 		mCursor = end;
 	}
@@ -81,12 +110,18 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+6;
 
-		addTri<false>(data.fill, mBase, startIdx, startIdx+4);
-		addQuad(data.fill, startIdx, startIdx+2, startIdx+4);
+		//addTri<false>(data.fill, mBase, startIdx, startIdx+4);
+		//addQuad(data.fill, startIdx, startIdx+2, startIdx+4);
+		addPrim(data.fill.indTri, mBase, startIdx, startIdx+4);
+		addPrim(data.fill.indQuad, startIdx, startIdx+2, startIdx+4);
 
+		//addQuad(data.stroke, startIdx, startIdx+2, startIdx+4);
+		//addQuad(data.stroke, startIdx+5, startIdx+3, startIdx+1);
+		addPrim(data.stroke.indQuad, startIdx, startIdx+2, startIdx+4);
+		addPrim(data.stroke.indQuad, startIdx+5, startIdx+3, startIdx+1);
 		addStroke(startIdx, startIdx+4);
-		addQuad(data.stroke, startIdx, startIdx+2, startIdx+4);
-		addQuad(data.stroke, startIdx+5, startIdx+3, startIdx+1);
+		if (!isFirstPrim(ELEMENT_COUNT(v)))
+			addJointBevel(mCursor-2, startIdx);
 
 		mCursor = end;
 	}
@@ -175,7 +210,10 @@ namespace vg
 			if (i==0)
 				i0=i2;
 			else
-				addTri<false>(data.fill, i0, i1, i2);
+			{
+				//addTri<false>(data.fill, i0, i1, i2);
+				addPrim(data.fill.indTri, i0, i1, i2);
+			}
 		}
 		
 		// The last or the only part
@@ -188,7 +226,10 @@ namespace vg
 		);
 
 		if (numRoots>0)
-			addTri<false>(data.fill, i0, i1, i2);
+		{
+			//addTri<false>(data.fill, i0, i1, i2);
+			addPrim(data.fill.indTri, i0, i1, i2);
+		}
 	}
 
 	void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
@@ -239,9 +280,22 @@ namespace vg
 
 	void GPUData::addStroke(u32 start, u32 end)
 	{
-		//Order is very important!!!
-		addTri<true>(data.stroke, start, end,     end+1);
-		addTri<true>(data.stroke, end+1, start+1, start);
+		//Order of indices is very important!!!
+		addPrim(data.stroke.indTri, start, end,     end+1, true);
+		addPrim(data.stroke.indTri, end+1, start+1, start, true);
+	}
+
+	void GPUData::addJointBevel(u32 end, u32 start)
+	{
+		glm::vec2	v1 = data.vertices[end].n,
+					v2 = data.vertices[start].n;
+		
+		float		det = v1.x*v2.y - v1.y*v2.x;
+		
+		if (det<0)
+			addPrim(data.indJointBevel, end,   start,   end+2, true);
+		else
+			addPrim(data.indJointBevel, end+1, start+1, end+2, true);
 	}
 
 	void GPUData::addSimpleCubic(u32& firstIdx, u32& lastIdx,
@@ -269,107 +323,130 @@ namespace vg
 		u32 i3 = addVertex(v3);
 		u32 i4 = addVertex(v4);
 
-		addCubic(data.fill, i1, i2, i3);
-		addCubic(data.fill, i3, i4, i1);
+		//addCubic(data.fill, i1, i2, i3);
+		//addCubic(data.fill, i3, i4, i1);
+		addPrim(data.fill.indCubic, i1, i2, i3);
+		addPrim(data.fill.indCubic, i3, i4, i1);
 
 		firstIdx = i1;
 		lastIdx  = i4;
 	}
 
-	template<>
-	float GPUData::calcTriOrient<false>(u32 i0, u32 i1, u32 i2)
+	//template<>
+	//float GPUData::calcTriOrient<false>(u32 i0, u32 i1, u32 i2)
+	//{
+	//	glm::vec2	v1 = data.vertices[i1].p-data.vertices[i0].p,
+	//				v2 = data.vertices[i2].p-data.vertices[i0].p;
+	//	
+	//	float		det = v1.x*v2.y - v1.y*v2.x;
+
+	//	return det;
+	//}
+
+	//template<>
+	//float GPUData::calcTriOrient<true>(u32 i0, u32 i1, u32 i2)
+	//{
+	//	glm::vec2	v1 = (data.vertices[i1].p+data.vertices[i1].n)-(data.vertices[i0].p+data.vertices[i0].n),
+	//				v2 = (data.vertices[i2].p+data.vertices[i2].n)-(data.vertices[i0].p+data.vertices[i0].n);
+	//	
+	//	float		det = v1.x*v2.y - v1.y*v2.x;
+
+	//	return det;
+	//}
+
+	void GPUData::addPrim(IndexVector idx[2], u32 i0, u32 i1, u32 i2, bool displaced)
 	{
-		glm::vec2	v1 = data.vertices[i1].p-data.vertices[i0].p,
-					v2 = data.vertices[i2].p-data.vertices[i0].p;
+		glm::vec2	v1, v2;
+		Vertex*		vtx = &data.vertices[0];
+
+		if (!displaced)
+		{
+			v1 = vtx[i1].p-vtx[i0].p;
+			v2 = vtx[i2].p-vtx[i0].p;
+		}
+		else
+		{
+			v1 = (vtx[i1].p+vtx[i1].n)-(vtx[i0].p+vtx[i0].n);
+			v2 = (vtx[i2].p+vtx[i2].n)-(vtx[i0].p+vtx[i0].n);
+		}
 		
 		float		det = v1.x*v2.y - v1.y*v2.x;
 
-		return det;
-	}
-
-	template<>
-	float GPUData::calcTriOrient<true>(u32 i0, u32 i1, u32 i2)
-	{
-		glm::vec2	v1 = (data.vertices[i1].p+data.vertices[i1].n)-(data.vertices[i0].p+data.vertices[i0].n),
-					v2 = (data.vertices[i2].p+data.vertices[i2].n)-(data.vertices[i0].p+data.vertices[i0].n);
-		
-		float		det = v1.x*v2.y - v1.y*v2.x;
-
-		return det;
-	}
-
-	template<bool displaced>
-	void GPUData::addTri(Region& reg, u32 i0, u32 i1, u32 i2)
-	{
-		float det = calcTriOrient<displaced>(i0, i1, i2);
+		//float det = calcTriOrient<displaced>(i0, i1, i2);
 
 		if (det==0)
 			return;
 
-		std::vector<u32>& indices = reg.indTri[det>0?CCW:CW];
+		std::vector<u32>& indices = idx[det>0?CCW:CW];
 
 		indices.push_back(i0);
 		indices.push_back(i1);
 		indices.push_back(i2);
 	}
 
-	void GPUData::addArc(Region& reg, u32 i0, u32 i1, u32 i2)
-	{
-		float det = calcTriOrient<false>(i0, i1, i2);
+	//template<bool displaced>
+	//void GPUData::addTri(Region& reg, u32 i0, u32 i1, u32 i2)
+	//{
+	//	float det = calcTriOrient<displaced>(i0, i1, i2);
 
-		if (det==0)
+	//	if (det==0)
+	//		return;
+
+	//	std::vector<u32>& indices = reg.indTri[det>0?CCW:CW];
+
+	//	indices.push_back(i0);
+	//	indices.push_back(i1);
+	//	indices.push_back(i2);
+	//}
+
+	//void GPUData::addQuad(Region& reg, u32 i0, u32 i1, u32 i2)
+	//{
+	//	float det = calcTriOrient<false>(i0, i1, i2);
+
+	//	if (det==0)
+	//		return;
+
+	//	std::vector<u32>& indices = reg.indQuad[det>0?CCW:CW];
+
+	//	indices.push_back(i0);
+	//	indices.push_back(i1);
+	//	indices.push_back(i2);
+	//}
+
+	//void GPUData::addArc(Region& reg, u32 i0, u32 i1, u32 i2)
+	//{
+	//	float det = calcTriOrient<false>(i0, i1, i2);
+
+	//	if (det==0)
+	//		return;
+
+	//	std::vector<u32>& indices = reg.indArc[det>0?CCW:CW];
+
+	//	indices.push_back(i0);
+	//	indices.push_back(i1);
+	//	indices.push_back(i2);
+	//}
+
+	//void GPUData::addCubic(Region& reg, u32 i0, u32 i1, u32 i2)
+	//{
+	//	float det = calcTriOrient<false>(i0, i1, i2);
+
+	//	if (det==0)
+	//		return;
+
+	//	std::vector<u32>& indices = reg.indCubic[det>0?CCW:CW];
+
+	//	indices.push_back(i0);
+	//	indices.push_back(i1);
+	//	indices.push_back(i2);
+	//}
+
+	void RasterizeFillEvenOdd(const GData& data)
+	{
+		if (data.vertices.empty())
 			return;
 
-		std::vector<u32>& indices = reg.indArc[det>0?CCW:CW];
-
-		indices.push_back(i0);
-		indices.push_back(i1);
-		indices.push_back(i2);
-	}
-
-	void GPUData::addQuad(Region& reg, u32 i0, u32 i1, u32 i2)
-	{
-		float det = calcTriOrient<false>(i0, i1, i2);
-
-		if (det==0)
-			return;
-
-		std::vector<u32>& indices = reg.indQuad[det>0?CCW:CW];
-
-		indices.push_back(i0);
-		indices.push_back(i1);
-		indices.push_back(i2);
-	}
-
-	void GPUData::addCubic(Region& reg, u32 i0, u32 i1, u32 i2)
-	{
-		float det = calcTriOrient<false>(i0, i1, i2);
-
-		if (det==0)
-			return;
-
-		std::vector<u32>& indices = reg.indCubic[det>0?CCW:CW];
-
-		indices.push_back(i0);
-		indices.push_back(i1);
-		indices.push_back(i2);
-	}
-
-	void RasterizeEvenOdd(std::vector<Vertex>& vtx, Region& data)
-	{
-		if (vtx.empty())
-			return;
-
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glEnableClientState(GL_VERTEX_ARRAY);
-
-		glEnable(GL_DEPTH_TEST);
-		glCullFace(GL_FRONT_AND_BACK);
-		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_ALWAYS, 0, 1);
-		glStencilMask(0x01);
+		const Vertex& vtx = data.vertices[0];
 
 		//// Clear stencil
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -380,24 +457,34 @@ namespace vg
 		//glVertex2f(path.mObject->min.x, path.mObject->max.y);
 		//glEnd();
 
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT_AND_BACK);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0, 1);
+		glStencilMask(0x01);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
 
-		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx[0].p);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx.p);
 
 		glUseProgram(0);
-		if (!data.indTri[CCW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CCW].size(), GL_UNSIGNED_INT, &data.indTri[CCW][0]);
-		if (!data.indTri[CW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CW].size(), GL_UNSIGNED_INT, &data.indTri[CW][0]);
+		if (data.countFillTri[CCW])
+			glDrawElements(GL_TRIANGLES, data.countFillTri[CCW], GL_UNSIGNED_INT, &data.fill.indTri[CCW][0]);
+		if (data.countFillTri[CW])
+			glDrawElements(GL_TRIANGLES, data.countFillTri[CW], GL_UNSIGNED_INT, &data.fill.indTri[CW][0]);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx[0].tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
 		glUseProgram(vg::shared::prgMaskQuad);
-		if (!data.indQuad[CCW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CCW].size(), GL_UNSIGNED_INT, &data.indQuad[CCW][0]);
-		if (!data.indQuad[CW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CW].size(), GL_UNSIGNED_INT, &data.indQuad[CW][0]);
+		if (data.countFillQuad[CCW])
+			glDrawElements(GL_TRIANGLES, data.countFillQuad[CCW], GL_UNSIGNED_INT, &data.fill.indQuad[CCW][0]);
+		if (data.countFillQuad[CW])
+			glDrawElements(GL_TRIANGLES, data.countFillQuad[CW], GL_UNSIGNED_INT, &data.fill.indQuad[CW][0]);
 
 		//if (!data.cubicIndices.empty())
 		//{
@@ -406,17 +493,28 @@ namespace vg
 		//}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glPopAttrib();
 		glDisableClientState(GL_VERTEX_ARRAY);
+		
+		glPopAttrib();
 	}
 
-	void RasterizeNonZero(std::vector<Vertex>& vtx, Region& data)
+	void RasterizeFillNonZero(const GData& data)
 	{
-		if (vtx.empty())
+		if (data.vertices.empty())
 			return;
 
+		//// Clear stencil
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		//glBegin(GL_QUADS);
+		//glVertex2f(path.mObject->min.x, path.mObject->min.y);
+		//glVertex2f(path.mObject->max.x, path.mObject->min.y);
+		//glVertex2f(path.mObject->max.x, path.mObject->max.y);
+		//glVertex2f(path.mObject->min.x, path.mObject->max.y);
+		//glEnd();
+
+		const Vertex& vtx = data.vertices[0];
+
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glEnableClientState(GL_VERTEX_ARRAY);
 
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_FRONT_AND_BACK);
@@ -426,6 +524,47 @@ namespace vg
 		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
 		glStencilMask(0xFF);
 
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx.p);
+
+		glUseProgram(0);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		if (data.countFillTri[CCW])
+			glDrawElements(GL_TRIANGLES, data.countFillTri[CCW], GL_UNSIGNED_INT, &data.fill.indTri[CCW][0]);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+		if (data.countFillTri[CW])
+			glDrawElements(GL_TRIANGLES, data.countFillTri[CW], GL_UNSIGNED_INT, &data.fill.indTri[CW][0]);
+
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
+
+		glUseProgram(vg::shared::prgMaskQuad);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+		if (data.countFillQuad[CCW])
+			glDrawElements(GL_TRIANGLES, data.countFillQuad[CCW], GL_UNSIGNED_INT, &data.fill.indQuad[CCW][0]);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+		if (data.countFillQuad[CW])
+			glDrawElements(GL_TRIANGLES, data.countFillQuad[CW], GL_UNSIGNED_INT, &data.fill.indQuad[CW][0]);
+
+		//if (!data.cubicIndices.empty())
+		//{
+		//	glUseProgram(vg::shared::prgMaskCubic);
+		//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
+		//}
+
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glPopAttrib();
+	}
+
+	void RasterizeStroke(const GData& data)
+	{
+		if (data.vertices.empty())
+			return;
+
+		const Vertex& vtx = data.vertices[0];
+
 		//// Clear stencil
 		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		//glBegin(GL_QUADS);
@@ -435,33 +574,48 @@ namespace vg
 		//glVertex2f(path.mObject->min.x, path.mObject->max.y);
 		//glEnd();
 
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT_AND_BACK);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilMask(0xFF);
+
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx[0].p);
+
+ 		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx.p);
 
 		glUseProgram(shared::prgMaskStrokeSeg);
 		glEnableVertexAttribArray(shared::locOffsetAttrib);
-		glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &vtx[0].n);
+		glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &vtx.n);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (!data.indTri[CCW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CCW].size(), GL_UNSIGNED_INT, &data.indTri[CCW][0]);
+		if (data.countStrokeTri[CCW])
+			glDrawElements(GL_TRIANGLES, data.countStrokeTri[CCW], GL_UNSIGNED_INT, &data.stroke.indTri[CCW][0]);
+		if (data.countJointBevel[CCW])
+			glDrawElements(GL_TRIANGLES, data.countJointBevel[CCW], GL_UNSIGNED_INT, &data.indJointBevel[CCW][0]);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (!data.indTri[CW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indTri[CW].size(), GL_UNSIGNED_INT, &data.indTri[CW][0]);
+		if (data.countStrokeTri[CW])
+			glDrawElements(GL_TRIANGLES, data.countStrokeTri[CW], GL_UNSIGNED_INT, &data.stroke.indTri[CW][0]);
+		if (data.countJointBevel[CW])
+			glDrawElements(GL_TRIANGLES, data.countJointBevel[CW], GL_UNSIGNED_INT, &data.indJointBevel[CW][0]);
 		glDisableVertexAttribArray(shared::locOffsetAttrib);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx[0].tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
-		//This is not fully correct!!!!!!!!!!!!!!!!!!!
 		glUseProgram(vg::shared::prgStrokeMaskQuad);
 		glEnableVertexAttribArray(shared::locOffsetAttribQuad);
-		glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &vtx[0].n);
+		glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &vtx.n);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (!data.indQuad[CCW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CCW].size(), GL_UNSIGNED_INT, &data.indQuad[CCW][0]);
+		if (data.countStrokeQuad[CCW])
+			glDrawElements(GL_TRIANGLES, data.countStrokeQuad[CCW], GL_UNSIGNED_INT, &data.stroke.indQuad[CCW][0]);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (!data.indQuad[CW].empty())
-			glDrawElements(GL_TRIANGLES, (GLsizei)data.indQuad[CW].size(), GL_UNSIGNED_INT, &data.indQuad[CW][0]);
+		if (data.countStrokeQuad[CW])
+			glDrawElements(GL_TRIANGLES, data.countStrokeQuad[CW], GL_UNSIGNED_INT, &data.stroke.indQuad[CW][0]);
 		glDisableVertexAttribArray(shared::locOffsetAttribQuad);
 
 		//if (!data.cubicIndices.empty())
@@ -471,7 +625,8 @@ namespace vg
 		//}
 
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glPopAttrib();
 		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glPopAttrib();
 	}
 }

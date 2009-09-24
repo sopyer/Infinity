@@ -136,7 +136,7 @@ class VGSample: public UI::GLFWStage
 			glScalef(2, -2, 1);
 			glCullFace(GL_FRONT_AND_BACK);
 
-			vg::RasterizeEvenOdd(mRegion.data.vertices, mRegion.data.fill);
+			vg::RasterizeFillEvenOdd(mRegion.data);
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
@@ -152,7 +152,7 @@ class VGSample: public UI::GLFWStage
 
 			glClear(GL_STENCIL_BUFFER_BIT);
 
-			vg::RasterizeNonZero(mRegion.data.vertices, mRegion.data.stroke);
+			vg::RasterizeStroke(mRegion.data);
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);

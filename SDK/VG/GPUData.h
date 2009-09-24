@@ -33,6 +33,8 @@ namespace vg
 		{
 		}
 	};
+
+	typedef std::vector<u32>	IndexVector;
 	
 	struct Region
 	{
@@ -46,6 +48,13 @@ namespace vg
 	{
 		std::vector<Vertex>	vertices;
 		Region	fill, stroke;
+		std::vector<u32>	indJointBevel[2];
+
+		GLsizei	offsetFillTri[2], countFillTri[2];
+		GLsizei	offsetFillQuad[2], countFillQuad[2];
+		GLsizei	offsetStrokeTri[2], countStrokeTri[2];
+		GLsizei	offsetStrokeQuad[2], countStrokeQuad[2];
+		GLsizei	offsetJointBevel[2], countJointBevel[2];
 	};
 
 	//Uses fixed vertex layout
@@ -82,20 +91,24 @@ namespace vg
 			u32 addVertices(u32 count, Vertex v[]);
 			
 			const glm::vec2& getCursor()
-			{
-				return data.vertices[mCursor].p;
-			}
+			{return data.vertices[mCursor].p;}
+
+			bool isFirstPrim(u32 primVtx)
+			{return data.vertices.size()-primVtx<2;}
 			
-			template<bool displaced>
-			float calcTriOrient(u32 i0, u32 i1, u32 i2);
+			//template<bool displaced>
+			//float calcTriOrient(u32 i0, u32 i1, u32 i2);
 			
 			void addStroke(u32 first, u32 last);
+			void addJointBevel(u32 end, u32 start);
 			
-			template<bool displaced>
-			void addTri(Region& reg, u32 i0, u32 i1, u32 i2);
-			void addArc(Region& reg, u32 i0, u32 i1, u32 i2);
-			void addQuad(Region& reg, u32 i0, u32 i1, u32 i2);
-			void addCubic(Region& reg, u32 i0, u32 i1, u32 i2);
+			void addPrim(IndexVector idx[2], u32 i0, u32 i1, u32 i2, bool displaced=false);
+
+			//template<bool displaced>
+			//void addTri(Region& reg, u32 i0, u32 i1, u32 i2);
+			//void addArc(Region& reg, u32 i0, u32 i1, u32 i2);
+			//void addQuad(Region& reg, u32 i0, u32 i1, u32 i2);
+			//void addCubic(Region& reg, u32 i0, u32 i1, u32 i2);
 
 			void addSimpleCubic(u32& firstIdx, u32& lastIdx,
 								const glm::vec2& p1, const glm::vec3& tc1,
@@ -107,6 +120,7 @@ namespace vg
 			u32 mBase, mCursor;
 	};
 
-	void RasterizeEvenOdd(std::vector<Vertex>& vtx, Region& data);
-	void RasterizeNonZero(std::vector<Vertex>& vtx, Region& data);
+	void RasterizeFillNonZero(const GData& data);
+	void RasterizeFillEvenOdd(const GData& data);
+	void RasterizeStroke(const GData& data);
 }
