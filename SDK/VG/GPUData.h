@@ -44,17 +44,40 @@ namespace vg
 		std::vector<u32>	indCubic[2];
 	};
 
+#define DECLARE_PRIM_TYPE(name)	PT_##name,							\
+								PT_##name##_CW  = PT_##name,		\
+								PT_##name##_CCW
+
+	enum PrimitiveTypes
+	{
+		DECLARE_PRIM_TYPE(FILL_TRI),
+		DECLARE_PRIM_TYPE(FILL_ARC),
+		DECLARE_PRIM_TYPE(FILL_QUAD),
+		DECLARE_PRIM_TYPE(FILL_CUBIC),
+		DECLARE_PRIM_TYPE(STROKE_TRI),
+		DECLARE_PRIM_TYPE(STROKE_ARC),
+		DECLARE_PRIM_TYPE(STROKE_QUAD),
+		DECLARE_PRIM_TYPE(STROKE_CUBIC),
+		DECLARE_PRIM_TYPE(JOINT_BEVEL),
+		DECLARE_PRIM_TYPE(JOINT_MITER),
+		DECLARE_PRIM_TYPE(JOINT_ROUND),
+		DECLARE_PRIM_TYPE(CAP_ROUND),
+		DECLARE_PRIM_TYPE(CAP_BEVEL),
+		PT_COUNT,
+	};
+
 	struct GData
 	{
 		std::vector<Vertex>	vertices;
-		Region	fill, stroke;
-		std::vector<u32>	indJointBevel[2];
+		IndexVector		indices[PT_COUNT];
+		
+		GLsizei	offset[PT_COUNT], count[PT_COUNT];
 
-		GLsizei	offsetFillTri[2], countFillTri[2];
-		GLsizei	offsetFillQuad[2], countFillQuad[2];
-		GLsizei	offsetStrokeTri[2], countStrokeTri[2];
-		GLsizei	offsetStrokeQuad[2], countStrokeQuad[2];
-		GLsizei	offsetJointBevel[2], countJointBevel[2];
+		void drawElements(PrimitiveTypes prim) const
+		{
+			if (count[prim])
+				glDrawElements(GL_TRIANGLES, count[prim], GL_UNSIGNED_INT, &indices[prim][0]);
+		}
 	};
 
 	//Uses fixed vertex layout
@@ -81,8 +104,6 @@ namespace vg
 			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3);
 			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
 
-			void append(u32 mode, const GPUData& other);
-
 		public:
 			GData	data;
 
@@ -96,20 +117,10 @@ namespace vg
 			bool isFirstPrim(u32 primVtx)
 			{return data.vertices.size()-primVtx<2;}
 			
-			//template<bool displaced>
-			//float calcTriOrient(u32 i0, u32 i1, u32 i2);
 			
 			void addStroke(u32 first, u32 last);
 			void addJointBevel(u32 end, u32 start);
-			
-			void addPrim(IndexVector idx[2], u32 i0, u32 i1, u32 i2, bool displaced=false);
-
-			//template<bool displaced>
-			//void addTri(Region& reg, u32 i0, u32 i1, u32 i2);
-			//void addArc(Region& reg, u32 i0, u32 i1, u32 i2);
-			//void addQuad(Region& reg, u32 i0, u32 i1, u32 i2);
-			//void addCubic(Region& reg, u32 i0, u32 i1, u32 i2);
-
+			void addPrim(PrimitiveTypes prim, u32 i0, u32 i1, u32 i2, bool displaced=false);
 			void addSimpleCubic(u32& firstIdx, u32& lastIdx,
 								const glm::vec2& p1, const glm::vec3& tc1,
 								const glm::vec2& p2, const glm::vec3& tc2,

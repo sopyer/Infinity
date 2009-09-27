@@ -26,32 +26,20 @@ namespace vg
 	{
 		if (closePath)
 		{
-			//TODO: do not store fill????
+			//Add closing geometry to the strokes
 			lineTo(data.vertices[mBase].p.x, data.vertices[mBase].p.y);
 			addJointBevel(mCursor-2, mBase+1);
-
-			data.offsetFillTri[CCW] = 0;
-			data.countFillTri[CCW] = (GLsizei)data.fill.indTri[CCW].size();
-			data.offsetFillTri[CW] = 0;
-			data.countFillTri[CW] = (GLsizei)data.fill.indTri[CW].size();
-			data.offsetFillQuad[CCW] = 0;
-			data.countFillQuad[CCW] = (GLsizei)data.fill.indQuad[CCW].size();
-			data.offsetFillQuad[CW] = 0;
-			data.countFillQuad[CW] = (GLsizei)data.fill.indQuad[CW].size();
+		}
+		else
+		{
+			//Generate caps
 		}
 
-		data.offsetStrokeTri[CCW] = 0;
-		data.countStrokeTri[CCW] = (GLsizei)data.stroke.indTri[CCW].size();
-		data.offsetStrokeTri[CW] = 0;
-		data.countStrokeTri[CW] = (GLsizei)data.stroke.indTri[CW].size();
-		data.offsetStrokeQuad[CCW] = 0;
-		data.countStrokeQuad[CCW] = (GLsizei)data.stroke.indQuad[CCW].size();
-		data.offsetStrokeQuad[CW] = 0;
-		data.countStrokeQuad[CW] = (GLsizei)data.stroke.indQuad[CW].size();
-		data.offsetJointBevel[CCW] = 0;
-		data.countJointBevel[CCW] = (GLsizei)data.indJointBevel[CCW].size();
-		data.offsetJointBevel[CW] = 0;
-		data.countJointBevel[CW] = (GLsizei)data.indJointBevel[CW].size();
+		for (size_t i=0; i<PT_COUNT; ++i)
+		{
+			data.offset[i] = 0;
+			data.count[i]  = (GLsizei)data.indices[i].size();
+		}
 
 		mBase=-1;
 	}
@@ -84,8 +72,7 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+4;
 
-		//addTri<false>(data.fill, mBase, mCursor, end);
-		addPrim(data.fill.indTri, mBase, mCursor, end);
+		addPrim(PT_FILL_TRI, mBase, mCursor, end);
 		addStroke(startIdx, startIdx+2);
 		if (!isFirstPrim(ELEMENT_COUNT(v)))
 			addJointBevel(mCursor-2, startIdx);
@@ -110,15 +97,11 @@ namespace vg
 		u32 startIdx  = addVertices(ELEMENT_COUNT(v), v);
 		u32 end       = startIdx+6;
 
-		//addTri<false>(data.fill, mBase, startIdx, startIdx+4);
-		//addQuad(data.fill, startIdx, startIdx+2, startIdx+4);
-		addPrim(data.fill.indTri, mBase, startIdx, startIdx+4);
-		addPrim(data.fill.indQuad, startIdx, startIdx+2, startIdx+4);
+		addPrim(PT_FILL_TRI, mBase, mCursor, end);
+		addPrim(PT_FILL_QUAD, startIdx, startIdx+2, startIdx+4);
 
-		//addQuad(data.stroke, startIdx, startIdx+2, startIdx+4);
-		//addQuad(data.stroke, startIdx+5, startIdx+3, startIdx+1);
-		addPrim(data.stroke.indQuad, startIdx, startIdx+2, startIdx+4);
-		addPrim(data.stroke.indQuad, startIdx+5, startIdx+3, startIdx+1);
+		addPrim(PT_STROKE_QUAD, startIdx, startIdx+2, startIdx+4);
+		addPrim(PT_STROKE_QUAD, startIdx+5, startIdx+3, startIdx+1);
 		addStroke(startIdx, startIdx+4);
 		if (!isFirstPrim(ELEMENT_COUNT(v)))
 			addJointBevel(mCursor-2, startIdx);
@@ -210,10 +193,7 @@ namespace vg
 			if (i==0)
 				i0=i2;
 			else
-			{
-				//addTri<false>(data.fill, i0, i1, i2);
-				addPrim(data.fill.indTri, i0, i1, i2);
-			}
+				addPrim(PT_FILL_TRI, i0, i1, i2);
 		}
 		
 		// The last or the only part
@@ -226,10 +206,7 @@ namespace vg
 		);
 
 		if (numRoots>0)
-		{
-			//addTri<false>(data.fill, i0, i1, i2);
-			addPrim(data.fill.indTri, i0, i1, i2);
-		}
+			addPrim(PT_FILL_TRI, i0, i1, i2);
 	}
 
 	void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1);
@@ -242,27 +219,6 @@ namespace vg
 
 		u32 value;
 	};
-
-	void GPUData::append(u32 mode, const GPUData& other)
-	{
-		//vertices.insert(vertices.end(), other.vertices.begin(), other.vertices.end());
-
-		//std::transform(	other.regIndices.begin(), other.regIndices.end(),
-		//				regIndices.end(),
-		//				AddFunctor((u32)regIndices.size()));
-
-		//std::transform(	other.arcIndices.begin(), other.arcIndices.end(),
-		//				arcIndices.end(),
-		//				AddFunctor((u32)arcIndices.size()));
-
-		//std::transform(	other.quadIndices.begin(), other.quadIndices.end(),
-		//				quadIndices.end(),
-		//				AddFunctor((u32)quadIndices.size()));
-
-		//std::transform(	other.cubicIndices.begin(), other.cubicIndices.end(),
-		//				cubicIndices.end(),
-		//				AddFunctor((u32)cubicIndices.size()));
-	}
 
 	u32 GPUData::addVertex(const Vertex& v)
 	{
@@ -281,8 +237,8 @@ namespace vg
 	void GPUData::addStroke(u32 start, u32 end)
 	{
 		//Order of indices is very important!!!
-		addPrim(data.stroke.indTri, start, end,     end+1, true);
-		addPrim(data.stroke.indTri, end+1, start+1, start, true);
+		addPrim(PT_STROKE_TRI, start, end,     end+1, true);
+		addPrim(PT_STROKE_TRI, end+1, start+1, start, true);
 	}
 
 	void GPUData::addJointBevel(u32 end, u32 start)
@@ -293,9 +249,9 @@ namespace vg
 		float		det = v1.x*v2.y - v1.y*v2.x;
 		
 		if (det<0)
-			addPrim(data.indJointBevel, end,   start,   end+2, true);
+			addPrim(PT_JOINT_BEVEL, end,   start,   end+2, true);
 		else
-			addPrim(data.indJointBevel, end+1, start+1, end+2, true);
+			addPrim(PT_JOINT_BEVEL, end+1, start+1, end+2, true);
 	}
 
 	void GPUData::addSimpleCubic(u32& firstIdx, u32& lastIdx,
@@ -323,38 +279,14 @@ namespace vg
 		u32 i3 = addVertex(v3);
 		u32 i4 = addVertex(v4);
 
-		//addCubic(data.fill, i1, i2, i3);
-		//addCubic(data.fill, i3, i4, i1);
-		addPrim(data.fill.indCubic, i1, i2, i3);
-		addPrim(data.fill.indCubic, i3, i4, i1);
+		addPrim(PT_FILL_CUBIC, i1, i2, i3);
+		addPrim(PT_FILL_CUBIC, i3, i4, i1);
 
 		firstIdx = i1;
 		lastIdx  = i4;
 	}
 
-	//template<>
-	//float GPUData::calcTriOrient<false>(u32 i0, u32 i1, u32 i2)
-	//{
-	//	glm::vec2	v1 = data.vertices[i1].p-data.vertices[i0].p,
-	//				v2 = data.vertices[i2].p-data.vertices[i0].p;
-	//	
-	//	float		det = v1.x*v2.y - v1.y*v2.x;
-
-	//	return det;
-	//}
-
-	//template<>
-	//float GPUData::calcTriOrient<true>(u32 i0, u32 i1, u32 i2)
-	//{
-	//	glm::vec2	v1 = (data.vertices[i1].p+data.vertices[i1].n)-(data.vertices[i0].p+data.vertices[i0].n),
-	//				v2 = (data.vertices[i2].p+data.vertices[i2].n)-(data.vertices[i0].p+data.vertices[i0].n);
-	//	
-	//	float		det = v1.x*v2.y - v1.y*v2.x;
-
-	//	return det;
-	//}
-
-	void GPUData::addPrim(IndexVector idx[2], u32 i0, u32 i1, u32 i2, bool displaced)
+	void GPUData::addPrim(PrimitiveTypes prim, u32 i0, u32 i1, u32 i2, bool displaced)
 	{
 		glm::vec2	v1, v2;
 		Vertex*		vtx = &data.vertices[0];
@@ -372,74 +304,15 @@ namespace vg
 		
 		float		det = v1.x*v2.y - v1.y*v2.x;
 
-		//float det = calcTriOrient<displaced>(i0, i1, i2);
-
 		if (det==0)
 			return;
 
-		std::vector<u32>& indices = idx[det>0?CCW:CW];
+		IndexVector& indices = data.indices[det>0?prim+1:prim];
 
 		indices.push_back(i0);
 		indices.push_back(i1);
 		indices.push_back(i2);
 	}
-
-	//template<bool displaced>
-	//void GPUData::addTri(Region& reg, u32 i0, u32 i1, u32 i2)
-	//{
-	//	float det = calcTriOrient<displaced>(i0, i1, i2);
-
-	//	if (det==0)
-	//		return;
-
-	//	std::vector<u32>& indices = reg.indTri[det>0?CCW:CW];
-
-	//	indices.push_back(i0);
-	//	indices.push_back(i1);
-	//	indices.push_back(i2);
-	//}
-
-	//void GPUData::addQuad(Region& reg, u32 i0, u32 i1, u32 i2)
-	//{
-	//	float det = calcTriOrient<false>(i0, i1, i2);
-
-	//	if (det==0)
-	//		return;
-
-	//	std::vector<u32>& indices = reg.indQuad[det>0?CCW:CW];
-
-	//	indices.push_back(i0);
-	//	indices.push_back(i1);
-	//	indices.push_back(i2);
-	//}
-
-	//void GPUData::addArc(Region& reg, u32 i0, u32 i1, u32 i2)
-	//{
-	//	float det = calcTriOrient<false>(i0, i1, i2);
-
-	//	if (det==0)
-	//		return;
-
-	//	std::vector<u32>& indices = reg.indArc[det>0?CCW:CW];
-
-	//	indices.push_back(i0);
-	//	indices.push_back(i1);
-	//	indices.push_back(i2);
-	//}
-
-	//void GPUData::addCubic(Region& reg, u32 i0, u32 i1, u32 i2)
-	//{
-	//	float det = calcTriOrient<false>(i0, i1, i2);
-
-	//	if (det==0)
-	//		return;
-
-	//	std::vector<u32>& indices = reg.indCubic[det>0?CCW:CW];
-
-	//	indices.push_back(i0);
-	//	indices.push_back(i1);
-	//	indices.push_back(i2);
-	//}
 
 	void RasterizeFillEvenOdd(const GData& data)
 	{
@@ -472,19 +345,16 @@ namespace vg
 		glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx.p);
 
 		glUseProgram(0);
-		if (data.countFillTri[CCW])
-			glDrawElements(GL_TRIANGLES, data.countFillTri[CCW], GL_UNSIGNED_INT, &data.fill.indTri[CCW][0]);
-		if (data.countFillTri[CW])
-			glDrawElements(GL_TRIANGLES, data.countFillTri[CW], GL_UNSIGNED_INT, &data.fill.indTri[CW][0]);
+		data.drawElements(PT_FILL_TRI_CCW);
+		data.drawElements(PT_FILL_TRI_CW);
+
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
 		glUseProgram(vg::shared::prgMaskQuad);
-		if (data.countFillQuad[CCW])
-			glDrawElements(GL_TRIANGLES, data.countFillQuad[CCW], GL_UNSIGNED_INT, &data.fill.indQuad[CCW][0]);
-		if (data.countFillQuad[CW])
-			glDrawElements(GL_TRIANGLES, data.countFillQuad[CW], GL_UNSIGNED_INT, &data.fill.indQuad[CW][0]);
+		data.drawElements(PT_FILL_QUAD_CCW);
+		data.drawElements(PT_FILL_QUAD_CW);
 
 		//if (!data.cubicIndices.empty())
 		//{
@@ -529,22 +399,18 @@ namespace vg
 
 		glUseProgram(0);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (data.countFillTri[CCW])
-			glDrawElements(GL_TRIANGLES, data.countFillTri[CCW], GL_UNSIGNED_INT, &data.fill.indTri[CCW][0]);
+		data.drawElements(PT_FILL_TRI_CCW);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (data.countFillTri[CW])
-			glDrawElements(GL_TRIANGLES, data.countFillTri[CW], GL_UNSIGNED_INT, &data.fill.indTri[CW][0]);
+		data.drawElements(PT_FILL_TRI_CW);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
 		glUseProgram(vg::shared::prgMaskQuad);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (data.countFillQuad[CCW])
-			glDrawElements(GL_TRIANGLES, data.countFillQuad[CCW], GL_UNSIGNED_INT, &data.fill.indQuad[CCW][0]);
+		data.drawElements(PT_FILL_TRI_CCW);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (data.countFillQuad[CW])
-			glDrawElements(GL_TRIANGLES, data.countFillQuad[CW], GL_UNSIGNED_INT, &data.fill.indQuad[CW][0]);
+		data.drawElements(PT_FILL_TRI_CW);
 
 		//if (!data.cubicIndices.empty())
 		//{
@@ -593,15 +459,11 @@ namespace vg
 		glEnableVertexAttribArray(shared::locOffsetAttrib);
 		glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, sizeof(Vertex), &vtx.n);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (data.countStrokeTri[CCW])
-			glDrawElements(GL_TRIANGLES, data.countStrokeTri[CCW], GL_UNSIGNED_INT, &data.stroke.indTri[CCW][0]);
-		if (data.countJointBevel[CCW])
-			glDrawElements(GL_TRIANGLES, data.countJointBevel[CCW], GL_UNSIGNED_INT, &data.indJointBevel[CCW][0]);
+		data.drawElements(PT_STROKE_TRI_CCW);
+		data.drawElements(PT_JOINT_BEVEL_CCW);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (data.countStrokeTri[CW])
-			glDrawElements(GL_TRIANGLES, data.countStrokeTri[CW], GL_UNSIGNED_INT, &data.stroke.indTri[CW][0]);
-		if (data.countJointBevel[CW])
-			glDrawElements(GL_TRIANGLES, data.countJointBevel[CW], GL_UNSIGNED_INT, &data.indJointBevel[CW][0]);
+		data.drawElements(PT_STROKE_TRI_CW);
+		data.drawElements(PT_JOINT_BEVEL_CW);
 		glDisableVertexAttribArray(shared::locOffsetAttrib);
 
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -611,11 +473,9 @@ namespace vg
 		glEnableVertexAttribArray(shared::locOffsetAttribQuad);
 		glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &vtx.n);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		if (data.countStrokeQuad[CCW])
-			glDrawElements(GL_TRIANGLES, data.countStrokeQuad[CCW], GL_UNSIGNED_INT, &data.stroke.indQuad[CCW][0]);
+		data.drawElements(PT_STROKE_QUAD_CCW);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		if (data.countStrokeQuad[CW])
-			glDrawElements(GL_TRIANGLES, data.countStrokeQuad[CW], GL_UNSIGNED_INT, &data.stroke.indQuad[CW][0]);
+		data.drawElements(PT_STROKE_QUAD_CW);
 		glDisableVertexAttribArray(shared::locOffsetAttribQuad);
 
 		//if (!data.cubicIndices.empty())
