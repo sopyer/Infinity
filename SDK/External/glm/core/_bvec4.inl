@@ -59,7 +59,7 @@ namespace glm
         x(a),
         y(b),
         z(c),
-        w(b)
+        w(d)
     {}
 
     inline _bvec4::_bvec4(const bool a, const bool b, const bool c, const _bvec2& d) :

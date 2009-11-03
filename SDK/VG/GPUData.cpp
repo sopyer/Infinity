@@ -4,7 +4,7 @@
 #include "Cubic.h"
 #include "SharedResources.h"
 
-namespace vg
+namespace impl
 {
 	enum
 	{
@@ -12,12 +12,12 @@ namespace vg
 		CCW = 1
 	};
 
-	GPUData::GPUData(): mBase(-1)
+	GPUData::GPUData(): mBase((u32)-1)
 	{}
 
 	void GPUData::begin(float x, float y)
 	{
-		assert(mBase==-1);
+		assert(mBase==(u32)-1);
 		Vertex v(glm::vec2(x, y), glm::vec2());
 		mCursor = mBase = addVertex(v);
 	}
@@ -41,22 +41,7 @@ namespace vg
 			data.count[i]  = (GLsizei)data.indices[i].size();
 		}
 
-		mBase=-1;
-	}
-
-	glm::vec2 rotate90CW(glm::vec2 vec)
-	{
-		return glm::vec2(vec.y, -vec.x);
-	}
-
-	glm::vec2 rotate90CCW(glm::vec2 vec)
-	{
-		return glm::vec2(-vec.y, vec.x);
-	}
-	
-	glm::vec2 makeNormal(glm::vec2 p1, glm::vec2 p2)
-	{
-		return glm::normalize(rotate90CCW(p2-p1));
+		mBase=(u32)-1;
 	}
 
 	void GPUData::lineTo(float x1, float y1)
@@ -352,7 +337,7 @@ namespace vg
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
-		glUseProgram(vg::shared::prgMaskQuad);
+		glUseProgram(shared::prgMaskQuad);
 		data.drawElements(PT_FILL_QUAD_CCW);
 		data.drawElements(PT_FILL_QUAD_CW);
 
@@ -406,11 +391,11 @@ namespace vg
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
-		glUseProgram(vg::shared::prgMaskQuad);
+		glUseProgram(shared::prgMaskQuad);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		data.drawElements(PT_FILL_TRI_CCW);
+		data.drawElements(PT_FILL_QUAD_CCW);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-		data.drawElements(PT_FILL_TRI_CW);
+		data.drawElements(PT_FILL_QUAD_CW);
 
 		//if (!data.cubicIndices.empty())
 		//{
@@ -469,7 +454,7 @@ namespace vg
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
 
-		glUseProgram(vg::shared::prgStrokeMaskQuad);
+		glUseProgram(shared::prgStrokeMaskQuad);
 		glEnableVertexAttribArray(shared::locOffsetAttribQuad);
 		glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, sizeof(Vertex), &vtx.n);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);

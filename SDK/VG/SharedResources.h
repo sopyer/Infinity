@@ -3,7 +3,7 @@
 //Temporary - do we need to export internal stuff????
 #define VG_EXPORT extern
 
-namespace vg
+namespace impl
 {
 	namespace shared
 	{

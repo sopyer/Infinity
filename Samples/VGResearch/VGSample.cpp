@@ -106,7 +106,7 @@ class VGSample: public UI::GLFWStage
 			glClearDepth(1.0);
 			glClearStencil(0);
 
-			vg::shared::Acquire();
+			impl::shared::Acquire();
 			mRegion.begin(0,0);
 			mRegion.lineTo(150, 100);
 			mRegion.lineTo(150, 0);
@@ -116,11 +116,39 @@ class VGSample: public UI::GLFWStage
 			mRegion.quadTo(100, -50, 50, -100);
 			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
 			mRegion.end(true);
+
+			impl::FillGeometryBuilder	fillBuilder;
+
+			fillBuilder.begin(0,0);
+			fillBuilder.lineTo(150, 100);
+			fillBuilder.lineTo(150, 0);
+			fillBuilder.lineTo(50, 100);
+			//mRegion.lineTo(50, 0);
+			fillBuilder.quadTo(0, 50, 50, 0);
+			fillBuilder.quadTo(100, -50, 50, -100);
+			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			fillBuilder.end();
+
+			fillBuilder.copyDataTo(fill);
+
+			impl::StrokeGeometryBuilder	strokeBuilder;
+
+			strokeBuilder.begin(0,0);
+			strokeBuilder.lineTo(150, 100);
+			strokeBuilder.lineTo(150, 0);
+			strokeBuilder.lineTo(50, 100);
+			//mRegion.lineTo(50, 0);
+			strokeBuilder.quadTo(0, 50, 50, 0);
+			strokeBuilder.quadTo(100, -50, 50, -100);
+			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			strokeBuilder.end(true);
+
+			strokeBuilder.copyDataTo(stroke);
 		}
 
 		~VGSample()
 		{
-			vg::shared::Release();
+			impl::shared::Release();
 			mContext.destroyPaint(mFill);
 			mContext.destroyPath(mPolygon);
 		}
@@ -136,7 +164,9 @@ class VGSample: public UI::GLFWStage
 			glScalef(2, -2, 1);
 			glCullFace(GL_FRONT_AND_BACK);
 
-			vg::RasterizeFillEvenOdd(mRegion.data);
+			//fill.RasterizeEvenOdd();
+			fill.RasterizeNonZero();
+			//impl::RasterizeFillEvenOdd(mRegion.data);
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
@@ -152,7 +182,8 @@ class VGSample: public UI::GLFWStage
 
 			glClear(GL_STENCIL_BUFFER_BIT);
 
-			vg::RasterizeStroke(mRegion.data);
+			stroke.Rasterize();
+			//impl::RasterizeStroke(mRegion.data);
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
@@ -176,11 +207,14 @@ class VGSample: public UI::GLFWStage
 		}
 		
 	private:
+		impl::FillGeometry			fill;
+		impl::StrokeGeometry		stroke;
+
 		vg::Context	mContext;
 		vg::Path	mPolygon;
 		vg::Paint	mFill;
 		TextureRef	mPattern;
-		vg::GPUData	mRegion;
+		impl::GPUData	mRegion;
 };
 
 int main()

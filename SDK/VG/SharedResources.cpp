@@ -2,7 +2,7 @@
 #include <cassert>
 #include "SharedResources.h"
 
-namespace vg
+namespace impl
 {
 	namespace shared
 	{

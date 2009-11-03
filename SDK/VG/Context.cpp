@@ -8,12 +8,12 @@ namespace vg
 {
 	Context::Context()
 	{
-		vg::shared::Acquire();
+		impl::shared::Acquire();
 	}
 
 	Context::~Context()
 	{
-		vg::shared::Release();
+		impl::shared::Release();
 	}
 
 	Path Context::createPath(float scale, float bias)
@@ -123,7 +123,7 @@ namespace vg
 
 		if (!path.mObject->vertQuad.empty())
 		{
-			glUseProgram(vg::shared::prgMaskQuad);
+			glUseProgram(impl::shared::prgMaskQuad);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glVertexPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].p);
 			glTexCoordPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].tc);
