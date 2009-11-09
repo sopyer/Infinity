@@ -6,6 +6,7 @@
 #include <utils.h>
 #include ".\types.h"
 #include "SharedResources.h"
+#include "Cubic.h"
 
 namespace impl
 {
@@ -209,11 +210,9 @@ namespace impl
 			drawElements(FILL_PRIM_TYPE_QUAD_CCW);
 			drawElements(FILL_PRIM_TYPE_QUAD_CW);
 
-			//if (!data.cubicIndices.empty())
-			//{
-			//	glUseProgram(vg::shared::prgMaskCubic);
-			//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
-			//}
+			glUseProgram(shared::prgMaskCubic);
+			drawElements(FILL_PRIM_TYPE_CUBIC_CCW);
+			drawElements(FILL_PRIM_TYPE_CUBIC_CW);
 
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
@@ -265,11 +264,11 @@ namespace impl
 			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
 			drawElements(FILL_PRIM_TYPE_QUAD_CW);
 
-			//if (!data.cubicIndices.empty())
-			//{
-			//	glUseProgram(vg::shared::prgMaskCubic);
-			//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
-			//}
+			glUseProgram(shared::prgMaskCubic);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			drawElements(FILL_PRIM_TYPE_CUBIC_CCW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			drawElements(FILL_PRIM_TYPE_CUBIC_CW);
 
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
@@ -282,6 +281,9 @@ namespace impl
 	class GeometryBuilder
 	{
 		protected:
+			GeometryBuilder():mBase(InvalidIndex), mCursor(InvalidIndex)
+			{}
+
 			VGuint addVertex(const VertexType& v)
 			{
 				assert(mVertices.size()<(size_t)VG_MAXINT);
@@ -317,19 +319,23 @@ namespace impl
 			}
 		
 		protected:
+			glm::vec2	getLastVertex()  {return mVertices[mCursor].p;}
+			glm::vec2	getFirstVertex() {return mVertices[mBase].p;}
+			bool		isFirstPrim()	 {return mCursor==mBase;}
+
+		protected:
+			static const VGuint	InvalidIndex = ~((VGuint)0);
+
+		protected:
 			std::vector<VertexType>	mVertices;
 			IndexVector				mIndices[PT_COUNT];
+			VGuint					mBase, mCursor;
 	};
-
-
 
 	class FillGeometryBuilder: public GeometryBuilder<FillVertex, FILL_PRIM_TYPE_COUNT>
 	{
 		public:
-			FillGeometryBuilder():mBase(InvalidIndex), mCursor(InvalidIndex)
-			{}
-
-			void begin(float x, float y)
+			void begin(VGfloat x, VGfloat y)
 			{
 				assert(mBase   == InvalidIndex);
 				assert(mCursor == InvalidIndex);
@@ -341,7 +347,7 @@ namespace impl
 				mCursor = mBase=InvalidIndex;
 			}
 			
-			void lineTo(float x1, float y1)
+			void lineTo(VGfloat x1, VGfloat y1)
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
@@ -355,7 +361,7 @@ namespace impl
 				mCursor = i1;
 			}
 
-			void quadTo(float x1, float y1, float x2, float y2)
+			void quadTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2)
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
@@ -372,17 +378,69 @@ namespace impl
 
 				assert(mCursor == i0-1);
 
-				addPrim(FILL_PRIM_TYPE_TRI,  mBase, mCursor, i2);
-				addPrim(FILL_PRIM_TYPE_QUAD, i0,    i1,      i2);
+				addPrim(FILL_PRIM_TYPE_TRI,  mBase, i0, i2);
+				addPrim(FILL_PRIM_TYPE_QUAD, i0,    i1, i2);
 
 				mCursor = i2;
 			}
 
-			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
+			void addSimpleCubic(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
 			{
+				FillVertex& v0 = mVertices[i0];
+				FillVertex& v1 = mVertices[i1];
+				FillVertex& v2 = mVertices[i2];
+				FillVertex& v3 = mVertices[i3];
+
+				if (cubic::calcImplicit(v1.tc)<0 || cubic::calcImplicit(v2.tc)<0)
+				{
+					cubic::changeOrient(v0.tc);
+					cubic::changeOrient(v1.tc);
+					cubic::changeOrient(v2.tc);
+					cubic::changeOrient(v3.tc);
+				}
+
+				addPrim(FILL_PRIM_TYPE_CUBIC, i0, i1, i2);
+				addPrim(FILL_PRIM_TYPE_CUBIC, i2, i3, i0);
+
 			}
 
-			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1)
+			void cubicTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2, VGfloat x3, VGfloat y3)
+			{
+				glm::vec2 pts[4] = 
+				{
+					getLastVertex(),
+					glm::vec2(x1, y1),
+					glm::vec2(x2, y2),
+					glm::vec2(x3, y3),
+				};
+
+				VGint count;
+				glm::vec2	pos[10];
+				glm::vec3	tc[10];
+
+				cubic::calcCubic(pts, count, pos, tc);
+
+				VGuint	last;
+
+				for (VGint i=0; i<count; ++i)
+				{
+					VGuint	i0 = addVertex(FillVertex(pos[i*3+0], tc[i*3+0]));
+					VGuint	i1 = addVertex(FillVertex(pos[i*3+1], tc[i*3+1]));
+					VGuint	i2 = addVertex(FillVertex(pos[i*3+2], tc[i*3+2]));
+					VGuint	i3 = addVertex(FillVertex(pos[i*3+3], tc[i*3+3]));
+					
+					addSimpleCubic(i0, i1, i2, i3);
+					addPrim(FILL_PRIM_TYPE_TRI, mCursor, i0, i3);
+
+					last = i3;
+				}
+
+				addPrim(FILL_PRIM_TYPE_TRI,  mBase, mCursor, last);
+
+				mCursor = last;
+			}
+
+			void arc(VGPathSegment type, VGfloat rx, VGfloat ry, VGfloat angle, VGfloat x0, VGfloat y0, VGfloat x1, VGfloat y1)
 			{
 			}
 			
@@ -411,14 +469,6 @@ namespace impl
 					mVertices.end());
 			}
 
-		private:
-			glm::vec2	getLastVertex() {return mVertices[mCursor].p;}
-
-		private:
-			static const VGuint	InvalidIndex = ~((VGuint)0);
-
-		private:
-			VGuint mBase, mCursor;
 	};
 
 #define DECLARE_STROKE_PRIM_TYPE(name)	STROKE_PRIM_TYPE_##name,									\
@@ -486,11 +536,14 @@ namespace impl
 			drawElements(STROKE_PRIM_TYPE_QUAD_CW);
 			glDisableVertexAttribArray(shared::locOffsetAttribQuad);
 
-			//if (!data.cubicIndices.empty())
-			//{
-			//	glUseProgram(vg::shared::prgMaskCubic);
-			//	glDrawElements(GL_TRIANGLES, (GLsizei)data.cubicIndices.size(), GL_UNSIGNED_INT, &data.cubicIndices[0]);
-			//}
+			glUseProgram(shared::prgStrokeMaskCubic);
+			glEnableVertexAttribArray(shared::attrOffsetCubic);
+			glVertexAttribPointer(shared::attrOffsetCubic, 2, GL_FLOAT, false, VertexSize, &vtx.n);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			drawElements(STROKE_PRIM_TYPE_CUBIC_CCW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			drawElements(STROKE_PRIM_TYPE_CUBIC_CW);
+			glDisableVertexAttribArray(shared::attrOffsetCubic);
 
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
@@ -502,10 +555,7 @@ namespace impl
 	class StrokeGeometryBuilder: public GeometryBuilder<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
 	{
 		public:
-			StrokeGeometryBuilder():mBase(InvalidIndex), mCursor(InvalidIndex)
-			{}
-
-			void begin(float x, float y)
+			void begin(VGfloat x, VGfloat y)
 			{
 				assert(mBase   == InvalidIndex);
 				assert(mCursor == InvalidIndex);
@@ -531,7 +581,7 @@ namespace impl
 				mCursor = mBase=InvalidIndex;
 			}
 			
-			void lineTo(float x1, float y1)
+			void lineTo(VGfloat x1, VGfloat y1)
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
@@ -552,7 +602,7 @@ namespace impl
 				addStroke(begin, end);
 			}
 
-			void quadTo(float x1, float y1, float x2, float y2)
+			void quadTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2)
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
@@ -601,8 +651,79 @@ namespace impl
 				addStroke(begin, end);
 			}
 
-			void cubic(float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3)
+			void addSimpleCubic(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
 			{
+				StrokeVertex& v0 = mVertices[i0];
+				StrokeVertex& v1 = mVertices[i1];
+				StrokeVertex& v2 = mVertices[i2];
+				StrokeVertex& v3 = mVertices[i3];
+
+				if (cubic::calcImplicit(v1.tc)<0 || cubic::calcImplicit(v2.tc)<0)
+				{
+					cubic::changeOrient(v0.tc);
+					cubic::changeOrient(v1.tc);
+					cubic::changeOrient(v2.tc);
+					cubic::changeOrient(v3.tc);
+				}
+
+				addPrim(STROKE_PRIM_TYPE_CUBIC, i0, i1, i2);
+				addPrim(STROKE_PRIM_TYPE_CUBIC, i2, i3, i0);
+
+			}
+
+			void cubicTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2, VGfloat x3, VGfloat y3)
+			{
+				glm::vec2 pts[4] = 
+				{
+					getLastVertex(),
+					glm::vec2(x1, y1),
+					glm::vec2(x2, y2),
+					glm::vec2(x3, y3),
+				};
+
+				VGint count;
+				glm::vec2	pos[10];
+				glm::vec3	tc[10];
+
+				cubic::calcCubic(pts, count, pos, tc);
+
+				GLuint base1, base2;
+
+				for (VGint i=0; i<count; ++i)
+				{
+					glm::vec2	n01(makeNormal(pos[i*3+0], pos[i*3+1])),
+								n12(makeNormal(pos[i*3+1], pos[i*3+2])),
+								n23(makeNormal(pos[i*3+2], pos[i*3+3]));
+					float		det012 = n01.y*n12.x-n01.x*n12.y;
+					glm::vec2	offset012(det012!=0?makeNormal(n01, n12)/det012:makeNormal(pos[i*3+0], pos[i*3+2]));
+					float		det123 = n12.y*n23.x-n12.x*n23.y;
+					glm::vec2	offset123(det123!=0?makeNormal(n12, n23)/det123:makeNormal(pos[i*3+1], pos[i*3+3]));
+
+					VGuint	i0 = addVertex(StrokeVertex(pos[i*3+0], n01, tc[i*3+0]));
+					addVertex(StrokeVertex(pos[i*3+0], -n01, tc[i*3+0]));
+					VGuint	i1 = addVertex(StrokeVertex(pos[i*3+1], offset012, tc[i*3+1]));
+					addVertex(StrokeVertex(pos[i*3+1], -offset012, tc[i*3+1]));
+					VGuint	i2 = addVertex(StrokeVertex(pos[i*3+2], offset123, tc[i*3+2]));
+					addVertex(StrokeVertex(pos[i*3+2], -offset123, tc[i*3+2]));
+					VGuint	i3 = addVertex(StrokeVertex(pos[i*3+3], n23, tc[i*3+3]));
+					addVertex(StrokeVertex(pos[i*3+3], -n23, tc[i*3+3]));
+					
+					if (i==0)
+					{
+						base1 = i0;
+						base2 = i0+1;
+					}
+
+					addSimpleCubic(i0, i1, i2, i3);
+					addPrim(STROKE_PRIM_TYPE_TRI, base1, i0, i3);
+
+					addSimpleCubic(i3+1, i2+1, i1+1, i0+1);
+					addPrim(STROKE_PRIM_TYPE_TRI, base2, i3+1, i0+1);
+				}
+
+				VGuint	last = addVertex(StrokeVertex(pos[i*3+3]));
+
+				addStroke(mCursor+1, last-2);
 			}
 
 			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1)
@@ -635,10 +756,6 @@ namespace impl
 			}
 
 		private:
-			glm::vec2	getLastVertex()  {return mVertices[mCursor].p;}
-			glm::vec2	getFirstVertex() {return mVertices[mBase].p;}
-			bool		isFirstPrim()	 {return mCursor==mBase;}
-
 			void addStroke(u32 start, u32 end)
 			{
 				//Order of indices is very important!!!
@@ -677,12 +794,6 @@ namespace impl
 				else
 					addPrim(STROKE_PRIM_TYPE_JOINT_BEVEL, first+1, second+1, second-1);
 			}
-
-		private:
-			static const VGuint	InvalidIndex = ~((VGuint)0);
-
-		private:
-			VGuint mBase, mCursor;
 	};
 
 	struct GData

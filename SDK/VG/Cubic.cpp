@@ -1,5 +1,6 @@
 #include "Cubic.h"
 #include <cassert>
+#include <algorithm>
 
 namespace cubic
 {
@@ -178,4 +179,96 @@ namespace cubic
 		tc.y = -tc.y;
 	}
 
+	void calcCubic(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10])
+	{
+		Determinants	det;
+		float	roots[2];
+		int		numRoots = 0;
+
+		glm::vec2 cp1[4] = {pts[0], pts[1], pts[2], pts[3]};
+		glm::vec2 cp2[4];
+		glm::vec3 tc1[4], tc2[4];
+
+		// Calc determinant
+		calcDets(cp1, det);
+		
+		// First calculate t values at which we should subdivide our curve
+		if (det.d[1] != 0)
+		{
+			float t1, t2;
+
+			if (det.D>=0)
+			{
+				// Handle serpentine and cusp case
+				calcSerpentineCuspTC(det, tc1, t1, t2);
+			}
+			else
+			{
+				// Handle loop case
+				calcLoopTC(det, tc1, t1, t2);
+			}
+			
+			if (t1>t2)
+				std::swap(t1, t2);
+
+			if (0<t1 && t1<1)
+				roots[numRoots++] = t1;
+
+			if (t1!=t2 && 0<t2 && t2<1)
+				roots[numRoots++] = t2;
+		}
+		else if (det.d[2]!=0)
+		{
+			//Handle cusp at infinity case
+			float t;
+
+			calcInfCuspTC(det, tc1, t);
+			roots[numRoots++] = t;
+		}
+		else if (det.d[3]!=0)
+		{
+			//Handle quadratic curve case
+			calcQuadraticTC(tc1);
+		}
+		else
+		{
+			//This is degenarate cases
+			pos[0] = cp1[0];
+			pos[1] = cp1[3];
+
+			tc[0] = glm::vec3(0);
+			tc[1] = glm::vec3(0);
+
+			count = 0;
+			return;
+		}
+
+		for(int i=0; i<numRoots; ++i)
+		{
+			float t = i==0?roots[i]:(roots[i]-roots[i-1])/(1-roots[i-1]);
+
+			cubic::subdivide(cp1, t, cp1, cp2);
+			cubic::subdivide(tc1, t, tc1, tc2);
+
+			pos[i*3+0] = cp1[0];
+			pos[i*3+1] = cp1[1];
+			pos[i*3+2] = cp1[2];
+
+			tc[i*3+0] = tc1[0];
+			tc[i*3+1] = tc1[1];
+			tc[i*3+2] = tc1[2];
+		}
+		
+		pos[i*3+0] = cp2[0];
+		pos[i*3+1] = cp2[1];
+		pos[i*3+2] = cp2[2];
+		pos[i*3+3] = cp2[3];
+
+		tc[i*3+0] = tc2[0];
+		tc[i*3+1] = tc2[1];
+		tc[i*3+2] = tc2[2];
+		tc[i*3+3] = tc2[3];
+
+		count = numRoots+1;
+	}
 }

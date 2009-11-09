@@ -17,8 +17,10 @@ namespace impl
 		VG_EXPORT GLuint	prgFillPattern;
 		VG_EXPORT GLuint	prgMaskStrokeSeg;
 		VG_EXPORT GLuint	prgStrokeMaskQuad;
+		VG_EXPORT GLuint	prgStrokeMaskCubic;
 		
 		VG_EXPORT GLint		locOffsetAttribQuad;
+		VG_EXPORT GLint		attrOffsetCubic;
 		VG_EXPORT GLint		locOffsetAttrib;
 	}
 }

@@ -119,29 +119,41 @@ class VGSample: public UI::GLFWStage
 
 			impl::FillGeometryBuilder	fillBuilder;
 
-			fillBuilder.begin(0,0);
-			fillBuilder.lineTo(150, 100);
-			fillBuilder.lineTo(150, 0);
-			fillBuilder.lineTo(50, 100);
-			//mRegion.lineTo(50, 0);
-			fillBuilder.quadTo(0, 50, 50, 0);
-			fillBuilder.quadTo(100, -50, 50, -100);
-			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			//fillBuilder.begin(0,0);
+			//fillBuilder.lineTo(150, 100);
+			//fillBuilder.lineTo(150, 0);
+			//fillBuilder.lineTo(50, 100);
+			////mRegion.lineTo(50, 0);
+			//fillBuilder.quadTo(0, 50, 50, 0);
+			//fillBuilder.quadTo(100, -50, 50, -100);
+			////mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			//fillBuilder.end();
+
+			fillBuilder.begin(0, 0);
+			fillBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//fillBuilder.lineTo(50, 100);
+			//fillBuilder.lineTo(0, 0);
 			fillBuilder.end();
 
 			fillBuilder.copyDataTo(fill);
 
 			impl::StrokeGeometryBuilder	strokeBuilder;
 
-			strokeBuilder.begin(0,0);
-			strokeBuilder.lineTo(150, 100);
-			strokeBuilder.lineTo(150, 0);
-			strokeBuilder.lineTo(50, 100);
-			//mRegion.lineTo(50, 0);
-			strokeBuilder.quadTo(0, 50, 50, 0);
-			strokeBuilder.quadTo(100, -50, 50, -100);
-			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
-			strokeBuilder.end(true);
+			//strokeBuilder.begin(0,0);
+			//strokeBuilder.lineTo(150, 100);
+			//strokeBuilder.lineTo(150, 0);
+			//strokeBuilder.lineTo(50, 100);
+			////mRegion.lineTo(50, 0);
+			//strokeBuilder.quadTo(0, 50, 50, 0);
+			//strokeBuilder.quadTo(100, -50, 50, -100);
+			////mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
+			//strokeBuilder.end(true);
+
+			strokeBuilder.begin(0, 0);
+			strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//fillBuilder.lineTo(50, 100);
+			//fillBuilder.lineTo(0, 0);
+			strokeBuilder.end(false);
 
 			strokeBuilder.copyDataTo(stroke);
 		}
@@ -165,7 +177,7 @@ class VGSample: public UI::GLFWStage
 			glCullFace(GL_FRONT_AND_BACK);
 
 			//fill.RasterizeEvenOdd();
-			fill.RasterizeNonZero();
+			//fill.RasterizeNonZero();
 			//impl::RasterizeFillEvenOdd(mRegion.data);
 
 			glColor4f(1, 1, 1, 1);
@@ -191,10 +203,10 @@ class VGSample: public UI::GLFWStage
 			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			glBegin(GL_QUADS);
-			glVertex2f(-210,-210);
-			glVertex2f(-210,210);
-			glVertex2f(260,210);
-			glVertex2f(260,-210);
+			glVertex2f(-400,-400);
+			glVertex2f(-400,400);
+			glVertex2f(400,400);
+			glVertex2f(400,-400);
 			glEnd();
 
 			glFlush();

@@ -13,7 +13,9 @@ namespace impl
 		GLuint	prgFillPattern = 0;
 		GLuint	prgMaskStrokeSeg = 0;
 		GLuint	prgStrokeMaskQuad = 0;
+		GLuint	prgStrokeMaskCubic = 0;
 		
+		GLint	attrOffsetCubic = -1;
 		GLint	locOffsetAttribQuad = -1;
 		GLint	locOffsetAttrib = -1;
 
@@ -124,7 +126,6 @@ namespace impl
 				CompileShader(fsCubic, sourceCubicFragSh);
 				glAttachShader(prgMaskCubic, fsCubic);
 				glLinkProgram(prgMaskCubic);
-				glDeleteShader(fsCubic);
 
 				prgMaskQuad = glCreateProgram();
 				fsQuad = glCreateShader(GL_FRAGMENT_SHADER);
@@ -145,7 +146,14 @@ namespace impl
 				glLinkProgram(prgStrokeMaskQuad);
 				locOffsetAttribQuad = glGetAttribLocation(prgStrokeMaskQuad, "aOffset");
 				
+				prgStrokeMaskCubic = glCreateProgram();
+				glAttachShader(prgStrokeMaskCubic, vsStrokeSeg);
+				glAttachShader(prgStrokeMaskCubic, fsCubic);
+				glLinkProgram(prgStrokeMaskCubic);
+				attrOffsetCubic = glGetAttribLocation(prgStrokeMaskCubic, "aOffset");
+
 				glDeleteShader(fsQuad);
+				glDeleteShader(fsCubic);
 				glDeleteShader(vsStrokeSeg);
 				
 				prgFillColor = glCreateProgram();
@@ -182,6 +190,7 @@ namespace impl
 				glDeleteProgram(prgFillPattern);
 				glDeleteProgram(prgMaskStrokeSeg);
 				glDeleteProgram(prgStrokeMaskQuad);
+				glDeleteProgram(prgStrokeMaskCubic);
 			}
 		}
 	}

@@ -13,6 +13,7 @@ namespace cubic
 		float	d[4];
 	};
 
+	void calcCubic(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10]);
 	void calcSerpentineCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2);
 	void calcLoopTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2);
 	void calcInfCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t);
