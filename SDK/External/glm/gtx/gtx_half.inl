@@ -300,7 +300,7 @@ namespace glm
 	        // Assemble the _half from s, e (zero) and m.
 	        //
 
-	        return s | (m >> 13);
+	        return short(s | (m >> 13));
         }
         else if(e == 0xff - (127 - 15))
         {
@@ -311,7 +311,7 @@ namespace glm
 	            // infinity with the same sign as f.
 	            //
 
-	            return s | 0x7c00;
+	            return short(s | 0x7c00);
 	        }
 	        else
 	        {
@@ -325,7 +325,7 @@ namespace glm
 	            //
 
 	            m >>= 13;
-	            return s | 0x7c00 | m | (m == 0);
+	            return short(s | 0x7c00 | m | (m == 0));
 	        }
         }
         else
@@ -357,14 +357,14 @@ namespace glm
 	        if (e > 30)
 	        {
 	            _overflow();        // Cause a hardware floating point overflow;
-	            return s | 0x7c00;  // if this returns, the _half becomes an
+	            return short(s | 0x7c00);  // if this returns, the _half becomes an
 	        }                       // infinity with the same sign as f.
 
 	        //
 	        // Assemble the _half from s, e and m.
 	        //
 
-	        return s | (e << 10) | (m >> 13);
+	        return short(s | (e << 10) | (m >> 13));
         }
     }
 

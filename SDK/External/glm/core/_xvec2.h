@@ -26,17 +26,17 @@ namespace glm
     {
     public:
         // Data
-        /* ISO C++ version unavailable with VC7.1 ...
-            union{T x, r, s;};
-            union{T y, g, t;};
-        */
+		//ISO C++ version unavailable with VC7.1 ...
+		union{T x, r, s;};
+		union{T y, g, t;};
+        
         // Solution away from ISO C++ but available with VC7.1 and GCC without -pedantic
-        union 
-        {
-            struct{T x, y;};
-            struct{T r, g;};
-            struct{T s, t;};
-        };
+        //union 
+        //{
+        //    struct{T x, y;};
+        //    struct{T r, g;};
+        //    struct{T s, t;};
+        //};
 
         // Common constructors
 	    _xvec2();

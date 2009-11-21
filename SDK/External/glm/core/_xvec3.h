@@ -31,18 +31,18 @@ namespace glm
     {
     public:
         // Data
-        /* ISO C++ version unavailable with VC7.1 ...
-            union{T x, r, s;};
-            union{T y, g, t;};
-            union{T z, b, p;};
-        */
+		//ISO C++ version unavailable with VC7.1 ...
+		union{T x, r, s;};
+		union{T y, g, t;};
+		union{T z, b, p;};
+        
         // Solution away from ISO C++ but available with VC7.1 and GCC without -pedantic
-        union 
-        {
-            struct{T x, y, z;};
-            struct{T r, g, b;};
-            struct{T s, t, p;};
-        };
+        //union 
+        //{
+        //    struct{T x, y, z;};
+        //    struct{T r, g, b;};
+        //    struct{T s, t, p;};
+        //};
 
         // Common constructors
 	    _xvec3();

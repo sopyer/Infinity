@@ -26,20 +26,20 @@ namespace glm
     {
     public:
         // Data
-        /* ISO C++ version unavailable with VC7.1 ...
-            union{T x, r, s;};
-            union{T y, g, t;};
-            union{T z, b, p;};
-            union{T w, a, q;};
-        */
+		//ISO C++ version unavailable with VC7.1 ...
+        union{T x, r, s;};
+        union{T y, g, t;};
+        union{T z, b, p;};
+        union{T w, a, q;};
+        
         // Solution away from ISO C++ but available with VC7.1 and GCC without -pedantic
-        union 
-        {
-            struct{T x, y, z, w;};
-            struct{T r, g, b, a;};
-            struct{T s, t, p, q;};
-            //__m128 data;
-        };
+        //union 
+        //{
+        //    struct{T x, y, z, w;};
+        //    struct{T r, g, b, a;};
+        //    struct{T s, t, p, q;};
+        //    //__m128 data;
+        //};
 
         // Common constructors
 	    _xvec4();

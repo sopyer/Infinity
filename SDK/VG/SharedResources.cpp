@@ -14,8 +14,10 @@ namespace impl
 		GLuint	prgMaskStrokeSeg = 0;
 		GLuint	prgStrokeMaskQuad = 0;
 		GLuint	prgStrokeMaskCubic = 0;
+		GLuint	prgStrokeMaskArc = 0;
 		
 		GLint	attrOffsetCubic = -1;
+		GLint	attrOffsetArc = -1;
 		GLint	locOffsetAttribQuad = -1;
 		GLint	locOffsetAttrib = -1;
 
@@ -24,73 +26,73 @@ namespace impl
 			size_t refCount = 0;
 
 			const char* const sourceArcFragSh = 
-				"void main(void)											"
-				"{															"
-				"	vec2 uv = gl_TexCoord[0].st;							"
-				"															"
-				"	if( (uv.s*uv.s + uv.t*uv.t)>=1.0 )						"
-				"		discard;											"
-				"															"
-				"	gl_FragColor = vec4(1.0);								"
-				"}															";
+				"void main(void)											\n"
+				"{															\n"
+				"	vec2 uv = gl_TexCoord[0].st;							\n"
+				"															\n"
+				"	if( (uv.s*uv.s + uv.t*uv.t)>=1.0 )						\n"
+				"		discard;											\n"
+				"															\n"
+				"	gl_FragColor = vec4(1.0);								\n"
+				"}															\n";
 
 			const char* const sourceQuadFragSh = 
-				"void main(void)											"
-				"{															"
-				"	vec2 uv = gl_TexCoord[0].st;							"
-				"															"
-				"	if( (pow(uv.s, 2.0)-uv.t)>=0.0 )						"
-				"		discard;											"
-				"															"
-				"	gl_FragColor = vec4(1.0);								"
-				"}															";
+				"void main(void)											\n"
+				"{															\n"
+				"	vec2 uv = gl_TexCoord[0].st;							\n"
+				"															\n"
+				"	if( (pow(uv.s, 2.0)-uv.t)>=0.0 )						\n"
+				"		discard;											\n"
+				"															\n"
+				"	gl_FragColor = vec4(1.0);								\n"
+				"}															\n";
 
 			const char* const sourceCubicFragSh = 
-				"void main(void)											"
-				"{															"
-				"	vec3 uv = gl_TexCoord[0].stp;							"
-				"															"
-				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					"
-				"		discard;											"
-				"															"
-				"	gl_FragColor = vec4(1.0);								"
-				"}															";
+				"void main(void)											\n"
+				"{															\n"
+				"	vec3 uv = gl_TexCoord[0].stp;							\n"
+				"															\n"
+				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					\n"
+				"		discard;											\n"
+				"															\n"
+				"	gl_FragColor = vec4(1.0);								\n"
+				"}															\n";
 
 			const char* const sourceColorFillFragSh =
-				"uniform vec4 uFillColor;									"
-				"															"
-				"void main()												"
-				"{															"
-				"	gl_FragColor = uFillColor;								"
-				"}															";
+				"uniform vec4 uFillColor;									\n"
+				"															\n"
+				"void main()												\n"
+				"{															\n"
+				"	gl_FragColor = uFillColor;								\n"
+				"}															\n";
 
 			const char* const sourceFillVertSh =
-				"uniform vec2 uImageDim;									"
-				"															"
-				"void main()												"
-				"{															"
-				"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	"
-				"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	"
-				"}															";
+				"uniform vec2 uImageDim;									\n"
+				"															\n"
+				"void main()												\n"
+				"{															\n"
+				"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	\n"
+				"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	\n"
+				"}															\n";
 
 			const char* const sourcePatternFillFragSh =
-				"uniform sampler2D uPattern;								"
-				"															"
-				"void main()												"
-				"{															"
-				"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		"
-				"}															";
+				"uniform sampler2D uPattern;								\n"
+				"															\n"
+				"void main()												\n"
+				"{															\n"
+				"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		\n"
+				"}															\n";
 
 			const char* const sourceStrokeVertSh =
-				"attribute vec2 aOffset;									"
-				"															"
-				"void main()												"
-				"{															"
-				"	vec4 pos = gl_Vertex;									"
-				"	pos.xy += 5*aOffset;										"
-				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			"
-				"	gl_TexCoord[0] = gl_MultiTexCoord0;						"
-				"}															";
+				"attribute vec2 aOffset;									\n"
+				"															\n"
+				"void main()												\n"
+				"{															\n"
+				"	vec4 pos = gl_Vertex;									\n"
+				"	pos.xy += 5*aOffset;									\n"
+				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			\n"
+				"	gl_TexCoord[0] = gl_MultiTexCoord0;						\n"
+				"}															\n";
 
 			void CompileShader(GLuint shader, const char* source)
 			{
@@ -119,7 +121,6 @@ namespace impl
 				CompileShader(fsArc, sourceArcFragSh);
 				glAttachShader(prgMaskArc, fsArc);
 				glLinkProgram(prgMaskArc);
-				glDeleteShader(fsArc);
 
 				prgMaskCubic = glCreateProgram();
 				fsCubic = glCreateShader(GL_FRAGMENT_SHADER);
@@ -152,6 +153,13 @@ namespace impl
 				glLinkProgram(prgStrokeMaskCubic);
 				attrOffsetCubic = glGetAttribLocation(prgStrokeMaskCubic, "aOffset");
 
+				prgStrokeMaskArc = glCreateProgram();
+				glAttachShader(prgStrokeMaskArc, vsStrokeSeg);
+				glAttachShader(prgStrokeMaskArc, fsArc);
+				glLinkProgram(prgStrokeMaskArc);
+				attrOffsetArc = glGetAttribLocation(prgStrokeMaskArc, "aOffset");
+
+				glDeleteShader(fsArc);
 				glDeleteShader(fsQuad);
 				glDeleteShader(fsCubic);
 				glDeleteShader(vsStrokeSeg);
@@ -191,6 +199,7 @@ namespace impl
 				glDeleteProgram(prgMaskStrokeSeg);
 				glDeleteProgram(prgStrokeMaskQuad);
 				glDeleteProgram(prgStrokeMaskCubic);
+				glDeleteProgram(prgStrokeMaskArc);
 			}
 		}
 	}

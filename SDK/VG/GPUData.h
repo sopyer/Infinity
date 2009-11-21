@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.h>
+#include <glm/glmext.h>
 #include <vg/openvg.h>
 #include <utils.h>
 #include ".\types.h"
@@ -10,21 +11,6 @@
 
 namespace impl
 {
-	inline glm::vec2 rotate90CW(glm::vec2 vec)
-	{
-		return glm::vec2(vec.y, -vec.x);
-	}
-
-	inline glm::vec2 rotate90CCW(glm::vec2 vec)
-	{
-		return glm::vec2(-vec.y, vec.x);
-	}
-	
-	inline glm::vec2 makeNormal(glm::vec2 p1, glm::vec2 p2)
-	{
-		return glm::normalize(rotate90CCW(p2-p1));
-	}
-
 	struct Vertex
 	{
 		glm::vec2	p;
@@ -214,6 +200,10 @@ namespace impl
 			drawElements(FILL_PRIM_TYPE_CUBIC_CCW);
 			drawElements(FILL_PRIM_TYPE_CUBIC_CW);
 
+			glUseProgram(shared::prgMaskArc);
+			drawElements(FILL_PRIM_TYPE_ARC_CCW);
+			drawElements(FILL_PRIM_TYPE_ARC_CW);
+
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
 			
@@ -269,6 +259,12 @@ namespace impl
 			drawElements(FILL_PRIM_TYPE_CUBIC_CCW);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
 			drawElements(FILL_PRIM_TYPE_CUBIC_CW);
+
+			glUseProgram(shared::prgMaskArc);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			drawElements(FILL_PRIM_TYPE_ARC_CCW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			drawElements(FILL_PRIM_TYPE_ARC_CW);
 
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
@@ -418,7 +414,7 @@ namespace impl
 				glm::vec2	pos[10];
 				glm::vec3	tc[10];
 
-				cubic::calcCubic(pts, count, pos, tc);
+				cubic::calcTriVertices(pts, count, pos, tc);
 
 				VGuint	last;
 
@@ -440,8 +436,32 @@ namespace impl
 				mCursor = last;
 			}
 
-			void arc(VGPathSegment type, VGfloat rx, VGfloat ry, VGfloat angle, VGfloat x0, VGfloat y0, VGfloat x1, VGfloat y1)
+			void arcTo(arc::Type type, VGfloat rx, VGfloat ry, VGfloat angle, VGfloat x1, VGfloat y1)
 			{
+				VGint count;
+				glm::vec2	pos[9];
+				glm::vec3	tc[9];
+
+				arc::calcTriVertices(type, rx, ry, angle, getLastVertex(), glm::vec2(x1, y1), count, pos, tc);
+				
+				VGuint	last;
+
+				for (VGint i=0; i<count; ++i)
+				{
+					last = addVertex(FillVertex(pos[i], tc[i]));
+				}
+
+				assert(last==mCursor+count);
+
+				for (VGint i=0; i<count-1; i+=2)
+				{
+					addPrim(FILL_PRIM_TYPE_ARC,  mCursor+i+1, mCursor+i+2, mCursor+i+3);
+					addPrim(FILL_PRIM_TYPE_TRI,  mCursor,     mCursor+i+1, mCursor+i+3);
+				}
+
+				addPrim(FILL_PRIM_TYPE_TRI,  mBase, mCursor+1, last);
+
+				mCursor = last;
 			}
 			
 			void copyDataTo(FillGeometry& fillGeom)
@@ -544,6 +564,15 @@ namespace impl
 			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
 			drawElements(STROKE_PRIM_TYPE_CUBIC_CW);
 			glDisableVertexAttribArray(shared::attrOffsetCubic);
+
+			glUseProgram(shared::prgStrokeMaskArc);
+			glEnableVertexAttribArray(shared::attrOffsetArc);
+			glVertexAttribPointer(shared::attrOffsetArc, 2, GL_FLOAT, false, VertexSize, &vtx.n);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			drawElements(STROKE_PRIM_TYPE_ARC_CCW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			drawElements(STROKE_PRIM_TYPE_ARC_CW);
+			glDisableVertexAttribArray(shared::attrOffsetArc);
 
 			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 			glDisableClientState(GL_VERTEX_ARRAY);
@@ -685,7 +714,7 @@ namespace impl
 				glm::vec2	pos[10];
 				glm::vec3	tc[10];
 
-				cubic::calcCubic(pts, count, pos, tc);
+				cubic::calcTriVertices(pts, count, pos, tc);
 
 				GLuint base1, base2;
 
@@ -726,8 +755,45 @@ namespace impl
 				addStroke(mCursor+1, last-2);
 			}
 
-			void arc(VGPathSegment type, float rx, float ry, float angle, float x0, float y0, float x1, float y1)
+			void arcTo(arc::Type type, VGfloat rx, VGfloat ry, VGfloat angle, VGfloat x1, VGfloat y1)
 			{
+				VGint count;
+				glm::vec2	pos[9];
+				glm::vec3	tc[9];
+
+				arc::calcTriVertices(type, rx, ry, angle, getLastVertex(), glm::vec2(x1, y1), count, pos, tc);
+				
+				VGuint	last;
+
+				for (VGint i=0; i<count; ++i)
+				{
+					glm::vec2	n;
+
+					if (i==count-1)
+						n = calcOffset(pos[i-1],   pos[i]);
+					else if (i%2==1)
+						n = calcOffset(pos[i-1], pos[i], pos[i+1]);
+					else
+						n = calcOffset(pos[i],   pos[i+1]);
+
+					last = addVertex(StrokeVertex(pos[i], n, tc[i]));
+					last = addVertex(StrokeVertex(pos[i], -n, tc[i]));
+				}
+
+				assert(last==mCursor+count*2);
+
+				for (VGint i=0; i<count-1; i+=2)
+				{
+					addPrim(STROKE_PRIM_TYPE_ARC,  mCursor+i*2+1, mCursor+i*2+3, mCursor+i*2+5);
+					addPrim(STROKE_PRIM_TYPE_TRI,  mCursor+1,     mCursor+i*2+1, mCursor+i*2+5);
+
+					addPrim(STROKE_PRIM_TYPE_ARC,  mCursor+i*2+6, mCursor+i*2+4, mCursor+i*2+2);
+					addPrim(STROKE_PRIM_TYPE_TRI,  mCursor+2,     mCursor+i*2+6, mCursor+i*2+2);
+				}
+
+				last = addVertex(StrokeVertex(pos[count-1]));
+
+				addStroke(mCursor+1, last-2);
 			}
 			
 			void copyDataTo(StrokeGeometry& strokeGeom)

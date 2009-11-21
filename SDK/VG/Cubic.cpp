@@ -179,7 +179,7 @@ namespace cubic
 		tc.y = -tc.y;
 	}
 
-	void calcCubic(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10])
+	void calcTriVertices(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10])
 	{
 		Determinants	det;
 		float	roots[2];
@@ -270,5 +270,122 @@ namespace cubic
 		tc[i*3+3] = tc2[3];
 
 		count = numRoots+1;
+	}
+}
+
+namespace arc
+{
+	glm::vec2	connectingPoint(const glm::vec2& p0, const glm::vec2& p1, const glm::vec2& ox, const glm::vec2& oy)
+	{
+		glm::vec2 d = p1-p0;
+		float px = glm::dot(d, ox);
+		float py = glm::dot(d, oy);
+
+		if (px*py<0)
+			return p0 + ox*px;
+		else //if (py>0)
+			return p0 + oy*py;
+	}
+
+	void calcTriVertices(Type type, VGfloat rx, VGfloat ry, VGfloat angle,
+						const glm::vec2& p0, const glm::vec2& p1,
+						int& count, glm::vec2 pos[9], glm::vec3 tc[9])
+	{
+		//rotate by -angle
+		glm::vec2 pp0 = glm::rotateGTX(p0, -angle);
+		glm::vec2 pp1 = glm::rotateGTX(p1, -angle);
+
+		//scale
+		pp0 *= glm::vec2(1, rx/ry);
+		pp1 *= glm::vec2(1, rx/ry);
+
+		glm::vec2 delta = pp1-pp0;
+		float r=rx, d=glm::length(delta);
+		float a = d/2.0f;
+		float b;
+
+		//one or all radii is too near to zero
+		//or end points too near
+		if (!(rx==0 || ry==0 || d==0))
+		{
+			glm::mat2	invXform = glm::mat2(1, 0, 0, ry/rx)*glm::rotate2DGTX(glm::mat2(), angle);
+
+			bool isSmallArc = IS_SMALL(type);
+
+			glm::vec2 ox = glm::normalize(delta);
+			glm::vec2 oy = rotate90CCW(ox);
+			glm::vec2 midpt = glm::mix(pp0, pp1, 0.5f);
+			
+			if (a>rx)
+				r = a;
+
+			b = sqrt(r*r-a*a);
+			
+			//approximate with small arc
+			if (b==0)
+				isSmallArc = true;
+
+			glm::vec2	center;
+
+			if (type==SMALL_CCW || type==LARGE_CW)
+				center = midpt + oy*b;
+			else
+				center = midpt - oy*b;
+
+			ox *= r;
+			oy *= r;
+
+			if (IS_CCW(type))
+				oy = -oy;
+
+			glm::vec2 p[9]; 
+			
+			pp0 -=center;
+			pp1 -=center;
+
+			if (isSmallArc)
+			{
+				//glm::vec2 pt2 = center+r*oy;
+
+				p[0] = pp0;
+				p[1] = calcOffsetN(pp0, oy);//connectingPoint(pp0, pt2, ox, oy);
+				p[2] = oy;//pt2;
+				p[3] = calcOffsetN( oy, pp1);//connectingPoint(pt2, pp1, ox, oy);
+				p[4] = pp1;
+
+				count = 5;
+			}
+			else
+			{
+				//glm::vec2 pt2 = center-r*ox;
+				//glm::vec2 pt3 = center+r*oy;
+				//glm::vec2 pt4 = center+r*ox;
+
+
+
+				p[0] = pp0;
+				p[1] = calcOffsetN(pp0, -ox);//connectingPoint(pp0, pt2, ox, oy);
+				p[2] = -ox;
+				p[3] = calcOffsetN(-ox,  oy);//connectingPoint(pt2, pt3, ox, oy);
+				p[4] = oy;
+				p[5] = calcOffsetN( oy,  ox);//connectingPoint(pt3, pt4, ox, oy);
+				p[6] = ox;
+				p[7] = calcOffsetN( ox, pp1);//connectingPoint(pt4, pp1, ox, oy);
+				p[8] = pp1;
+
+				count = 9;
+			}
+
+			for (int i = 0; i<count; ++i)
+			{
+				pos[i] = glm::rotateGTX((center+p[i])*glm::vec2(1, ry/rx), angle);
+				tc[i] = glm::vec3(p[i]/r, 0);
+			}
+		}
+		else
+		{
+			count = 1;
+			pos[count-1] = p1;
+		}
 	}
 }

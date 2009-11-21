@@ -130,7 +130,9 @@ class VGSample: public UI::GLFWStage
 			//fillBuilder.end();
 
 			fillBuilder.begin(0, 0);
-			fillBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
+			//fillBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
+			//fillBuilder.cubicTo(50, 50, 100, -50, 150, 0);
 			//fillBuilder.lineTo(50, 100);
 			//fillBuilder.lineTo(0, 0);
 			fillBuilder.end();
@@ -150,9 +152,11 @@ class VGSample: public UI::GLFWStage
 			//strokeBuilder.end(true);
 
 			strokeBuilder.begin(0, 0);
-			strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
-			//fillBuilder.lineTo(50, 100);
-			//fillBuilder.lineTo(0, 0);
+			//strokeBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
+			strokeBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
+			//strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//strokeBuilder.lineTo(50, 100);
+			//strokeBuilder.lineTo(0, 0);
 			strokeBuilder.end(false);
 
 			strokeBuilder.copyDataTo(stroke);
@@ -178,7 +182,6 @@ class VGSample: public UI::GLFWStage
 
 			//fill.RasterizeEvenOdd();
 			//fill.RasterizeNonZero();
-			//impl::RasterizeFillEvenOdd(mRegion.data);
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
@@ -186,16 +189,15 @@ class VGSample: public UI::GLFWStage
 			glStencilFunc(GL_EQUAL, 1, 1);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 			glBegin(GL_QUADS);
-			glVertex2f(0,-100);
-			glVertex2f(0,100);
-			glVertex2f(150,100);
-			glVertex2f(150,-100);
+			glVertex2f(-400,-400);
+			glVertex2f(-400,400);
+			glVertex2f(400,400);
+			glVertex2f(400,-400);
 			glEnd();
 
 			glClear(GL_STENCIL_BUFFER_BIT);
 
 			stroke.Rasterize();
-			//impl::RasterizeStroke(mRegion.data);
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
