@@ -107,54 +107,60 @@ class VGSample: public UI::GLFWStage
 			glClearStencil(0);
 
 			impl::shared::Acquire();
-			mRegion.begin(0,0);
-			mRegion.lineTo(150, 100);
-			mRegion.lineTo(150, 0);
-			mRegion.lineTo(50, 100);
-			//mRegion.lineTo(50, 0);
-			mRegion.quadTo(0, 50, 50, 0);
-			mRegion.quadTo(100, -50, 50, -100);
-			//mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
-			mRegion.end(true);
 
 			impl::FillGeometryBuilder	fillBuilder;
 
-			//fillBuilder.begin(0,0);
-			//fillBuilder.lineTo(150, 100);
-			//fillBuilder.lineTo(150, 0);
-			//fillBuilder.lineTo(50, 100);
-			////mRegion.lineTo(50, 0);
-			//fillBuilder.quadTo(0, 50, 50, 0);
-			//fillBuilder.quadTo(100, -50, 50, -100);
-			////mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
-			//fillBuilder.end();
+			Array<glm::vec2>	v;
 
-			fillBuilder.begin(0, 0);
-			//fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
-			//fillBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
-			//fillBuilder.cubicTo(50, 50, 100, -50, 150, 0);
-			//fillBuilder.lineTo(50, 100);
-			//fillBuilder.lineTo(0, 0);
+			fillBuilder.begin(0,0);
+			fillBuilder.lineTo(150, 100);
+			fillBuilder.lineTo(150, 0);
+			v.clear();
+			v.pushBack(glm::vec2(50, 100));
+			v.pushBack(glm::vec2(0, 50));
+			v.pushBack(glm::vec2(50, 0));
+			fillBuilder.addQuad(v);
+			fillBuilder.lineTo(50, 100);
+			fillBuilder.lineTo(50, 0);
+			fillBuilder.lineTo(50, -100);
 			fillBuilder.end();
+
+			v.clear();
+			v.pushBack(glm::vec2(50, 0));
+			v.pushBack(glm::vec2(100, -50));
+			v.pushBack(glm::vec2(50, -100));
+			fillBuilder.addQuad(v);
+
+			//fillBuilder.begin(0, 0);
+			////fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
+			////fillBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
+			//Array<glm::vec2>	v;
+			//v.pushBack(glm::vec2(0, 0));
+			//v.pushBack(glm::vec2(50, 50));
+			//v.pushBack(glm::vec2(100, -50));
+			//v.pushBack(glm::vec2(150, 0));
+			//fillBuilder.cubicTo(v);
+			////fillBuilder.lineTo(50, 100);
+			////fillBuilder.lineTo(0, 0);
+			//fillBuilder.end();
 
 			fillBuilder.copyDataTo(fill);
 
 			impl::StrokeGeometryBuilder	strokeBuilder;
 
-			//strokeBuilder.begin(0,0);
-			//strokeBuilder.lineTo(150, 100);
-			//strokeBuilder.lineTo(150, 0);
-			//strokeBuilder.lineTo(50, 100);
-			////mRegion.lineTo(50, 0);
-			//strokeBuilder.quadTo(0, 50, 50, 0);
-			//strokeBuilder.quadTo(100, -50, 50, -100);
-			////mRegion.cubic(50, 0, 90, -50, 120, 0, 150, 0); 
-			//strokeBuilder.end(true);
+			//strokeBuilder.begin(50,100);
+			////strokeBuilder.begin(0,0);
+			////strokeBuilder.lineTo(150, 100);
+			////strokeBuilder.lineTo(150, 0);
+			////strokeBuilder.lineTo(50, 100);
+			////strokeBuilder.quadTo(0, 50, 50, 0);
+			////strokeBuilder.quadTo(100, -50, 50, -100);
+			//strokeBuilder.end(/*true*/false);
 
 			strokeBuilder.begin(0, 0);
 			//strokeBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
-			strokeBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
-			//strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//strokeBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
+			strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
 			//strokeBuilder.lineTo(50, 100);
 			//strokeBuilder.lineTo(0, 0);
 			strokeBuilder.end(false);
@@ -181,7 +187,7 @@ class VGSample: public UI::GLFWStage
 			glCullFace(GL_FRONT_AND_BACK);
 
 			//fill.RasterizeEvenOdd();
-			//fill.RasterizeNonZero();
+			fill.RasterizeNonZero();
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
@@ -197,7 +203,7 @@ class VGSample: public UI::GLFWStage
 
 			glClear(GL_STENCIL_BUFFER_BIT);
 
-			stroke.Rasterize();
+			//stroke.Rasterize();
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
@@ -228,7 +234,6 @@ class VGSample: public UI::GLFWStage
 		vg::Path	mPolygon;
 		vg::Paint	mFill;
 		TextureRef	mPattern;
-		impl::GPUData	mRegion;
 };
 
 int main()

@@ -89,7 +89,7 @@ namespace impl
 				"void main()												\n"
 				"{															\n"
 				"	vec4 pos = gl_Vertex;									\n"
-				"	pos.xy += 5*aOffset;									\n"
+				"	pos.xy += 10*aOffset;									\n"
 				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			\n"
 				"	gl_TexCoord[0] = gl_MultiTexCoord0;						\n"
 				"}															\n";

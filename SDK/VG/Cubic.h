@@ -3,21 +3,31 @@
 #include <glm/glm.h>
 #include <glm/glmext.h>
 #include <vg/openvg.h>
+#include <vector>
 
-inline glm::vec2 rotate90CW(glm::vec2 vec)
+//Unoptimized version - uses dynamic allocations,
+//Can be improved using custom implementation with stack cache
+template<typename T>
+class Array: public std::vector<T>
 {
-	return glm::vec2(vec.y, -vec.x);
-}
+	public:
+		T* begin() {return empty()?0:&*std::vector<T>::begin();}
+		T* end  () {return empty()?0:begin()+size();}
 
-inline glm::vec2 rotate90CCW(glm::vec2 vec)
-{
-	return glm::vec2(-vec.y, vec.x);
-}
+		const T* begin() const {return empty()?0:&*std::vector<T>::begin();}
+		const T* end  () const {return empty()?0:begin()+size();}
 
-inline glm::vec2 makeNormal(glm::vec2 p1, glm::vec2 p2)
-{
-	return glm::normalize(rotate90CCW(p2-p1));
-}
+		void pushBack(const T& value) {push_back(value);}
+
+		template<typename I>
+		void pushBack(I itBegin, I itEnd) {insert(std::vector<T>::end(), itBegin, itEnd);}
+
+		T* expand(size_t count)
+		{
+			resize(size()+count);
+			return end()-count;
+		}
+};
 
 inline glm::vec2 perpendicularCW(const glm::vec2& vec)
 {
@@ -51,23 +61,6 @@ inline glm::vec2 calcOffset(const glm::vec2& p0, const glm::vec2& p1, const glm:
 
 namespace cubic
 {
-	float calcImplicit(const glm::vec3& tc);
-	void changeOrient(glm::vec3& tc);
-
-	struct Determinants
-	{
-		float	D;
-		float	d[4];
-	};
-
-	void calcTriVertices(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10]);
-	void calcSerpentineCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2);
-	void calcLoopTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2);
-	void calcInfCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t);
-	void calcQuadraticTC(glm::vec3 tc[4]);
-
-	void calcDets(const glm::vec2 cp[4], Determinants& dets/*float d[4], float& D*/);
-
 	template<typename T>
 	void subdivide(const T cubic[4], float t, T subCubic1[4], T subCubic2[4])
 	{
@@ -95,34 +88,8 @@ namespace cubic
 	}
 }
 
-namespace arc
-{
-	enum
-	{
-		SMALL = 0,
-		LARGE = 2,
-		CCW = 0,
-		CW  = 1,
-		
-		DIR_BIT  = 1,
-		SIZE_BIT = 2, 
-	};
+void cubicTriVertices(const Array<glm::vec2>& pts, Array<glm::vec2>& pos, Array<glm::vec3>& tc);
 
-	enum Type
-	{
-		SMALL_CCW = SMALL|CCW,
-		LARGE_CCW = LARGE|CCW,
-		SMALL_CW = SMALL|CW,
-		LARGE_CW = LARGE|CW,
-	};
-
-#define IS_SMALL(u) (((u)&SIZE_BIT)==SMALL)
-#define IS_LARGE(u) (((u)&SIZE_BIT)==LARGE)
-
-#define IS_CCW(u) (((u)&DIR_BIT)==CCW)
-#define IS_CW(u)  (((u)&DIR_BIT)==CW)
-
-	void calcTriVertices(Type type, VGfloat rx, VGfloat ry, VGfloat angle,
-						const glm::vec2& p0, const glm::vec2& p1,
-						int& count, glm::vec2 pos[9], glm::vec3 tc[9]);
-}
+void arcTriVertices(VGPathSegment type, const glm::vec2& radius, VGfloat angle,
+					const glm::vec2& p0, const glm::vec2& p1,
+					Array<glm::vec2>& pos, Array<glm::vec3>& tc);

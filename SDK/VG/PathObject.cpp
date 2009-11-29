@@ -85,15 +85,15 @@ namespace vg
 	{
 		//Think about some check for "simplicity"
 
-		//Inequality changed to avoid visual artefacts when value is near zero
-		bool doChangeOrient = cubic::calcImplicit(tc2)<-0.0000001;
-		
-		//To handle case when second control point is near zero
-		doChangeOrient |= cubic::calcImplicit(tc3)<-0.0000001;
-		
-		addCubicTriangle(p1, doChangeOrient?changeOrient(tc1):tc1, p2, doChangeOrient?changeOrient(tc2):tc2, p3, doChangeOrient?changeOrient(tc3):tc3);
-		addCubicTriangle(p3, doChangeOrient?changeOrient(tc3):tc3, p4, doChangeOrient?changeOrient(tc4):tc4, p1, doChangeOrient?changeOrient(tc1):tc1);
-		addPathPoint(reverse?p1:p4);
+		////Inequality changed to avoid visual artefacts when value is near zero
+		//bool doChangeOrient = cubic::calcImplicit(tc2)<-0.0000001;
+		//
+		////To handle case when second control point is near zero
+		//doChangeOrient |= cubic::calcImplicit(tc3)<-0.0000001;
+		//
+		//addCubicTriangle(p1, doChangeOrient?changeOrient(tc1):tc1, p2, doChangeOrient?changeOrient(tc2):tc2, p3, doChangeOrient?changeOrient(tc3):tc3);
+		//addCubicTriangle(p3, doChangeOrient?changeOrient(tc3):tc3, p4, doChangeOrient?changeOrient(tc4):tc4, p1, doChangeOrient?changeOrient(tc1):tc1);
+		//addPathPoint(reverse?p1:p4);
 	}
 
 	//For details of implementation see:
@@ -101,88 +101,88 @@ namespace vg
 	void PathObject::cubicTo(const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3)
 	{
 		//float	d[4], D;
-		cubic::Determinants	det;
-		float	roots[2];
-		size_t	numRoots = 0;
+		//cubic::Determinants	det;
+		//float	roots[2];
+		//size_t	numRoots = 0;
 
-		//Vertices reversed on purpose! So we changed curve parametrization
-		//We subdivide from in order 1 to 0
-		//So we can use simple t2/t1 instead of (t2-t1)/(1-t2)
-		glm::vec2 cp1[4] = {p3, p2, p1, ptO}, cp2[4];
-		glm::vec3 tc1[4], tc2[4];
+		////Vertices reversed on purpose! So we changed curve parametrization
+		////We subdivide from in order 1 to 0
+		////So we can use simple t2/t1 instead of (t2-t1)/(1-t2)
+		//glm::vec2 cp1[4] = {p3, p2, p1, ptO}, cp2[4];
+		//glm::vec3 tc1[4], tc2[4];
 
-		// Calc determinant
-		cubic::calcDets(cp1, det/*d, D*/);
-		
-		// First calculate t values at which we should subdivide our curve
-		if (det.d[1] != 0)
-		{
-			float t1, t2;
+		//// Calc determinant
+		//cubic::calcDets(cp1, det/*d, D*/);
+		//
+		//// First calculate t values at which we should subdivide our curve
+		//if (det.d[1] != 0)
+		//{
+		//	float t1, t2;
 
-			if (det.D>=0)
-			{
-				// Handle serpentine and cusp case
-				cubic::calcSerpentineCuspTC(det,/*D, d, */tc1, t1, t2);
-			}
-			else
-			{
-				// Handle loop case
-				cubic::calcLoopTC(det,/*D, d,*/ tc1, t1, t2);
-			}
-			
-			//From greater value to lower - due to changed parametrization
-			if (t1<t2)
-				std::swap(t1, t2);
+		//	if (det.D>=0)
+		//	{
+		//		// Handle serpentine and cusp case
+		//		cubic::calcSerpentineCuspTC(det,/*D, d, */tc1, t1, t2);
+		//	}
+		//	else
+		//	{
+		//		// Handle loop case
+		//		cubic::calcLoopTC(det,/*D, d,*/ tc1, t1, t2);
+		//	}
+		//	
+		//	//From greater value to lower - due to changed parametrization
+		//	if (t1<t2)
+		//		std::swap(t1, t2);
 
-			if (0<t1 && t1<1)
-				roots[numRoots++] = t1;
+		//	if (0<t1 && t1<1)
+		//		roots[numRoots++] = t1;
 
-			if (t1!=t2 && 0<t2 && t2<1)
-				roots[numRoots++] = t2;
-		}
-		else if (det.d[2]!=0)
-		{
-			//Handle cusp at infinity case
-			float t;
+		//	if (t1!=t2 && 0<t2 && t2<1)
+		//		roots[numRoots++] = t2;
+		//}
+		//else if (det.d[2]!=0)
+		//{
+		//	//Handle cusp at infinity case
+		//	float t;
 
-			cubic::calcInfCuspTC(det,/*D, d,*/ tc1, t);
-			roots[numRoots++] = t;
-		}
-		else if (det.d[3]!=0)
-		{
-			//Handle quadratic curve case
-			cubic::calcQuadraticTC(tc1);
-		}
-		else
-		{
-			//This is degenarate cases
-			return;
-		}
+		//	cubic::calcInfCuspTC(det,/*D, d,*/ tc1, t);
+		//	roots[numRoots++] = t;
+		//}
+		//else if (det.d[3]!=0)
+		//{
+		//	//Handle quadratic curve case
+		//	cubic::calcQuadraticTC(tc1);
+		//}
+		//else
+		//{
+		//	//This is degenarate cases
+		//	return;
+		//}
 
-		// Subdivide curve from in direction from 1 to 0,
-		// which represent normal direction in curve space
-		for(size_t i=0; i<numRoots; ++i)
-		{
-			float t = i==0?roots[i]:roots[i]/roots[i-1];
+		//// Subdivide curve from in direction from 1 to 0,
+		//// which represent normal direction in curve space
+		//for(size_t i=0; i<numRoots; ++i)
+		//{
+		//	float t = i==0?roots[i]:roots[i]/roots[i-1];
 
-			cubic::subdivide(cp1, t, cp1, cp2);
-			cubic::subdivide(tc1, t, tc1, tc2);
+		//	cubic::subdivide(cp1, t, cp1, cp2);
+		//	cubic::subdivide(tc1, t, tc1, tc2);
 
-			addSimpleCubic<true>(
-				cp2[0], tc2[0],
-				cp2[1], tc2[1],
-				cp2[2], tc2[2],
-				cp2[3], tc2[3]
-			);
-		}
-		
-		// The last or the only part
-		addSimpleCubic<true>(
-			cp1[0], tc1[0],
-			cp1[1], tc1[1],
-			cp1[2], tc1[2],
-			cp1[3], tc1[3]
-		);
+		//	addSimpleCubic<true>(
+		//		cp2[0], tc2[0],
+		//		cp2[1], tc2[1],
+		//		cp2[2], tc2[2],
+		//		cp2[3], tc2[3]
+		//	);
+		//}
+		//
+		//// The last or the only part
+		//addSimpleCubic<true>(
+		//	cp1[0], tc1[0],
+		//	cp1[1], tc1[1],
+		//	cp1[2], tc1[2],
+		//	cp1[3], tc1[3]
+		//);
 	}
 
 	void PathObject::arcTo(int segment, float rx, float ry, float angle, const glm::vec2& endPt)

@@ -9,8 +9,33 @@ namespace cubic
 		return tc.x*tc.x*tc.x - tc.y*tc.z;
 	}
 
-	void calcDets(const glm::vec2 p[4], Determinants& dets/*float d[4], float& D*/)
+	void changeOrient(glm::vec3& tc)
 	{
+		tc.x = -tc.x;
+		tc.y = -tc.y;
+	}
+
+	void correctOrient(glm::vec3 tc[4])
+	{
+		if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
+		{
+			cubic::changeOrient(tc[0]);
+			cubic::changeOrient(tc[1]);
+			cubic::changeOrient(tc[2]);
+			cubic::changeOrient(tc[3]);
+		}
+	}
+
+	struct Determinants
+	{
+		float	D;
+		float	d[4];
+	};
+
+	void calcDets(const Array<glm::vec2>& p, Determinants& dets)
+	{
+		assert(p.size()==4);
+
 		/**********************************************************/
 		/*	Alternative way of calculating di
 		/*
@@ -54,8 +79,9 @@ namespace cubic
 	}
 
 	//Serpentine and cusp with inflection at infinity
-	void calcSerpentineCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2)
+	void calcSerpentineCuspTC(Determinants& dets, Array<glm::vec3>& tc, float& t1, float& t2)
 	{
+		assert(tc.size()==4);
 		assert(dets.D>=0 && dets.d[1]!=0);
 
 		/********************************************************/
@@ -118,17 +144,21 @@ namespace cubic
 	}
 
 	// Loop case
-	void calcLoopTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t1, float& t2)
+	void calcLoopTC(Determinants& dets, Array<glm::vec3>& tc, float& t1, float& t2)
 	{
+		assert(tc.size()==4);
 		assert(dets.D<0 && dets.d[1]!=0);
 
-		//float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
-		//float t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
-
-		//glm::vec3	kk0(t1,       t1*t1,             t1),
-		//			kk1(-t1*t2-1, -t1*t1*t2-2.0f*t1, -1-2*t1*t2),
-		//			kk2(t2,       1+2.0f*t1*t2,      t1*t2*t2+2.0f*t2),
-		//			kk3(0.0f,     -t2,               -t2*t2);
+		/********************************************************/
+		/*			Calculating koeficients in alternative way
+		/* float t1 = (d[2] + sqrt(-D))/d[1]/2.0f;
+		/* float t2 = 2.0f*d[1]/(d[2] - sqrt(-D));
+		/*
+		/* glm::vec3	kk0(t1,       t1*t1,             t1),
+		/*				kk1(-t1*t2-1, -t1*t1*t2-2.0f*t1, -1-2*t1*t2),
+		/*				kk2(t2,       1+2.0f*t1*t2,      t1*t2*t2+2.0f*t2),
+		/*				kk3(0.0f,     -t2,               -t2*t2);
+		/********************************************************/
 
 		//!!!!! TODO !!!!!
 		//Calc roots in way similar to serpantine
@@ -147,8 +177,9 @@ namespace cubic
 	}
 
 	//Cusp at infinity
-	void calcInfCuspTC(Determinants& dets/*const float D, const float d[4]*/, glm::vec3 tc[4], float& t)
+	void calcInfCuspTC(Determinants& dets, Array<glm::vec3>& tc, float& t)
 	{
+		assert(tc.size()==4);
 		assert(dets.d[1]==0 && dets.d[2]!=0);
 
 		t = dets.d[3]/3.0f/dets.d[2];
@@ -165,227 +196,192 @@ namespace cubic
 	}
 
 	// Quadratic curve
-	void calcQuadraticTC(glm::vec3 tc[4])
+	void calcQuadraticTC(Array<glm::vec3>& tc)
 	{
+		assert(tc.size()==4);
+
 		tc[0] = glm::vec3(0.0f,      0.0f,      0.0f);
 		tc[1] = glm::vec3(1.0f/3.0f, 0.0f,      1.0f/3.0f);
 		tc[2] = glm::vec3(2.0f/3.0f, 1.0f/3.0f, 2.0f/3.0f);
 		tc[3] = glm::vec3(1.0f,      1.0f,      1.0f);
 	}
+}
 
-	void changeOrient(glm::vec3& tc)
+void cubicTriVertices(const Array<glm::vec2>& pts, Array<glm::vec2>& pos, Array<glm::vec3>& tc)
+{
+	cubic::Determinants	det;
+	Array<float>		subdPts;
+
+	Array<glm::vec2> cp1, cp2;
+	Array<glm::vec3> tc1, tc2;
+	
+	pos.assign(pts.begin(), pts.end());
+	tc.resize(4);
+
+	cubic::calcDets(pos, det);
+	
+	// Calculate t-values at which we should subdivide our curve
+	// and values for explicit curve presentation at control point.
+	// See Loop, Blinn. Resolution independent curve rendering using programmable hardware.
+	if (det.d[1] != 0)
 	{
-		tc.x = -tc.x;
-		tc.y = -tc.y;
-	}
+		float t1, t2;
 
-	void calcTriVertices(glm::vec2 pts[4], int& count, glm::vec2 pos[10], glm::vec3 tc[10])
-	{
-		Determinants	det;
-		float	roots[2];
-		int		numRoots = 0;
-
-		glm::vec2 cp1[4] = {pts[0], pts[1], pts[2], pts[3]};
-		glm::vec2 cp2[4];
-		glm::vec3 tc1[4], tc2[4];
-
-		// Calc determinant
-		calcDets(cp1, det);
-		
-		// First calculate t values at which we should subdivide our curve
-		if (det.d[1] != 0)
+		if (det.D>=0)
 		{
-			float t1, t2;
-
-			if (det.D>=0)
-			{
-				// Handle serpentine and cusp case
-				calcSerpentineCuspTC(det, tc1, t1, t2);
-			}
-			else
-			{
-				// Handle loop case
-				calcLoopTC(det, tc1, t1, t2);
-			}
-			
-			if (t1>t2)
-				std::swap(t1, t2);
-
-			if (0<t1 && t1<1)
-				roots[numRoots++] = t1;
-
-			if (t1!=t2 && 0<t2 && t2<1)
-				roots[numRoots++] = t2;
-		}
-		else if (det.d[2]!=0)
-		{
-			//Handle cusp at infinity case
-			float t;
-
-			calcInfCuspTC(det, tc1, t);
-			roots[numRoots++] = t;
-		}
-		else if (det.d[3]!=0)
-		{
-			//Handle quadratic curve case
-			calcQuadraticTC(tc1);
+			// Handle serpentine and cusp case
+			cubic::calcSerpentineCuspTC(det, tc, t1, t2);
 		}
 		else
 		{
-			//This is degenarate cases
-			pos[0] = cp1[0];
-			pos[1] = cp1[3];
-
-			tc[0] = glm::vec3(0);
-			tc[1] = glm::vec3(0);
-
-			count = 0;
-			return;
-		}
-
-		for(int i=0; i<numRoots; ++i)
-		{
-			float t = i==0?roots[i]:(roots[i]-roots[i-1])/(1-roots[i-1]);
-
-			cubic::subdivide(cp1, t, cp1, cp2);
-			cubic::subdivide(tc1, t, tc1, tc2);
-
-			pos[i*3+0] = cp1[0];
-			pos[i*3+1] = cp1[1];
-			pos[i*3+2] = cp1[2];
-
-			tc[i*3+0] = tc1[0];
-			tc[i*3+1] = tc1[1];
-			tc[i*3+2] = tc1[2];
+			// Handle loop case
+			cubic::calcLoopTC(det, tc, t1, t2);
 		}
 		
-		pos[i*3+0] = cp2[0];
-		pos[i*3+1] = cp2[1];
-		pos[i*3+2] = cp2[2];
-		pos[i*3+3] = cp2[3];
+		if (t1>t2)
+			std::swap(t1, t2);
 
-		tc[i*3+0] = tc2[0];
-		tc[i*3+1] = tc2[1];
-		tc[i*3+2] = tc2[2];
-		tc[i*3+3] = tc2[3];
+		if (0<t1 && t1<1)
+			subdPts.pushBack(t1);
 
-		count = numRoots+1;
+		if (t1!=t2 && 0<t2 && t2<1)
+			subdPts.pushBack(t2);
 	}
+	else if (det.d[2]!=0)
+	{
+		//Handle cusp at infinity case
+		float t;
+
+		cubic::calcInfCuspTC(det, tc, t);
+		subdPts.pushBack(t);
+	}
+	else if (det.d[3]!=0)
+	{
+		//Handle quadratic curve case
+		cubic::calcQuadraticTC(tc);
+	}
+	else
+	{
+		//This is degenarate cases - line, point
+		pos.clear();
+		tc.clear();
+
+		return;
+	}
+	
+	pos.resize(subdPts.size()*4+4);
+	tc.resize(subdPts.size()*4+4);
+
+	glm::vec2* ptrPos = pos.begin();
+	glm::vec3* ptrTC  = tc.begin();
+
+	for(size_t i=0; i<subdPts.size(); ++i, ptrPos+=4, ptrTC+=4)
+	{
+		float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
+
+		cubic::subdivide(ptrPos, t, ptrPos, ptrPos+4);
+		cubic::subdivide(ptrTC, t, ptrTC, ptrTC+4);
+
+		cubic::correctOrient(ptrTC);
+	}
+	
+	cubic::correctOrient(ptrTC);
 }
 
-namespace arc
+void arcTriVertices(VGPathSegment type, const glm::vec2& radius, VGfloat angle,
+					const glm::vec2& p0, const glm::vec2& p1,
+					Array<glm::vec2>& pos, Array<glm::vec3>& tc)
 {
-	glm::vec2	connectingPoint(const glm::vec2& p0, const glm::vec2& p1, const glm::vec2& ox, const glm::vec2& oy)
+	assert(type==VG_SCCWARC_TO || type==VG_SCWARC_TO ||
+		   type==VG_LCCWARC_TO || type==VG_LCWARC_TO);
+
+	VGfloat rx = radius.x;
+	VGfloat ry = radius.y;
+
+	//rotate by -angle
+	glm::vec2 pp0 = glm::rotateGTX(p0, -angle);
+	glm::vec2 pp1 = glm::rotateGTX(p1, -angle);
+
+	//scale
+	pp0 *= glm::vec2(1, rx/ry);
+	pp1 *= glm::vec2(1, rx/ry);
+
+	glm::vec2 delta = pp1-pp0;
+	float d=glm::length(delta);
+
+	//one or all radii is too near to zero
+	//or end points too near
+	if (!(rx==0 || ry==0 || d==0))
 	{
-		glm::vec2 d = p1-p0;
-		float px = glm::dot(d, ox);
-		float py = glm::dot(d, oy);
+		bool isSmallArc = type==VG_SCCWARC_TO || type==VG_SCWARC_TO;
 
-		if (px*py<0)
-			return p0 + ox*px;
-		else //if (py>0)
-			return p0 + oy*py;
-	}
-
-	void calcTriVertices(Type type, VGfloat rx, VGfloat ry, VGfloat angle,
-						const glm::vec2& p0, const glm::vec2& p1,
-						int& count, glm::vec2 pos[9], glm::vec3 tc[9])
-	{
-		//rotate by -angle
-		glm::vec2 pp0 = glm::rotateGTX(p0, -angle);
-		glm::vec2 pp1 = glm::rotateGTX(p1, -angle);
-
-		//scale
-		pp0 *= glm::vec2(1, rx/ry);
-		pp1 *= glm::vec2(1, rx/ry);
-
-		glm::vec2 delta = pp1-pp0;
-		float r=rx, d=glm::length(delta);
+		float r = rx;
 		float a = d/2.0f;
 		float b;
 
-		//one or all radii is too near to zero
-		//or end points too near
-		if (!(rx==0 || ry==0 || d==0))
+		glm::vec2 ox = glm::normalize(delta);
+		glm::vec2 oy = perpendicularCCW(ox);
+		glm::vec2 midpt = glm::mix(pp0, pp1, 0.5f);
+		
+		if (a>rx)
+			r = a;
+
+		b = sqrt(r*r-a*a);
+		
+		//approximate with small arc
+		if (b==0)
+			isSmallArc = true;
+
+		glm::vec2	center;
+
+		if (type==VG_SCCWARC_TO || type==VG_LCWARC_TO)
+			center = midpt + oy*b;
+		else
+			center = midpt - oy*b;
+
+		ox *= r;
+		oy *= r;
+
+		if (type==VG_SCCWARC_TO || type==VG_LCCWARC_TO)
+			oy = -oy;
+
+		pp0 -=center;
+		pp1 -=center;
+
+		pos.resize(isSmallArc?5:9);
+		tc.resize (isSmallArc?5:9);
+
+		if (isSmallArc)
 		{
-			glm::mat2	invXform = glm::mat2(1, 0, 0, ry/rx)*glm::rotate2DGTX(glm::mat2(), angle);
-
-			bool isSmallArc = IS_SMALL(type);
-
-			glm::vec2 ox = glm::normalize(delta);
-			glm::vec2 oy = rotate90CCW(ox);
-			glm::vec2 midpt = glm::mix(pp0, pp1, 0.5f);
-			
-			if (a>rx)
-				r = a;
-
-			b = sqrt(r*r-a*a);
-			
-			//approximate with small arc
-			if (b==0)
-				isSmallArc = true;
-
-			glm::vec2	center;
-
-			if (type==SMALL_CCW || type==LARGE_CW)
-				center = midpt + oy*b;
-			else
-				center = midpt - oy*b;
-
-			ox *= r;
-			oy *= r;
-
-			if (IS_CCW(type))
-				oy = -oy;
-
-			glm::vec2 p[9]; 
-			
-			pp0 -=center;
-			pp1 -=center;
-
-			if (isSmallArc)
-			{
-				//glm::vec2 pt2 = center+r*oy;
-
-				p[0] = pp0;
-				p[1] = calcOffsetN(pp0, oy);//connectingPoint(pp0, pt2, ox, oy);
-				p[2] = oy;//pt2;
-				p[3] = calcOffsetN( oy, pp1);//connectingPoint(pt2, pp1, ox, oy);
-				p[4] = pp1;
-
-				count = 5;
-			}
-			else
-			{
-				//glm::vec2 pt2 = center-r*ox;
-				//glm::vec2 pt3 = center+r*oy;
-				//glm::vec2 pt4 = center+r*ox;
-
-
-
-				p[0] = pp0;
-				p[1] = calcOffsetN(pp0, -ox);//connectingPoint(pp0, pt2, ox, oy);
-				p[2] = -ox;
-				p[3] = calcOffsetN(-ox,  oy);//connectingPoint(pt2, pt3, ox, oy);
-				p[4] = oy;
-				p[5] = calcOffsetN( oy,  ox);//connectingPoint(pt3, pt4, ox, oy);
-				p[6] = ox;
-				p[7] = calcOffsetN( ox, pp1);//connectingPoint(pt4, pp1, ox, oy);
-				p[8] = pp1;
-
-				count = 9;
-			}
-
-			for (int i = 0; i<count; ++i)
-			{
-				pos[i] = glm::rotateGTX((center+p[i])*glm::vec2(1, ry/rx), angle);
-				tc[i] = glm::vec3(p[i]/r, 0);
-			}
+			pos[0] = pp0;
+			pos[1] = calcOffsetN(pp0, oy);
+			pos[2] = oy;
+			pos[3] = calcOffsetN( oy, pp1);
+			pos[4] = pp1;
 		}
 		else
 		{
-			count = 1;
-			pos[count-1] = p1;
+			pos[0] = pp0;
+			pos[1] = calcOffsetN(pp0, -ox);
+			pos[2] = -ox;
+			pos[3] = calcOffsetN(-ox,  oy);
+			pos[4] = oy;
+			pos[5] = calcOffsetN( oy,  ox);
+			pos[6] = ox;
+			pos[7] = calcOffsetN( ox, pp1);
+			pos[8] = pp1;
 		}
+
+		for (size_t i = 0; i<pos.size(); ++i)
+		{
+			//opder is important;)
+			tc[i] = glm::vec3(pos[i]/r, 0);
+			pos[i] = glm::rotateGTX((center+pos[i])*glm::vec2(1, ry/rx), angle);
+		}
+	}
+	else
+	{
+		pos.clear();
+		tc.clear();
 	}
 }
