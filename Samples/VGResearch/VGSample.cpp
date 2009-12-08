@@ -18,21 +18,9 @@ class VGSample: public UI::GLFWStage
 	public:
 		VGSample()
 		{
-			mPattern.create("pattern.jpg");
-
-			assert(testLoad(mPattern));
-
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			gluPerspective(35.0, (float)mWidth/mHeight,1,2048);
-
-			mFill = mContext.createPaint();
-			assert(testLoad(mPattern));
-			//mFill.setColorPaint(glm::vec4(0.45f, 0.33f, 0.67f, 1.0f));
-			mFill.setPatternPaint((GLuint)mPattern, glm::vec4(1,0,0,1), VG_TILE_REPEAT);
-
-			assert(testLoad(mPattern));
-			mPolygon = mContext.createPath(1.0f, 0.0f);
 
 			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, /*VG_LINE_TO_ABS,*/ VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float data[] = {150, 100, 150, 0, 50, 100, /*0, 0,*/ 0, 50, 50, 0};
@@ -95,7 +83,7 @@ class VGSample: public UI::GLFWStage
 								  99, 0,  50, 50,  99, 99,
 								  0, 99,  50, 50,  0, 0};
 
-			mPolygon.appendData(sizeof(segs), segs, data);
+			//mPolygon.appendData(sizeof(segs), segs, data);
 			//mPolygon.appendData(sizeof(quadTest), quadTest, quadData);
 			//mPolygon.appendData(sizeof(lineQuadTest), lineQuadTest, lineQuadData);
 			//mPolygon.appendData(sizeof(arcTest), arcTest, arcData);
@@ -132,16 +120,15 @@ class VGSample: public UI::GLFWStage
 			fillBuilder.addQuad(v);
 
 			//fillBuilder.begin(0, 0);
-			////fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
-			////fillBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
-			//Array<glm::vec2>	v;
+			//fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
+			//fillBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
 			//v.pushBack(glm::vec2(0, 0));
 			//v.pushBack(glm::vec2(50, 50));
 			//v.pushBack(glm::vec2(100, -50));
 			//v.pushBack(glm::vec2(150, 0));
-			//fillBuilder.cubicTo(v);
-			////fillBuilder.lineTo(50, 100);
-			////fillBuilder.lineTo(0, 0);
+			//fillBuilder.addCubic(v);
+			//fillBuilder.lineTo(50, 100);
+			//fillBuilder.lineTo(0, 0);
 			//fillBuilder.end();
 
 			fillBuilder.copyDataTo(fill);
@@ -158,9 +145,16 @@ class VGSample: public UI::GLFWStage
 			//strokeBuilder.end(/*true*/false);
 
 			strokeBuilder.begin(0, 0);
+			v.clear();
+			v.pushBack(glm::vec2(0, 0));
+			v.pushBack(glm::vec2(50, 50));
+			v.pushBack(glm::vec2(100, -50));
+			v.pushBack(glm::vec2(150, 0));
+			strokeBuilder.cubicTo(v);
 			//strokeBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
 			//strokeBuilder.arcTo(arc::LARGE_CW, 80, 50, 45, 100, 0);
-			strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
+			//strokeBuilder.lineTo(150, 0);
 			//strokeBuilder.lineTo(50, 100);
 			//strokeBuilder.lineTo(0, 0);
 			strokeBuilder.end(false);
@@ -171,51 +165,65 @@ class VGSample: public UI::GLFWStage
 		~VGSample()
 		{
 			impl::shared::Release();
-			mContext.destroyPaint(mFill);
-			mContext.destroyPath(mPolygon);
 		}
 
 	protected:
+		void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)
+		{
+			glBegin(GL_QUADS);
+			glVertex2f(min.x-offset, min.y-offset);
+			glVertex2f(min.x-offset, max.y+offset);
+			glVertex2f(max.x+offset, max.y+offset);
+			glVertex2f(max.x+offset, min.y-offset);
+			glEnd();
+		}
+
+		void clearStencil(const glm::vec2& min, const glm::vec2& max, float offset)
+		{
+			glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+			glEnable(GL_STENCIL_TEST);
+			glDisable(GL_DEPTH_TEST);
+
+			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+			glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+			glStencilMask(0xFF);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+			glUseProgram(0);
+
+			drawQuad(min, max, offset);
+
+			glPopAttrib();
+		}
+
 		void onPaint(VG& vg)
 		{
- 			glStencilMask(0xFF);
-			glClearStencil(0x80);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(400.0f, 300.0f, -4.0f);
 			glScalef(2, -2, 1);
-			glCullFace(GL_FRONT_AND_BACK);
 
-			//fill.RasterizeEvenOdd();
+			clearStencil(fill.mMin, fill.mMax, 0);
 			fill.RasterizeNonZero();
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
 			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_EQUAL, 1, 1);
+			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			glBegin(GL_QUADS);
-			glVertex2f(-400,-400);
-			glVertex2f(-400,400);
-			glVertex2f(400,400);
-			glVertex2f(400,-400);
-			glEnd();
+			drawQuad(fill.mMin, fill.mMax, 0);
 
-			glClear(GL_STENCIL_BUFFER_BIT);
-
-			//stroke.Rasterize();
+			clearStencil(stroke.mMin, stroke.mMax, 5);
+			stroke.Rasterize();
 
 			glColor4f(1, 0, 0, 1);
 			glUseProgram(0);
 			glEnable(GL_STENCIL_TEST);
 			glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-			glBegin(GL_QUADS);
-			glVertex2f(-400,-400);
-			glVertex2f(-400,400);
-			glVertex2f(400,400);
-			glVertex2f(400,-400);
-			glEnd();
+			drawQuad(stroke.mMin, stroke.mMax, 5);
 
 			glFlush();
 		}
@@ -231,9 +239,6 @@ class VGSample: public UI::GLFWStage
 		impl::StrokeGeometry		stroke;
 
 		vg::Context	mContext;
-		vg::Path	mPolygon;
-		vg::Paint	mFill;
-		TextureRef	mPattern;
 };
 
 int main()

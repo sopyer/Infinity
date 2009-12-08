@@ -27,6 +27,7 @@ namespace UI
 		protected:
 			void onPaint(VG& vg)
 			{
+				UNUSED(vg);
 				//ChildsVector::iterator	it = mChilds.begin(),
 				//						end = mChilds.end();
 				//for (; it != end; ++it)

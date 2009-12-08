@@ -10,15 +10,15 @@ namespace vg
 {
 	void Paint::setColorPaint(const glm::vec4& color)
 	{
-		GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
-		mObject->fillProgram.begin();
-			glUseProgram(impl::shared::prgFillColor);
-			glUniform4fv(uLocColor, 1, color);
-			glBindTexture(GL_TEXTURE_2D, 0);
-		mObject->fillProgram.end();
+		//GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
+		//mObject->fillProgram.begin();
+		//	glUseProgram(impl::shared::prgFillColor);
+		//	glUniform4fv(uLocColor, 1, color);
+		//	glBindTexture(GL_TEXTURE_2D, 0);
+		//mObject->fillProgram.end();
 
-		mObject->color = color;
-		mObject->texture = 0;
+		//mObject->color = color;
+		//mObject->texture = 0;
 	}
 
 	void setPatternSamplerParams(const glm::vec4& fillColor, VGTilingMode mode)
@@ -53,24 +53,24 @@ namespace vg
 
 	void Paint::setPatternPaint(GLuint texture, const glm::vec4& fillColor, VGTilingMode mode)
 	{
-		GLint uLocImage    = glGetUniformLocation(impl::shared::prgFillPattern, "uPattern");
-		GLint uLocImageDim = glGetUniformLocation(impl::shared::prgFillPattern, "uImageDim");
-		glm::vec2	imgDim;
+		//GLint uLocImage    = glGetUniformLocation(impl::shared::prgFillPattern, "uPattern");
+		//GLint uLocImageDim = glGetUniformLocation(impl::shared::prgFillPattern, "uImageDim");
+		//glm::vec2	imgDim;
 
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &imgDim.x);
-		glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgDim.y);
+		//glBindTexture(GL_TEXTURE_2D, texture);
+		//glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &imgDim.x);
+		//glGetTexLevelParameterfv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgDim.y);
 
-		mObject->fillProgram.begin();
-			glUseProgram(impl::shared::prgFillPattern);
-			glUniform1i(uLocImage, 0);
-			glUniform2fv(uLocImageDim, 1, imgDim);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, texture);
-			setPatternSamplerParams(fillColor, mode);
-		mObject->fillProgram.end();
+		//mObject->fillProgram.begin();
+		//	glUseProgram(impl::shared::prgFillPattern);
+		//	glUniform1i(uLocImage, 0);
+		//	glUniform2fv(uLocImageDim, 1, imgDim);
+		//	glActiveTexture(GL_TEXTURE0);
+		//	glBindTexture(GL_TEXTURE_2D, texture);
+		//	setPatternSamplerParams(fillColor, mode);
+		//mObject->fillProgram.end();
 
-		mObject->texture = texture;
-		mObject->tilingMode = mode;
+		//mObject->texture = texture;
+		//mObject->tilingMode = mode;
 	}
 }

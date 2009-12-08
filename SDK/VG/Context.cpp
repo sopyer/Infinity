@@ -121,15 +121,15 @@ namespace vg
 		glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertRegion[0]);
 		glDrawElements(GL_TRIANGLES, (GLsizei)path.mObject->idxRegion.size(), GL_UNSIGNED_INT, &path.mObject->idxRegion[0]);
 
-		if (!path.mObject->vertQuad.empty())
-		{
-			glUseProgram(impl::shared::prgMaskQuad);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glVertexPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].p);
-			glTexCoordPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].tc);
-			glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->vertQuad.size());
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		}
+		//if (!path.mObject->vertQuad.empty())
+		//{
+		//	glUseProgram(impl::shared::prgMaskQuad);
+		//	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		//	glVertexPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].p);
+		//	glTexCoordPointer(2, GL_FLOAT, sizeof(VertexTex2), &path.mObject->vertQuad[0].tc);
+		//	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)path.mObject->vertQuad.size());
+		//	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		//}
 
 		//GLint base = 0;
 		//glVertexPointer(2, GL_FLOAT, 2*sizeof(float), &path.mObject->vertices[0]);

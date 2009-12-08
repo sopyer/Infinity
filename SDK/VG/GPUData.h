@@ -11,32 +11,6 @@
 
 namespace impl
 {
-	struct Vertex
-	{
-		glm::vec2	p;
-		glm::vec2	n;
-		glm::vec3	tc;
-
-		Vertex(const glm::vec2& _p, const glm::vec2& _n, const glm::vec3& _tc):
-			p(_p), n(_n), tc(_tc)
-		{}
-
-		Vertex(const glm::vec2& _p, const glm::vec2& _n):
-			p(_p), n(_n)
-		{}
-
-		Vertex(const glm::vec2& _p, const glm::vec3& _tc):
-			p(_p), tc(_tc)
-		{}
-
-		Vertex(const glm::vec2& _p): p(_p)
-		{}
-
-		Vertex()
-		{
-		}
-	};
-
 	struct FillVertex
 	{
 		glm::vec2	p;
@@ -88,13 +62,6 @@ namespace impl
 		{}
 	};
 
-
-	inline glm::vec2 evalVertex(FillVertex v)
-	{return v.p;}
-
-	inline glm::vec2 evalVertex(StrokeVertex v)
-	{return v.p+v.n;}
-
 	typedef Array<VGuint>	IndexVector;
 	
 	template<class VertexType, VGuint PRIM_COUNT>
@@ -104,6 +71,8 @@ namespace impl
 		IndexVector			indices;
 		
 		GLsizei	offset[PRIM_COUNT], count[PRIM_COUNT];
+		
+		glm::vec2	mMin, mMax;
 		
 		static const VGuint VertexSize = sizeof(VertexType);
 
@@ -117,16 +86,13 @@ namespace impl
 		void drawElementsNZ(VGuint primType)
 		{
 			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glCullFace(GL_BACK);
+			glCullFace(GL_FRONT);
 			drawElements(primType);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			glCullFace(GL_FRONT);
+			glCullFace(GL_BACK);
 			drawElements(primType);
 		}
 	};
-
-#define CCW(primType)	((primType)+1)
-#define CW(primType)	((primType)+0)
 
 	enum FillPrimitiveTypes
 	{
@@ -137,6 +103,8 @@ namespace impl
 		FILL_PRIM_TYPE_COUNT,
 	};
 
+using namespace shared;
+
 	struct FillGeometry: public Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>
 	{
 		void RasterizeEvenOdd()
@@ -145,20 +113,13 @@ namespace impl
 				return;
 
 			FillVertex& vtx = vertices[0];
-
-			//// Clear stencil
-			//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			//glBegin(GL_QUADS);
-			//glVertex2f(path.mObject->min.x, path.mObject->min.y);
-			//glVertex2f(path.mObject->max.x, path.mObject->min.y);
-			//glVertex2f(path.mObject->max.x, path.mObject->max.y);
-			//glVertex2f(path.mObject->min.x, path.mObject->max.y);
-			//glEnd();
-
+			
 			glPushAttrib(GL_ALL_ATTRIB_BITS);
+			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
 			glEnable(GL_DEPTH_TEST);
-			glCullFace(GL_FRONT_AND_BACK);
+			glDisable(GL_CULL_FACE);
+			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 			glEnable(GL_STENCIL_TEST);
@@ -172,44 +133,37 @@ namespace impl
 			glUseProgram(0);
 			drawElements(FILL_PRIM_TYPE_TRI);
 
+			glClientActiveTexture(GL_TEXTURE0);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
 
-			glUseProgram(shared::prgMaskQuad);
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
 			drawElements(FILL_PRIM_TYPE_QUAD);
 
-			glUseProgram(shared::prgMaskCubic);
+			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
 			drawElements(FILL_PRIM_TYPE_CUBIC);
 
-			glUseProgram(shared::prgMaskArc);
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
 			drawElements(FILL_PRIM_TYPE_ARC);
 
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_VERTEX_ARRAY);
-			
+			glPopClientAttrib();
 			glPopAttrib();
 		}
 
+		//Safetly supports up to 127 self intersections
 		void RasterizeNonZero()
 		{
 			if (vertices.empty())
 				return;
 
-			//// Clear stencil
-			//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			//glBegin(GL_QUADS);
-			//glVertex2f(path.mObject->min.x, path.mObject->min.y);
-			//glVertex2f(path.mObject->max.x, path.mObject->min.y);
-			//glVertex2f(path.mObject->max.x, path.mObject->max.y);
-			//glVertex2f(path.mObject->min.x, path.mObject->max.y);
-			//glEnd();
-
 			FillVertex& vtx = vertices[0];
 
 			glPushAttrib(GL_ALL_ATTRIB_BITS);
+			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
 			glEnable(GL_CULL_FACE);
 			glEnable(GL_DEPTH_TEST);
+			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 			glEnable(GL_STENCIL_TEST);
@@ -222,22 +176,20 @@ namespace impl
 			glUseProgram(0);
 			drawElementsNZ(FILL_PRIM_TYPE_TRI);
 
-			glCullFace(GL_FRONT_AND_BACK);
+			glClientActiveTexture(GL_TEXTURE0);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
 
-			glUseProgram(shared::prgMaskQuad);
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
 			drawElementsNZ(FILL_PRIM_TYPE_QUAD);
 
-			glUseProgram(shared::prgMaskCubic);
+			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
 			drawElementsNZ(FILL_PRIM_TYPE_CUBIC);
 
-			glUseProgram(shared::prgMaskArc);
+			glUseProgram(programs[PRG_RAST_FILL_ARC]);
 			drawElementsNZ(FILL_PRIM_TYPE_ARC);
 
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_VERTEX_ARRAY);
-
+			glPopClientAttrib();
 			glPopAttrib();
 		}
 	};
@@ -254,47 +206,70 @@ namespace impl
 				assert(mVertices.size()<(size_t)VG_MAXINT);
 				VGuint idx = (VGuint)mVertices.size();
 				mVertices.push_back(v);
+				calcBBox(v.p);
 				return idx;
 			}
 
-			VGuint addVertices(VGuint count, VertexType v[])
+			void setVertex(VGuint i, const VertexType& v)
 			{
-				assert(mVertices.size()<(size_t)VG_MAXINT);
-				VGuint idx = (VGuint)mVertices.size();
-				mVertices.pushBack(v, v+count);
-				return idx;
+				assert(i<mVertices.size());
+				mVertices[i] = v;
+				calcBBox(v.p);
 			}
+
+			VertexType*	reserveRange(VGuint count, VGuint& begin, VGuint& end)
+			{
+				assert((mVertices.size()+count)<(size_t)VG_MAXINT);
+				
+				begin = (VGuint)mVertices.size();
+				end   = begin+count;
 			
+				mVertices.resize(end);
+				--end;
+
+				return mVertices.begin()+begin;
+			}
+
 			void addPrim(VGuint primType, VGuint i0, VGuint i1, VGuint i2)
 			{
 				assert(primType<PRIM_COUNT);
-				glm::vec2	v1 = evalVertex(mVertices[i1])-evalVertex(mVertices[i0]);
-				glm::vec2	v2 = evalVertex(mVertices[i2])-evalVertex(mVertices[i0]);
 
-				float	det = v1.x*v2.y - v1.y*v2.x;
-
-				if (det==0)
+				if (i0==i1 || i1==i2 || i2==i0)
 					return;
 
-				IndexVector& indices = mIndices[/*det>0?CCW(primType):CW(primType)*/primType];
+				IndexVector& indices = mIndices[primType];
 
 				indices.push_back(i0);
 				indices.push_back(i1);
 				indices.push_back(i2);
 			}
 		
-		protected:
-			glm::vec2	getLastVertex()  {return mVertices[mCursor].p;}
-			glm::vec2	getFirstVertex() {return mVertices[mBase].p;}
+			glm::vec2	getPos(VGuint i) {return mVertices[i].p;}
 			bool		isFirstPrim()	 {return mCursor==mBase;}
+
+		protected:
+			void calcBBox(const glm::vec2& p)
+			{
+				if (mVertices.empty())
+				{
+					mMin = p;
+					mMax = p;
+				}
+				else
+				{
+					mMin = glm::min(mMin, p);
+					mMax = glm::max(mMax, p);
+				}
+			}
 
 		protected:
 			static const VGuint	InvalidIndex = ~((VGuint)0);
 
 		protected:
 			Array<VertexType>		mVertices;
-			IndexVector				mIndices[PT_COUNT];
+			IndexVector				mIndices[PRIM_COUNT];
 			VGuint					mBase, mCursor;
+			glm::vec2				mMin, mMax;
 	};
 
 	class FillGeometryBuilder: public GeometryBuilder<FillVertex, FILL_PRIM_TYPE_COUNT>
@@ -330,10 +305,13 @@ namespace impl
 				
 				//TODO: check for degenerate case...
 
-				VGuint i0 = 
-				addVertex(FillVertex(v[0], 0.0f, 0.0f));
-				addVertex(FillVertex(v[1], 0.5f, 0.0f));
-				addVertex(FillVertex(v[2], 1.0f, 1.0f));
+				VGuint i0, end;
+
+				reserveRange(3, i0, end);
+
+				setVertex(i0+0, FillVertex(v[0], 0.0f, 0.0f));
+				setVertex(i0+1, FillVertex(v[1], 0.5f, 0.0f));
+				setVertex(i0+2, FillVertex(v[2], 1.0f, 1.0f));
 
 				addPrim(FILL_PRIM_TYPE_QUAD, i0, i0+1, i0+2);
 			}
@@ -349,20 +327,21 @@ namespace impl
 
 				assert(pos.size()==tc.size());
 				assert(tc.size()%4==0);
+				
+				VGuint	begin, end;
+
+				reserveRange((VGuint)pos.size(), begin, end);
 
 				for (size_t i=0; i<pos.size(); ++i)
 				{
-					addVertex(FillVertex(pos[i], tc[i]));
+					setVertex(begin+i, FillVertex(pos[i], tc[i]));
 				}
 
-				VGuint	first = (VGuint)mVertices.size()-pos.size(),
-						last  = first+(VGuint)pos.size()-1;
-
-				for (VGuint i0=first; i0<last; i0+=4)
+				for (VGuint i0=begin; i0<end; i0+=4)
 				{
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0,    i0+1, i0+2);
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0+2,  i0+3, i0+0);
-					addPrim(FILL_PRIM_TYPE_TRI,   first, i0,   i0+3);
+					addPrim(FILL_PRIM_TYPE_TRI,   begin, i0,   i0+3);
 				}
 			}
 
@@ -376,20 +355,19 @@ namespace impl
 				
 				assert(pos.size()==tc.size());
 
-				size_t count = pos.size();
+				VGuint	begin, end;
 
-				for (size_t i=0; i<count; ++i)
+				reserveRange((VGuint)pos.size(), begin, end);
+
+				for (size_t i=0; i<pos.size(); ++i)
 				{
-					addVertex(FillVertex(pos[i], tc[i]));
+					setVertex(begin+i, FillVertex(pos[i], tc[i]));
 				}
 
-				VGuint	first = (VGuint)mVertices.size()-pos.size(),
-						last  = first+(VGuint)pos.size()-1;
-
-				for (VGuint i0=first; i<last-1; i+=2)
+				for (VGuint i0=begin; i<end-1; i+=2)
 				{
 					addPrim(FILL_PRIM_TYPE_ARC,  i0,    i0+1, i0+2);
-					addPrim(FILL_PRIM_TYPE_TRI,  first, i0,   i0+2);
+					addPrim(FILL_PRIM_TYPE_TRI,  begin, i0,   i0+2);
 				}
 			}
 			
@@ -410,100 +388,106 @@ namespace impl
 				}
 
 				fillGeom.vertices.pushBack(mVertices.begin(), mVertices.end());
+				fillGeom.mMin = mMin;
+				fillGeom.mMax = mMax;
 			}
 
 	};
 
-#define DECLARE_STROKE_PRIM_TYPE(name)	STROKE_PRIM_TYPE_##name,									\
-										STROKE_PRIM_TYPE_##name##_CW  = STROKE_PRIM_TYPE_##name,	\
-										STROKE_PRIM_TYPE_##name##_CCW
-
 	enum StrokePrimitiveTypes
 	{
-		DECLARE_STROKE_PRIM_TYPE(TRI),
-		DECLARE_STROKE_PRIM_TYPE(ARC),
-		DECLARE_STROKE_PRIM_TYPE(QUAD),
-		DECLARE_STROKE_PRIM_TYPE(CUBIC),
-		DECLARE_STROKE_PRIM_TYPE(JOINT_BEVEL),
-		DECLARE_STROKE_PRIM_TYPE(JOINT_MITER),
-		DECLARE_STROKE_PRIM_TYPE(JOINT_ROUND),
-		DECLARE_STROKE_PRIM_TYPE(CAP_ROUND),
-		DECLARE_STROKE_PRIM_TYPE(CAP_BEVEL),
+		STROKE_PRIM_TYPE_TRI,
+		STROKE_PRIM_TYPE_ARC,
+		STROKE_PRIM_TYPE_QUAD,
+		STROKE_PRIM_TYPE_CUBIC,
+		STROKE_PRIM_TYPE_JOINT_BEVEL,
+		STROKE_PRIM_TYPE_JOINT_MITER,
+		STROKE_PRIM_TYPE_JOINT_ROUND,
+		STROKE_PRIM_TYPE_CAP_ROUND,
+		STROKE_PRIM_TYPE_CAP_BEVEL,
 		STROKE_PRIM_TYPE_COUNT,
 	};
 
 	struct StrokeGeometry: public Geometry<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
 	{
+		void RasterizePrimitives(float halfWidth)
+		{
+			glUseProgram(programs[PRG_RAST_STROKE_TRI]);
+			glUniform1f(uniforms[UNI_RAST_STROKE_TRI_HALFWIDTH], halfWidth);
+			drawElementsNZ(STROKE_PRIM_TYPE_TRI);
+
+			glUseProgram(programs[PRG_RAST_STROKE_QUAD]);
+			glUniform1f(uniforms[UNI_RAST_STROKE_QUAD_HALFWIDTH], halfWidth);
+			drawElementsNZ(STROKE_PRIM_TYPE_QUAD);
+
+			glUseProgram(programs[PRG_RAST_STROKE_CUBIC]);
+			glUniform1f(uniforms[UNI_RAST_STROKE_CUBIC_HALFWIDTH], halfWidth);
+			drawElementsNZ(STROKE_PRIM_TYPE_CUBIC);
+
+			glUseProgram(programs[PRG_RAST_STROKE_ARC]);
+			glUniform1f(uniforms[UNI_RAST_STROKE_ARC_HALFWIDTH], halfWidth);
+			drawElementsNZ(STROKE_PRIM_TYPE_ARC);
+		}
+
+		//Safely supports up to 127 self intersections
+		//We rasterize strokes in 2 passes, which behave differently for different stroke primitives
 		void Rasterize()
 		{
 			if (vertices.empty())
 				return;
-
+			
 			StrokeVertex& vtx = vertices[0];
 
 			glPushAttrib(GL_ALL_ATTRIB_BITS);
+			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
 			glEnable(GL_DEPTH_TEST);
-			glCullFace(GL_FRONT_AND_BACK);
+			glEnable(GL_CULL_FACE);
+			
 			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 			glEnable(GL_STENCIL_TEST);
 			glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
 			glStencilMask(0xFF);
 
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-
- 			glEnableClientState(GL_VERTEX_ARRAY);
-			glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &vtx.p);
-
-			glUseProgram(shared::prgMaskStrokeSeg);
-			glEnableVertexAttribArray(shared::locOffsetAttrib);
-			glVertexAttribPointer(shared::locOffsetAttrib, 2, GL_FLOAT, false, VertexSize, &vtx.n);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			drawElements(STROKE_PRIM_TYPE_TRI_CCW);
-			drawElements(STROKE_PRIM_TYPE_JOINT_BEVEL_CCW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			drawElements(STROKE_PRIM_TYPE_TRI_CW);
-			drawElements(STROKE_PRIM_TYPE_JOINT_BEVEL_CW);
-			glDisableVertexAttribArray(shared::locOffsetAttrib);
-
+ 			// Position
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
+			
+			// Perpendicular
+			glClientActiveTexture(GL_TEXTURE1);
 			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(3, GL_FLOAT, sizeof(Vertex), &vtx.tc);
+			glTexCoordPointer(2, GL_FLOAT, VertexSize, &vtx.n);
 
-			glUseProgram(shared::prgStrokeMaskQuad);
-			glEnableVertexAttribArray(shared::locOffsetAttribQuad);
-			glVertexAttribPointer(shared::locOffsetAttribQuad, 2, GL_FLOAT, false, VertexSize, &vtx.n);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			drawElements(STROKE_PRIM_TYPE_QUAD_CCW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			drawElements(STROKE_PRIM_TYPE_QUAD_CW);
-			glDisableVertexAttribArray(shared::locOffsetAttribQuad);
+			// Rasterization parameters
+			glClientActiveTexture(GL_TEXTURE0);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
 
-			glUseProgram(shared::prgStrokeMaskCubic);
-			glEnableVertexAttribArray(shared::attrOffsetCubic);
-			glVertexAttribPointer(shared::attrOffsetCubic, 2, GL_FLOAT, false, VertexSize, &vtx.n);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			drawElements(STROKE_PRIM_TYPE_CUBIC_CCW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			drawElements(STROKE_PRIM_TYPE_CUBIC_CW);
-			glDisableVertexAttribArray(shared::attrOffsetCubic);
+			//Chnaging multiplier of normal change winding for tri primitive
+			//So we need to change front face to make rasterization correct
+			//And for other primitive types we need to change winding to add or remove parts:
+			//We rasterize quad as tri, so for proper stroke we need area between tri edges,
+			//changing normal multiplier in most cases does not change tri winding, only shifts
+			//so if we do not change front face we will have 2 quads one under another
+			//We need to change winding for second quad to add/remove pixels.
+			
+			//First pass
+			glFrontFace(GL_CCW);
+			RasterizePrimitives(5);
 
-			glUseProgram(shared::prgStrokeMaskArc);
-			glEnableVertexAttribArray(shared::attrOffsetArc);
-			glVertexAttribPointer(shared::attrOffsetArc, 2, GL_FLOAT, false, VertexSize, &vtx.n);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			drawElements(STROKE_PRIM_TYPE_ARC_CCW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			drawElements(STROKE_PRIM_TYPE_ARC_CW);
-			glDisableVertexAttribArray(shared::attrOffsetArc);
+			//Second pass
+			glFrontFace(GL_CW);
+			RasterizePrimitives(-5);
 
-			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-			glDisableClientState(GL_VERTEX_ARRAY);
-
+			glPopClientAttrib();
 			glPopAttrib();
 		}
 	};
 
+	/* Unlike FillGeometryBuilder all methods should be called between begin/end
+	/* order is also important
+	*/
 	class StrokeGeometryBuilder: public GeometryBuilder<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
 	{
 		public:
@@ -522,8 +506,8 @@ namespace impl
 				if (closePath)
 				{
 					//Add closing geometry to the strokes
-					lineTo(getFirstVertex().x, getFirstVertex().y);
-					addJointBevel(mCursor-2, mBase+1);
+					//lineTo(getFirstVertex().x, getFirstVertex().y);
+					//addJointBevel(mCursor-2, mBase+1);
 				}
 				else
 				{
@@ -538,52 +522,39 @@ namespace impl
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
 
-				glm::vec2	p0(getLastVertex()), p1(x1, y1), n(calcOffset(p0, p1));
-
-				StrokeVertex v[] = {
-					StrokeVertex(p0, n), StrokeVertex(p0, -n),
-					StrokeVertex(p1, n), StrokeVertex(p1, -n),
-					StrokeVertex(p1)
-				};
+				glm::vec2	p0(getPos(mCursor)), p1(x1, y1), n(calcOffset(p0, p1));
 				
-				VGuint begin = addVertices(ARRAY_SIZE(v), v);
-				VGuint end   = begin+2;
+				VGuint i0, end;
 
-				assert(mCursor == begin-1);
+				reserveRange(3, i0, end);
 
-				addStroke(begin, end);
+				setVertex(i0+0, StrokeVertex(p0, n));
+				setVertex(i0+1, StrokeVertex(p1, n));
+				setVertex(i0+2, StrokeVertex(p1));
+				
+				addStroke(mCursor, i0, i0+1, i0+2);
 			}
 
-			void quadTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2)
+			//Requires 3 vertices, first should be the same as the last in previous primitive
+			void quadTo(const Array<glm::vec2>& v)
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
+				assert(getPos(mCursor)==v[0]);
 
-				glm::vec2	p0(getLastVertex()), p1(x1, y1), p2(x2, y2);
-				glm::vec2	n01(calcOffset(p0, p1)), n12(calcOffset(p1, p2));
-				glm::vec2	offset(calcOffsetN(n01, n12));
+				glm::vec2	n01(calcOffset(v[0], v[1])), n12(calcOffset(v[1], v[2]));
+				glm::vec2	n012(calcOffsetN(n01, n12));
 				
-				VGuint	begin, end;
+				VGuint i0, end;
 
-				StrokeVertex v[] = {
-					StrokeVertex(p0, n01,     glm::vec3(0.0f, 0.0f, 0.0f)),
-					StrokeVertex(p0, -n01,    glm::vec3(0.0f, 0.0f, 0.0f)),
-					StrokeVertex(p1, offset,  glm::vec3(0.5f, 0.0f, 0.0f)),
-					StrokeVertex(p1, -offset, glm::vec3(0.5f, 0.0f, 0.0f)),
-					StrokeVertex(p2, n12,     glm::vec3(1.0f, 1.0f, 0.0f)),
-					StrokeVertex(p2, -n12,    glm::vec3(1.0f, 1.0f, 0.0f)),
-					StrokeVertex(p2)
-				};
+				reserveRange(3, i0, end);
 
-				begin = addVertices(ARRAY_SIZE(v), v);
-				end   = begin+4;
+				setVertex(i0+0, StrokeVertex(v[0],  n01, glm::vec3(0.0f, 0.0f, 0.0f)));
+				setVertex(i0+1, StrokeVertex(v[1], n012, glm::vec3(0.5f, 0.0f, 0.0f)));
+				setVertex(i0+2, StrokeVertex(v[2],  n12, glm::vec3(1.0f, 1.0f, 0.0f)));
 
-				addPrim(STROKE_PRIM_TYPE_QUAD, begin,   begin+2, begin+4);
-				addPrim(STROKE_PRIM_TYPE_QUAD, begin+5, begin+3, begin+1);
-
-				assert(mCursor == begin-1);
-
-				addStroke(begin, end);
+				addPrim(FILL_PRIM_TYPE_QUAD, i0, i0+1, i0+2);
+				addStroke(mCursor, i0, i0+1, i0+2);
 			}
 
 			void addSimpleCubic(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
@@ -591,22 +562,25 @@ namespace impl
 				addPrim(STROKE_PRIM_TYPE_CUBIC, i0, i1, i2);
 				addPrim(STROKE_PRIM_TYPE_CUBIC, i2, i3, i0);
 			}
-
-			void cubicTo(VGfloat x1, VGfloat y1, VGfloat x2, VGfloat y2, VGfloat x3, VGfloat y3)
+			
+			//Requires 4 vertices, first should be the same as the last in previous primitive
+			void cubicTo(const Array<glm::vec2>& v)
 			{
-				Array<glm::vec2>	pts;
+				assert(mBase   != InvalidIndex);
+				assert(mCursor != InvalidIndex);
+				assert(glm::equal(getPos(mCursor), v[0]));
+
 				Array<glm::vec2>	pos;
 				Array<glm::vec3>	tc;
+				
+				cubicTriVertices(v, pos, tc);
 
-				pts.pushBack(getLastVertex());
-				pts.pushBack(glm::vec2(x1, y1));
-				pts.pushBack(glm::vec2(x2, y2));
-				pts.pushBack(glm::vec2(x3, y3));
+				assert(pos.size()==tc.size());
+				assert(tc.size()%4==0);
 
-				cubicTriVertices(pts, pos, tc);
+				VGuint	begin, end;
 
-				VGuint	first = (VGuint)mVertices.size(),
-						last  = first+(VGuint)pos.size()*2-1;
+				reserveRange((VGuint)pos.size(), begin, end);
 
 				for (size_t i=0; i<pos.size(); ++i)
 				{
@@ -619,32 +593,32 @@ namespace impl
 					else
 						n = calcOffset(pos[i],   pos[i+1]);
 
-					last = addVertex(StrokeVertex(pos[i],  n, tc[i]));
-					last = addVertex(StrokeVertex(pos[i], -n, tc[i]));
+					setVertex(begin+i, StrokeVertex(pos[i], n, tc[i]));
 				}
 
-				for (VGuint i0=first; i0<last; i0+=8)
+				for (VGuint i=begin; i<end; i+=4)
 				{
-					addSimpleCubic(i0, i0+2, i0+4, i0+6);
-					addPrim(STROKE_PRIM_TYPE_TRI, mCursor+1, i0, i0+6);
-
-					addSimpleCubic(i0+7, i0+5, i0+3, i0+1);
-					addPrim(STROKE_PRIM_TYPE_TRI, mCursor+2, i0+7, i0+1);
+					addSimpleCubic(i, i+1, i+2, i+3);
+					addPrim(STROKE_PRIM_TYPE_TRI, begin, i, i+3);
 				}
 
-				last = addVertex(StrokeVertex(glm::vec2(x3, y3)));
+				VGuint i0 = addVertex(StrokeVertex(v[3]));
 
-				addStroke(mCursor+1, last-2);
+				addStroke(mCursor, begin, end, i0);
 			}
 
-			void arcTo(VGPathSegment type, VGfloat rx, VGfloat ry, VGfloat angle, VGfloat x1, VGfloat y1)
+			void arcTo(VGPathSegment type, const glm::vec2& radius, VGfloat angle, const glm::vec2& p1)
 			{
 				Array<glm::vec2>	pos;
 				Array<glm::vec3>	tc;
 
-				arcTriVertices(type, glm::vec2(rx, ry), angle, getLastVertex(), glm::vec2(x1, y1), pos, tc);
+				arcTriVertices(type, radius, angle, getPos(mCursor), p1, pos, tc);
 				
-				VGuint	last;
+				assert(pos.size()==tc.size());
+
+				VGuint	begin, end;
+
+				reserveRange((VGuint)pos.size(), begin, end);
 
 				for (size_t i=0; i<pos.size(); ++i)
 				{
@@ -657,24 +631,19 @@ namespace impl
 					else
 						n = calcOffset(pos[i],   pos[i+1]);
 
-					last = addVertex(StrokeVertex(pos[i],  n, tc[i]));
-					last = addVertex(StrokeVertex(pos[i], -n, tc[i]));
+					setVertex(begin+i, StrokeVertex(pos[i], n, tc[i]));
 				}
 
-				assert(last==mCursor+pos.size()*2);
-
-				for (size_t i=0; i<pos.size()-1; i+=2)
+				for (VGuint i=begin; i<end-1; ++i)
 				{
-					addPrim(STROKE_PRIM_TYPE_ARC,  mCursor+i*2+1, mCursor+i*2+3, mCursor+i*2+5);
-					addPrim(STROKE_PRIM_TYPE_TRI,  mCursor+1,     mCursor+i*2+1, mCursor+i*2+5);
-
-					addPrim(STROKE_PRIM_TYPE_ARC,  mCursor+i*2+6, mCursor+i*2+4, mCursor+i*2+2);
-					addPrim(STROKE_PRIM_TYPE_TRI,  mCursor+2,     mCursor+i*2+6, mCursor+i*2+2);
+					addPrim(FILL_PRIM_TYPE_ARC,  i,     i+1, i+2);
+					addPrim(FILL_PRIM_TYPE_TRI,  begin, i,   i+2);
 				}
 
-				last = addVertex(glm::vec2(x1, y1));
+				VGuint i0 = addVertex(p1);
 
-				addStroke(mCursor+1, last-2);
+				addStroke(mCursor, begin, end, i0);
+
 			}
 			
 			void copyDataTo(StrokeGeometry& strokeGeom)
@@ -694,14 +663,16 @@ namespace impl
 				}
 
 				strokeGeom.vertices.pushBack(mVertices.begin(),	mVertices.end());
+				strokeGeom.mMin = mMin;
+				strokeGeom.mMax = mMax;
 			}
 
 		private:
-			void addStroke(u32 start, u32 end)
+			//Order of indices is very important!!!
+			void addStroke(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
 			{
-				//Order of indices is very important!!!
-				addPrim(STROKE_PRIM_TYPE_TRI, start, end,     end+1);
-				addPrim(STROKE_PRIM_TYPE_TRI, end+1, start+1, start);
+				addPrim(STROKE_PRIM_TYPE_TRI, i0, i1, i2);
+				addPrim(STROKE_PRIM_TYPE_TRI, i0, i2, i3);
 
 				if (isFirstPrim())
 				{
@@ -710,12 +681,12 @@ namespace impl
 				}
 				else
 				{
-					addJointBevel(mCursor);
+					//addJointBevel(mCursor);
 					//addJointMiter(mCursor);
 					//addJointRound(mCursor);
 				}
 
-				mCursor = end+2;
+				mCursor = i3;
 			}
 
 			void addJointBevel(VGuint center)

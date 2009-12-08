@@ -82,15 +82,15 @@ namespace UI
 			bool		isVisible() {return mVisible;}
 
 		protected:
-			virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {}
-			virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {}
+			virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {UNUSED(event);}
+			virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {UNUSED(event);}
 
-			virtual void onMotion(const MotionEvent& event) {}
+			virtual void onMotion(const MotionEvent& event) {UNUSED(event);}
 
 			virtual void onScroll() {}
 
-			virtual void onKeyDown(const KeyEvent& event/*uint32 key*/) {}
-			virtual void onKeyUp(const KeyEvent& event/*uint32 key*/) {}
+			virtual void onKeyDown(const KeyEvent& event/*uint32 key*/) {UNUSED(event);}
+			virtual void onKeyUp(const KeyEvent& event/*uint32 key*/) {UNUSED(event);}
 			
 			virtual void onEnter() {}
 			virtual void onLeave() {}
@@ -100,7 +100,7 @@ namespace UI
 
 			//virtual void onUpdate(float timePassed){}
 			
-			virtual void onPaint(VG& vg) {}
+			virtual void onPaint(VG& vg) {UNUSED(vg);}
 			virtual void onPick(/*VG& vg, */Color color);
 			//{
 			//	glColor4ub(color.red, color.green, color.blue, color.alpha);

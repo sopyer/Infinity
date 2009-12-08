@@ -1,98 +1,164 @@
 #include <gl\glee.h>
 #include <cassert>
 #include "SharedResources.h"
+#include <utils.h>
 
 namespace impl
 {
 	namespace shared
 	{
-		GLuint	prgMaskQuad = 0;
-		GLuint	prgMaskCubic = 0;
-		GLuint	prgMaskArc = 0;	
-		GLuint	prgFillColor = 0;
-		GLuint	prgFillPattern = 0;
-		GLuint	prgMaskStrokeSeg = 0;
-		GLuint	prgStrokeMaskQuad = 0;
-		GLuint	prgStrokeMaskCubic = 0;
-		GLuint	prgStrokeMaskArc = 0;
-		
-		GLint	attrOffsetCubic = -1;
-		GLint	attrOffsetArc = -1;
-		GLint	locOffsetAttribQuad = -1;
-		GLint	locOffsetAttrib = -1;
+		GLuint	programs[PRG_COUNT];
+		GLint	uniforms[UNI_COUNT];
 
 		namespace
 		{
+			//MSVC8 is unhappy without extern:)
+			extern const char UNI_NAME_HALF_WIDTH[] = "uHalfWidth";
+
 			size_t refCount = 0;
+			
+			enum
+			{
+				fsRastArc,
+				fsRastQuad,
+				fsRastCubic,
+				vsRastStroke,
 
-			const char* const sourceArcFragSh = 
-				"void main(void)											\n"
-				"{															\n"
-				"	vec2 uv = gl_TexCoord[0].st;							\n"
-				"															\n"
-				"	if( (uv.s*uv.s + uv.t*uv.t)>=1.0 )						\n"
-				"		discard;											\n"
-				"															\n"
-				"	gl_FragColor = vec4(1.0);								\n"
-				"}															\n";
+				shCount
+			};
 
-			const char* const sourceQuadFragSh = 
-				"void main(void)											\n"
-				"{															\n"
-				"	vec2 uv = gl_TexCoord[0].st;							\n"
-				"															\n"
-				"	if( (pow(uv.s, 2.0)-uv.t)>=0.0 )						\n"
-				"		discard;											\n"
-				"															\n"
-				"	gl_FragColor = vec4(1.0);								\n"
-				"}															\n";
+			struct ProgramDef
+			{
+				size_t			mShaderCount;
+				const size_t*	mShaderList;
+				size_t			mUniformCount;
+				const char**	mUniformList;
+			};
+			
+			ProgramDef	programDefs[PRG_COUNT] = 
+			{
+				//PRG_RAST_FILL_CUBIC,
+				{
+					1, CArray1<size_t, fsRastCubic>::ptr,
+					0, 0
+				},
+				//PRG_RAST_FILL_QUAD,
+				{
+					1, CArray1<size_t, fsRastQuad>::ptr,
+					0, 0
+				},
+				//PRG_RAST_FILL_ARC,
+				{
+					1, CArray1<size_t, fsRastArc>::ptr,
+					0, 0
+				},
+				//PRG_RAST_STROKE_CUBIC,
+				{
+					2, CArray2<size_t, vsRastStroke, fsRastCubic>::ptr,
+					1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				},
+				//PRG_RAST_STROKE_QUAD,
+				{
+					2, CArray2<size_t, vsRastStroke, fsRastQuad>::ptr,
+					1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				},
+				//PRG_RAST_STROKE_ARC,
+				{
+					2, CArray2<size_t, vsRastStroke, fsRastArc>::ptr,
+					1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				},
+				//PRG_RAST_STROKE_TRI,
+				{
+					1, CArray1<size_t, vsRastStroke>::ptr,
+					1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				},
+			};
+			
+			struct ShaderDef
+			{
+				GLenum		mType;
+				const char*	mSource;
+			};
 
-			const char* const sourceCubicFragSh = 
-				"void main(void)											\n"
-				"{															\n"
-				"	vec3 uv = gl_TexCoord[0].stp;							\n"
-				"															\n"
-				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					\n"
-				"		discard;											\n"
-				"															\n"
-				"	gl_FragColor = vec4(1.0);								\n"
-				"}															\n";
+			ShaderDef shaderDefs[shCount] =
+			{
+				{
+					GL_FRAGMENT_SHADER,
+					"void main(void)											\n"
+					"{															\n"
+					"	vec2 uv = gl_TexCoord[0].st;							\n"
+					"															\n"
+					"	if( (uv.s*uv.s + uv.t*uv.t)>=1.0 )						\n"
+					"		discard;											\n"
+					"															\n"
+					"	gl_FragColor = vec4(1.0);								\n"
+					"}															\n"
+				},
 
-			const char* const sourceColorFillFragSh =
-				"uniform vec4 uFillColor;									\n"
-				"															\n"
-				"void main()												\n"
-				"{															\n"
-				"	gl_FragColor = uFillColor;								\n"
-				"}															\n";
+				{
+					GL_FRAGMENT_SHADER,
+					"void main(void)											\n"
+					"{															\n"
+					"	vec2 uv = gl_TexCoord[0].st;							\n"
+					"															\n"
+					"	if( (pow(uv.s, 2.0)-uv.t)>=0.0 )						\n"
+					"		discard;											\n"
+					"															\n"
+					"	gl_FragColor = vec4(1.0);								\n"
+					"}															\n"
+				},
 
-			const char* const sourceFillVertSh =
-				"uniform vec2 uImageDim;									\n"
-				"															\n"
-				"void main()												\n"
-				"{															\n"
-				"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	\n"
-				"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	\n"
-				"}															\n";
+				{
+					GL_FRAGMENT_SHADER,
+					"void main(void)											\n"
+					"{															\n"
+					"	vec3 uv = gl_TexCoord[0].stp;							\n"
+					"															\n"
+					"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					\n"
+					"		discard;											\n"
+					"															\n"
+					"	gl_FragColor = vec4(1.0);								\n"
+					"}															\n"
+				},
 
-			const char* const sourcePatternFillFragSh =
-				"uniform sampler2D uPattern;								\n"
-				"															\n"
-				"void main()												\n"
-				"{															\n"
-				"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		\n"
-				"}															\n";
+				{
+					GL_VERTEX_SHADER,
+					"uniform float uHalfWidth;									\n"
+					"															\n"
+					"void main()												\n"
+					"{															\n"
+					"	vec4 pos = gl_Vertex;									\n"
+					"	pos.xy += uHalfWidth*gl_MultiTexCoord1.xy;				\n"
+					"	gl_Position = gl_ModelViewProjectionMatrix*pos;			\n"
+					"	gl_TexCoord[0] = gl_MultiTexCoord0;						\n"
+					"}															\n"
+				},
+			};
 
-			const char* const sourceStrokeVertSh =
-				"attribute vec2 aOffset;									\n"
-				"															\n"
-				"void main()												\n"
-				"{															\n"
-				"	vec4 pos = gl_Vertex;									\n"
-				"	pos.xy += 10*aOffset;									\n"
-				"	gl_Position = gl_ModelViewProjectionMatrix*pos;			\n"
-				"	gl_TexCoord[0] = gl_MultiTexCoord0;						\n"
-				"}															\n";
+			//const char* const sourceColorFillFragSh =
+			//	"uniform vec4 uFillColor;									\n"
+			//	"															\n"
+			//	"void main()												\n"
+			//	"{															\n"
+			//	"	gl_FragColor = uFillColor;								\n"
+			//	"}															\n";
+
+			//const char* const sourceFillVertSh =
+			//	"uniform vec2 uImageDim;									\n"
+			//	"															\n"
+			//	"void main()												\n"
+			//	"{															\n"
+			//	"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	\n"
+			//	"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	\n"
+			//	"}															\n";
+
+			//const char* const sourcePatternFillFragSh =
+			//	"uniform sampler2D uPattern;								\n"
+			//	"															\n"
+			//	"void main()												\n"
+			//	"{															\n"
+			//	"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		\n"
+			//	"}															\n";
 
 			void CompileShader(GLuint shader, const char* source)
 			{
@@ -111,76 +177,60 @@ namespace impl
 				GLuint	vsFill;
 				GLuint	fsColor;
 				GLuint	fsPattern;
-				GLuint	fsArc;
-				GLuint	fsCubic;
-				GLuint	fsQuad;
-				GLuint	vsStrokeSeg;
 
-				prgMaskArc = glCreateProgram();
-				fsArc = glCreateShader(GL_FRAGMENT_SHADER);
-				CompileShader(fsArc, sourceArcFragSh);
-				glAttachShader(prgMaskArc, fsArc);
-				glLinkProgram(prgMaskArc);
+				GLuint	shaders[shCount];
 
-				prgMaskCubic = glCreateProgram();
-				fsCubic = glCreateShader(GL_FRAGMENT_SHADER);
-				CompileShader(fsCubic, sourceCubicFragSh);
-				glAttachShader(prgMaskCubic, fsCubic);
-				glLinkProgram(prgMaskCubic);
+				for (size_t i=0; i<shCount; ++i)
+				{
+					shaders[i] = glCreateShader(shaderDefs[i].mType);
+					GLint len = (GLint)strlen(shaderDefs[i].mSource);
+					glShaderSource(shaders[i], 1, (const GLchar **)&shaderDefs[i].mSource, &len);
+					glCompileShader(shaders[i]); 
+				}
 
-				prgMaskQuad = glCreateProgram();
-				fsQuad = glCreateShader(GL_FRAGMENT_SHADER);
-				CompileShader(fsQuad, sourceQuadFragSh);
-				glAttachShader(prgMaskQuad, fsQuad);
-				glLinkProgram(prgMaskQuad);
-				
-				prgMaskStrokeSeg = glCreateProgram();
-				vsStrokeSeg = glCreateShader(GL_VERTEX_SHADER);
-				CompileShader(vsStrokeSeg, sourceStrokeVertSh);
-				glAttachShader(prgMaskStrokeSeg, vsStrokeSeg);
-				glLinkProgram(prgMaskStrokeSeg);
-				locOffsetAttrib = glGetAttribLocation(prgMaskStrokeSeg, "aOffset");
-				
-				prgStrokeMaskQuad = glCreateProgram();
-				glAttachShader(prgStrokeMaskQuad, vsStrokeSeg);
-				glAttachShader(prgStrokeMaskQuad, fsQuad);
-				glLinkProgram(prgStrokeMaskQuad);
-				locOffsetAttribQuad = glGetAttribLocation(prgStrokeMaskQuad, "aOffset");
-				
-				prgStrokeMaskCubic = glCreateProgram();
-				glAttachShader(prgStrokeMaskCubic, vsStrokeSeg);
-				glAttachShader(prgStrokeMaskCubic, fsCubic);
-				glLinkProgram(prgStrokeMaskCubic);
-				attrOffsetCubic = glGetAttribLocation(prgStrokeMaskCubic, "aOffset");
+				size_t	uni = 0;
 
-				prgStrokeMaskArc = glCreateProgram();
-				glAttachShader(prgStrokeMaskArc, vsStrokeSeg);
-				glAttachShader(prgStrokeMaskArc, fsArc);
-				glLinkProgram(prgStrokeMaskArc);
-				attrOffsetArc = glGetAttribLocation(prgStrokeMaskArc, "aOffset");
+				for (size_t i=0; i<PRG_COUNT; ++i)
+				{
+					programs[i] = glCreateProgram();
+					
+					for (size_t sh=0; sh<programDefs[i].mShaderCount; ++sh)
+					{
+						glAttachShader(programs[i], shaders[programDefs[i].mShaderList[sh]]);
+					}
+					
+					glLinkProgram(programs[i]);
 
-				glDeleteShader(fsArc);
-				glDeleteShader(fsQuad);
-				glDeleteShader(fsCubic);
-				glDeleteShader(vsStrokeSeg);
-				
-				prgFillColor = glCreateProgram();
-				fsColor = glCreateShader(GL_FRAGMENT_SHADER);
-				CompileShader(fsColor, sourceColorFillFragSh);
-				glAttachShader(prgFillColor, fsColor);
-				glLinkProgram(prgFillColor);
-				glDeleteShader(fsColor);
+					for (size_t u=0; u<programDefs[i].mUniformCount; ++u)
+					{
+						uniforms[uni++] = glGetUniformLocation(programs[i], programDefs[i].mUniformList[u]);
+					}
+				}
 
-				prgFillPattern = glCreateProgram();
-				vsFill = glCreateShader(GL_VERTEX_SHADER);
-				fsPattern = glCreateShader(GL_FRAGMENT_SHADER);
-				CompileShader(vsFill, sourceFillVertSh);
-				CompileShader(fsPattern, sourcePatternFillFragSh);
-				glAttachShader(prgFillPattern, fsPattern);
-				glAttachShader(prgFillPattern, vsFill);
-				glLinkProgram(prgFillPattern);
-				glDeleteShader(fsPattern);
-				glDeleteShader(vsFill);
+				assert(uni==UNI_COUNT);
+
+				//prgFillColor = glCreateProgram();
+				//fsColor = glCreateShader(GL_FRAGMENT_SHADER);
+				//CompileShader(fsColor, sourceColorFillFragSh);
+				//glAttachShader(prgFillColor, fsColor);
+				//glLinkProgram(prgFillColor);
+				//glDeleteShader(fsColor);
+
+				//prgFillPattern = glCreateProgram();
+				//vsFill = glCreateShader(GL_VERTEX_SHADER);
+				//fsPattern = glCreateShader(GL_FRAGMENT_SHADER);
+				//CompileShader(vsFill, sourceFillVertSh);
+				//CompileShader(fsPattern, sourcePatternFillFragSh);
+				//glAttachShader(prgFillPattern, fsPattern);
+				//glAttachShader(prgFillPattern, vsFill);
+				//glLinkProgram(prgFillPattern);
+				//glDeleteShader(fsPattern);
+				//glDeleteShader(vsFill);
+
+				for (size_t i=0; i<shCount; ++i)
+				{
+					glDeleteShader(shaders[i]);
+				}
 			}
 			refCount++;
 		}
@@ -191,15 +241,13 @@ namespace impl
 			refCount--;
 			if (refCount==0)
 			{
-				glDeleteProgram(prgMaskQuad);
-				glDeleteProgram(prgMaskCubic);
-				glDeleteProgram(prgMaskArc);	
-				glDeleteProgram(prgFillColor);
-				glDeleteProgram(prgFillPattern);
-				glDeleteProgram(prgMaskStrokeSeg);
-				glDeleteProgram(prgStrokeMaskQuad);
-				glDeleteProgram(prgStrokeMaskCubic);
-				glDeleteProgram(prgStrokeMaskArc);
+				//glDeleteProgram(prgFillColor);
+				//glDeleteProgram(prgFillPattern);
+
+				for (size_t i=0; i<PRG_COUNT; ++i)
+				{
+					glDeleteProgram(programs[i]);
+				}
 			}
 		}
 	}
