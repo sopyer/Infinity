@@ -217,6 +217,11 @@ using namespace shared;
 				calcBBox(v.p);
 			}
 
+			void setVertex(VGuint i, const glm::vec2& n)
+			{
+				mVertices[i].n = n;
+			}
+
 			VertexType*	reserveRange(VGuint count, VGuint& begin, VGuint& end)
 			{
 				assert((mVertices.size()+count)<(size_t)VG_MAXINT);
@@ -244,8 +249,11 @@ using namespace shared;
 				indices.push_back(i2);
 			}
 		
-			glm::vec2	getPos(VGuint i) {return mVertices[i].p;}
-			bool		isFirstPrim()	 {return mCursor==mBase;}
+			glm::vec2	getPos(VGuint i)  {return mVertices[i].p;}
+			glm::vec2	getNorm(VGuint i) {return mVertices[i].n;}
+			bool		isFirstPrim()	  {return mCursor==mBase;}
+
+			void	setTC(VGuint i, const glm::vec3& tc) {mVertices[i].tc = tc;}
 
 		protected:
 			void calcBBox(const glm::vec2& p)
@@ -341,7 +349,8 @@ using namespace shared;
 				{
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0,    i0+1, i0+2);
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0+2,  i0+3, i0+0);
-					addPrim(FILL_PRIM_TYPE_TRI,   begin, i0,   i0+3);
+					//At begin cubic explicit equation evaluates to 0 so next line is always correct
+					addPrim(FILL_PRIM_TYPE_CUBIC, begin, i0,   i0+3); //Triangle but drawn with cubic shader 
 				}
 			}
 
@@ -366,8 +375,8 @@ using namespace shared;
 
 				for (VGuint i0=begin; i<end-1; i+=2)
 				{
-					addPrim(FILL_PRIM_TYPE_ARC,  i0,    i0+1, i0+2);
-					addPrim(FILL_PRIM_TYPE_TRI,  begin, i0,   i0+2);
+					addPrim(FILL_PRIM_TYPE_ARC,  i0+0,  i0+1, i0+2);
+					addPrim(FILL_PRIM_TYPE_ARC,  begin, i0+0, i0+2); //Triangle but drawn with arc shader
 				}
 			}
 			
@@ -410,11 +419,16 @@ using namespace shared;
 
 	struct StrokeGeometry: public Geometry<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
 	{
-		void RasterizePrimitives(float halfWidth)
+		void RasterizePrimitives(float halfWidth, bool jointMiter = false, bool jointRound = true)
 		{
 			glUseProgram(programs[PRG_RAST_STROKE_TRI]);
 			glUniform1f(uniforms[UNI_RAST_STROKE_TRI_HALFWIDTH], halfWidth);
 			drawElementsNZ(STROKE_PRIM_TYPE_TRI);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glCullFace(GL_FRONT);
+			drawElements(STROKE_PRIM_TYPE_JOINT_BEVEL);
+			if (jointMiter)
+				drawElements(STROKE_PRIM_TYPE_JOINT_MITER);
 
 			glUseProgram(programs[PRG_RAST_STROKE_QUAD]);
 			glUniform1f(uniforms[UNI_RAST_STROKE_QUAD_HALFWIDTH], halfWidth);
@@ -427,6 +441,10 @@ using namespace shared;
 			glUseProgram(programs[PRG_RAST_STROKE_ARC]);
 			glUniform1f(uniforms[UNI_RAST_STROKE_ARC_HALFWIDTH], halfWidth);
 			drawElementsNZ(STROKE_PRIM_TYPE_ARC);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glCullFace(GL_FRONT);
+			if (jointRound)
+				drawElements(STROKE_PRIM_TYPE_JOINT_ROUND);
 		}
 
 		//Safely supports up to 127 self intersections
@@ -505,9 +523,15 @@ using namespace shared;
 
 				if (closePath)
 				{
-					//Add closing geometry to the strokes
-					//lineTo(getFirstVertex().x, getFirstVertex().y);
-					//addJointBevel(mCursor-2, mBase+1);
+					glm::vec2	p0(getPos(mCursor)), p1(getPos(mBase)), n(calcOffset(p0, p1));
+					
+					VGuint i0 = addVertex(StrokeVertex(p0, n));
+					VGuint i1 = addVertex(StrokeVertex(p1, n));
+					
+					addStroke(i0, i1, mBase);
+					addJointBevel(mBase, i1, mBaseN);
+					addJointMiter(mBase, i1, mBaseN);
+					addJointRound(mBase, i1, mBaseN);
 				}
 				else
 				{
@@ -532,7 +556,7 @@ using namespace shared;
 				setVertex(i0+1, StrokeVertex(p1, n));
 				setVertex(i0+2, StrokeVertex(p1));
 				
-				addStroke(mCursor, i0, i0+1, i0+2);
+				addStroke(i0, i0+1, i0+2);
 			}
 
 			//Requires 3 vertices, first should be the same as the last in previous primitive
@@ -540,29 +564,25 @@ using namespace shared;
 			{
 				assert(mBase   != InvalidIndex);
 				assert(mCursor != InvalidIndex);
-				assert(getPos(mCursor)==v[0]);
+				assert(glm::equal(getPos(mCursor), v[0]));
 
 				glm::vec2	n01(calcOffset(v[0], v[1])), n12(calcOffset(v[1], v[2]));
 				glm::vec2	n012(calcOffsetN(n01, n12));
 				
 				VGuint i0, end;
 
-				reserveRange(3, i0, end);
+				reserveRange(4, i0, end);
 
 				setVertex(i0+0, StrokeVertex(v[0],  n01, glm::vec3(0.0f, 0.0f, 0.0f)));
 				setVertex(i0+1, StrokeVertex(v[1], n012, glm::vec3(0.5f, 0.0f, 0.0f)));
 				setVertex(i0+2, StrokeVertex(v[2],  n12, glm::vec3(1.0f, 1.0f, 0.0f)));
+				
+				addPrim(STROKE_PRIM_TYPE_QUAD, i0, i0+1, i0+2);
 
-				addPrim(FILL_PRIM_TYPE_QUAD, i0, i0+1, i0+2);
-				addStroke(mCursor, i0, i0+1, i0+2);
+				end = addVertex(StrokeVertex(v[2]));
+				addStroke(i0, i0+2, end);
 			}
 
-			void addSimpleCubic(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
-			{
-				addPrim(STROKE_PRIM_TYPE_CUBIC, i0, i1, i2);
-				addPrim(STROKE_PRIM_TYPE_CUBIC, i2, i3, i0);
-			}
-			
 			//Requires 4 vertices, first should be the same as the last in previous primitive
 			void cubicTo(const Array<glm::vec2>& v)
 			{
@@ -598,21 +618,23 @@ using namespace shared;
 
 				for (VGuint i=begin; i<end; i+=4)
 				{
-					addSimpleCubic(i, i+1, i+2, i+3);
-					addPrim(STROKE_PRIM_TYPE_TRI, begin, i, i+3);
+					addPrim(STROKE_PRIM_TYPE_CUBIC, i+0,   i+1, i+2);
+					addPrim(STROKE_PRIM_TYPE_CUBIC, i+2,   i+3, i+0);
+					//At begin cubic explicit equation evaluates to 0 so next line is always correct
+					addPrim(STROKE_PRIM_TYPE_CUBIC, begin, i+0, i+3);  //Triangle but drawn with cubic shader 
 				}
 
 				VGuint i0 = addVertex(StrokeVertex(v[3]));
 
-				addStroke(mCursor, begin, end, i0);
+				addStroke(begin, end, i0);
 			}
 
-			void arcTo(VGPathSegment type, const glm::vec2& radius, VGfloat angle, const glm::vec2& p1)
+			void arcTo(VGPathSegment type, const glm::vec2& radius, VGfloat angle, const glm::vec2& p0, const glm::vec2& p1)
 			{
 				Array<glm::vec2>	pos;
 				Array<glm::vec3>	tc;
 
-				arcTriVertices(type, radius, angle, getPos(mCursor), p1, pos, tc);
+				arcTriVertices(type, radius, angle, p0, p1, pos, tc);
 				
 				assert(pos.size()==tc.size());
 
@@ -634,16 +656,14 @@ using namespace shared;
 					setVertex(begin+i, StrokeVertex(pos[i], n, tc[i]));
 				}
 
-				for (VGuint i=begin; i<end-1; ++i)
+				for (VGuint i=begin; i<end-1; i+=2)
 				{
-					addPrim(FILL_PRIM_TYPE_ARC,  i,     i+1, i+2);
-					addPrim(FILL_PRIM_TYPE_TRI,  begin, i,   i+2);
+					addPrim(STROKE_PRIM_TYPE_ARC,  i,     i+1, i+2);
+					addPrim(STROKE_PRIM_TYPE_ARC,  begin, i,   i+2);  //Triangle but drawn with arc shader 
 				}
 
 				VGuint i0 = addVertex(p1);
-
-				addStroke(mCursor, begin, end, i0);
-
+				addStroke(begin, end, i0);
 			}
 			
 			void copyDataTo(StrokeGeometry& strokeGeom)
@@ -669,42 +689,68 @@ using namespace shared;
 
 		private:
 			//Order of indices is very important!!!
-			void addStroke(VGuint i0, VGuint i1, VGuint i2, VGuint i3)
+			void addStroke(VGuint i1, VGuint i2, VGuint i3)
 			{
-				addPrim(STROKE_PRIM_TYPE_TRI, i0, i1, i2);
-				addPrim(STROKE_PRIM_TYPE_TRI, i0, i2, i3);
+				addPrim(STROKE_PRIM_TYPE_TRI, mCursor, i1, i2);
+				addPrim(STROKE_PRIM_TYPE_TRI, mCursor, i2, i3);
 
 				if (isFirstPrim())
 				{
+					mBaseN = i1;
 					//addCapButt(mCursor)
 					//addCapRound(mCursor)
 				}
 				else
 				{
-					//addJointBevel(mCursor);
-					//addJointMiter(mCursor);
-					//addJointRound(mCursor);
+					addJointBevel(mCursor, mCursorN, i1);
+					addJointMiter(mCursor, mCursorN, i1);
+					addJointRound(mCursor, mCursorN, i1);
 				}
 
-				mCursor = i3;
+				mCursorN = i2;
+				mCursor  = i3;
 			}
 
-			void addJointBevel(VGuint center)
+			void addJointBevel(VGuint i0, VGuint i1, VGuint i2)
 			{
-				addJointBevel(center-2, center+1);
+				addPrim(STROKE_PRIM_TYPE_JOINT_BEVEL, i0, i1, i2);
 			}
 
-			void addJointBevel(VGuint first, VGuint second)
+			void addJointMiter(VGuint i0, VGuint i1, VGuint i2)
 			{
-				glm::vec2	v1 = mVertices[first].n,
-							v2 = mVertices[second].n;
-				
-				float		det = v1.x*v2.y - v1.y*v2.x;
-				
-				if (det<0)
-					addPrim(STROKE_PRIM_TYPE_JOINT_BEVEL, first,   second,   second-1);
-				else
-					addPrim(STROKE_PRIM_TYPE_JOINT_BEVEL, first+1, second+1, second-1);
+				glm::vec2	n1(getNorm(i1)), n2(getNorm(i2)), n(calcOffsetN(n1, n2));
+
+				VGuint		idx = addVertex(StrokeVertex(getPos(i0), n));
+
+				addPrim(STROKE_PRIM_TYPE_JOINT_MITER, i1, idx, i2);
 			}
+
+			void addJointRound(VGuint i0, VGuint i1, VGuint i2)
+			{
+				glm::vec2	n1  = getNorm(i1),
+							n2  = getNorm(i2),
+							nm  = glm::normalize(0.5f*(n1+n2)),
+							n1m = calcOffsetN(n1, nm),
+							nm2 = calcOffsetN(nm, n2);
+
+				VGuint	begin, end;
+
+				reserveRange(5, begin, end);
+
+				glm::vec2	p0(getPos(i0));
+
+				setVertex(begin+0, StrokeVertex(p0, n1,  glm::vec3(n1,  0)));
+				setVertex(begin+1, StrokeVertex(p0, n1m, glm::vec3(n1m, 0)));
+				setVertex(begin+2, StrokeVertex(p0, nm,  glm::vec3(nm,  0)));
+				setVertex(begin+3, StrokeVertex(p0, nm2, glm::vec3(nm2, 0)));
+				setVertex(begin+4, StrokeVertex(p0, n2,  glm::vec3(n2,  0)));
+
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+1, begin+2);
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin+2, begin+3, begin+4);
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+2, begin+4);  //Triangle but drawn with arc shader 
+			}
+
+		private:
+			VGuint	mBaseN, mCursorN;
 	};
 }
