@@ -158,13 +158,6 @@
 			<File
 				RelativePath=".\Context.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\Context.h"
@@ -178,23 +171,8 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\GPUData.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\GPUData.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Paint.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\Paint.h"
@@ -210,13 +188,6 @@
 			<File
 				RelativePath=".\PaintObject.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\PaintObject.h"
@@ -232,13 +203,6 @@
 			<File
 				RelativePath=".\Path.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\Path.h"
@@ -254,13 +218,6 @@
 			<File
 				RelativePath=".\PathObject.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\PathObject.h"
@@ -284,13 +241,6 @@
 			<File
 				RelativePath=".\VG.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\VG.h"
@@ -334,6 +284,10 @@
 			Name="Impl"
 			>
 			<File
+				RelativePath=".\GeometryBuilders.h"
+				>
+			</File>
+			<File
 				RelativePath=".\impl\Path.cpp"
 				>
 				<FileConfiguration
@@ -357,6 +311,14 @@
 			</File>
 			<File
 				RelativePath=".\impl\Path.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Rasterizer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Rasterizer.h"
 				>
 			</File>
 		</Filter>

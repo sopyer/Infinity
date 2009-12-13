@@ -2,7 +2,8 @@
 
 #include <VG\path.h>
 #include <VG\Context.h>
-#include <VG\GPUData.h>
+#include <VG\Rasterizer.h>
+#include <VG\GeometryBuilders.h>
 #include <VG\SharedResources.h>
 
 GLchar buf[1024];
@@ -22,8 +23,8 @@ class VGSample: public UI::GLFWStage
 			glLoadIdentity();
 			gluPerspective(35.0, (float)mWidth/mHeight,1,2048);
 
-			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, /*VG_LINE_TO_ABS,*/ VG_QUAD_TO_ABS, VG_CLOSE_PATH};
-			float data[] = {150, 100, 150, 0, 50, 100, /*0, 0,*/ 0, 50, 50, 0};
+			ubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_QUAD_TO_ABS, VG_CLOSE_PATH};
+			float data[] = {150, 100, 150, 0, 50, 100, 0, 0, 0, 50, 50, 0};
 
 			ubyte quadTest[] = {VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float quadData[] = {50, 100, 100, 0};
@@ -66,19 +67,19 @@ class VGSample: public UI::GLFWStage
 			//!!!!!BUG!!!!!
 			//float cubicData[] = {0, 0, 50, 50, 70, 0, 45, 30};
 
-			ubyte sampleTest[] = {/*VG_MOVE_TO_ABS,
+			ubyte sampleTest[] = {VG_MOVE_TO_ABS,
 								  VG_LINE_TO_ABS,
 								  VG_LINE_TO_ABS,
 								  VG_LINE_TO_ABS,
-								  VG_CLOSE_PATH,*/
+								  VG_CLOSE_PATH,
 								  VG_MOVE_TO_ABS,
 								  VG_CUBIC_TO_ABS,
 								  VG_CUBIC_TO_ABS, 
 								  VG_CLOSE_PATH};
-			float sampleData[] = {/*20, 20,
+			float sampleData[] = {20, 20,
 								  20, 80,
 								  80, 80,
-								  80, 20,*/
+								  80, 20,
 								  0,  0,
 								  99, 0,  50, 50,  99, 99,
 								  0, 99,  50, 50,  0, 0};
@@ -96,28 +97,30 @@ class VGSample: public UI::GLFWStage
 
 			impl::shared::Acquire();
 
-			impl::FillGeometryBuilder	fillBuilder;
+			impl::buildFillGeometry(ARRAY_SIZE(segs), segs, data, fill);
+
+			//impl::FillGeometryBuilder	fillBuilder;
 
 			Array<glm::vec2>	v;
 
-			fillBuilder.begin(0,0);
-			fillBuilder.lineTo(150, 100);
-			fillBuilder.lineTo(150, 0);
-			v.clear();
-			v.pushBack(glm::vec2(50, 100));
-			v.pushBack(glm::vec2(0, 50));
-			v.pushBack(glm::vec2(50, 0));
-			fillBuilder.addQuad(v);
-			fillBuilder.lineTo(50, 100);
-			fillBuilder.lineTo(50, 0);
-			fillBuilder.lineTo(50, -100);
-			fillBuilder.end();
+			//fillBuilder.begin(0,0);
+			//fillBuilder.lineTo(150, 100);
+			//fillBuilder.lineTo(150, 0);
+			//v.clear();
+			//v.pushBack(glm::vec2(50, 100));
+			//v.pushBack(glm::vec2(0, 50));
+			//v.pushBack(glm::vec2(50, 0));
+			//fillBuilder.addQuad(v);
+			//fillBuilder.lineTo(50, 100);
+			//fillBuilder.lineTo(50, 0);
+			//fillBuilder.lineTo(50, -100);
+			//fillBuilder.end();
 
-			v.clear();
-			v.pushBack(glm::vec2(50, 0));
-			v.pushBack(glm::vec2(100, -50));
-			v.pushBack(glm::vec2(50, -100));
-			fillBuilder.addQuad(v);
+			//v.clear();
+			//v.pushBack(glm::vec2(50, 0));
+			//v.pushBack(glm::vec2(100, -50));
+			//v.pushBack(glm::vec2(50, -100));
+			//fillBuilder.addQuad(v);
 
 			//fillBuilder.begin(0, 0);
 			//fillBuilder.arcTo(arc::LARGE_CW, 50, 50, 0, 100, 0);
@@ -131,9 +134,14 @@ class VGSample: public UI::GLFWStage
 			//fillBuilder.lineTo(0, 0);
 			//fillBuilder.end();
 
-			fillBuilder.copyDataTo(fill);
+			//fillBuilder.copyDataTo(fill);
 
 			impl::StrokeGeometryBuilder	strokeBuilder;
+
+			VGubyte	ss[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS,
+							VG_QUAD_TO_ABS, VG_SQUAD_TO_ABS, VG_CLOSE_PATH};
+			float	ssd[] = {150, 100, 150, 0, 50, 100, 0, 50, 50, 0, 50, -100};
+			impl::buildStrokeGeometry(ARRAY_SIZE(ss), ss, ssd, stroke);
 
 			//strokeBuilder.begin(50,100);
 			////strokeBuilder.begin(0,0);
@@ -144,38 +152,38 @@ class VGSample: public UI::GLFWStage
 			////strokeBuilder.quadTo(100, -50, 50, -100);
 			//strokeBuilder.end(/*true*/false);
 
-			strokeBuilder.begin(0,0);
-			strokeBuilder.lineTo(150, 100);
-			strokeBuilder.lineTo(150, 0);
-			strokeBuilder.lineTo(50, 100);
-			v.clear();
-			v.pushBack(glm::vec2(50, 100));
-			v.pushBack(glm::vec2(0, 50));
-			v.pushBack(glm::vec2(50, 0));
-			strokeBuilder.quadTo(v);
-			v.clear();
-			v.pushBack(glm::vec2(50, 0));
-			v.pushBack(glm::vec2(100, -50));
-			v.pushBack(glm::vec2(50, -100));
-			strokeBuilder.quadTo(v);
-			strokeBuilder.end(true);
+			//strokeBuilder.begin(0,0);
+			//strokeBuilder.lineTo(150, 100);
+			//strokeBuilder.lineTo(150, 0);
+			//strokeBuilder.lineTo(50, 100);
+			//v.clear();
+			//v.pushBack(glm::vec2(50, 100));
+			//v.pushBack(glm::vec2(0, 50));
+			//v.pushBack(glm::vec2(50, 0));
+			//strokeBuilder.quadTo(v);
+			//v.clear();
+			//v.pushBack(glm::vec2(50, 0));
+			//v.pushBack(glm::vec2(100, -50));
+			//v.pushBack(glm::vec2(50, -100));
+			//strokeBuilder.quadTo(v);
+			//strokeBuilder.end(true);
 
 			//strokeBuilder.begin(0, 0);
-			//v.clear();
-			//v.pushBack(glm::vec2(0, 0));
-			//v.pushBack(glm::vec2(50, 50));
-			//v.pushBack(glm::vec2(100, -50));
-			//v.pushBack(glm::vec2(150, 0));
-			//strokeBuilder.cubicTo(v);
+			////v.clear();
+			////v.pushBack(glm::vec2(0, 0));
+			////v.pushBack(glm::vec2(50, 50));
+			////v.pushBack(glm::vec2(100, -50));
+			////v.pushBack(glm::vec2(150, 0));
+			////strokeBuilder.cubicTo(v);
 			////strokeBuilder.arcTo(VG_LCWARC_TO, glm::vec2(50, 50), 0, glm::vec2(0, 0), glm::vec2(100, 0));
-			////strokeBuilder.arcTo(VG_LCWARC_TO, glm::vec2(80, 50), 45, glm::vec2(0, 0), glm::vec2(100, 0));
+			//strokeBuilder.arcTo(VG_LCWARC_TO, glm::vec2(80, 50), 45, glm::vec2(0, 0), glm::vec2(100, 0));
 			////strokeBuilder.cubicTo(50, 50, 100, -50, 150, 0);
 			////strokeBuilder.lineTo(150, 0);
 			////strokeBuilder.lineTo(50, 100);
 			////strokeBuilder.lineTo(0, 0);
-			//strokeBuilder.end(true);
+			//strokeBuilder.end(false);
 
-			strokeBuilder.copyDataTo(stroke);
+			//strokeBuilder.copyDataTo(stroke);
 		}
 
 		~VGSample()

@@ -1,199 +1,5 @@
-#pragma once
-
-#include <vector>
-#include <glm/glm.h>
-#include <glm/glmext.h>
-#include <vg/openvg.h>
-#include <utils.h>
-#include ".\types.h"
-#include "SharedResources.h"
-#include "Cubic.h"
-
 namespace impl
 {
-	struct FillVertex
-	{
-		glm::vec2	p;
-		glm::vec3	tc;
-
-		FillVertex(const glm::vec2& _p, const glm::vec3& _tc):
-			p(_p), tc(_tc)
-		{}
-
-		FillVertex(const glm::vec2& _p, const float tcx, const float tcy):
-			p(_p), tc(tcx, tcy, 0)
-		{}
-
-		FillVertex(const float x, const float y, const float tcx, const float tcy)
-			: p(x, y), tc(tcx, tcy, 0)
-		{}
-		FillVertex(const glm::vec2& _p): p(_p)
-		{}
-
-		FillVertex(const float x, const float y): p(x, y)
-		{}
-
-		FillVertex()
-		{}
-	};
-
-	struct StrokeVertex
-	{
-		glm::vec2	p;
-		glm::vec2	n;
-		glm::vec3	tc;
-
-		StrokeVertex(const glm::vec2& _p, const glm::vec2& _n, const glm::vec3& _tc):
-			p(_p), n(_n), tc(_tc)
-		{}
-
-		StrokeVertex(const glm::vec2& _p, const glm::vec2& _n):
-			p(_p), n(_n)
-		{}
-
-		StrokeVertex(const glm::vec2& _p, const glm::vec3& _tc):
-			p(_p), tc(_tc)
-		{}
-
-		StrokeVertex(const glm::vec2& _p): p(_p)
-		{}
-
-		StrokeVertex()
-		{}
-	};
-
-	typedef Array<VGuint>	IndexVector;
-	
-	template<class VertexType, VGuint PRIM_COUNT>
-	struct Geometry
-	{
-		Array<VertexType>	vertices;
-		IndexVector			indices;
-		
-		GLsizei	offset[PRIM_COUNT], count[PRIM_COUNT];
-		
-		glm::vec2	mMin, mMax;
-		
-		static const VGuint VertexSize = sizeof(VertexType);
-
-		void drawElements(VGuint primType) const
-		{
-			assert(primType<PRIM_COUNT);
-			if (count[primType])
-				glDrawElements(GL_TRIANGLES, count[primType], GL_UNSIGNED_INT, &indices[0]+offset[primType]);
-		}
-
-		void drawElementsNZ(VGuint primType)
-		{
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glCullFace(GL_FRONT);
-			drawElements(primType);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			glCullFace(GL_BACK);
-			drawElements(primType);
-		}
-	};
-
-	enum FillPrimitiveTypes
-	{
-		FILL_PRIM_TYPE_TRI,
-		FILL_PRIM_TYPE_ARC,
-		FILL_PRIM_TYPE_QUAD,
-		FILL_PRIM_TYPE_CUBIC,
-		FILL_PRIM_TYPE_COUNT,
-	};
-
-using namespace shared;
-
-	struct FillGeometry: public Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>
-	{
-		void RasterizeEvenOdd()
-		{
-			if (vertices.empty())
-				return;
-
-			FillVertex& vtx = vertices[0];
-			
-			glPushAttrib(GL_ALL_ATTRIB_BITS);
-			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_CULL_FACE);
-			
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_ALWAYS, 0, 1);
-			glStencilMask(0x01);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
-
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
-
-			glUseProgram(0);
-			drawElements(FILL_PRIM_TYPE_TRI);
-
-			glClientActiveTexture(GL_TEXTURE0);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
-
-			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-			drawElements(FILL_PRIM_TYPE_QUAD);
-
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
-			drawElements(FILL_PRIM_TYPE_CUBIC);
-
-			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-			drawElements(FILL_PRIM_TYPE_ARC);
-
-			glPopClientAttrib();
-			glPopAttrib();
-		}
-
-		//Safetly supports up to 127 self intersections
-		void RasterizeNonZero()
-		{
-			if (vertices.empty())
-				return;
-
-			FillVertex& vtx = vertices[0];
-
-			glPushAttrib(GL_ALL_ATTRIB_BITS);
-			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-
-			glEnable(GL_CULL_FACE);
-			glEnable(GL_DEPTH_TEST);
-			
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
-			glStencilMask(0xFF);
-
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
-
-			glUseProgram(0);
-			drawElementsNZ(FILL_PRIM_TYPE_TRI);
-
-			glClientActiveTexture(GL_TEXTURE0);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
-
-			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-			drawElementsNZ(FILL_PRIM_TYPE_QUAD);
-
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
-			drawElementsNZ(FILL_PRIM_TYPE_CUBIC);
-
-			glUseProgram(programs[PRG_RAST_FILL_ARC]);
-			drawElementsNZ(FILL_PRIM_TYPE_ARC);
-
-			glPopClientAttrib();
-			glPopAttrib();
-		}
-	};
-
 	template<class VertexType, VGuint PRIM_COUNT>
 	class GeometryBuilder
 	{
@@ -349,8 +155,7 @@ using namespace shared;
 				{
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0,    i0+1, i0+2);
 					addPrim(FILL_PRIM_TYPE_CUBIC, i0+2,  i0+3, i0+0);
-					//At begin cubic explicit equation evaluates to 0 so next line is always correct
-					addPrim(FILL_PRIM_TYPE_CUBIC, begin, i0,   i0+3); //Triangle but drawn with cubic shader 
+					addPrim(FILL_PRIM_TYPE_TRI,  begin, i0,   i0+3);
 				}
 			}
 
@@ -376,7 +181,7 @@ using namespace shared;
 				for (VGuint i0=begin; i<end-1; i+=2)
 				{
 					addPrim(FILL_PRIM_TYPE_ARC,  i0+0,  i0+1, i0+2);
-					addPrim(FILL_PRIM_TYPE_ARC,  begin, i0+0, i0+2); //Triangle but drawn with arc shader
+					addPrim(FILL_PRIM_TYPE_TRI,  begin, i0+0, i0+2);
 				}
 			}
 			
@@ -401,106 +206,6 @@ using namespace shared;
 				fillGeom.mMax = mMax;
 			}
 
-	};
-
-	enum StrokePrimitiveTypes
-	{
-		STROKE_PRIM_TYPE_TRI,
-		STROKE_PRIM_TYPE_ARC,
-		STROKE_PRIM_TYPE_QUAD,
-		STROKE_PRIM_TYPE_CUBIC,
-		STROKE_PRIM_TYPE_JOINT_BEVEL,
-		STROKE_PRIM_TYPE_JOINT_MITER,
-		STROKE_PRIM_TYPE_JOINT_ROUND,
-		STROKE_PRIM_TYPE_CAP_ROUND,
-		STROKE_PRIM_TYPE_CAP_BEVEL,
-		STROKE_PRIM_TYPE_COUNT,
-	};
-
-	struct StrokeGeometry: public Geometry<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
-	{
-		void RasterizePrimitives(float halfWidth, bool jointMiter = false, bool jointRound = true)
-		{
-			glUseProgram(programs[PRG_RAST_STROKE_TRI]);
-			glUniform1f(uniforms[UNI_RAST_STROKE_TRI_HALFWIDTH], halfWidth);
-			drawElementsNZ(STROKE_PRIM_TYPE_TRI);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glCullFace(GL_FRONT);
-			drawElements(STROKE_PRIM_TYPE_JOINT_BEVEL);
-			if (jointMiter)
-				drawElements(STROKE_PRIM_TYPE_JOINT_MITER);
-
-			glUseProgram(programs[PRG_RAST_STROKE_QUAD]);
-			glUniform1f(uniforms[UNI_RAST_STROKE_QUAD_HALFWIDTH], halfWidth);
-			drawElementsNZ(STROKE_PRIM_TYPE_QUAD);
-
-			glUseProgram(programs[PRG_RAST_STROKE_CUBIC]);
-			glUniform1f(uniforms[UNI_RAST_STROKE_CUBIC_HALFWIDTH], halfWidth);
-			drawElementsNZ(STROKE_PRIM_TYPE_CUBIC);
-
-			glUseProgram(programs[PRG_RAST_STROKE_ARC]);
-			glUniform1f(uniforms[UNI_RAST_STROKE_ARC_HALFWIDTH], halfWidth);
-			drawElementsNZ(STROKE_PRIM_TYPE_ARC);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glCullFace(GL_FRONT);
-			if (jointRound)
-				drawElements(STROKE_PRIM_TYPE_JOINT_ROUND);
-		}
-
-		//Safely supports up to 127 self intersections
-		//We rasterize strokes in 2 passes, which behave differently for different stroke primitives
-		void Rasterize()
-		{
-			if (vertices.empty())
-				return;
-			
-			StrokeVertex& vtx = vertices[0];
-
-			glPushAttrib(GL_ALL_ATTRIB_BITS);
-			glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-
-			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_CULL_FACE);
-			
-			glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
-			glStencilMask(0xFF);
-
- 			// Position
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
-			
-			// Perpendicular
-			glClientActiveTexture(GL_TEXTURE1);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(2, GL_FLOAT, VertexSize, &vtx.n);
-
-			// Rasterization parameters
-			glClientActiveTexture(GL_TEXTURE0);
-			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-			glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
-
-			//Chnaging multiplier of normal change winding for tri primitive
-			//So we need to change front face to make rasterization correct
-			//And for other primitive types we need to change winding to add or remove parts:
-			//We rasterize quad as tri, so for proper stroke we need area between tri edges,
-			//changing normal multiplier in most cases does not change tri winding, only shifts
-			//so if we do not change front face we will have 2 quads one under another
-			//We need to change winding for second quad to add/remove pixels.
-			
-			//First pass
-			glFrontFace(GL_CCW);
-			RasterizePrimitives(5);
-
-			//Second pass
-			glFrontFace(GL_CW);
-			RasterizePrimitives(-5);
-
-			glPopClientAttrib();
-			glPopAttrib();
-		}
 	};
 
 	/* Unlike FillGeometryBuilder all methods should be called between begin/end
@@ -535,7 +240,8 @@ using namespace shared;
 				}
 				else
 				{
-					//generate caps
+					addCaps(getPos(mBase),    getNorm(mBaseN),   perpendicularCCW(getNorm(mBaseN)));
+					addCaps(getPos(mCursor), -getNorm(mCursorN), perpendicularCW (getNorm(mCursorN)));
 				}
 
 				mCursor = mBase=InvalidIndex;
@@ -620,8 +326,7 @@ using namespace shared;
 				{
 					addPrim(STROKE_PRIM_TYPE_CUBIC, i+0,   i+1, i+2);
 					addPrim(STROKE_PRIM_TYPE_CUBIC, i+2,   i+3, i+0);
-					//At begin cubic explicit equation evaluates to 0 so next line is always correct
-					addPrim(STROKE_PRIM_TYPE_CUBIC, begin, i+0, i+3);  //Triangle but drawn with cubic shader 
+					addPrim(STROKE_PRIM_TYPE_TRI,   begin, i+0, i+3);
 				}
 
 				VGuint i0 = addVertex(StrokeVertex(v[3]));
@@ -656,10 +361,9 @@ using namespace shared;
 					setVertex(begin+i, StrokeVertex(pos[i], n, tc[i]));
 				}
 
-				for (VGuint i=begin; i<end-1; i+=2)
+				for (VGuint i=begin+1; i<end; ++i)
 				{
-					addPrim(STROKE_PRIM_TYPE_ARC,  i,     i+1, i+2);
-					addPrim(STROKE_PRIM_TYPE_ARC,  begin, i,   i+2);  //Triangle but drawn with arc shader 
+					addPrim(STROKE_PRIM_TYPE_ARC,  begin, i,   i+1);
 				}
 
 				VGuint i0 = addVertex(p1);
@@ -697,8 +401,6 @@ using namespace shared;
 				if (isFirstPrim())
 				{
 					mBaseN = i1;
-					//addCapButt(mCursor)
-					//addCapRound(mCursor)
 				}
 				else
 				{
@@ -745,9 +447,23 @@ using namespace shared;
 				setVertex(begin+3, StrokeVertex(p0, nm2, glm::vec3(nm2, 0)));
 				setVertex(begin+4, StrokeVertex(p0, n2,  glm::vec3(n2,  0)));
 
-				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+1, begin+2);
-				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin+2, begin+3, begin+4);
-				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+2, begin+4);  //Triangle but drawn with arc shader 
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin, begin+1, begin+2);
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin, begin+2, begin+3);
+				addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin, begin+3, begin+4);
+				//addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+1, begin+2);
+				//addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin+2, begin+3, begin+4);
+				//addPrim(STROKE_PRIM_TYPE_JOINT_ROUND,  begin,   begin+2, begin+4);  //Triangle but drawn with arc shader 
+			}
+
+			void addCaps(const glm::vec2& p, const glm::vec2& n, const glm::vec2& t)
+			{
+				VGuint i0 = addVertex(StrokeVertex(p,  -n, glm::vec3( -n, 0)));
+				VGuint i1 = addVertex(StrokeVertex(p, t-n, glm::vec3(t-n, 0)));
+				VGuint i2 = addVertex(StrokeVertex(p, t+n, glm::vec3(t+n, 0)));
+				VGuint i3 = addVertex(StrokeVertex(p,   n, glm::vec3(  n, 0)));
+
+				addPrim(STROKE_PRIM_TYPE_CAP,  i0, i1, i2);
+				addPrim(STROKE_PRIM_TYPE_CAP,  i0, i2, i3);
 			}
 
 		private:
