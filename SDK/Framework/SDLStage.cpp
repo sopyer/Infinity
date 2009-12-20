@@ -68,7 +68,7 @@ namespace UI
 		SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
 		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );							// colors and doublebuffering
+		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
 		SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, mVSync );							// colors and doublebuffering
 
 		if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
@@ -76,34 +76,21 @@ namespace UI
 			logMessage("Unable to open screen surface: %s\n", SDL_GetError() );		// If Something's Gone Wrong, Report
 			exit(1);															// And Exit
 		}
-
-		//if (!mVSync) glfwOpenWindowHint(GLFW_REFRESH_RATE, 0);
-
-		//if (!glfwOpenWindow((int)mWidth, (int)mHeight, 
-		//					8,8,8,8,//0, 0, 0, 0, 
-		//					mDepthBits, mStencilBits, 
-		//					mFullscreen ? GLFW_FULLSCREEN : GLFW_WINDOW))
-		//{
-		//	glfwTerminate();
-		//	return;
-		//}
 		
-		//glfwSetWindowCloseCallback(SDLStage::closeCallback);
-		//glfwSetKeyCallback(SDLStage::keyCallback);
-		//glfwSetCharCallback(SDLStage::charCallback);
+		SDL_EnableUNICODE(TRUE);
+		SDL_EnableKeyRepeat(33, 33);
 
-		mVG.create();
+		vg::init();
 		mVG.setSize((GLuint)mWidth, (GLuint)mHeight);
 
 		mTimer.start();
 		mInputTicker.onFrame.connect(this, &SDLStage::handleInput);
 		mInputTicker.start();
-
-		//setPos(-mWidth/2, -mHeight/2); //Fix if center of coords is in center of screen
 	}
 
 	SDLStage::~SDLStage()
 	{
+		vg::cleanup();
 		mTimer.stop();
 		SDL_Quit();
 	}
@@ -121,15 +108,20 @@ namespace UI
 					close();
 					break;
 
-				case SDL_KEYDOWN:		
+				case SDL_KEYDOWN:
+					onKeyDown(E.key);
 					break;
 				case SDL_KEYUP:		
+					onKeyUp(E.key);
 					break;
 				case SDL_MOUSEMOTION:
+					onMotion(E.motion);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
+					onTouch(E.button);
 					break;
 				case SDL_MOUSEBUTTONUP:
+					onUntouch(E.button);
 					break;
 			}
 			++i;

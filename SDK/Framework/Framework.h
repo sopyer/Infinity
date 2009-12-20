@@ -5,8 +5,6 @@
 
 #include <UI.h>
 
-#include <loading.h> //Remove later
-
 void logMessage(const char *s,...);
 
 #endif

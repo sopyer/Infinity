@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="SDLmain"
 	ProjectGUID="{DA956FD3-E142-46F2-9DD5-C78BEBB56B7A}"
+	RootNamespace="SDLmain"
 	>
 	<Platforms>
 		<Platform
@@ -157,8 +158,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(SolutionDir)Temp\SDK\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
 			UseOfMFC="0"
@@ -184,7 +185,7 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\include,..\..\include\SDL"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE;WIN32,_DEBUG,_WINDOWS"
-				RuntimeLibrary="2"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=".\Debug/SDLmain.pch"
 				AssemblerListingLocation=".\Debug/"

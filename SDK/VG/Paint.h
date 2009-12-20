@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gl/glee.h>
 #include <VG/OpenVG.h>
 #include ".\types.h"
 

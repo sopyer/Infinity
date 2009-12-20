@@ -16,7 +16,9 @@ class Image: public UI::Actor
 			float w = getWidth(), h = getHeight(),
 				  x = 0, y = 0;
 			glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+			glUseProgram(0);
 			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, mTexture);
 			glBegin(GL_TRIANGLE_STRIP);
 				glTexCoord2f(0, 0);
 				glVertex2f(x, y);
@@ -98,51 +100,66 @@ class Edit: public Label, public sigslot::has_slots<>
 
 		virtual void onKeyDown(const KeyEvent& event/*u32 key*/)
 		{
-			u32 key = event.key;
+			u32 key = event.keysym.sym;
 			// filter for special keys
 			// Enter, quit edition
-			if (key == KeySyms::KeyEnter/*GLFW_KEY_ENTER*/)
+			if (key == SDLK_RETURN/*GLFW_KEY_ENTER*/)
 			{
 				return;
 			}
+			// Regular char, append it to the edited string
+			else if (event.keysym.unicode>=32)
+			{
+				std::string::iterator	where = mText.end();
+				if (mCaretPos < (int)mText.length())
+				{
+					where = mText.begin()+mCaretPos;
+				}
+				char	c;
+				wchar_t	wc = (wchar_t)event.keysym.unicode;
+				_wctomb_l(&c, wc, _create_locale(LC_CTYPE, ".1251"));
+				mText.insert(where, c);
+				mCaretPos++;
+				resetCursor();
+			}
 			// Special keys
-			else if (key >= KeySyms::KeySpecial/*GLFW_KEY_SPECIAL*/)
+			else
 			{
 				switch (key)
 				{
-				case KeySyms::KeyLeft: //GLFW_KEY_LEFT :
+				case SDLK_LEFT: //GLFW_KEY_LEFT :
 					{
 						// move cursor left one char
 						mCaretPos--;
 					} 
 					break;
-				case KeySyms::KeyRight: //GLFW_KEY_RIGHT :
+				case SDLK_RIGHT: //GLFW_KEY_RIGHT :
 					{
 						// move cursor right one char
 						mCaretPos++;
 					} 
 					break;
-				case KeySyms::KeyHome: //GLFW_KEY_HOME :
+				case SDLK_HOME: //GLFW_KEY_HOME :
 					{
 						mCaretPos = 0;
 					} 
 					break;
-				case KeySyms::KeyEnd: //GLFW_KEY_END :
+				case SDLK_END: //GLFW_KEY_END :
 					{
 						mCaretPos = (int)mText.length();
 					} 
 					break;
-				case KeySyms::KeyInsert: //GLFW_KEY_INSERT :
+				case SDLK_INSERT: //GLFW_KEY_INSERT :
 					{
 					} 
 					break;
-				case KeySyms::KeyDel: //GLFW_KEY_DEL :
+				case SDLK_DELETE: //GLFW_KEY_DEL :
 					{
 						if (mCaretPos < (int)mText.length())
 							mText.erase(mText.begin()+mCaretPos);
 					} 
 					break;
-				case KeySyms::KeyBackspace: //GLFW_KEY_BACKSPACE :
+				case SDLK_BACKSPACE: //GLFW_KEY_BACKSPACE :
 					{
 						if (mCaretPos > 0)
 							mText.erase(mText.begin()+mCaretPos-1);
@@ -158,21 +175,6 @@ class Edit: public Label, public sigslot::has_slots<>
 				}
 				resetCursor();
 			}	
-			// Regular char, append it to the edited string
-			else if (event.unicode)
-			{
-				std::string::iterator	where = mText.end();
-				if (mCaretPos < (int)mText.length())
-				{
-					where = mText.begin()+mCaretPos;
-				}
-				char	c;
-				wchar_t	wc = (wchar_t)event.unicode;
-				_wctomb_l(&c, wc, _create_locale(LC_CTYPE, ".1251"));
-				mText.insert(where, c);
-				mCaretPos++;
-				resetCursor();
-			}
 			mCaretPos = std::min(mCaretPos, (int)mText.length());
 			mCaretPos = std::max(mCaretPos, 0);
 		}
@@ -225,10 +227,10 @@ class Button: public Label
 
 	protected:
 		virtual void onTouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
-		{mIsPressed = true;}
+		{mIsPressed = true; onClicked.emit();}
 
 		virtual void onUntouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
-		{mIsPressed = false; onClicked.emit();}
+		{mIsPressed = false;}
 
 		virtual void onEnter()
 		{mIsHover = true;}

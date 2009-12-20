@@ -8,8 +8,6 @@
 
 namespace impl
 {
-	using namespace shared;
-
 	glm::vec2 readVec2(const VGfloat*& ptr)
 	{
 		glm::vec2	res(*ptr, *(ptr+1));

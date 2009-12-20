@@ -8,12 +8,12 @@ namespace vg
 {
 	Context::Context()
 	{
-		impl::shared::Acquire();
+		impl::acquire();
 	}
 
 	Context::~Context()
 	{
-		impl::shared::Release();
+		impl::release();
 	}
 
 	Path Context::createPath(float scale, float bias)
@@ -48,26 +48,26 @@ namespace vg
 		glPopAttrib();
 	}
 
-	void Context::drawPath(Path path, ProgramRef fill)
-	{
-		maskPathRegion(path);
+	//void Context::drawPath(Path path, ProgramRef fill)
+	//{
+	//	maskPathRegion(path);
 
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		
-		glUseProgram(*fill);
+	//	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	//	
+	//	glUseProgram(*fill);
 
-		glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_EQUAL, 1, 1);
+	//	glEnable(GL_STENCIL_TEST);
+	//	glStencilFunc(GL_EQUAL, 1, 1);
 
-		glBegin(GL_QUADS);
-		glVertex2f(path.mObject->min.x, path.mObject->min.y);
-		glVertex2f(path.mObject->max.x, path.mObject->min.y);
-		glVertex2f(path.mObject->max.x, path.mObject->max.y);
-		glVertex2f(path.mObject->min.x, path.mObject->max.y);
-		glEnd();
+	//	glBegin(GL_QUADS);
+	//	glVertex2f(path.mObject->min.x, path.mObject->min.y);
+	//	glVertex2f(path.mObject->max.x, path.mObject->min.y);
+	//	glVertex2f(path.mObject->max.x, path.mObject->max.y);
+	//	glVertex2f(path.mObject->min.x, path.mObject->max.y);
+	//	glEnd();
 
-		glPopAttrib();
-	}
+	//	glPopAttrib();
+	//}
 
 	void Context::destroyPath(Path path)
 	{

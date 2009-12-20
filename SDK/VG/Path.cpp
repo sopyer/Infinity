@@ -1,6 +1,5 @@
 #include <vector>
 #include <glm/glm.h>
-#include <Framework.h>
 
 #include "Path.h"
 #include "PathObject.h"

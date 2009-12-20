@@ -138,9 +138,11 @@ class VGSample: public UI::GLFWStage
 
 			impl::StrokeGeometryBuilder	strokeBuilder;
 
-			VGubyte	ss[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS,
-							VG_QUAD_TO_ABS, VG_SQUAD_TO_ABS, VG_CLOSE_PATH};
-			float	ssd[] = {150, 100, 150, 0, 50, 100, 0, 50, 50, 0, 50, -100};
+			//VGubyte	ss[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS,
+			//				VG_QUAD_TO_ABS, VG_SQUAD_TO_ABS, VG_CLOSE_PATH};
+			//float	ssd[] = {150, 100, 150, 0, 50, 100, 0, 50, 50, 0, 50, -100};
+			VGubyte	ss[] = {VG_QUAD_TO_ABS/*, VG_CLOSE_PATH*/};
+			float	ssd[] = {50, 139, 70, 30};
 			impl::buildStrokeGeometry(ARRAY_SIZE(ss), ss, ssd, stroke);
 
 			//strokeBuilder.begin(50,100);

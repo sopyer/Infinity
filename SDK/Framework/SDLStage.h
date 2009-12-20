@@ -10,7 +10,7 @@ struct SDL_Surface;
 namespace UI
 {
 	//! Refactor initializing code
-	class SDLStage: public Stage, public Singleton<GLFWStage>
+	class SDLStage: public Stage
 	{
 		public:
 			SDLStage();

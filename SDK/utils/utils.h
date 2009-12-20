@@ -51,6 +51,14 @@ struct CArray2
 template<typename T, T val0, T val1>
 T CArray2<T, val0, val1>::ptr[] = {val0, val1};
 
+template<typename T, T val0, T val1, T val2>
+struct CArray3
+{
+	static T	ptr[];
+};
+template<typename T, T val0, T val1, T val2>
+T CArray3<T, val0, val1, val2>::ptr[] = {val0, val1, val2};
+
 //template<size_t val0>
 //struct CArray1
 //{
@@ -67,13 +75,13 @@ T CArray2<T, val0, val1>::ptr[] = {val0, val1};
 //template<size_t val0, size_t val1>
 //const size_t CArray2<val0, val1>::ptr[] = {val0, val1};
 
-template<size_t val0, size_t val1, size_t val2>
-struct CArray3
-{
-	static const size_t	ptr[];
-};
-template<size_t val0, size_t val1, size_t val2>
-const size_t CArray3<val0, val1, val2>::ptr[] = {val0, val1, val2};
+//template<size_t val0, size_t val1, size_t val2>
+//struct CArray3
+//{
+//	static const size_t	ptr[];
+//};
+//template<size_t val0, size_t val1, size_t val2>
+//const size_t CArray3<val0, val1, val2>::ptr[] = {val0, val1, val2};
 
 template<size_t val0, size_t val1, size_t val2, size_t val3>
 struct CArray4

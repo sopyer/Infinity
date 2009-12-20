@@ -11,19 +11,9 @@
 
 #include <ResourceHandle.h>
 
-bool testLoad(GLuint texture);
-void loadTexture(const char* name, GLuint texture);
-
-template<class T>
-class TextureIface
+class TextureRef: public ResourceHandle<gl::Texture2D>
 {
+	typedef ResourceHandle<gl::Texture2D> base;
 public:
-	//operator gl::Texture2D() {return *((T*)this);}
-
-	void create(const char* name)
-	{
-		loadTexture(name, (GLuint)*(T*)this);
-	}
+	void create(const char* name);
 };
-
-typedef ResourceHandle<gl::Texture2D, TextureIface> TextureRef;

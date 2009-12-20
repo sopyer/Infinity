@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <glm/glm.h>
-#include <Framework.h>
+#include <gl/glee.h>
 #include <vg/openvg.h>
 #include ".\types.h"
 #include "VertexTypes.h"
@@ -19,7 +19,7 @@ namespace vg
 		int		dataHint;
 
 		/* Raw data */
-		std::vector<u8>		segs;
+		std::vector<VGbyte>		segs;
 		std::vector<float>	data;
 
 		/* Rendering Data */
@@ -113,7 +113,7 @@ namespace vg
 		void lineTo(float x, float y);
 		void quadTo(float x1, float y1, float x2, float y2);
 		void cubicTo(float x1, float y1, float x2, float y2, float x3, float y3);
-		void arcTo(u8 segment, float rx, float ry, float angle, float xe, float ye);
+		void arcTo(VGbyte segment, float rx, float ry, float angle, float xe, float ye);
 
 		void clear();
 

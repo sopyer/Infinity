@@ -20,7 +20,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)Temp\Samples\$(ProjectName)\$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="1"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,8 +40,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;GLEW_STATIC;FTGL_LIBRARY_STATIC;GLFW_DLL;$(NOINHERIT)"
+				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\External\SDL\include"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FTGL_LIBRARY_STATIC;$(NOINHERIT)"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

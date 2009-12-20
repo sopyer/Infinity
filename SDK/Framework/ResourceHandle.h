@@ -37,8 +37,8 @@ class ResourceIndex//: public Singleton< ResourceIndex<T> >
         }
 
     private:
-        typedef std::map<std::string, T*>  IndexType;
-        typedef typename IndexType::iterator IndexIt;
+        typedef std::map<std::string, T*>		IndexType;
+        typedef typename IndexType::iterator	IndexIt;
 
         struct pred_search_ptr
         {
@@ -55,8 +55,8 @@ class ResourceIndex//: public Singleton< ResourceIndex<T> >
         IndexType   mIndex;
 };
 
-template<class T, template<class> class Iface>
-class ResourceHandle: public Iface< ResourceHandle<T, Iface> >
+template<class T>
+class ResourceHandle
 {
 	private:
 		struct Holder
@@ -89,19 +89,6 @@ class ResourceHandle: public Iface< ResourceHandle<T, Iface> >
             return *this;
         }
 
-        void create(const char* name)
-        {
-            release();
-
-            assign(mRegistry.find(name));
-            if (!mObject)
-            {
-                assign(new Holder());
-                Iface< ResourceHandle<T, Iface> >::create(name);
-                mRegistry.add(name, mObject);
-            }
-        }
-
         template<class U>
         operator U()
         {return mObject->mResource;}
@@ -121,7 +108,22 @@ class ResourceHandle: public Iface< ResourceHandle<T, Iface> >
         {return mObject;}
 #endif
 
-    private:
+	protected:
+		template<class Constructor>
+        void create(const char* name, Constructor& ctor)
+        {
+            release();
+
+            assign(mRegistry.find(name));
+            if (!mObject)
+            {
+                assign(new Holder());
+                ctor(mObject->mResource);
+                mRegistry.add(name, mObject);
+            }
+        }
+
+	private:
         template<class U>
         void assign(U other)
         {ResourceHandle(other).swap(*this);}
@@ -147,25 +149,25 @@ class ResourceHandle: public Iface< ResourceHandle<T, Iface> >
         static Registry mRegistry;
 };
 
-template<class T, template<class> class Iface>
-typename ResourceHandle<T, Iface>::Registry ResourceHandle<T, Iface>::mRegistry;
+template<class T>
+typename ResourceHandle<T>::Registry ResourceHandle<T>::mRegistry;
 
-template<class T, template<class> class Iface> inline bool operator==(ResourceHandle<T, Iface> const & a, ResourceHandle<T, Iface> const & b)
+template<class T> inline bool operator==(ResourceHandle<T> const & a, ResourceHandle<T> const & b)
 {
     return a.get() == b.get();
 }
 
-template<class T, template<class> class Iface> inline bool operator!=(ResourceHandle<T, Iface> const & a, ResourceHandle<T, Iface> const & b)
+template<class T> inline bool operator!=(ResourceHandle<T> const & a, ResourceHandle<T> const & b)
 {
     return a.get() != b.get();
 }
 
-template<class T, template<class> class Iface> inline bool operator<(ResourceHandle<T, Iface> const & a, ResourceHandle<T, Iface> const & b)
+template<class T> inline bool operator<(ResourceHandle<T> const & a, ResourceHandle<T> const & b)
 {
     return std::less<T *>()(a.get(), b.get());
 }
 
-template<class T, template<class> class Iface> void swap(ResourceHandle<T, Iface> & lhs, ResourceHandle<T, Iface> & rhs)
+template<class T> void swap(ResourceHandle<T> & lhs, ResourceHandle<T> & rhs)
 {
     lhs.swap(rhs);
 }

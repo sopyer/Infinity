@@ -2,9 +2,9 @@
 
 #include <vector>
 #include <glm/glm.h>
-#include <Framework.h>
 #include <vg/openvg.h>
 #include ".\types.h"
+#include <glClasses.h>
 
 namespace vg
 {

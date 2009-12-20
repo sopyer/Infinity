@@ -100,8 +100,8 @@ class GUISample: public UI::SDLStage
 		void onUpdate(u32 frame)
 		{
 			//logMessage("Time: %d\n", mTimer.getTime());
-			if( glfwGetKey(KeySyms::KeyESC/*GLFW_KEY_ESC*/) )
-				close();
+			//if( glfwGetKey(KeySyms::KeyESC/*GLFW_KEY_ESC*/) )
+			//	close();
 		}
 
 		void onMoveDog()
@@ -132,7 +132,7 @@ class GUISample: public UI::SDLStage
 		OffsetAnimation	mMover;
 };
 
-int main()
+extern "C" int main(int argc, char** argv)
 {
 	GUISample app;
 

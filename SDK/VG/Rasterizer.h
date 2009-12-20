@@ -119,6 +119,7 @@ namespace impl
 		void RasterizeNonZero();
 	};
 
+	//Strokes for quads and cubics essentially are approximations and not a good ones - they would not work in some cases
 	struct StrokeGeometry: public Geometry<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
 	{
 		void RasterizePrimitives(float halfWidth, bool jointMiter = false, bool jointRound = true);

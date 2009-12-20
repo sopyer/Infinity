@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <glm/glm.h>
-#include <Framework.h>
+#include <gl/glee.h>
 #include <vg/openvg.h>
 #include ".\types.h"
 
@@ -18,7 +18,7 @@ namespace vg
 			~Context();
 
 			Path createPath(float scale, float bias);
-			void drawPath(Path path, ProgramRef fill);
+			//void drawPath(Path path, ProgramRef fill);
 			void drawPath(Path path, Paint fill);
 			void destroyPath(Path path);
 

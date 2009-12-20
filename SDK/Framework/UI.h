@@ -2,7 +2,7 @@
 #	define __UI_H_INCLUDED__
 
 #include <sigslot.h>
-#include <gl\glfw.h>
+//#include <gl\glfw.h>
 #include <gl\glee.h>
 
 #include <..\vfs++\vfs++.h>
@@ -28,7 +28,7 @@ namespace UI
 
 #	include <Actor.h>
 #	include <Container.h>
-#	include <GLFWStage.h>
+//#	include <GLFWStage.h>
 #	include <SDLStage.h>
 
 #endif

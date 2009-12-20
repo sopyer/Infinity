@@ -1,3 +1,4 @@
+#include <cassert>
 #include "PathObject.h"
 #include "Cubic.h"
 
@@ -502,7 +503,7 @@ namespace vg
 	{
 	}
 
-	void PathObject::arcTo(u8 segment, float rx, float ry, float angle, float xe, float ye)
+	void PathObject::arcTo(VGbyte segment, float rx, float ry, float angle, float xe, float ye)
 	{
 	}
 

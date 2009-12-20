@@ -1,9 +1,26 @@
+#include "gl/glee.h"
 #include "VG.h"
+#include "SharedResources.h"
+using namespace impl;
 
 //strange staff fix it!!!!!!!
 //#define _USE_MATH_DEFINES
 #include <cmath>
 #define M_PI       3.14159265358979323846
+
+namespace vg
+{
+	void init()
+	{
+		acquire();
+	}
+
+	void cleanup()
+	{
+		release();
+	}
+}
+
 
 void VG::begin()
 {
@@ -186,37 +203,38 @@ void VG::setPerspectiveProj()
 #define norm255( i ) ( (float) ( i ) / 255.0f )
 
 const char* cWidgetVSSource = {
-    "#version 120\n\
-    \n\
-    void main()\n\
-    {\n\
-		gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n\
-        gl_TexCoord[0] = gl_MultiTexCoord0;\n\
-    }\n\
-    "};
+    "																				\n\
+    void main()																		\n\
+    {																				\n\
+		gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;						\n\
+        gl_TexCoord[0] = gl_MultiTexCoord0;											\n\
+    }																				\n\
+    "
+};
 
 // @@ IC: Use standard GLSL. Do not initialize uniforms.
 	
 const char* cWidgetFSSource = {
-    "#version 120\n\
-    uniform vec4 fillColor /*= vec4( 1.0, 0.0,0.0,1.0)*/;\n\
-    uniform vec4 borderColor /*= vec4( 1.0, 1.0,1.0,1.0)*/;\n\
-    uniform vec2 zones;\n\
-    \n\
-    void main()\n\
-    {\n\
-        float doTurn = float(gl_TexCoord[0].y > 0);\n\
-        float radiusOffset = doTurn * abs( gl_TexCoord[0].z );\n\
-        float turnDir = sign( gl_TexCoord[0].z );\n\
-        vec2 uv = vec2(gl_TexCoord[0].x + turnDir*radiusOffset, gl_TexCoord[0].y);\n\
-        float l = abs( length(uv) - radiusOffset );\n\
-        float a = clamp( l - zones.x, 0.0, 2.0);\n\
-        float b = clamp( l - zones.y, 0.0, 2.0);\n\
-        b = exp2(-2.0*b*b);\n\
-        gl_FragColor = ( fillColor * b + (1.0-b)*borderColor );\n\
-        gl_FragColor.a *= exp2(-2.0*a*a);\n\
-    }\n\
-    "};
+    "																				\n\
+    uniform vec4 uFillColor;														\n\
+    uniform vec4 uBorderColor;														\n\
+    uniform vec2 uZones;															\n\
+																					\n\
+    void main()																		\n\
+    {																				\n\
+        float doTurn       = float(gl_TexCoord[0].y>0);								\n\
+        float radiusOffset = doTurn*abs(gl_TexCoord[0].z);							\n\
+        float turnDir      = sign(gl_TexCoord[0].z);								\n\
+        vec2  uv = vec2(gl_TexCoord[0].x+turnDir*radiusOffset, gl_TexCoord[0].y);	\n\
+        float l  = abs(length(uv) - radiusOffset);									\n\
+        float a  = clamp(l - uZones.x, 0.0, 2.0);									\n\
+        float b  = clamp(l - uZones.y, 0.0, 2.0);									\n\
+        b = exp2(-2.0*b*b);															\n\
+        gl_FragColor = (uFillColor*b + (1.0-b)*uBorderColor);						\n\
+        gl_FragColor.a *= exp2(-2.0*a*a);											\n\
+    }																				\n\
+    "
+};
 
 const static float s_colors[cNbColors][4] =
 {
@@ -257,12 +275,12 @@ const static float s_colors[cNbColors][4] =
 	{ norm255(0), norm255(0), norm255(0), 0.0 },
 };
 
-void VG::drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId, int borderColorId ) const
+void VG::drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId, int borderColorId )
 {
-    glUseProgram(*mWidgetProgram);
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, corner.x - 1, corner.x - 2);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
+	glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], corner.x - 1, corner.x - 2);
 
     float xb = corner.x;
     float yb = corner.y;
@@ -344,12 +362,12 @@ void VG::drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId
     glUseProgram(0);
 }
 
-void VG::drawRoundedRectOutline( const Rect& rect, const Point& corner, int borderColorId ) const
+void VG::drawRoundedRectOutline( const Rect& rect, const Point& corner, int borderColorId )
 {
-    glUseProgram(*mWidgetProgram);
-    glUniform4fv( mFillColorUniform, 1, s_colors[cTranslucent]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, corner.x - 1, corner.x - 2);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[cTranslucent]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], corner.x - 1, corner.x - 2);
 
     float xb = corner.x;
     float yb = corner.y;
@@ -432,13 +450,12 @@ void VG::drawRoundedRectOutline( const Rect& rect, const Point& corner, int bord
     glUseProgram(0);
 }
 
-void VG::drawCircle( const Rect& rect, int fillColorId, int borderColorId ) const
+void VG::drawCircle( const Rect& rect, int fillColorId, int borderColorId )
 {
-    glUseProgram(*mWidgetProgram);
-    
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, (rect.w / 2) - 1, (rect.w / 2) - 2);
+	glUseProgram(programs[PRG_SIMPLE_UI]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], (rect.w / 2) - 1, (rect.w / 2) - 2);
 
 
     float xb = rect.w / 2;
@@ -464,7 +481,7 @@ void VG::drawCircle( const Rect& rect, int fillColorId, int borderColorId ) cons
     glUseProgram(0);
 }
 
-void VG::drawMinus( const Rect& rect, int width, int fillColorId, int borderColorId ) const
+void VG::drawMinus( const Rect& rect, int width, int fillColorId, int borderColorId )
 {
     float xb = width;
     float yb = width;
@@ -477,11 +494,11 @@ void VG::drawMinus( const Rect& rect, int width, int fillColorId, int borderColo
 
     float y1 = rect.y + rect.h * 0.5;
 
-    glUseProgram(*mWidgetProgram);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
     
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, (xb) - 1, (xb) - 2);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], (xb) - 1, (xb) - 2);
 
     glBegin(GL_TRIANGLE_STRIP);
         glTexCoord3f(-xb, -yb, 0);
@@ -508,7 +525,7 @@ void VG::drawMinus( const Rect& rect, int width, int fillColorId, int borderColo
     glUseProgram(0);
 }
 
-void VG::drawPlus( const Rect& rect, int width, int fillColorId, int borderColorId ) const
+void VG::drawPlus( const Rect& rect, int width, int fillColorId, int borderColorId )
 {
     float xb = width;
     float yb = width;
@@ -524,11 +541,11 @@ void VG::drawPlus( const Rect& rect, int width, int fillColorId, int borderColor
     float y1 = rect.y + rect.h * 0.5;
     float y2 = rect.y + rect.h * 0.9;
 
-    glUseProgram(*mWidgetProgram);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
     
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, (xb) - 1, (xb) - 2);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], (xb) - 1, (xb) - 2);
 
  /*   glBegin(GL_TRIANGLE_STRIP);
         glTexCoord3f(-xb, -yb, 0);
@@ -617,7 +634,7 @@ void VG::drawPlus( const Rect& rect, int width, int fillColorId, int borderColor
     glUseProgram(0);
 }
 
-void VG::drawDownArrow( const Rect& rect, int width, int fillColorId, int borderColorId ) const
+void VG::drawDownArrow( const Rect& rect, int width, int fillColorId, int borderColorId )
 {
     float offset = sqrt(2.0f)/2.0f;
    
@@ -636,11 +653,11 @@ void VG::drawDownArrow( const Rect& rect, int width, int fillColorId, int border
     float y0 = rect.y + rect.h * 0.1f + yoff2;
     float y1 = rect.y + rect.h * 0.6f;
 
-    glUseProgram(*mWidgetProgram);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
     
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, (xb) - 1, (xb) - 2);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], (xb) - 1, (xb) - 2);
 
     glBegin(GL_TRIANGLE_STRIP);
         glTexCoord3f(-xb, -yb, 0);
@@ -686,7 +703,7 @@ void VG::drawDownArrow( const Rect& rect, int width, int fillColorId, int border
     glUseProgram(0);
 }
 
-void VG::drawUpArrow( const Rect& rect, int width, int fillColorId, int borderColorId ) const
+void VG::drawUpArrow( const Rect& rect, int width, int fillColorId, int borderColorId )
 {
     float offset = sqrt(2.0f)/2.0f;
    
@@ -705,11 +722,11 @@ void VG::drawUpArrow( const Rect& rect, int width, int fillColorId, int borderCo
     float y0 = rect.y + rect.h * 0.9f + yoff2;
     float y1 = rect.y + rect.h * 0.4f;
 
-    glUseProgram(*mWidgetProgram);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
     
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, (xb) - 1, (xb) - 2);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], (xb) - 1, (xb) - 2);
 
     glBegin(GL_TRIANGLE_STRIP);
         glTexCoord3f(-xb, -yb, 0);
@@ -755,13 +772,13 @@ void VG::drawUpArrow( const Rect& rect, int width, int fillColorId, int borderCo
     glUseProgram(0);
 }
 
-void VG::drawRect( const Rect & rect, int fillColorId, int borderColorId ) const
+void VG::drawRect( const Rect & rect, int fillColorId, int borderColorId )
 {
-    glUseProgram(*mWidgetProgram);
+    glUseProgram(programs[PRG_SIMPLE_UI]);
 
-    glUniform4fv( mFillColorUniform, 1, s_colors[fillColorId]);
-    glUniform4fv( mBorderColorUniform, 1, s_colors[borderColorId]);
-    glUniform2f( mZonesUniform, 0, 0);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, s_colors[fillColorId]);
+    glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, s_colors[borderColorId]);
+    glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], 0, 0);
 
     float x0 = rect.x;
     float x1 = rect.x + rect.w;
@@ -782,7 +799,7 @@ void VG::drawRect( const Rect & rect, int fillColorId, int borderColorId ) const
     glUseProgram(0);
 }
 
-void VG::drawFrame( const Rect& rect, const Point& corner, bool isHover, bool isOn, bool isFocus ) const
+void VG::drawFrame( const Rect& rect, const Point& corner, bool isHover, bool isOn, bool isFocus )
 {
     int lColorNb = cBase + (isHover) + (isOn << 1);// + (isFocus << 2);
 
@@ -791,7 +808,7 @@ void VG::drawFrame( const Rect& rect, const Point& corner, bool isHover, bool is
     else
         drawRoundedRect( rect, corner , lColorNb, cOutline );
 }
-void VG::drawBoolFrame( const Rect& rect, const Point& corner, bool isHover, bool isOn, bool isFocus ) const
+void VG::drawBoolFrame( const Rect& rect, const Point& corner, bool isHover, bool isOn, bool isFocus )
 {
     int lColorNb = cBool + (isHover) + (isOn << 1);// + (isFocus << 2);
         

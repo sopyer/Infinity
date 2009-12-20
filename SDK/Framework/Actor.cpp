@@ -23,7 +23,7 @@ namespace UI
 		while (parent && (p = parent->getParent()))
 			parent = p;
 
-		return dynamic_cast<Stage*>(parent)/*Stage::getPtr()*/;
+		return dynamic_cast<Stage*>(parent);
 	}
 
 	Actor&	Actor::setParent(Actor* parent)
@@ -36,7 +36,7 @@ namespace UI
 		return *this;
 	}
 
-	void Actor::onPick(/*VG& vg, */Color color)
+	void Actor::onPick(Color color)
 	{
 		glColor4ub(color.red, color.green, color.blue, color.alpha);
 		glBegin(GL_QUADS);

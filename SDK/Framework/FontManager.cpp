@@ -1,5 +1,5 @@
 #include <FontManager.h>
-#include <..\vfs\vfs.h>
+//#include <..\vfs\vfs.h>
 
 FTFont* FontManager::load(const std::string& name)
 {	

@@ -1,8 +1,13 @@
 #pragma once
 
-#include <ShaderManager.h>
-#include <ProgramManager.h>
 #include <FTGLTextureFont.h>
+#include "SharedResources.h"
+
+namespace vg
+{
+	void init();
+	void cleanup();
+}
 
 struct TextAlign
 {
@@ -55,15 +60,6 @@ enum Color
 class VG
 {
 public:
-	void create(/*GLuint width, GLuint height*/)//: mWidth(width), mHeight(height)
-	{
-		mWidgetProgram.create("UIProgram", "UI.vert", "UI.frag");
-		
-		mFillColorUniform   = mWidgetProgram->bindUniform("fillColor");
-		mBorderColorUniform = mWidgetProgram->bindUniform("borderColor");
-		mZonesUniform       = mWidgetProgram->bindUniform("zones");
-	}
-
 	void setSize(GLuint width, GLuint height) {mWidth = width; mHeight = height;}
 
 	void begin();
@@ -80,16 +76,16 @@ public:
 
 	void drawRect(glm::vec4 color, glm::ivec2 p1, glm::ivec2 p2);
 
-    void drawRect( const Rect& rect, int fillColorId, int borderColorId ) const;
-    void drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId, int borderColorId ) const;
-    void drawRoundedRectOutline( const Rect& rect, const Point& corner, int borderColorId ) const;
-    void drawCircle( const Rect& rect, int fillColorId, int borderColorId ) const;
-    void drawMinus( const Rect& rect, int width, int fillColorId, int borderColorId ) const;
-    void drawPlus( const Rect& rect, int width, int fillColorId, int borderColorId ) const;
-    void drawDownArrow( const Rect& rect, int width, int fillColorId, int borderColorId ) const;
-    void drawUpArrow( const Rect& rect, int width, int fillColorId, int borderColorId ) const;
-	void drawFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false ) const;
-	void drawBoolFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false ) const;
+	void drawRect( const Rect& rect, int fillColorId, int borderColorId );
+    void drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId, int borderColorId );
+    void drawRoundedRectOutline( const Rect& rect, const Point& corner, int borderColorId );
+    void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
+    void drawMinus( const Rect& rect, int width, int fillColorId, int borderColorId );
+    void drawPlus( const Rect& rect, int width, int fillColorId, int borderColorId );
+    void drawDownArrow( const Rect& rect, int width, int fillColorId, int borderColorId );
+    void drawUpArrow( const Rect& rect, int width, int fillColorId, int borderColorId );
+	void drawFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false );
+	void drawBoolFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false );
 
 private:
 	void setOrthoProj();
@@ -98,9 +94,9 @@ private:
 private:
 	GLuint	mWidth;
 	GLuint	mHeight;
-	ProgramRef	mWidgetProgram;
+	//ProgramRef	mWidgetProgram;
 
-	unsigned int mFillColorUniform;
-	unsigned int mBorderColorUniform;
-	unsigned int mZonesUniform;
+	//unsigned int mFillColorUniform;
+	//unsigned int mBorderColorUniform;
+	//unsigned int mZonesUniform;
 };

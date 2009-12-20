@@ -82,15 +82,15 @@ namespace UI
 			bool		isVisible() {return mVisible;}
 
 		protected:
-			virtual void onTouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {UNUSED(event);}
-			virtual void onUntouch(const ButtonEvent& event/*float x, float y, uint32 buttons*/) {UNUSED(event);}
+			virtual void onTouch(const ButtonEvent& event) {UNUSED(event);}
+			virtual void onUntouch(const ButtonEvent& event) {UNUSED(event);}
 
 			virtual void onMotion(const MotionEvent& event) {UNUSED(event);}
 
 			virtual void onScroll() {}
 
-			virtual void onKeyDown(const KeyEvent& event/*uint32 key*/) {UNUSED(event);}
-			virtual void onKeyUp(const KeyEvent& event/*uint32 key*/) {UNUSED(event);}
+			virtual void onKeyDown(const KeyEvent& event) {UNUSED(event);}
+			virtual void onKeyUp(const KeyEvent& event) {UNUSED(event);}
 			
 			virtual void onEnter() {}
 			virtual void onLeave() {}
