@@ -98,20 +98,8 @@ namespace UI
 			virtual void onFocusIn() {}
 			virtual void onFocusOut() {}
 
-			//virtual void onUpdate(float timePassed){}
-			
-			virtual void onPaint(VG& vg) {UNUSED(vg);}
-			virtual void onPick(/*VG& vg, */Color color);
-			//{
-			//	glColor4ub(color.red, color.green, color.blue, color.alpha);
-			//	glBegin(GL_QUADS);
-			//	glVertex2f(0,0);
-			//	glVertex2f(mWidth,0);
-			//	glVertex2f(mWidth,mHeight);
-			//	glVertex2f(0,mHeight);
-			//	glEnd();
-			//}
-
+			virtual void onPaint() {}
+			virtual void onPick(Color color);
 			virtual void onAllocate() {}
 		
 		protected:

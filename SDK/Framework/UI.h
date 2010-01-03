@@ -2,22 +2,23 @@
 #	define __UI_H_INCLUDED__
 
 #include <sigslot.h>
-//#include <gl\glfw.h>
 #include <gl\glee.h>
 
 #include <..\vfs++\vfs++.h>
 #include <glClasses.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
-#include <TextureManager.h>
-#include <ProgramManager.h>
-#include <ShaderManager.h>
-#include <FontManager.h>
 #include <VG\VG.h>
 #include <utils.h>
 #include <Timer.h>
 
 #include <Events.h>
+
+namespace ui
+{
+	void init();
+	void cleanup();
+}
 
 namespace UI
 {
@@ -28,7 +29,6 @@ namespace UI
 
 #	include <Actor.h>
 #	include <Container.h>
-//#	include <GLFWStage.h>
 #	include <SDLStage.h>
 
 #endif

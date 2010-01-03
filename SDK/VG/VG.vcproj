@@ -239,6 +239,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SUI.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SUI.h"
+				>
+			</File>
+			<File
 				RelativePath=".\VG.cpp"
 				>
 			</File>

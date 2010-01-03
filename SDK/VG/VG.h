@@ -2,6 +2,7 @@
 
 #include <FTGLTextureFont.h>
 #include "SharedResources.h"
+#include "SUI.h"
 
 namespace vg
 {
@@ -9,16 +10,16 @@ namespace vg
 	void cleanup();
 }
 
-struct TextAlign
-{
-	enum
-	{
-		Top = 1, VCenter = 2, Bottom = 3,
-		Left = 1<<2, HCenter = 2<<2, Right = 3<<2,
-		VMask = 3, HMask = 3<<2
-	};
-};
-
+//struct TextAlign
+//{
+//	enum
+//	{
+//		Top = 1, VCenter = 2, Bottom = 3,
+//		Left = 1<<2, HCenter = 2<<2, Right = 3<<2,
+//		VMask = 3, HMask = 3<<2
+//	};
+//};
+//
 struct Point
 {
     Point() : x(0), y(0) {}
@@ -56,6 +57,7 @@ enum Color
     cNbColors = 24,
 };
 
+
 //Fix me!!!!: take into account font metrics for font rendering
 class VG
 {
@@ -65,27 +67,12 @@ public:
 	void begin();
 	void end();
 
-	void drawText(FTFont* font, GLint x, GLint y, const char* text)	{if (font) drawText(*font, x, y, text);}
-	void drawText(FTFont* font, glm::ivec2 pos, const char* text)	{if (font) drawText(*font, pos, text);}
-	void drawText(FTFont& font, glm::ivec2 pos, const char* text)	{drawText(font, pos.x, pos.y, text);}
-	void drawText(FTFont& font, GLint x, GLint y, const char* text) {drawText(font, x, y, TextAlign::Top|TextAlign::Left, text);}
-	void drawText(FTFont& font, glm::ivec2 pos, int flags, const char* text) {drawText(font, pos.x, pos.y, flags, text);}
-	void drawText(FTFont& font, GLint x, GLint y, int flags, const char* text);
-
-	glm::ivec2 getTextExtent(FTFont& font, const char* text);
-
-	void drawRect(glm::vec4 color, glm::ivec2 p1, glm::ivec2 p2);
-
-	void drawRect( const Rect& rect, int fillColorId, int borderColorId );
-    void drawRoundedRect( const Rect& rect, const Point& corner, int fillColorId, int borderColorId );
-    void drawRoundedRectOutline( const Rect& rect, const Point& corner, int borderColorId );
-    void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
-    void drawMinus( const Rect& rect, int width, int fillColorId, int borderColorId );
-    void drawPlus( const Rect& rect, int width, int fillColorId, int borderColorId );
-    void drawDownArrow( const Rect& rect, int width, int fillColorId, int borderColorId );
-    void drawUpArrow( const Rect& rect, int width, int fillColorId, int borderColorId );
-	void drawFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false );
-	void drawBoolFrame( const Rect& rect, const Point& corner, bool isHover = false, bool isOn = false, bool isFocus = false );
+	//void drawText(FTFont* font, GLint x, GLint y, const char* text)	{if (font) drawText(*font, x, y, text);}
+	//void drawText(FTFont* font, glm::ivec2 pos, const char* text)	{if (font) drawText(*font, pos, text);}
+	//void drawText(FTFont& font, glm::ivec2 pos, const char* text)	{drawText(font, pos.x, pos.y, text);}
+	//void drawText(FTFont& font, GLint x, GLint y, const char* text) {drawText(font, x, y, TextAlign::Top|TextAlign::Left, text);}
+	//void drawText(FTFont& font, glm::ivec2 pos, int flags, const char* text) {drawText(font, pos.x, pos.y, flags, text);}
+	//void drawText(FTFont& font, GLint x, GLint y, int flags, const char* text);
 
 private:
 	void setOrthoProj();

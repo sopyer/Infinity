@@ -11,6 +11,8 @@
 
 #include <ResourceHandle.h>
 
+void loadTexture(const char* name, GLuint texture);
+
 class TextureRef: public ResourceHandle<gl::Texture2D>
 {
 	typedef ResourceHandle<gl::Texture2D> base;

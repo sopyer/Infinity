@@ -10,31 +10,9 @@
 
 namespace UI
 {
-	void SDLStage::loadConfig(const char* cfgFile)
+	SDLStage::SDLStage()/*: mInputTicker(50)*/
 	{
-		dictionary * dict;
-		
-		dict = iniparser_load(cfgFile);
-		
-		mWidth  = (float)iniparser_getint(dict, "Video:Width", 800);
-		mHeight = (float)iniparser_getint(dict, "Video:Height", 600);
-		
-		mBitsPerPixel = iniparser_getint(dict, "Video:BitsPerPixel", 32);
-		mDepthBits    = iniparser_getint(dict, "Video:DepthBits", 24);
-		mStencilBits  = iniparser_getint(dict, "Video:StencilBits", 8);
-		
-		mFullscreen = iniparser_getboolean(dict, "Video:Fullscreen", false) != 0;
-		mVSync      = iniparser_getboolean(dict, "Video:VSync", false) != 0;
-		
-		strcpy(mPaths, iniparser_getstring(dict, "General:Paths", ""));
-		
-		iniparser_freedict(dict);
-	}
-
-	SDLStage::SDLStage(): mInputTicker(50)
-	{
-		mRunning = false;
-		AllocConsole();
+		//mRunning = false;
 
 		if(SDL_Init(SDL_INIT_VIDEO)<0)											// Init The SDL Library, The VIDEO Subsystem
 		{
@@ -42,21 +20,13 @@ namespace UI
 			exit(1);															// Get Out Of Here. Sorry.
 		}
 
-		loadConfig("infinity.cfg");
-		logMessage("Resources paths initializing...");
-
-		char* path=strtok(mPaths, ";");
-		while( path )
-		{
-			if( strstr(path, ".zip" ) )
-				VFS::mount(path);
-			else
-				VFS::mount(path);
-
-			path = strtok(0, ";");
-		}
+		//!!!! Refactor
+		mFullscreen = false;
+		mWidth = 800;
+		mHeight = 600;
 
 		u32 flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
+
 		if (mFullscreen)		
 		{
 			flags |= SDL_FULLSCREEN;
@@ -69,7 +39,7 @@ namespace UI
 		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
-		SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, mVSync );							// colors and doublebuffering
+		//SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );							// colors and doublebuffering
 
 		if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
 		{
@@ -78,14 +48,14 @@ namespace UI
 		}
 		
 		SDL_EnableUNICODE(TRUE);
-		SDL_EnableKeyRepeat(33, 33);
+		SDL_EnableKeyRepeat(40, 40);
 
 		vg::init();
 		mVG.setSize((GLuint)mWidth, (GLuint)mHeight);
 
-		mTimer.start();
-		mInputTicker.onFrame.connect(this, &SDLStage::handleInput);
-		mInputTicker.start();
+		//mTimer.start();
+		//mInputTicker.onFrame.connect(this, &SDLStage::handleInput);
+		//mInputTicker.start();
 	}
 
 	SDLStage::~SDLStage()
@@ -95,7 +65,7 @@ namespace UI
 		SDL_Quit();
 	}
 
-	void SDLStage::handleInput(u32	frame)
+	void SDLStage::handleInput()
 	{
 		enterPhase(PHASE_EVENT_HANDLING);
 		SDL_Event	E;
@@ -128,25 +98,34 @@ namespace UI
 		}
 	}
 
+	void SDLStage::handleRender()
+	{
+		enterPhase(PHASE_ALLOCATE);
+		enterPhase(PHASE_RENDERING);
+		enterPhase(PHASE_DEFAULT);
+		SDL_GL_SwapBuffers();										// And Swap The Buffers (We're Double-Buffering, Remember?)
+	}
+
 	void SDLStage::close()
 	{
-		mRunning = false;
+		//mRunning = false;
+		scheduler::terminateLoop();
 	}
 
 	void SDLStage::run()
 	{
-		mRunning = true;
+		//mRunning = true;
 
-		mTimer.resetFrame();
-		while (mRunning /*&& glfwGetWindowParam(GLFW_OPENED)*/)
-		{
-			mScheduler.mainLoop();
-			mTimer.resetFrame();
-			enterPhase(PHASE_ALLOCATE);
-			enterPhase(PHASE_RENDERING);
-			enterPhase(PHASE_DEFAULT);
-			SDL_GL_SwapBuffers();										// And Swap The Buffers (We're Double-Buffering, Remember?)
-		}
+		//mTimer.resetFrame();
+		//while (mRunning)
+		//{
+		//	mScheduler.mainLoop();
+		//	mTimer.resetFrame();
+		//}
+		scheduler::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
+		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 20);
+
+		scheduler::mainLoop();
 	}
 
 }

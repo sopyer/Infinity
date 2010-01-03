@@ -19,35 +19,26 @@ namespace UI
 			void run();
 			void close();
 			
-			bool isRunning() {return mRunning;}
+			//bool isRunning() {return mRunning;}
 
 		protected:
-			int		mBitsPerPixel;
-			int		mDepthBits;
-			int		mStencilBits;
 			bool	mFullscreen;
-			bool	mVSync;
 
 			Timer	mTimer;
 
 		private:
-			void loadConfig(const char* cfgFile);
-			void handleInput(u32 frame);
+			void handleInput();
+			void handleRender();
 		
 		private:
-			VFS				mVFS;
-			FontManager		mFontMgr;
-			ProgramManager	mProgramMgr;
-			ShaderManager	mShaderMgr;
-	
-			Scheduler	mScheduler;
-			Timeline	mInputTicker;
+			//Scheduler	mScheduler;
+			//Timeline	mInputTicker;
 
-			bool	mRunning;
+			//bool	mRunning;
 			
 			SDL_Surface *mScreen;
 			
-			char mPaths[1024];	//! Is's terrible;
+			//char mPaths[1024];	//! Is's terrible;
 	};
 }
 

@@ -304,6 +304,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UI.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\UI.h"
 				>
 			</File>
@@ -314,6 +318,10 @@
 		</File>
 		<File
 			RelativePath=".\Framework.h"
+			>
+		</File>
+		<File
+			RelativePath=".\Scheduler.cpp"
 			>
 		</File>
 		<File

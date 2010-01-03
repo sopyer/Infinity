@@ -190,8 +190,6 @@ namespace UI
 
 	Actor* Stage::doPick(u32 x, u32 y)
 	{
-		//outlineActors();
-
 		GLint	viewport[4];
 		glGetIntegerv(GL_VIEWPORT, viewport);
 		
@@ -256,7 +254,7 @@ namespace UI
 	
 		mVG.begin();
 	
-		onPaint(mVG);
+		onPaint();
 
 		std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
 											end = mRenderQueue.end();
@@ -265,7 +263,7 @@ namespace UI
 		{
 			glPushMatrix();
 			glMultMatrixf((*it).transform);
-			(*it).actor->onPaint(mVG);
+			(*it).actor->onPaint();
 			glPopMatrix();
 		}
 

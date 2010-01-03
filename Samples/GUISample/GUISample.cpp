@@ -1,22 +1,54 @@
+#include <TextureManager.h>
+#include <ProgramManager.h>
+#include <ShaderManager.h>
+#include <FontManager.h>
 #include <framework.h>
 #include <FTGLTextureFont.h>
 #include "Controls.h"
 #include "Animations.h"
+#include <VG\Context.h>
+
+class LabelTest: public UI::Actor
+{
+	public:
+		LabelTest(): mColor(1.0f, 1.0f, 1.0f, 1.0f) {}
+		
+		LabelTest& setFont(vg::Font font) {mFont = font; return *this;}
+		LabelTest& setColor(const glm::vec4& color) {mColor = color; return *this;}
+		LabelTest& setText(const char* text) {mText = text; return *this;}
+
+	protected:
+		virtual void onPaint(VG& vg)
+		{
+			glColor4fv(mColor);
+			vg::drawString(mFont, 0, 0, "TestString");
+		}
+
+	protected:
+		glm::vec4	mColor;
+		vg::Font	mFont;
+		std::string	mText;
+};
 
 class GUISample: public UI::SDLStage
 {
 	public:
-		GUISample():mUpdater(30), mAnim(2000, 100)
+		GUISample()/*:mUpdater(30), mAnim(2000, 100)*/
 		{
-			mUpdater.onFrame.connect(this, &GUISample::onUpdate);
+			VFS::mount("..\\AppData");
+
+			//mUpdater.onFrame.connect(this, &GUISample::onUpdate);
 
 			mTextFont.create("Times 16px", "C:\\WINDOWS\\Fonts\\times.ttf 16px");
+			
+			mFont = vg::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
+			mFont.setFaceSize(16);
 
-			mLabel.setText("Label Test")
+			mLabel.setText(L"Label Test")
 				.setFont(mTextFont)
 				.setPos(0, 0);
 
-			mEdit.setText("Edit me!!!")
+			mEdit.setText(L"Edit me!!!")
 				.setFont(mTextFont)
 				.setPos(0, 40)
 				.setSize(100, 30);
@@ -27,17 +59,17 @@ class GUISample: public UI::SDLStage
 				.add(mEdit)
 				.setPos(40, 140);
 
-			mButton.setText("Exit")
+			mButton.setText(L"Exit")
 				  .setFont(mTextFont)
 				  .setPos(0, 60)
 				  .setSize(80, 30);
 			
-			mMoveDog.setText("Move dog;)")
+			mMoveDog.setText(L"Move dog;)")
 				  .setFont(mTextFont)
 				  .setPos(100, 60)
 				  .setSize(120, 30);
 
-			mCheck.setText("Check")
+			mCheck.setText(L"Check")
 				  .setFont(mTextFont)
 				  .setPos(0, 100)
 				  .setSize(80, 30);
@@ -54,10 +86,11 @@ class GUISample: public UI::SDLStage
 			mCombobox.setPos(400, 300)
 				.setSize(200, 40);
 			
-			mAvatarImg.create("sobachka.png");
-			mImage.setTexture(mAvatarImg)
-				.setPos(200, 200)
-				.setSize(60, 80);
+			glGenTextures(1, &mTexture);
+			mImage.setTexture(mTexture)
+				  .setPos(200, 200)
+				  .setSize(60, 80);
+			loadTexture("sobachka.png", mTexture);
 
 			add(mImage);
 			add(mButton);
@@ -66,55 +99,46 @@ class GUISample: public UI::SDLStage
 			add(mContainer);
 			add(mMenu);
 			add(mCombobox);
+			add(mTestLabel.setFont(mFont)
+				.setPos(0, 500)
+			);
 
-			mUpdater.onStarted.connect(this, &GUISample::test);
-			mUpdater.onCompleted.connect(this, &GUISample::test);
-			mUpdater.start();
+			//mUpdater.onStarted.connect(this, &GUISample::test);
+			//mUpdater.onCompleted.connect(this, &GUISample::test);
+			//mUpdater.start();
 
-			mMover.setOffset(300, 0)
-				.setTimeline(&mAnim)
-				.setInterpolator(&mItrp)
-				.apply(&mImage);
+			//mMover.setOffset(300, 0)
+			//	.setTimeline(&mAnim)
+			//	.setInterpolator(&mItrp)
+			//	.apply(&mImage);
 
 			mMoveDog.onClicked.connect(this, &GUISample::onMoveDog);
 
 		}
-
+		
+		~GUISample()
+		{
+			vg::destroyFont(mFont);
+			glDeleteTextures(1, &mTexture);
+		}
 	protected:
-		void test()
-		{
-		}
-
-		void paint()
-		{
-			//glClearDepth(1.0);
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			//
-			//mVG.begin();
-			//	UI::Container::onPaint(mVG);
-			//mVG.end();
-
-			//glFlush();
-		}
-
-		void onUpdate(u32 frame)
-		{
-			//logMessage("Time: %d\n", mTimer.getTime());
-			//if( glfwGetKey(KeySyms::KeyESC/*GLFW_KEY_ESC*/) )
-			//	close();
-		}
-
 		void onMoveDog()
 		{
-			mAnim.stop();
-			mAnim.start();
+			//mAnim.stop();
+			//mAnim.start();
 		}
 
 	private:
-		gl::Context		mContext;
+		VFS				mVFS;
+		FontManager		mFontMgr;
+		ProgramManager	mProgramMgr;
+		ShaderManager	mShaderMgr;
 
+		vg::Font		mFont;
+		vg::Context		mContext;
+
+		GLuint			mTexture;
 		FontRef			mTextFont;
-		TextureRef		mAvatarImg;
 
 		Button			mButton;
 		CheckBox		mCheck;
@@ -125,18 +149,22 @@ class GUISample: public UI::SDLStage
 		Layout			mCombobox;
 		Image			mImage;
 		Button			mMoveDog;
+		LabelTest		mTestLabel;
 
-		Timeline		mUpdater;
-		Timeline		mAnim;
+		//Timeline		mUpdater;
+		//Timeline		mAnim;
 		Interpolator	mItrp;
-		OffsetAnimation	mMover;
+		//OffsetAnimation	mMover;
 };
 
 extern "C" int main(int argc, char** argv)
 {
-	GUISample app;
-
-	app.run();
+	ui::init();
+	{
+		GUISample app;
+		app.run();
+	}
+	ui::cleanup();
 
 	return 0;
 }

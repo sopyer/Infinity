@@ -2,16 +2,19 @@
 
 #include <UI.h>
 #include <cstdlib>
+#include <scheduler.h>
 
 class Image: public UI::Actor
 {
 	public:
-		Image() {}
+		Image()  {}
+		~Image() {}
 		
-		Image& setTexture(TextureRef texture) {mTexture = texture; return *this;}
+		Image&	setTexture(GLuint texture) {mTexture = texture; return *this;}
+		GLuint	getTexture() {return mTexture;}
 
 	protected:
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
 			float w = getWidth(), h = getHeight(),
 				  x = 0, y = 0;
@@ -33,17 +36,17 @@ class Image: public UI::Actor
 		}
 
 	protected:
-		TextureRef		mTexture;
+		GLuint		mTexture;
 };
 
 class Rectangle: public UI::Actor
 {
 	protected:
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
-			u32 w = getWidth(), h = getHeight(),
+			float w = getWidth(), h = getHeight(),
 			    x = 0, y = 0;
-		    vg.drawFrame(Rect(x, y, w, h), Point(5, 5), false, false, false);
+			sui::drawFrame(x, y, w, h, 5, 5, false, false, false);
 		}
 };
 
@@ -54,31 +57,36 @@ class Label: public UI::Actor
 		
 		Label& setFont(FontRef font) {mFont = font; return *this;}
 		Label& setColor(const glm::vec4& color) {mColor = color; return *this;}
-		Label& setText(const char* text) {mText = text; return *this;}
+		Label& setText(const wchar_t* text) {mText = text; return *this;}
 
 	protected:
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
 			glColor4fv(mColor);
-			vg.drawText(*mFont, 0/*mX*/, 0/*mY*/, mText.c_str());
+			float y = sui::getTextAscender(*mFont)+sui::getTextDescender(*mFont);
+			sui::drawText(*mFont, 0, (mHeight+y)/2, mText.c_str());
 		}
 
 	protected:
 		glm::vec4	mColor;
 		FontRef		mFont;
-		std::string	mText;
+		std::wstring	mText;
 };
 
 class Edit: public Label, public sigslot::has_slots<>
 {
 	public:
-		Edit(): mCaretPos(0), mShowCursor(false), mBlinkTimeline(3)
+		Edit(): mCaretPos(0), mShowCursor(false), mBlinkTask(0)
 		{
-			mBlinkTimeline.onFrame.connect(this, &Edit::onBlink);
 		}
 	
+		~Edit()
+		{
+			hideCursor();
+		}
+
 	protected:
-		void onBlink(u32)
+		void onBlink()
 		{
 			mShowCursor = !mShowCursor;
 		}
@@ -110,15 +118,12 @@ class Edit: public Label, public sigslot::has_slots<>
 			// Regular char, append it to the edited string
 			else if (event.keysym.unicode>=32)
 			{
-				std::string::iterator	where = mText.end();
+				std::wstring::iterator	where = mText.end();
 				if (mCaretPos < (int)mText.length())
 				{
 					where = mText.begin()+mCaretPos;
 				}
-				char	c;
-				wchar_t	wc = (wchar_t)event.keysym.unicode;
-				_wctomb_l(&c, wc, _create_locale(LC_CTYPE, ".1251"));
-				mText.insert(where, c);
+				mText.insert(where, event.keysym.unicode);
 				mCaretPos++;
 				resetCursor();
 			}
@@ -127,39 +132,39 @@ class Edit: public Label, public sigslot::has_slots<>
 			{
 				switch (key)
 				{
-				case SDLK_LEFT: //GLFW_KEY_LEFT :
+				case SDLK_LEFT:
 					{
 						// move cursor left one char
 						mCaretPos--;
 					} 
 					break;
-				case SDLK_RIGHT: //GLFW_KEY_RIGHT :
+				case SDLK_RIGHT:
 					{
 						// move cursor right one char
 						mCaretPos++;
 					} 
 					break;
-				case SDLK_HOME: //GLFW_KEY_HOME :
+				case SDLK_HOME:
 					{
 						mCaretPos = 0;
 					} 
 					break;
-				case SDLK_END: //GLFW_KEY_END :
+				case SDLK_END:
 					{
 						mCaretPos = (int)mText.length();
 					} 
 					break;
-				case SDLK_INSERT: //GLFW_KEY_INSERT :
+				case SDLK_INSERT:
 					{
 					} 
 					break;
-				case SDLK_DELETE: //GLFW_KEY_DEL :
+				case SDLK_DELETE:
 					{
 						if (mCaretPos < (int)mText.length())
 							mText.erase(mText.begin()+mCaretPos);
 					} 
 					break;
-				case SDLK_BACKSPACE: //GLFW_KEY_BACKSPACE :
+				case SDLK_BACKSPACE:
 					{
 						if (mCaretPos > 0)
 							mText.erase(mText.begin()+mCaretPos-1);
@@ -179,30 +184,35 @@ class Edit: public Label, public sigslot::has_slots<>
 			mCaretPos = std::max(mCaretPos, 0);
 		}
 
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
-			Label::onPaint(vg);
-			//Fix me!!!!!: if mCaretPos == 0 the cursor is not drawn
-			//Use font metrics for cursor rendering then text bounding box
+			sui::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 3);
+			
+			glColor4fv(mColor);
+			float y = (mHeight+sui::getTextAscender(*mFont)+sui::getTextDescender(*mFont))/2;
+			sui::drawText(*mFont, 7, y, mText.c_str());
+
 			if (mShowCursor)
 			{
-				glm::ivec2	pos(0, 0);//(mX, mY);
-				glm::ivec2	ex = vg.getTextExtent(*mFont, mText.substr(0, mCaretPos).c_str());
-				ex.s += 1;
-				vg.drawRect(mColor, pos+glm::ivec2(ex.s, mFont->Descender()/*0*/), pos+glm::ivec2(ex.s, mFont->Ascender()/*ex.t*/));
+				float tw = 7+sui::getTextHExtent(*mFont, mText.substr(0, mCaretPos).c_str());
+				sui::drawRect(tw, y-sui::getTextDescender(*mFont), tw+1, y-sui::getTextAscender(*mFont), 4, 4);
 			}
 		}
 		
 		void showCursor()
 		{
 			mShowCursor = true;
-			mBlinkTimeline.start();
+			mBlinkTask = scheduler::addTimedTask<Edit, &Edit::onBlink>(this, 400);
 		}
 
 		void hideCursor()
 		{
 			mShowCursor = false;
-			mBlinkTimeline.stop();
+			if (mBlinkTask)
+			{
+				scheduler::terminateTask(mBlinkTask);
+				mBlinkTask = 0;
+			}
 		}
 
 		void resetCursor()
@@ -211,7 +221,7 @@ class Edit: public Label, public sigslot::has_slots<>
 		}
 
 	private:
-		Timeline	mBlinkTimeline;
+		scheduler::Task	mBlinkTask;
 		
 		bool	mShowCursor;
 		int		mCaretPos;
@@ -238,12 +248,13 @@ class Button: public Label
 		virtual void onLeave()
 		{mIsHover = false; mIsPressed = false;}
 
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
-		    vg.drawFrame(Rect(/*mX, mY,*/0, 0, mWidth, mHeight), Point(5, 5), mIsHover, mIsPressed, false);
+			sui::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
 			glColor4fv(mColor);
-			glm::ivec2	mPos(/*mX, mY*/0, 0), mSize(mWidth, mHeight);
-			vg.drawText(*mFont, mPos+mSize/2, TextAlign::HCenter | TextAlign::VCenter, mText.c_str());
+			float x = sui::getTextHExtent(*mFont, mText.c_str());
+			float y = sui::getTextAscender(*mFont)+sui::getTextDescender(*mFont);
+			sui::drawText(*mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str());
 		}
 
 	protected:
@@ -261,13 +272,14 @@ class CheckBox: public Button
 		virtual void onUntouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
 		{Button::onUntouch(event/*x, y, buttons*/); mIsChecked = !mIsChecked;}
 
-		virtual void onPaint(VG& vg)
+		virtual void onPaint()
 		{
-			///*if (style) */vg.drawFrame( Rect(mPos.x, mPos.y, 16, 16), Point( 5, 5 ), mIsHover, false, false );
-			vg.drawBoolFrame(Rect(/*mX, mY,*/0, 0, 16, 16), Point( 16/6, 16/6 ), mIsHover, mIsChecked, false );
-		    //vg.drawFrame(Rect(mPos.x, mPos.y, 20, 20), Point(5, 5), mIsHover, mIsChecked, false);
+			sui::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
 			glColor4fv(mColor);
-			vg.drawText(*mFont,/* mX+*/20, /*mY+*/8, TextAlign::Left | TextAlign::VCenter, mText.c_str());
+			float x = 20;
+			float y = sui::getTextAscender(*mFont)+sui::getTextDescender(*mFont);
+			y = (16+y)/2;
+			sui::drawText(*mFont, x, y, mText.c_str());
 		}
 
 	private:
@@ -283,13 +295,13 @@ class HGroup: public UI::Container
 			setSize(100, 30);
 
 			m1.setFont(mTextFont)
-				.setText("Menu1")
+				.setText(L"Menu1")
 				.setSize(100, 20);
 			m2.setFont(mTextFont)
-				.setText("Menu2")
+				.setText(L"Menu2")
 				.setSize(100, 20);
 			m3.setFont(mTextFont)
-				.setText("Menu3")
+				.setText(L"Menu3")
 				.setSize(100, 20);
 
 			add(m1).add(m2).add(m3);
@@ -331,7 +343,7 @@ class Layout: public UI::Container, public sigslot::has_slots<>
 			add
 			(
 				mEdit.setFont(mTextFont)
-					.setText("Edit me!!!")
+					.setText(L"Edit me!!!")
 					.setSize(80, 20)
 					.setPos(0,0)
 			)
@@ -339,7 +351,7 @@ class Layout: public UI::Container, public sigslot::has_slots<>
 			add
 			(
 				mButton.setFont(mTextFont)
-					.setText("^")
+					.setText(L"^")
 					.setSize(20, 20)
 					.setPos(80,0)
 			)
