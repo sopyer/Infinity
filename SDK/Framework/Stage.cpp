@@ -36,7 +36,19 @@ namespace UI
 		mFocused = 0; return *this;
 	}
 
-	void Stage::onKeyDown(const KeyEvent& event)
+
+	Stage& Stage::setProjection(float* mat4x4)
+	{
+		mProjection = glm::mat4(
+			mat4x4[0],  mat4x4[1],  mat4x4[2],  mat4x4[3], 
+			mat4x4[4],  mat4x4[5],  mat4x4[6],  mat4x4[7], 
+			mat4x4[8],  mat4x4[9],  mat4x4[10], mat4x4[11], 
+			mat4x4[12], mat4x4[13], mat4x4[14], mat4x4[15]
+		);
+		return *this;
+	}
+
+	void Stage::processKeyDown(const KeyEvent& event)
 	{
 		//Also here should be and hotkeys handling
 
@@ -46,7 +58,7 @@ namespace UI
 		//No do not sent any event to childs
 	}
 
-	void Stage::onKeyUp(const KeyEvent& event)
+	void Stage::processKeyUp(const KeyEvent& event)
 	{
 		if (mFocused)
 			mFocused->onKeyUp(event);
@@ -54,7 +66,7 @@ namespace UI
 		//No do not sent any event to childs
 	}
 
-	void Stage::onTouch(const ButtonEvent& event)
+	void Stage::processTouch(const ButtonEvent& event)
 	{
 		Actor* actor = doPick((u32)event.x, (u32)event.y);
 
@@ -62,7 +74,7 @@ namespace UI
 			actor->onTouch(event);
 	}
 
-	void Stage::onUntouch(const ButtonEvent& event)
+	void Stage::processUntouch(const ButtonEvent& event)
 	{
 		Actor* actor = doPick((u32)event.x, (u32)event.y);
 
@@ -70,9 +82,9 @@ namespace UI
 			actor->onUntouch(event);
 	}
 
-	void Stage::onMotion(const MotionEvent& event)
+	void Stage::processMotion(const MotionEvent& event)
 	{
-		Actor* actor = doPick((u32)event.x, (u32)event.y);
+		Actor* actor = doPick(event.x, event.y);
 
 		if (mLastVisited != actor)
 		{
@@ -164,17 +176,21 @@ namespace UI
 	
 	void Stage::outlineActors()
 	{
-		mVG.begin();
-
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClearDepth(1.0f);
 		glClearStencil(0);
 		glDepthMask(GL_TRUE);
 		glStencilMask( 0xFF );
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glUseProgram(0);
 		glDisable(GL_BLEND);
 		glDisable(GL_TEXTURE_2D);
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(mProjection);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
 		for(u32 i = 0; i < mRenderQueue.size(); ++i)
 		{
@@ -184,7 +200,6 @@ namespace UI
 			glPopMatrix();
 		}
 
-		mVG.end();
 		glFinish();
 	}
 
@@ -197,15 +212,19 @@ namespace UI
 		u8	pixel[4];
 		glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 		
-		//u8* p = new u8[mWidth*mHeight*4];
-		//glReadPixels (0, 0, mWidth, mHeight, GL_RGBA, GL_UNSIGNED_BYTE, p);
-		//SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, mWidth, mHeight, 4, p);		
-		//delete [] p;
-
 		if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
-			return 0/*this*/;
+			return this;
 
 		u32 id = pixelToId(pixel);
+#ifdef DEBUG
+		if (id >= mRenderQueue.size())
+		{
+			u8* p = new u8[mWidth*mHeight*4];
+			glReadPixels (0, 0, mWidth, mHeight, GL_RGBA, GL_UNSIGNED_BYTE, p);
+			SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, mWidth, mHeight, 4, p);		
+			delete [] p;
+		}
+#endif
 		assert(id < mRenderQueue.size());
 		return mRenderQueue[id].actor;
 	}
@@ -247,17 +266,25 @@ namespace UI
 	void Stage::renderActors()
 	{
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		//glClearDepth(1.0);
-		glClear(GL_COLOR_BUFFER_BIT/* | GL_DEPTH_BUFFER_BIT*/);
+		glClearDepth(1.0);
+		glClearStencil(0);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
 		glDepthFunc(GL_LEQUAL);
-		glDepthMask(GL_FALSE);
-	
-		mVG.begin();
-	
-		onPaint();
 
 		std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
 											end = mRenderQueue.end();
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(mProjection);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		
+		glPushMatrix();
+		onPaint();
+		glPopMatrix();
 
 		for (; it != end; ++it)
 		{
@@ -266,8 +293,6 @@ namespace UI
 			(*it).actor->onPaint();
 			glPopMatrix();
 		}
-
-		mVG.end();
 
 		glFlush();
 	}

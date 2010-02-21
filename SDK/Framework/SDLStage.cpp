@@ -50,18 +50,11 @@ namespace UI
 		SDL_EnableUNICODE(TRUE);
 		SDL_EnableKeyRepeat(40, 40);
 
-		vg::init();
-		mVG.setSize((GLuint)mWidth, (GLuint)mHeight);
-
-		//mTimer.start();
-		//mInputTicker.onFrame.connect(this, &SDLStage::handleInput);
-		//mInputTicker.start();
+		setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
 	}
 
 	SDLStage::~SDLStage()
 	{
-		vg::cleanup();
-		mTimer.stop();
 		SDL_Quit();
 	}
 
@@ -79,19 +72,19 @@ namespace UI
 					break;
 
 				case SDL_KEYDOWN:
-					onKeyDown(E.key);
+					processKeyDown(E.key);
 					break;
 				case SDL_KEYUP:		
-					onKeyUp(E.key);
+					processKeyUp(E.key);
 					break;
 				case SDL_MOUSEMOTION:
-					onMotion(E.motion);
+					processMotion(E.motion);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					onTouch(E.button);
+					processTouch(E.button);
 					break;
 				case SDL_MOUSEBUTTONUP:
-					onUntouch(E.button);
+					processUntouch(E.button);
 					break;
 			}
 			++i;

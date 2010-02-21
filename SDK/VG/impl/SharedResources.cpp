@@ -31,12 +31,19 @@ namespace impl
 			shCount
 		};
 
+		struct ShaderDef
+		{
+			GLenum		mType;
+			const char*	mSource;
+		};
+
 		struct ProgramDef
 		{
 			size_t			mShaderCount;
 			const size_t*	mShaderList;
 			size_t			mUniformCount;
 			const char**	mUniformList;
+			size_t*			mUniformID;
 		};
 		
 		ProgramDef	programDefs[PRG_COUNT] = 
@@ -44,51 +51,55 @@ namespace impl
 			//PRG_SIMPLE_UI,
 			{
 				2, CArray2<size_t, vsSimpleUI, fsSimpleUI>::ptr,
-				3, CArray3<const char*, UNI_NAME_FILL_COLOR, UNI_NAME_BORDER_COLOR, UNI_NAME_ZONES>::ptr
+				3,
+				CArray3<const char*, UNI_NAME_FILL_COLOR, UNI_NAME_BORDER_COLOR, UNI_NAME_ZONES>::ptr,
+				CArray3<size_t, UNI_SIMPLE_UI_FILL_COLOR, UNI_SIMPLE_UI_BORDER_COLOR, UNI_SIMPLE_UI_ZONES>::ptr
 			},
 			//PRG_RAST_FILL_CUBIC,
 			{
 				1, CArray1<size_t, fsRastCubic>::ptr,
-				0, 0
+				0, 0, 0
 			},
 			//PRG_RAST_FILL_QUAD,
 			{
 				1, CArray1<size_t, fsRastQuad>::ptr,
-				0, 0
+				0, 0, 0
 			},
 			//PRG_RAST_FILL_ARC,
 			{
 				1, CArray1<size_t, fsRastArc>::ptr,
-				0, 0
+				0, 0, 0
 			},
 			//PRG_RAST_STROKE_CUBIC,
 			{
 				2, CArray2<size_t, vsRastStroke, fsRastCubic>::ptr,
-				1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				1,
+				CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
+				CArray1<size_t, UNI_RAST_STROKE_CUBIC_HALFWIDTH>::ptr
 			},
 			//PRG_RAST_STROKE_QUAD,
 			{
 				2, CArray2<size_t, vsRastStroke, fsRastQuad>::ptr,
-				1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				1,
+				CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
+				CArray1<size_t, UNI_RAST_STROKE_QUAD_HALFWIDTH>::ptr
 			},
 			//PRG_RAST_STROKE_ARC,
 			{
 				2, CArray2<size_t, vsRastStroke, fsRastArc>::ptr,
-				1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				1,
+				CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
+				CArray1<size_t, UNI_RAST_STROKE_ARC_HALFWIDTH>::ptr
 			},
 			//PRG_RAST_STROKE_TRI,
 			{
 				1, CArray1<size_t, vsRastStroke>::ptr,
-				1, CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr
+				1,
+				CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
+				CArray1<size_t, UNI_RAST_STROKE_TRI_HALFWIDTH>::ptr
 			},
 		};
 		
-		struct ShaderDef
-		{
-			GLenum		mType;
-			const char*	mSource;
-		};
-
 		ShaderDef shaderDefs[shCount] =
 		{
 			{
@@ -223,8 +234,6 @@ namespace impl
 				glCompileShader(shaders[i]); 
 			}
 
-			size_t	uni = 0;
-
 			for (size_t i=0; i<PRG_COUNT; ++i)
 			{
 				programs[i] = glCreateProgram();
@@ -238,11 +247,9 @@ namespace impl
 
 				for (size_t u=0; u<programDefs[i].mUniformCount; ++u)
 				{
-					uniforms[uni++] = glGetUniformLocation(programs[i], programDefs[i].mUniformList[u]);
+					uniforms[programDefs[i].mUniformID[u]] = glGetUniformLocation(programs[i], programDefs[i].mUniformList[u]);
 				}
 			}
-
-			assert(uni==UNI_COUNT);
 
 			//prgFillColor = glCreateProgram();
 			//fsColor = glCreateShader(GL_FRAGMENT_SHADER);

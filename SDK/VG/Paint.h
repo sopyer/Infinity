@@ -1,17 +1,19 @@
-#pragma once
+#ifndef __PAINT_H_INCLUDED__
+#	define __PAINT_H_INCLUDED__
 
-#include <gl/glee.h>
 #include <VG/OpenVG.h>
-#include ".\types.h"
+#include <DataTypes.h>
 
-//namespace VG
+#include <VGCommon.h>
+
 namespace vg
 {
-	struct PaintObject;
-	
-	struct Paint: public PtrToImpl<PaintObject>
+	struct Paint: public Handle<GLuint>
 	{
-		void setColorPaint(const glm::vec4& color);
-		void setPatternPaint(GLuint texture, const glm::vec4& fillColor, VGTilingMode mode);
+		static Paint createSolid(float* color4f);
+		static Paint createPattern();
+		static void  destroy(Paint paint);
 	};
 }
+
+#endif

@@ -186,21 +186,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\PaintObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PaintObject.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath=".\Path.cpp"
 				>
 			</File>
@@ -214,29 +199,6 @@
 						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\PathObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PathObject.h"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\SharedResources.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SharedResources.h"
-				>
 			</File>
 			<File
 				RelativePath=".\SUI.cpp"
@@ -261,6 +223,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\VGCommon.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -268,7 +234,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\types.h"
+				RelativePath=".\DataTypes.h"
 				>
 			</File>
 			<File
@@ -277,22 +243,44 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Math"
-			>
-			<File
-				RelativePath=".\Cubic.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Cubic.h"
-				>
-			</File>
-		</Filter>
-		<Filter
 			Name="Impl"
 			>
 			<File
-				RelativePath=".\GeometryBuilders.h"
+				RelativePath=".\impl\GeometryBuilders.h"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\Math.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\Math.h"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\Paint.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)\$(InputName)1.obj"
+						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)\$(InputName)1.obj"
+						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\impl\Paint.h"
 				>
 			</File>
 			<File
@@ -322,11 +310,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Rasterizer.cpp"
+				RelativePath=".\impl\Rasterizer.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Rasterizer.h"
+				RelativePath=".\impl\Rasterizer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\SharedResources.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\impl\SharedResources.h"
 				>
 			</File>
 		</Filter>

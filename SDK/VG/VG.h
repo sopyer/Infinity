@@ -1,7 +1,7 @@
 #pragma once
 
 #include <FTGLTextureFont.h>
-#include "SharedResources.h"
+#include "impl\SharedResources.h"
 #include "SUI.h"
 
 namespace vg

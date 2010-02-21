@@ -2,11 +2,11 @@
 #	define	__IMPL_PATH_H_INCLUDED__
 
 #include <vg/openvg.h>
-#include <vector>
+#include <DataTypes.h>
+#include "Rasterizer.h"
 
 namespace impl
 {
-
 	class Path
 	{
 		public:
@@ -14,16 +14,26 @@ namespace impl
 							const VGubyte* pathSegments,
 							const VGfloat* pathData);
 
-		private:
-			void rebuild();
+			void bounds(VGfloat* minX,
+						VGfloat* minY,
+						VGfloat* maxX,
+						VGfloat* maxY);
+		
+		//private:
+			void rasterizeFill();
+			void prepareGeom();
 
-		private:
-			/* Path data */
-			std::vector<VGubyte>	mSegments;
-			std::vector<float>		mData;
+		//private:
+			//User path data
+			Array<VGubyte>	mSegments;
+			Array<float>	mData;
 			
-			//Internal behaviour flags
-			bool	mRebuildGeometry:1;
+			//Private path data
+			FillGeometry	mFillGeom;
+			StrokeGeometry	mStrokeGeom;
+			
+			VGuint	mPrims;
+			bool	mRebuildGeometry;
 	};
 
 }

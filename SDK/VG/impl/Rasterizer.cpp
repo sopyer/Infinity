@@ -1,7 +1,8 @@
 #include <cassert>
-#include <gl\glee.h>
+#include <gl/glee.h>
 #include <utils.h>
-#include "Cubic.h"
+
+#include "Math.h"
 #include "SharedResources.h"
 #include "Rasterizer.h"
 #include "GeometryBuilders.h"
@@ -343,7 +344,15 @@ namespace impl
 		builder.copyDataTo(geom);
 	}
 
-	void FillGeometry::RasterizeEvenOdd()
+	enum
+	{
+		PRIM_TYPE_TRI = 1,
+		PRIM_TYPE_ARC = 2,
+		PRIM_TYPE_QUAD = 4,
+		PRIM_TYPE_CUBIC = 8,
+	};
+
+	void FillGeometry::RasterizeEvenOdd(VGuint prims)
 	{
 		if (vertices.empty())
 			return;
@@ -365,22 +374,34 @@ namespace impl
 
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
-
-		glUseProgram(0);
-		drawElements(FILL_PRIM_TYPE_TRI);
+		
+		if (prims&PRIM_TYPE_TRI)
+		{
+			glUseProgram(0);
+			drawElements(FILL_PRIM_TYPE_TRI);
+		}
 
 		glClientActiveTexture(GL_TEXTURE0);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
 
-		glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-		drawElements(FILL_PRIM_TYPE_QUAD);
+		if (prims&PRIM_TYPE_QUAD)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+			drawElements(FILL_PRIM_TYPE_QUAD);
+		}
 
-		glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
-		drawElements(FILL_PRIM_TYPE_CUBIC);
+		if (prims&PRIM_TYPE_CUBIC)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
+			drawElements(FILL_PRIM_TYPE_CUBIC);
+		}
 
-		glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-		drawElements(FILL_PRIM_TYPE_ARC);
+		if (prims&PRIM_TYPE_ARC)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+			drawElements(FILL_PRIM_TYPE_ARC);
+		}
 
 		glPopClientAttrib();
 		glPopAttrib();

@@ -1,6 +1,7 @@
-#include "Cubic.h"
 #include <cassert>
 #include <algorithm>
+
+#include "Math.h"
 
 namespace cubic
 {

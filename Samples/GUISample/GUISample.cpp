@@ -114,6 +114,14 @@ class GUISample: public UI::SDLStage
 
 			mMoveDog.onClicked.connect(this, &GUISample::onMoveDog);
 
+
+			glPushAttrib(GL_ALL_ATTRIB_BITS);
+			glMatrixMode(GL_PROJECTION);
+			glPushMatrix();
+			glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
+			
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
 		}
 		
 		~GUISample()

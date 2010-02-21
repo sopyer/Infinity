@@ -5,9 +5,6 @@
 
 namespace impl
 {
-	void acquire();
-	void release();
-
 	enum
 	{
 		PRG_SIMPLE_UI,
@@ -43,4 +40,7 @@ namespace impl
 
 	extern GLuint	programs[];
 	extern GLint	uniforms[];
+
+	void acquire();
+	void release();
 }

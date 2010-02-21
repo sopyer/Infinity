@@ -3,7 +3,7 @@
 
 #	include	<vg/openvg.h>
 #	include <FTGLTextureFont.h>
-#	include "SharedResources.h"
+#	include "impl\SharedResources.h"
 
 namespace sui
 {

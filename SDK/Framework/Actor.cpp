@@ -28,10 +28,10 @@ namespace UI
 
 	Actor&	Actor::setParent(Actor* parent)
 	{
-		if (mParent)
-			dynamic_cast<Container*>(mParent)->remove(this);
-
 		mParent = parent;
+
+		//if (mParent)
+		//	dynamic_cast<Container*>(mParent)->remove(this);
 
 		return *this;
 	}

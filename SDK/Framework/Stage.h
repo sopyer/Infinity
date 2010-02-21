@@ -15,6 +15,8 @@ namespace UI
 			
 			Stage& captureFocus(Actor* focused);
 			Stage& releaseFocus();
+			
+			Stage& setProjection(float* mat4x4);
 
 		protected:
 			enum Phase
@@ -27,16 +29,16 @@ namespace UI
 			};
 
 		protected:
-			virtual void onKeyDown(const KeyEvent& event);
-			virtual void onKeyUp(const KeyEvent& event);
-			virtual void onTouch(const ButtonEvent& event);
-			virtual void onUntouch(const ButtonEvent& event);
-			virtual void onMotion(const MotionEvent& event);
+			void processKeyDown(const KeyEvent& event);
+			void processKeyUp(const KeyEvent& event);
+			void processTouch(const ButtonEvent& event);
+			void processUntouch(const ButtonEvent& event);
+			void processMotion(const MotionEvent& event);
 
 			void enterPhase(Phase nextPhase);// {mPhase = nextPhase;}
 
 		protected:
-			VG				mVG;
+			//VG				mVG;
 
 		private:
 			struct RenderItem
@@ -58,6 +60,8 @@ namespace UI
 
 			Actor*	mLastVisited;
 			Actor*	mFocused;
+			
+			glm::mat4	mProjection;
 
 			std::vector<RenderItem>		mRenderQueue;
 	};

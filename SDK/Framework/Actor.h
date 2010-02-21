@@ -50,24 +50,25 @@ namespace UI
 			Stage*	getStage();
 
 			Actor&	setPos(float x, float y)   {mX = x; mY = y; queueRelayout(); return *this;}
+			Actor&	setPos(float x, float y, float z)   {mX = x; mY = y; mZ = z; queueRelayout(); return *this;}
 			Actor&	setSize(float width, float height) {mWidth = width; mHeight = height; queueRelayout(); return *this;}
 			
 			Actor&	setParent(Actor& parent) {return setParent(&parent);}
 			//!!!! Resolve add/remove problem while setting parent-child relation
 			Actor&	setParent(Actor* parent);// {dynamic_cast<Container>(mParent)->remove(this); mParent = parent; return *this;}
 
-			Actor&	setWidth(float w)		{mWidth = w; return *this;}
+			Actor&	setWidth(float w)	{mWidth = w; return *this;}
 			Actor&	setHeight(float h)	{mHeight = h; return *this;}
 
 			Actor&	setX(float x) {mX = x; return *this;}
 			Actor&	setY(float y) {mY = y; return *this;}
 			Actor&	setZ(float z) {mZ = -z; return *this;}
 
-			Actor&	setScaleX(float scaleX) {mScaleX = scaleX; return *this;}
-			Actor&	setScaleY(float scaleY) {mScaleY = scaleY; return *this;}
+			Actor&	setScaleX(float scaleX) {mScaleX = scaleX; queueRelayout(); return *this;}
+			Actor&	setScaleY(float scaleY) {mScaleY = scaleY; queueRelayout(); return *this;}
 			
 			Actor&	setRotation(float angle, float rotDirX, float rotDirY, float rotDirZ)
-			{mAngle = angle; mRotDirX = rotDirX;  mRotDirY = rotDirY;  mRotDirZ = rotDirZ; return *this;}
+			{mAngle = angle; mRotDirX = rotDirX;  mRotDirY = rotDirY;  mRotDirZ = rotDirZ; queueRelayout(); return *this;}
 
 			float	getWidth()	{return mWidth;}
 			float	getHeight()	{return mHeight;}

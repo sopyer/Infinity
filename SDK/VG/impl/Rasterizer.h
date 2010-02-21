@@ -2,7 +2,9 @@
 
 #include <glm/glm.h>
 #include <vg/openvg.h>
-#include "Cubic.h"
+#include <gl/glee.h>
+
+#include "Math.h"
 
 namespace impl
 {
@@ -113,7 +115,7 @@ namespace impl
 
 	struct FillGeometry: public Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>
 	{
-		void RasterizeEvenOdd();
+		void RasterizeEvenOdd(VGuint prims);
 
 		//Safetly supports up to 127 self intersections
 		void RasterizeNonZero();
