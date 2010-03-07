@@ -3,8 +3,8 @@
 
 #include <VG/OpenVG.h>
 
-#include <DataTypes.h>
-#include <VGCommon.h>
+#include <VG/DataTypes.h>
+#include <VG/VGCommon.h>
 
 namespace vg
 {

@@ -44,17 +44,35 @@ namespace vg
 		drawQuad(min, max, offset);
 	}
 
+	void drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
+		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		path.mHandle->rasterizeFill();
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glUseProgram(0);
+		glColor4ub(red, green, blue, alpha);
+		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		glPopAttrib();
+	}
+
 	void drawPath(Path path, Paint paint)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
 		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
 		path.mHandle->rasterizeFill();
 
 		glCallList(paint.mHandle);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		glPopAttrib();
 	}
 
 	void destroyPath(Path path)

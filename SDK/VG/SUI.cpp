@@ -1,4 +1,5 @@
-#include "gl/glee.h"
+#include <gl/glee.h>
+#include <FTGLTextureFont.h>
 #include "impl/SharedResources.h"
 #include "SUI.h"
 
@@ -47,31 +48,33 @@ namespace sui
 		{ norm255(0), norm255(0), norm255(0), 0.0 },
 	};
 
-	GLfloat	getTextAscender(FTFont& font)
+	void Font::setSize(VGuint size) {mHandle->FaceSize(size);}
+
+	GLfloat	getTextAscender(Font font)
 	{
-		return font.Ascender();
+		return font.mHandle->Ascender();
 	}
 
-	GLfloat	getTextDescender(FTFont& font)
+	GLfloat	getTextDescender(Font font)
 	{
-		return font.Descender();
+		return font.mHandle->Descender();
 	}
 	
-	GLfloat	getTextVExtent(FTFont& font)
+	GLfloat	getTextVExtent(Font font)
 	{
-		return font.Ascender()-font.Descender();
+		return font.mHandle->Ascender()-font.mHandle->Descender();
 	}
 
-	GLfloat	getTextHExtent(FTFont& font, const wchar_t* text)
+	GLfloat	getTextHExtent(Font font, const wchar_t* text)
 	{
 		float x1, y1, z1, x2, y2, z2;
-		font.BBox(text, x1, y1, z1, x2, y2, z2);
+		font.mHandle->BBox(text, x1, y1, z1, x2, y2, z2);
 
 		return x2-x1;
 	}
 
 	void	calcTextBasePt(
-		FTFont& font, float w, float h, VGuint flags,
+		Font font, float w, float h, VGuint flags,
 		const wchar_t* text, float& bx, float& by
 	)
 	{
@@ -105,7 +108,20 @@ namespace sui
 		};
 	}
 
-	void drawText(FTFont& font, GLfloat x, GLfloat y, const wchar_t* text)
+	Font createFont(const char* name)
+	{
+		Font	newFont;
+
+		newFont.mHandle = new FTGLTextureFont(name);
+		return newFont;
+	}
+
+	void destroyFont(Font font)
+	{
+		delete font.mHandle;
+	}
+
+	void drawText(Font font, GLfloat x, GLfloat y, const wchar_t* text)
 	{
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
@@ -113,7 +129,7 @@ namespace sui
 		glScalef(1.0f, -1.0f, 1.0f);//It's hack to compansate text rendering algorithm
 		glEnable(GL_TEXTURE_2D);
 
-		font.Render(text);
+		font.mHandle->Render(text);
 
 		glDisable(GL_TEXTURE_2D);
 		glPopMatrix();

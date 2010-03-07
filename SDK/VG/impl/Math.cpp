@@ -18,13 +18,18 @@ namespace cubic
 
 	void correctOrient(glm::vec3 tc[4])
 	{
-		if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
+		if (ml::lessThenE(calcImplicit(tc[1]), 0) || ml::lessThenE(calcImplicit(tc[2]),0))
+		//if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
 		{
 			cubic::changeOrient(tc[0]);
 			cubic::changeOrient(tc[1]);
 			cubic::changeOrient(tc[2]);
 			cubic::changeOrient(tc[3]);
 		}
+		//assert(cubic::calcImplicit(tc[1])>=0);
+		//assert(cubic::calcImplicit(tc[2])>=0);
+		//assert(cubic::calcImplicit(tc[0])==0);
+		//assert(cubic::calcImplicit(tc[3])==0);
 	}
 
 	struct Determinants

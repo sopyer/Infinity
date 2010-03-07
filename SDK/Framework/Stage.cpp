@@ -116,9 +116,9 @@ namespace UI
 	static const u32 gMaskUsed = 8;
 	static const u32 bMaskUsed = 8;
 
-	static const u32 rMask = 7;
-	static const u32 gMask = 7;
-	static const u32 bMask = 7;
+	static const u32 rMask = 5;
+	static const u32 gMask = 5;
+	static const u32 bMask = 5;
 
 	//code from clutter!!!!!!!!!!!!!!!!!!!!LGPL????????????????????????
 	Color idToColor(u32 id)
@@ -127,19 +127,19 @@ namespace UI
 		u32 red, green, blue;
 
 		// compute the numbers we'll store in the components
-		red   = (id >> (gMaskUsed+bMaskUsed)) & (0xff >> (8-rMaskUsed));
-		green = (id >> bMaskUsed) & (0xff >> (8-gMaskUsed));
-		blue  = (id) & (0xff >> (8-bMaskUsed));
+		red   = (id >> (gMask/*Used*/+bMask/*Used*/)) & (0xff >> (8-rMask/*Used*/));
+		green = (id >> bMask/*Used*/) & (0xff >> (8-gMask/*Used*/));
+		blue  = (id) & (0xff >> (8-bMask/*Used*/));
 
 		// shift left bits a bit and add one, this circumvents
 		// at least some potential rounding errors in GL/GLES
 		// driver / hw implementation.
-		if (rMaskUsed != rMask)
-		red = red * 2 + 1;
-		if (gMaskUsed != gMask)
-		green = green * 2 + 1;
-		if (bMaskUsed != bMask)
-		blue  = blue  * 2 + 1;
+		//if (rMaskUsed != rMask)
+		//red = red * 2 + 1;
+		//if (gMaskUsed != gMask)
+		//green = green * 2 + 1;
+		//if (bMaskUsed != bMask)
+		//blue  = blue  * 2 + 1;
 
 		// shift up to be full 8bit values
 		red   = red   << (8 - rMask);
@@ -164,45 +164,16 @@ namespace UI
 		blue  = pixel[2] >> (8 - bMask);
 
 		// divide potentially by two if 'fuzzy'
-		red   = red   >> (rMaskUsed - rMask);
-		green = green >> (gMaskUsed - gMask);
-		blue  = blue  >> (bMaskUsed - bMask);  
+		//red   = red   >> (rMaskUsed - rMask);
+		//green = green >> (gMaskUsed - gMask);
+		//blue  = blue  >> (bMaskUsed - bMask);  
 
 		// combine the correct per component values into the final id
-		u32 id =  blue + (green << bMaskUsed) + (red << (bMaskUsed + gMaskUsed));
+		u32 id =  blue + (green << bMask/*Used*/) + (red << (bMask/*Used*/ + gMask/*Used*/));
 
 		return id;
 	} 
 	
-	void Stage::outlineActors()
-	{
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClearDepth(1.0f);
-		glClearStencil(0);
-		glDepthMask(GL_TRUE);
-		glStencilMask( 0xFF );
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glUseProgram(0);
-		glDisable(GL_BLEND);
-		glDisable(GL_TEXTURE_2D);
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(mProjection);
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-
-		for(u32 i = 0; i < mRenderQueue.size(); ++i)
-		{
-			glPushMatrix();
-			glMultMatrixf(mRenderQueue[i].transform);
-			mRenderQueue[i].actor->onPick(idToColor(i));
-			glPopMatrix();
-		}
-
-		glFinish();
-	}
-
 	Actor* Stage::doPick(u32 x, u32 y)
 	{
 		GLint	viewport[4];
@@ -216,12 +187,14 @@ namespace UI
 			return this;
 
 		u32 id = pixelToId(pixel);
-#ifdef DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
 		if (id >= mRenderQueue.size())
 		{
-			u8* p = new u8[mWidth*mHeight*4];
-			glReadPixels (0, 0, mWidth, mHeight, GL_RGBA, GL_UNSIGNED_BYTE, p);
-			SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, mWidth, mHeight, 4, p);		
+			GLuint w = (GLuint)mWidth;
+			GLuint h = (GLuint)mHeight;
+			u8* p = new u8[w*h*4];
+			glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
+			SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
 			delete [] p;
 		}
 #endif
@@ -263,6 +236,48 @@ namespace UI
 		mPhase = nextPhase;
 	}
 
+	//!!!!!!!!!!!Refactor
+	void setupUIViewMatrix(const glm::mat4& proj, float width, float height)
+	{
+		glm::mat4 inv = glm::inverseGTX(proj);
+		glm::vec4 ur = inv*glm::vec4(1, 1, -1, 1);
+		ur/=ur.w;
+
+		glLoadIdentity();
+		glScalef(ur.x, ur.y, 1);
+		glTranslatef(-1, 1, -0.1f/*z_near*/);
+		glScalef(2.0f/width, -2.0f/height, 1.0f/width);
+	}
+
+	void Stage::outlineActors()
+	{
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearDepth(1.0f);
+		glClearStencil(0);
+		glDepthMask(GL_TRUE);
+		glStencilMask( 0xFF );
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glUseProgram(0);
+		glDisable(GL_BLEND);
+		glDisable(GL_TEXTURE_2D);
+		glMatrixMode(GL_PROJECTION);
+		glLoadMatrixf(mProjection);
+		
+		glMatrixMode(GL_MODELVIEW);
+		setupUIViewMatrix(mProjection, mWidth, mHeight);
+
+		for(size_t i = 0; i < mRenderQueue.size(); ++i)
+		{
+			glPushMatrix();
+			glMultMatrixf(mRenderQueue[i].transform);
+			mRenderQueue[i].actor->onPick(idToColor(i));
+			glPopMatrix();
+		}
+
+		glFinish();
+	}
+
 	void Stage::renderActors()
 	{
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -277,21 +292,24 @@ namespace UI
 											end = mRenderQueue.end();
 
 		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(mProjection);
-		
+		glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f)/*mProjection*/);
+
 		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		
+		setupUIViewMatrix(mProjection, mWidth, mHeight);
+
 		glPushMatrix();
 		onPaint();
 		glPopMatrix();
 
 		for (; it != end; ++it)
 		{
-			glPushMatrix();
-			glMultMatrixf((*it).transform);
-			(*it).actor->onPaint();
-			glPopMatrix();
+			if ((*it).actor->isVisible())
+			{
+				glPushMatrix();
+				glMultMatrixf((*it).transform);
+				(*it).actor->onPaint();
+				glPopMatrix();
+			}
 		}
 
 		glFlush();
@@ -305,7 +323,7 @@ namespace UI
 		{
 			Actor* child = *it;
 
-			if (child->isVisible())
+			//if (child->isVisible())
 			{
 				glm::mat4	actorTransform = parentTransform*child->getTransformMatrix();
 				RenderItem	item = {actorTransform, child};

@@ -36,8 +36,32 @@ inline glm::vec2 calcOffset(const glm::vec2& p0, const glm::vec2& p1, const glm:
 	return calcOffsetN(n0, n1);
 }
 
+namespace ml
+{
+	const float EPS3 = 0.001f;
+	const float EPS5 = 0.00001f;
+	const float EPS7 = 0.0000001f;
+
+	inline bool equalE(float a, float b, float tolerance = EPS7)
+	{
+		return abs(a-b)<tolerance;
+	}
+
+	inline bool lessThenE(float a, float b, float tolerance = EPS7)
+	{
+		return b-a>tolerance;
+	}
+
+	inline bool greaterThenE(float a, float b, float tolerance = EPS7)
+	{
+		return a-b>tolerance;
+	}
+}
+
 namespace cubic
 {
+	float calcImplicit(const glm::vec3& tc);
+
 	template<typename T>
 	void subdivide(const T cubic[4], float t, T subCubic1[4], T subCubic2[4])
 	{

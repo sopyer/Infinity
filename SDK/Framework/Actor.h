@@ -52,6 +52,7 @@ namespace UI
 			Actor&	setPos(float x, float y)   {mX = x; mY = y; queueRelayout(); return *this;}
 			Actor&	setPos(float x, float y, float z)   {mX = x; mY = y; mZ = z; queueRelayout(); return *this;}
 			Actor&	setSize(float width, float height) {mWidth = width; mHeight = height; queueRelayout(); return *this;}
+			Actor&	setScale(float scaleX, float scaleY) {mScaleX = scaleX; mScaleY = scaleY; queueRelayout(); return *this;}
 			
 			Actor&	setParent(Actor& parent) {return setParent(&parent);}
 			//!!!! Resolve add/remove problem while setting parent-child relation

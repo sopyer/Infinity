@@ -30,5 +30,6 @@ namespace UI
 #	include <Actor.h>
 #	include <Container.h>
 #	include <SDLStage.h>
+#	include <Controls.h>
 
 #endif

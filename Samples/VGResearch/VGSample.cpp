@@ -15,6 +15,64 @@ GLsizei len;
 
 float cubicData[] = {0, 0, 50, 50, 67, 20, 48, 30};
 
+class CubicActor: public UI::Actor
+{
+public:
+	CubicActor(const VGfloat* cp)
+	{
+		memcpy(&mControlPoints, cp, sizeof(VGfloat)*2*4);
+		VGubyte segments[3] = {VG_MOVE_TO, VG_CUBIC_TO, VG_CLOSE_PATH};
+		mCubic = vg::Path::create(3, segments, cp);
+		//hide();
+	}
+
+	~CubicActor()
+	{
+		vg::Path::destroy(mCubic);
+	}
+
+	CubicActor& setPaint(vg::Paint paint)
+	{
+		mPaint = paint; return *this;
+	}
+
+	float* getControlPoints()
+	{
+		return mControlPoints[0];
+	}
+
+	sigslot::signal1<CubicActor*> eventSelected;
+
+protected:
+	virtual void onTouch(const ButtonEvent& event)
+	{
+		if (isVisible())
+		{
+			hide();
+		}
+		else
+		{
+			show();
+			eventSelected(this);
+		}
+	}
+
+	virtual void onPaint()
+	{
+		vg::drawPath(mCubic, mPaint);
+	}
+
+	virtual void onPick(UI::Color color)
+	{
+		vg::drawPath(mCubic, color.red, color.green, color.blue, color.alpha);
+	}
+
+private:
+	vg::Path	mCubic;
+	vg::Paint	mPaint;
+	glm::vec3	mControlPoints[4];
+};
+
 VGfloat hourHandData[] = {
 	14.52016f, -0.22339926f, 14.52016f, -0.22339926f, 13.76016f, -0.18339926f, 12.52016f, 
 	-0.18339926f, 12.407921f, -0.37046566f, 12.504577f, -0.73236826f, 12.51766f, -0.77839926f, 12.463759f, 
@@ -88,9 +146,11 @@ class VGSample: public UI::SDLStage
 	public:
 		VGSample():
 			doMove(false),
-			offsetX(0),
-			offsetY(0),
-			zoom(10)
+			offsetX(mWidth/2),
+			offsetY(mHeight/2),
+			zoom(10),
+			mActiveCubic(0),
+			mVisPrims(vg::PRIM_TYPE_ALL)
 		{
 			VGubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float data[] = {150, 100, 150, 0, 50, 100, 0, 0, 0, 50, 50, 0};
@@ -175,9 +235,36 @@ class VGSample: public UI::SDLStage
 			point = vg::Path::createUnitQuad();
 			path  = vg::Path::create(ARRAY_SIZE(hourHandSegs), hourHandSegs, hourHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(arcTest), arcTest, arcData);
-			path.setRastPrims(vg::PRIM_TYPE_CUBIC);
 			paint = vg::Paint::createSolid(glm::vec4(0.0f, 0.8f, 0.65f, 1.0f));
 			white = vg::Paint::createSolid(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+			float* d = hourHandData;
+			for (int i = 0; i< ARRAY_SIZE(hourHandSegs); ++i)
+			{
+				if (hourHandSegs[i]==VG_CUBIC_TO)
+				{
+					CubicActor* ca = new CubicActor(d-2);
+					ca->setPaint(white).hide();
+					ca->eventSelected.connect(this, &VGSample::handleCubicSelected);
+					mCubics.add(ca);
+					mCubicsHolder.push_back(ca);
+				}
+
+				switch (hourHandSegs[i])
+				{
+					case VG_CUBIC_TO:
+						d+=6;
+						break;
+					case VG_MOVE_TO:
+					case VG_LINE_TO:
+						d+=2;
+						break;
+					default:;
+				}
+			}
+			
+			add(mCubics);
+			updateCubics();
 
 			//impl::FillGeometryBuilder	fillBuilder;
 
@@ -266,37 +353,158 @@ class VGSample: public UI::SDLStage
 			//strokeBuilder.end(false);
 
 			//strokeBuilder.copyDataTo(stroke);
+			mFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
+			mFont.setSize(16);
+
+			add(mRenderCubicCB.setChecked(true)
+				  .setText(L"Render Cubic")
+				  .setFont(mFont)
+				  .setPos(0, 0)
+				  .setSize(16, 16));
+			mRenderCubicCB.onClicked.connect(this, &VGSample::changePrimVisibility);
+
+			add(mRenderTriCB.setChecked(true)
+				  .setText(L"Render Tri")
+				  .setFont(mFont)
+				  .setPos(0, 20)
+				  .setSize(16, 16));
+			mRenderTriCB.onClicked.connect(this, &VGSample::changePrimVisibility);
+
+			add(mRenderQuadCB.setChecked(true)
+				  .setText(L"Render Quad")
+				  .setFont(mFont)
+				  .setPos(0, 40)
+				  .setSize(16, 16));
+			mRenderQuadCB.onClicked.connect(this, &VGSample::changePrimVisibility);
+
+			add(mRenderArcCB.setChecked(true)
+				  .setText(L"Render Arc")
+				  .setFont(mFont)
+				  .setPos(0, 60)
+				  .setSize(16, 16));
+			mRenderArcCB.onClicked.connect(this, &VGSample::changePrimVisibility);
+
+			wchar_t zoomStr[256];
+			swprintf(zoomStr, L"Zoom level %f", zoom);
+			add(mZoomLabel.setText(zoomStr)
+				  .setFont(mFont)
+				  .setPos(300, 10));
+			add(mCubicLabel.setFont(mFont)
+				  .setPos(0, 540));
 		}
 
 		~VGSample()
 		{
+			struct {void operator ()(CubicActor* cubic) {delete cubic;}} deleter;
+			
+			std::for_each(mCubicsHolder.begin(), mCubicsHolder.end(), deleter);
+
+			sui::destroyFont(mFont);
 			vg::Path::destroy(point);
 			vg::Path::destroy(path);
 			vg::Paint::destroy(paint);
 			vg::Paint::destroy(white);
 			vg::cleanup();
 		}
-
+		
 	protected:
+		std::vector<CubicActor*>	mCubicsHolder;
+
+		CubicActor*		mActiveCubic;
+		ui::Group		mCubics;
+		sui::Font		mFont;
+		ui::Label		mZoomLabel;
+		ui::Label		mCubicLabel;
+		ui::CheckBox	mRenderCubicCB;
+		ui::CheckBox	mRenderTriCB;
+		ui::CheckBox	mRenderArcCB;
+		ui::CheckBox	mRenderQuadCB;
 		vg::Path	point;
 		vg::Paint	white;
 		bool doMove;
 		float offsetX;
 		float offsetY;
 		float zoom;
+		VGuint		mVisPrims;
+		
+		void handleCubicSelected(CubicActor* cubic)
+		{
+			if (cubic!=mActiveCubic)
+			{
+				const float* cp = cubic->getControlPoints();
+				wchar_t label[1024];
+				swprintf(label, L"CP: (%f, %f) (%f, %f) (%f, %f) (%f, %f)",
+					cp[0], cp[1], cp[2], cp[3], cp[4], cp[5], cp[6], cp[7]);
+				mCubicLabel.setText(label);
+			}
+			else
+				mCubicLabel.setText(L"");
+
+			if (mActiveCubic)
+			{
+				mActiveCubic->hide();
+			}
+			
+			mActiveCubic = (cubic!=mActiveCubic)?cubic:0;
+		}
+
+		void updateCubics()
+		{
+			mCubics.setScale(zoom, zoom).setPos(offsetX, offsetY);
+		}
+
+		void changePrimVisibility(UI::Actor* actor)
+		{
+			if (ui::isSame(actor, &mRenderCubicCB))
+			{
+				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_CUBIC:mVisPrims&~vg::PRIM_TYPE_CUBIC;
+			}
+			else if (ui::isSame(actor, &mRenderTriCB))
+			{
+				mVisPrims = mRenderTriCB.isChecked()?mVisPrims|vg::PRIM_TYPE_TRI:mVisPrims&~vg::PRIM_TYPE_TRI;
+			}
+			else if (ui::isSame(actor, &mRenderQuadCB))
+			{
+				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_QUAD:mVisPrims&~vg::PRIM_TYPE_QUAD;
+			}
+			else if (ui::isSame(actor, &mRenderArcCB))
+			{
+				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_ARC:mVisPrims&~vg::PRIM_TYPE_ARC;
+			}
+			path.setRastPrims(mVisPrims);
+		}
 
 		void onTouch(const ButtonEvent& event)
 		{
 			if (event.button == SDL_BUTTON_WHEELUP)
-				zoom += zoom*zoom/300;
+			{
+				zoom *= 1.2f;
+				offsetX -= (event.x-offsetX)*(1.2f - 1);
+				offsetY -= (event.y-offsetY)*(1.2f - 1);
+			}
 			else if (event.button == SDL_BUTTON_WHEELDOWN)
 			{
-				zoom -= zoom*zoom/100;
-				if (zoom<0.11)
-					zoom = 0.11;
+				zoom /= 1.2f;
+				if (zoom<1.0f)
+				{
+					//fix it a bit
+					offsetX -= (event.x-offsetX)*(1/zoom/1.2f - 1);
+					offsetY -= (event.y-offsetY)*(1/zoom/1.2f - 1);
+					zoom = 1.0f;
+				}
+				else
+				{
+					offsetX -= (event.x-offsetX)*(1/1.2f - 1);
+					offsetY -= (event.y-offsetY)*(1/1.2f - 1);
+				}
 			}
 			else
 				doMove = true;
+
+			wchar_t zoomStr[256];
+			swprintf(zoomStr, L"Zoom level %f", zoom);
+			mZoomLabel.setText(zoomStr);
+			updateCubics();
 		}
 
 		void onUntouch(const ButtonEvent& event)
@@ -308,60 +516,32 @@ class VGSample: public UI::SDLStage
 		{
 			if (doMove)
 			{
-				offsetX += event.xrel/11.0f;
-				offsetY -= event.yrel/11.0f;
+				offsetX += event.xrel/*/11.0f*/;
+				offsetY += event.yrel/*/11.0f*/;
 			}
+			updateCubics();
 			//mGroup.setPos(offsetX, 0/*offsetY*/);
 		}
-
-		//void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)
-		//{
-		//	glBegin(GL_QUADS);
-		//	glVertex2f(min.x-offset, min.y-offset);
-		//	glVertex2f(min.x-offset, max.y+offset);
-		//	glVertex2f(max.x+offset, max.y+offset);
-		//	glVertex2f(max.x+offset, min.y-offset);
-		//	glEnd();
-		//}
-
-		//void clearStencil(const glm::vec2& min, const glm::vec2& max, float offset)
-		//{
-		//	glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-		//	glEnable(GL_STENCIL_TEST);
-		//	glDisable(GL_DEPTH_TEST);
-
-		//	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-		//	glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
-		//	glStencilMask(0xFF);
-		//	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-		//	glUseProgram(0);
-
-		//	drawQuad(min, max, offset);
-
-		//	glPopAttrib();
-		//}
 
 		void onPaint()
 		{
 			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
+			//glMatrixMode(GL_MODELVIEW);
+			//glLoadIdentity();
 			//glTranslatef(400.0f, 300.0f, -4.0f);
 			//glScalef(2, -2, 1);
-			glPushMatrix();
-			glTranslatef(offsetX, offsetY, -zoom);
-
+			//glPushMatrix();
+			glTranslatef(offsetX, offsetY, 0);
+			glScalef(zoom, zoom, 1);
 			vg::drawPath(path, paint);
-			glPopMatrix();
+			//glPopMatrix();
 			//Hack:) for correct result we should also parse segments
 			for (int i=0; i<ARRAY_SIZE(hourHandData); i+=2)
 			{
 				glPushMatrix();
-				glTranslatef(hourHandData[i]+offsetX, hourHandData[i+1]+offsetY, -zoom);
-				glScalef(0.02f, 0.02f, 1);
+				//glTranslatef(offsetX, offsetY, 0);
+				glTranslatef(hourHandData[i], hourHandData[i+1], 0);
+				glScalef(2/zoom, 2/zoom, 1);
 				vg::drawPath(point, white);
 				glPopMatrix();
 			}

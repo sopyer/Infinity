@@ -1,9 +1,7 @@
 #ifndef __SUI_H_INCLUDED__
 #	define __SUI_H_INCLUDED__
 
-#	include	<vg/openvg.h>
-#	include <FTGLTextureFont.h>
-#	include "impl\SharedResources.h"
+#	include <VG/VGCommon.h>
 
 namespace sui
 {
@@ -28,17 +26,28 @@ namespace sui
 		TALIGN_VCENTER = 8,
 	};
 
-	GLfloat	getTextAscender(FTFont& font);
-	GLfloat	getTextDescender(FTFont& font);
-	GLfloat	getTextVExtent(FTFont& font);
-	GLfloat	getTextHExtent(FTFont& font, const wchar_t* text);
+	struct Font
+	{
+		void setSize(VGuint size);
+
+		FTFont*	mHandle;
+	};
+
+	GLfloat	getTextAscender(Font font);
+	GLfloat	getTextDescender(Font font);
+	GLfloat	getTextVExtent(Font font);
+	GLfloat	getTextHExtent(Font font, const wchar_t* text);
 	
 	void	calcTextBasePt(
-		FTFont& font, float w, float h, VGuint flags,
+		Font font, float w, float h, VGuint flags,
 		const wchar_t* text, float& bx, float& by
 	);
 
-	void drawText(FTFont& font, GLfloat x, GLfloat y, const wchar_t* text);
+	Font	createFont(const char* name);
+	void	destroyFont(Font font);
+
+	void drawText(Font font, GLfloat x, GLfloat y, const wchar_t* text);
+
 	void drawRect(
 		float x0, float y0, float x1, float y1,
 		int fillColor, int borderColor

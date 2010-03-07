@@ -311,6 +311,14 @@
 				RelativePath=".\UI.h"
 				>
 			</File>
+			<Filter
+				Name="Controls"
+				>
+				<File
+					RelativePath=".\Controls.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\Framework.cpp"

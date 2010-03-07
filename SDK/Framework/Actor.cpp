@@ -38,6 +38,7 @@ namespace UI
 
 	void Actor::onPick(Color color)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glColor4ub(color.red, color.green, color.blue, color.alpha);
 		glBegin(GL_QUADS);
 		glVertex2f(0,0);
@@ -45,5 +46,6 @@ namespace UI
 		glVertex2f(mWidth,mHeight);
 		glVertex2f(0,mHeight);
 		glEnd();
+		glPopAttrib();
 	}
 }

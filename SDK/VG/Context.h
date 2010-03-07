@@ -6,9 +6,9 @@
 #include <vg/openvg.h>
 
 #include <FTGLTextureFont.h>
-#include <Path.h>
-#include <Paint.h>
-#include <VGCommon.h>
+#include <VG/Path.h>
+#include <VG/Paint.h>
+#include <VG/VGCommon.h>
 
 namespace vg
 {
@@ -26,6 +26,7 @@ namespace vg
 	void	destroyPath(Path path);
 
 	void	drawPath(Path path, Paint paint);
+	void	drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
 
 	class Context
 	{
