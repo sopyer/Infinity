@@ -285,7 +285,8 @@ namespace UI
 		glClearStencil(0);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
+		
+		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LEQUAL);
 
 		std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),

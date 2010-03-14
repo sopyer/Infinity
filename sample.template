@@ -1,0 +1,43 @@
+#include <framework.h>
+
+class <SampleName>: public UI::SDLStage
+{
+	public:
+		<SampleName>()
+		{
+		}
+		
+		~<SampleName>()
+		{
+		}
+	protected:
+		virtual void onPaint()
+		{
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+			glTranslatef(0, 0, -10);
+			
+			glColor3f(1, 1, 1);
+			glBegin(GL_QUADS);
+				glVertex2f(-1,  1);
+				glVertex2f( 1,  1);
+				glVertex2f( 1, -1);
+				glVertex2f(-1, -1);
+			glEnd();
+		}
+
+	private:
+		VFS				mVFS;
+};
+
+extern "C" int main(int argc, char** argv)
+{
+	ui::init();
+	{
+		<SampleName> app;
+		app.run();
+	}
+	ui::cleanup();
+
+	return 0;
+}

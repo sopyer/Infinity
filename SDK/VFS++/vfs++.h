@@ -24,6 +24,8 @@ public:
 
 	operator PHYSFS_file* () {return mHandle;}
 
+	operator bool() {return mHandle!=0;}
+
 public:
 	PHYSFS_file*	mHandle;
 };

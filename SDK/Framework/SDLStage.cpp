@@ -16,7 +16,7 @@ namespace UI
 
 		if(SDL_Init(SDL_INIT_VIDEO)<0)											// Init The SDL Library, The VIDEO Subsystem
 		{
-			logMessage("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
+			logging::message("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
 			exit(1);															// Get Out Of Here. Sorry.
 		}
 
@@ -43,7 +43,7 @@ namespace UI
 
 		if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
 		{
-			logMessage("Unable to open screen surface: %s\n", SDL_GetError() );		// If Something's Gone Wrong, Report
+			logging::message("Unable to open screen surface: %s\n", SDL_GetError() );		// If Something's Gone Wrong, Report
 			exit(1);															// And Exit
 		}
 		

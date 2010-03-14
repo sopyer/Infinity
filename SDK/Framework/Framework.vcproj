@@ -200,6 +200,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ResourceHelpers.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\ResourceHelpers.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ResourceManager.h"
 				>
 			</File>
@@ -217,6 +225,14 @@
 			</File>
 			<File
 				RelativePath=".\TextureManager.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Cameras"
+			>
+			<File
+				RelativePath=".\FirstPersonCamera.h"
 				>
 			</File>
 			<Filter
@@ -255,14 +271,6 @@
 					>
 				</File>
 			</Filter>
-		</Filter>
-		<Filter
-			Name="Cameras"
-			>
-			<File
-				RelativePath=".\FirstPersonCamera.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="UI"

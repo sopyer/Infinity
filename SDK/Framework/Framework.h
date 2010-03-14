@@ -4,7 +4,11 @@
 #include <gl\glee.h>
 
 #include <UI.h>
+#include <ResourceHelpers.h>
 
-void logMessage(const char *s,...);
+namespace logging
+{
+	void message(const char *s,...);
+}
 
 #endif
