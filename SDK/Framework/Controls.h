@@ -32,13 +32,13 @@ namespace ui
 				glEnable(GL_TEXTURE_2D);
 				glBindTexture(GL_TEXTURE_2D, mTexture);
 				glBegin(GL_TRIANGLE_STRIP);
-					glTexCoord2f(0, 0);
-					glVertex2f(x, y);
 					glTexCoord2f(0, 1);
+					glVertex2f(x, y);
+					glTexCoord2f(0, 0);
 					glVertex2f(x, y+h);
-					glTexCoord2f(1, 0);
-					glVertex2f(x+w, y);
 					glTexCoord2f(1, 1);
+					glVertex2f(x+w, y);
+					glTexCoord2f(1, 0);
 					glVertex2f(x+w, y+h);
 				glEnd();
 				glDisable(GL_TEXTURE_2D);

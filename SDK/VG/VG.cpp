@@ -1,6 +1,8 @@
 #include <gl/glee.h>
 #include "VG.h"
 #include "impl/SharedResources.h"
+#include <FTGLTextureFont.h>
+
 using namespace impl;
 
 //strange staff fix it!!!!!!!

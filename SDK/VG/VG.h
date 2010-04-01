@@ -1,6 +1,5 @@
 #pragma once
 
-#include <FTGLTextureFont.h>
 #include "impl\SharedResources.h"
 #include "SUI.h"
 

@@ -5,7 +5,6 @@
 #include <gl/glee.h>
 #include <vg/openvg.h>
 
-#include <FTGLTextureFont.h>
 #include <VG/Path.h>
 #include <VG/Paint.h>
 #include <VG/VGCommon.h>
@@ -14,7 +13,7 @@ namespace vg
 {
 	struct Font: public Handle<FTFont*>
 	{
-		void	setFaceSize(VGuint size) {mHandle->FaceSize(size);}
+		void	setFaceSize(VGuint size);
 	};
 
 	Font	createFont(const char* name);

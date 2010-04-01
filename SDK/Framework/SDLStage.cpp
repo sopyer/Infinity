@@ -116,7 +116,7 @@ namespace UI
 		//	mTimer.resetFrame();
 		//}
 		scheduler::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
-		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 20);
+		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 1);
 
 		scheduler::mainLoop();
 	}

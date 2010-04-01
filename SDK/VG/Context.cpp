@@ -2,9 +2,13 @@
 #include "Context.h"
 #include "impl/Path.h"
 #include "impl/SharedResources.h"
+#include <FTGLTextureFont.h>
 
 namespace vg
 {
+	void Font::setFaceSize(VGuint size) {mHandle->FaceSize(size);}
+
+
 	Context::Context()
 	{
 		impl::acquire();

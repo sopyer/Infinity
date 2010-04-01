@@ -391,7 +391,7 @@ class VGSample: public UI::SDLStage
 			mRenderArcCB.onClicked.connect(this, &VGSample::changePrimVisibility);
 
 			wchar_t zoomStr[256];
-			swprintf(zoomStr, L"Zoom level %f", zoom);
+			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
 			add(mZoomLabel.setText(zoomStr)
 				  .setFont(mFont)
 				  .setPos(300, 10));
@@ -439,7 +439,7 @@ class VGSample: public UI::SDLStage
 			{
 				const float* cp = cubic->getControlPoints();
 				wchar_t label[1024];
-				swprintf(label, L"CP: (%f, %f) (%f, %f) (%f, %f) (%f, %f)",
+				swprintf(label, 1024, L"CP: (%f, %f) (%f, %f) (%f, %f) (%f, %f)",
 					cp[0], cp[1], cp[2], cp[3], cp[4], cp[5], cp[6], cp[7]);
 				mCubicLabel.setText(label);
 			}
@@ -508,7 +508,7 @@ class VGSample: public UI::SDLStage
 				doMove = true;
 
 			wchar_t zoomStr[256];
-			swprintf(zoomStr, L"Zoom level %f", zoom);
+			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
 			mZoomLabel.setText(zoomStr);
 			updateCubics();
 		}
