@@ -20,6 +20,8 @@ namespace vg
 	struct Path: public Handle<impl::Path*>
 	{
 		void appendData(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
+		void getBounds(float& x1, float& y1, float& x2, float& y2);
+
 		void setRastPrims(VGuint prims);
 
 		static Path create(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);

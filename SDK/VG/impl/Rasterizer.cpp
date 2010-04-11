@@ -350,6 +350,7 @@ namespace impl
 		PRIM_TYPE_ARC = 2,
 		PRIM_TYPE_QUAD = 4,
 		PRIM_TYPE_CUBIC = 8,
+		PRIM_TYPE_ALL = 15
 	};
 
 	void FillGeometry::RasterizeEvenOdd(VGuint prims)

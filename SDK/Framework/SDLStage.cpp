@@ -14,7 +14,7 @@ namespace UI
 	{
 		//mRunning = false;
 
-		if(SDL_Init(SDL_INIT_VIDEO)<0)											// Init The SDL Library, The VIDEO Subsystem
+		if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)											// Init The SDL Library, The VIDEO Subsystem
 		{
 			logging::message("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
 			exit(1);															// Get Out Of Here. Sorry.
@@ -116,7 +116,8 @@ namespace UI
 		//	mTimer.resetFrame();
 		//}
 		scheduler::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
-		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 1);
+		//Do not make this too small ro there will be input handling lag
+		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 20);
 
 		scheduler::mainLoop();
 	}

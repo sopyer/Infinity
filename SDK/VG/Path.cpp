@@ -15,6 +15,11 @@ namespace vg
 		//VG_RETURN(VG_NO_RETVAL);
 	}
 
+	void Path::getBounds(float& x1, float& y1, float& x2, float& y2)
+	{
+		mHandle->bounds(&x1, &y1, &x2, &y2);
+	}
+
 	void Path::setRastPrims(VGuint prims)
 	{
 		mHandle->mPrims = prims;

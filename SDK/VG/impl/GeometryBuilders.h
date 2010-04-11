@@ -64,7 +64,7 @@ namespace impl
 		protected:
 			void calcBBox(const glm::vec2& p)
 			{
-				if (mVertices.empty())
+				if (mVertices.size()==1)
 				{
 					mMin = p;
 					mMax = p;

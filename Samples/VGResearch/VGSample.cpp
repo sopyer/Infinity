@@ -50,6 +50,9 @@ public:
 protected:
 	virtual void onTouch(const ButtonEvent& event)
 	{
+		if (event.button!=SDL_BUTTON_LEFT)
+			return;
+
 		if (isVisible())
 		{
 			hide();

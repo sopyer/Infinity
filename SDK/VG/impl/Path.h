@@ -10,6 +10,8 @@ namespace impl
 	class Path
 	{
 		public:
+			Path();
+
 			void appendData(const VGint    numSegments,
 							const VGubyte* pathSegments,
 							const VGfloat* pathData);

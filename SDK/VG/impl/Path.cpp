@@ -12,6 +12,10 @@ namespace impl
 	////////////////////////////////////////////////////
 	//			Public methods
 	////////////////////////////////////////////////////
+	Path::Path():mPrims(15)
+	{
+	}
+
 
 	void Path::appendData(const VGint    numSegments,
 						  const VGubyte* pathSegments,
@@ -21,6 +25,7 @@ namespace impl
 		mData.insert(mData.std::vector<float>::end(), pathData, pathData+pathDataSize(numSegments, pathSegments));
 
 		mRebuildGeometry = true;
+		prepareGeom();
 	}
 
 	void Path::bounds(VGfloat* minX,
