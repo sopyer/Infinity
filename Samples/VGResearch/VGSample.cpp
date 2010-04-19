@@ -231,8 +231,6 @@ class VGSample: public UI::SDLStage
 			glClearDepth(1.0);
 			glClearStencil(0);
 
-			vg::init();
-
 			impl::buildFillGeometry(ARRAY_SIZE(segs), segs, data, fill);
 			//path = vg::createPath();
 
@@ -413,7 +411,6 @@ class VGSample: public UI::SDLStage
 			vg::Path::destroy(path);
 			vg::Paint::destroy(paint);
 			vg::Paint::destroy(white);
-			vg::cleanup();
 		}
 		
 	protected:

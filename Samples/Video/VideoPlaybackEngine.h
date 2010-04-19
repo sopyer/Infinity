@@ -5,6 +5,8 @@
 #include <string>
 #include <cstdio>
 #include <gl/glee.h>
+#include <al/al.h>
+#include <vector>
 
 extern "C"
 {
@@ -18,14 +20,18 @@ class VideoPlaybackEngine
 	public:
 		void init();
 		void cleanup();
-		void decodeVideoTask(GLuint texture, unsigned int& frameTime);
+		void decodeVideoTask(GLuint texture, ALuint buffer, unsigned int& frameTime);
 		void updateGLTexture(GLuint texture);
+		void updateALBuffer(ALuint buffer);
 
 	private:
+		int					mAudioFormat;
+		std::vector<char>	mAudioData;
 		AVFormatContext *pFormatCtx;
-		int             videoStream;
-		AVCodecContext  *pCodecCtx;
-		AVCodec         *pCodec;
+		int             videoStream, audioStream;
+		AVCodecContext  *pVideoCodecCtx;
+		AVCodecContext  *pAudioCodecCtx;
+		//AVCodec         *pVideoCodec;
 		AVFrame         *pFrame; 
 		AVFrame         *pFrameRGB;
 		int             numBytes;

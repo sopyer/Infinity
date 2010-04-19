@@ -61,7 +61,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="opengl32.lib avcodec.lib avformat.lib swscale.lib avutil.lib winmm.lib"
+				AdditionalDependencies="opengl32.lib avcodec.lib avformat.lib swscale.lib avutil.lib winmm.lib openal32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\..\SDK\lib"
 				GenerateDebugInformation="true"

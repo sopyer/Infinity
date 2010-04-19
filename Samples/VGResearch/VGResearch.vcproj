@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\External\SDL\include"
+				AdditionalIncludeDirectories="..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\External\SDL\include;..\..\SDK\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;GLEW_STATIC;FTGL_LIBRARY_STATIC;GLFW_DLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"

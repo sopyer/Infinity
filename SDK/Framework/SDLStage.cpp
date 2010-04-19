@@ -1,4 +1,4 @@
-#include <gl\glee.h>
+#include <gl/glee.h>
 #include "UI.h"
 #include "Framework.h"
 #include "SDLStage.h"
@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <SOIL.h> // remove later
 #include <SDL.h>
+#include <vg/vg.h>
 
 namespace UI
 {
@@ -51,10 +52,13 @@ namespace UI
 		SDL_EnableKeyRepeat(40, 40);
 
 		setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
+
+		vg::init();
 	}
 
 	SDLStage::~SDLStage()
 	{
+		vg::cleanup();
 		SDL_Quit();
 	}
 
@@ -117,7 +121,7 @@ namespace UI
 		//}
 		scheduler::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
 		//Do not make this too small ro there will be input handling lag
-		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 20);
+		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 10);
 
 		scheduler::mainLoop();
 	}

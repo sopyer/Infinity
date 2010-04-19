@@ -1,5 +1,6 @@
 #include "VideoPlaybackEngine.h"
-#include <gl\glee.h>
+#include <gl/glee.h>
+#include <al/al.h>
 
 VideoPlaybackEngine engine;
 
@@ -13,7 +14,7 @@ void cleanup()
 	engine.cleanup();
 }
 
-void processFrame(GLuint texture, unsigned int& frameTime)
+void processFrame(GLuint texture, ALuint buffer, unsigned int& frameTime)
 {
-	engine.decodeVideoTask(texture, frameTime);
+	engine.decodeVideoTask(texture, buffer, frameTime);
 }

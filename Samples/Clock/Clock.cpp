@@ -111,8 +111,6 @@ class ClockSample: public UI::SDLStage
 				);
 			}
 #else			
-			vg::init();
-
 			mRed = vg::Paint::createSolid(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
 			mBlack = vg::Paint::createSolid(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 			mWhite = vg::Paint::createSolid(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -137,8 +135,6 @@ class ClockSample: public UI::SDLStage
 			vg::Paint::destroy(mWhite);
 			vg::Paint::destroy(mBlack);
 			vg::Paint::destroy(mRed);
-
-			vg::cleanup();
 #endif
 		}
 
