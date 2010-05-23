@@ -106,7 +106,7 @@ namespace UI
 	void SDLStage::close()
 	{
 		//mRunning = false;
-		scheduler::terminateLoop();
+		mt::terminateLoop();
 	}
 
 	void SDLStage::run()
@@ -119,11 +119,11 @@ namespace UI
 		//	mScheduler.mainLoop();
 		//	mTimer.resetFrame();
 		//}
-		scheduler::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
+		mt::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
 		//Do not make this too small ro there will be input handling lag
-		scheduler::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 10);
+		mt::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 10);
 
-		scheduler::mainLoop();
+		mt::mainLoop();
 	}
 
 }

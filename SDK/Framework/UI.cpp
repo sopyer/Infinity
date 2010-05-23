@@ -5,11 +5,11 @@ namespace ui
 {
 	void init()
 	{
-		scheduler::init();
+		mt::init();
 	}
 
 	void cleanup()
 	{
-		scheduler::cleanup();
+		mt::cleanup();
 	}
 }

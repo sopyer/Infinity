@@ -247,6 +247,14 @@
 					>
 				</File>
 				<File
+					RelativePath=".\SOIL\image_helper.c"
+					>
+				</File>
+				<File
+					RelativePath=".\SOIL\image_helper.h"
+					>
+				</File>
+				<File
 					RelativePath=".\SOIL\SOIL.c"
 					>
 				</File>
@@ -328,6 +336,14 @@
 				</File>
 			</Filter>
 		</Filter>
+		<File
+			RelativePath=".\Context.h"
+			>
+		</File>
+		<File
+			RelativePath=".\ContextWin.cpp"
+			>
+		</File>
 		<File
 			RelativePath=".\Framework.cpp"
 			>

@@ -5,21 +5,22 @@
 #include <windows.h>
 #include <list>
 #include <algorithm>
+#include <sdl.h>
 
-namespace scheduler
+namespace mt
 {
 	enum TaskFlags
 	{
 		SCHED_DESC_IMMEDIATE=0,
 		SCHED_DESC_TIMED=1,
-		SCHED_TASK_TIME_MODE_MASK=1,
+		SCHED_MASK_TASK_TIME_MODE=1,
 
 		SCHED_DESC_ONE_TIME=0,
 		SCHED_DESC_RECURRING=2,
-		SCHED_TASK_REPEAT_MODE_MASK=2,
+		SCHED_MASK_TASK_REPEAT_MODE=2,
 
 		SCHED_DESC_STOP_TASK=4,
-		SCHED_TASK_CONTROL_MASK=4,
+		SCHED_MASK_TASK_CONTROL=4,
 	};
 
 	enum SchedEntryType
@@ -202,10 +203,40 @@ namespace scheduler
 				{
 					entry.timedTaskDesc.taskFunc(entry.timedTaskDesc.userData);
 					entry.timedTaskDesc.msDueTime += entry.timedTaskDesc.msTimeout;
-					if ((entry.flags&SCHED_TASK_REPEAT_MODE_MASK) == SCHED_DESC_RECURRING)
+					if ((entry.flags&SCHED_MASK_TASK_REPEAT_MODE) == SCHED_DESC_RECURRING)
 						timedTaskQueue.push(&entry);
 				}
 			}
 		}
+	}
+
+	Thread createThread(int (__cdecl *fn)(void *), void *data)
+	{
+		return SDL_CreateThread(fn, data);
+	}
+
+	void waitThread(Thread thread, int *status)
+	{
+		SDL_WaitThread(thread, status);
+	}
+
+	Mutex createMutex()
+	{
+		return SDL_CreateMutex();
+	}
+
+	int lockMutex(Mutex mtx)
+	{
+		return SDL_LockMutex(mtx);
+	}
+
+	int unlockMutex(Mutex mtx)
+	{
+		return SDL_UnlockMutex(mtx);
+	}
+
+	void destroyMutex(Mutex mtx)
+	{
+		SDL_DestroyMutex(mtx);
 	}
 }

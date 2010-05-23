@@ -1,8 +1,10 @@
 #include "VideoPlaybackEngine.h"
 #include <cassert>
+#include <SOIL/SOIL.h>
 
-void VideoPlaybackEngine::init()
+void VideoPlaybackEngine::init(ctx::Context context)
 {
+	mResCtx = context;
 	// Register all formats and codecs
 	av_register_all();
 	// Open video file
@@ -93,10 +95,135 @@ void VideoPlaybackEngine::init()
 	dstFormat = PIX_FMT_RGB24;
 	img_convert_ctx = sws_getContext(width, height, srcFormat, 
 		width, height, dstFormat, SWS_BICUBIC, NULL, NULL, NULL);
+
+	createResources();
+	Sleep(1000);
+}
+
+void VideoPlaybackEngine::createResources()
+{
+	mQuitDecodeThread = false;
+	mIsStreaming = true;
+#ifdef WIN32
+	mHDC = wglGetCurrentDC();
+#endif
+	
+	mMutex = mt::createMutex();
+	mDecodeThread = mt::createThread<VideoPlaybackEngine, &VideoPlaybackEngine::decodeThreadFunc>(this);
+}
+
+void VideoPlaybackEngine::init(GLsizei numTextures, GLuint* textures, ALsizei numBuffers, ALuint* buffers)
+{
+	mt::Lock	lock(mMutex);
+
+	for (int i = 0; i<numTextures; ++i)
+		mFreeTextures.push(textures[i]);
+
+	for (int i = 0; i<numBuffers; ++i)
+		mFreeBuffers.push(buffers[i]);
+}
+
+void VideoPlaybackEngine::destroyResources()
+{
+	mQuitDecodeThread = true;
+	if (mDecodeThread)
+	{
+		mt::waitThread(mDecodeThread, NULL);
+	}
+	mt::destroyMutex(mMutex);
+}
+
+void VideoPlaybackEngine::decodeThreadFunc()
+{
+	//BOOL res = wglShareLists(mGLRC, localGLRC);
+	
+	//ALCcontext* ctx = alcGetCurrentContext();
+	
+	//ctx::makeCurrent(mResCtx);
+	wglMakeCurrent(mHDC, mResCtx.GLContext);
+
+	ALuint	buffer;
+	GLuint	texture;
+	unsigned int	frameTime;
+
+	while(mIsStreaming && !mQuitDecodeThread)
+	{
+		{
+			mt::Lock	lock(mMutex);
+			
+			if (mFreeTextures.empty())
+			{
+				Sleep(0);
+				continue;
+			}
+			else
+			{
+				texture = mFreeTextures.front();
+				mFreeTextures.pop();
+			}
+
+			if (mFreeBuffers.empty())
+			{
+				buffer = 0;
+			}
+			else
+			{
+				buffer = mFreeBuffers.front();
+				mFreeBuffers.pop();
+			}
+		}
+
+		decodeVideoTask(texture, buffer, frameTime);
+
+		{
+			mt::Lock	lock(mMutex);
+			
+			mDecodedTextures.push(texture);
+			mDecodedBuffers.push(buffer);
+			mFrameTimes.push(frameTime);
+		}
+
+	}
+
+}
+
+void VideoPlaybackEngine::getFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime)
+{
+	mt::Lock	lock(mMutex);
+
+	assert(mFrameTimes.size()==mDecodedTextures.size());
+
+	if (!mDecodedTextures.empty())
+	{
+		if (texture)
+			mFreeTextures.push(texture);
+		texture = mDecodedTextures.front();
+		frameTime = mFrameTimes.front();
+
+		mDecodedTextures.pop();
+		mFrameTimes.pop();
+	}
+
+	if (buffer)
+	{
+		mFreeBuffers.push(buffer);
+	}
+
+	if (!mDecodedBuffers.empty())
+	{
+		buffer = mDecodedBuffers.front();
+		mDecodedBuffers.pop();
+	}
+	else
+	{
+		buffer = 0;
+	}
+	printf("t %d|b %d\n", texture, buffer);
 }
 
 void VideoPlaybackEngine::cleanup()
 {
+	destroyResources();
 	sws_freeContext(img_convert_ctx);
 	// Free the RGB image
 	delete [] buffer;
@@ -116,7 +243,7 @@ void VideoPlaybackEngine::cleanup()
 void VideoPlaybackEngine::updateGLTexture(GLuint texture)
 {
 	int realWidth = pFrameRGB->linesize[0];
-	
+
 	sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0, 
 				height, pFrameRGB->data, pFrameRGB->linesize);
 
@@ -126,11 +253,16 @@ void VideoPlaybackEngine::updateGLTexture(GLuint texture)
 	{
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y, width, 1, GL_RGB, GL_UNSIGNED_BYTE,
 			pFrameRGB->data[0]+y*pFrameRGB->linesize[0]);
-		GLenum err = glGetError();
-		assert(err == GL_NO_ERROR);
 	}
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	//Setting texture parameters once more as glTexImage2D(..., 0)
+	//seems to reset them to default and causes bug
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	
 	glFinish();
 }
 
@@ -139,7 +271,9 @@ void VideoPlaybackEngine::updateALBuffer(ALuint buffer)
 	if (buffer && !mAudioData.empty())
 	{
 		//convert if incompatible formats!!!!!!!!!!!!!!!!!!!
-		alBufferData(buffer, mAudioFormat, &mAudioData[0], mAudioData.size(), pAudioCodecCtx->sample_rate);
+		alBufferData(buffer, mAudioFormat, &mAudioData[0], (ALsizei)mAudioData.size(), pAudioCodecCtx->sample_rate);
+		ALenum err = alGetError();
+		assert(err == AL_NO_ERROR);
 		mAudioData.clear();
 	}
 }
@@ -148,11 +282,9 @@ void VideoPlaybackEngine::decodeVideoTask(GLuint texture, ALuint buffer, unsigne
 {
 	AVPacket        packet;
 	int frameFinished = 0;
-
-	// Read frames and save first five frames to disk
-	while(av_read_frame(pFormatCtx, &packet)>=0)
+	
+	while(mIsStreaming = (av_read_frame(pFormatCtx, &packet)>=0))
 	{
-		// Is this a packet from the video stream?
 		if (packet.stream_index==audioStream)
 		{
 			//Should be aligned!!!!!!!!!!!!!!!!!!!!!
@@ -182,20 +314,13 @@ void VideoPlaybackEngine::decodeVideoTask(GLuint texture, ALuint buffer, unsigne
 		}
 		if (packet.stream_index==videoStream)
 		{
-			//printf("packet pts=%I64d, dts=%I64d\n", packet.pts, packet.dts);
 			// Decode video frame
 			avcodec_decode_video(pVideoCodecCtx, pFrame, &frameFinished, packet.data, packet.size);
 
 			// Did we get a video frame?
 			if(frameFinished)
 			{
-				assert(packet.dts!=0x8000000000000000);
-				//printf("Frame pts=%I64d, delay %d, pts_reop=%I64d\n", pFrame->pts, pFrame->repeat_pict, pFrame->reordered_opaque);
-				//printf("frame finished\n");
-				// Convert the image from its native format to RGB
-				assert(pFrame->repeat_pict==0);
 				frameTime = (unsigned int)(timeBase*packet.dts*1000);
-				// Save the frame to disk
 				av_free_packet(&packet);
 				break;
 			}

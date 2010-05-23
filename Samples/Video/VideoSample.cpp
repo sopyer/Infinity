@@ -1,66 +1,96 @@
 #include <framework.h>
 #include <al/al.h>
 #include <al/alc.h>
+#include <SOIL/SOIL.h>
 
-void processFrame(GLuint texture, ALuint buffer, unsigned int& frameTime);
-void init();
+void processFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime);
+void init(ctx::Context context);
+void init(GLsizei numTextures, GLuint* textures, ALsizei numBuffers, ALuint* buffers);
 void cleanup();
 
 #include <mmsystem.h>
 
 const int NUM_BUFFERS = 3;
+const int NUM_TEXTURES = 3;
+
+int	SOIL_save_OGL_texture
+	(
+		const char *filename,
+		int image_type,
+		int channels,
+		unsigned int texture_id
+	)
+{
+	if (texture_id)
+	{
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+	}
+
+	GLenum err;
+	int width, height;
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width);
+	err = glGetError();
+	assert(err == GL_NO_ERROR);
+	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);
+	err = glGetError();
+	assert(err == GL_NO_ERROR);
+	unsigned char* p = new unsigned char[width*height*4];
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, p);
+	err = glGetError();
+	assert(err == GL_NO_ERROR);
+	SOIL_save_image(filename, image_type, width, height, channels, p);		
+	delete [] p;
+
+	return glGetError()==GL_NO_ERROR;
+}
+
 
 class VideoSample: public UI::SDLStage
 {
 	public:
-		GLuint		textures[2];
+		GLuint		textures[NUM_TEXTURES];
 		ALCdevice*	mAudioDevice;
 		ALCcontext*	mAudioContext;
 		ALuint		mSource;
+		ALuint		mTexture;
 		ALuint		mBuffers[NUM_BUFFERS];
-		int			mUsedBuffers;
 
-		VideoSample()
+		VideoSample():mTexture(0)
 		{
-			ALenum err;
 			mAudioDevice  = alcOpenDevice(NULL);
 			mAudioContext = alcCreateContext(mAudioDevice, NULL);
 			
 			alcMakeContextCurrent(mAudioContext);
 
-			mSource = -1;
-			mBuffers[0]=mBuffers[1]=-1;
 			alGenSources(1, &mSource);
 			alGenBuffers(NUM_BUFFERS, mBuffers);
 
-			glGenTextures(2, textures);
+			mBase = ctx::getCurrent();
+			ctx::cloneCurrent(2, true, mCtx);
+			ctx::makeCurrent(mCtx[0]);
 
-			glBindTexture(GL_TEXTURE_2D, textures[0]);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-
-			glBindTexture(GL_TEXTURE_2D, textures[1]);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			init();
-
-			mUsedBuffers = 1;
-			processFrame(textures[0], mBuffers[0], frameTime);
-			alSourceQueueBuffers(mSource, 1, mBuffers);
-			alSourcePlay(mSource);
-			curTexture = 1; //hack ensure correct behaviour in first frame
+			glGenTextures(NUM_TEXTURES, textures);
+			
+			init(mCtx[1]);
+			glGenTextures(NUM_TEXTURES, textures);
+			init(NUM_TEXTURES, textures, NUM_BUFFERS, mBuffers);
+			Sleep(1000);
+			ALuint buffer=0;
+			processFrame(mTexture, buffer, frameTime);
+			if (buffer)
+			{
+				alSourceQueueBuffers(mSource, 1, &buffer);
+				alSourcePlay(mSource);
+			}
 		}
+		
+		ctx::Context	mBase, mCtx[2];
 		
 		~VideoSample()
 		{
 			cleanup();
-			glDeleteTextures(2, textures);
+			ctx::destroy(2, mCtx);
+			glDeleteTextures(NUM_TEXTURES, textures);
 			
 			alDeleteBuffers(NUM_BUFFERS, mBuffers);
 			alDeleteSources(1, &mSource);
@@ -71,6 +101,7 @@ class VideoSample: public UI::SDLStage
 		unsigned int baseTime, timeOfNextFrame, curTexture, frameTime;
 		virtual void onPaint()
 		{
+			ctx::makeCurrent(mCtx[0]);
 			static int firstTime = true;
 			
 			if (firstTime)
@@ -78,46 +109,39 @@ class VideoSample: public UI::SDLStage
 				timeOfNextFrame = baseTime = timeGetTime();
 				firstTime = false;
 			}
-
-			if (timeGetTime()>=timeOfNextFrame)
+			else if (timeGetTime()>=timeOfNextFrame)
 			{
-				printf("%d %d\n", timeGetTime(), timeOfNextFrame);
 				ALuint buffer = 0;
-				
-				if (mUsedBuffers<NUM_BUFFERS)
-				{
-					buffer = mBuffers[mUsedBuffers++];
-				}
-				else
-				{
-					ALint count;
-					alGetSourcei(mSource, AL_BUFFERS_PROCESSED, &count);
-					if (count>0)
-					{
-						alSourceUnqueueBuffers(mSource, 1, &buffer);
-					}
-				}
+				ALint count;
 
-				processFrame(textures[curTexture], buffer, frameTime);
+				alGetSourcei(mSource, AL_BUFFERS_PROCESSED, &count);
+				if (count>0)
+				{
+					alSourceUnqueueBuffers(mSource, 1, &buffer);
+				}
+				
+				processFrame(mTexture, buffer, frameTime);
+
 				if (buffer)
 					alSourceQueueBuffers(mSource, 1, &buffer);
+
 				timeOfNextFrame = baseTime+frameTime;
-				curTexture = 1-curTexture;
 			}
 			
-			ALint state;
+			ALint state, bufCount;
+			alGetSourcei(mSource, AL_BUFFERS_QUEUED, &bufCount);
 			alGetSourcei(mSource, AL_SOURCE_STATE, &state);
-			if (state!=AL_PLAYING)
+			if (state!=AL_PLAYING && bufCount>0)
 				alSourcePlay(mSource);
 
-			const GLfloat w = 6.4*1.1f, h = 3.6*1.1f;
+			const GLfloat w = 6.4f*1.1f, h = 3.6f*1.1f;
 
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0, 0, -5);
 			
+			glBindTexture(GL_TEXTURE_2D, mTexture);
 			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, textures[curTexture]);
 			glColor3f(1, 1, 1);
 			glBegin(GL_QUADS);
 				glTexCoord2f(0, 0);
@@ -129,6 +153,7 @@ class VideoSample: public UI::SDLStage
 				glTexCoord2f(0, 1);
 				glVertex2f(-w/2, -h/2);
 			glEnd();
+			ctx::makeCurrent(mBase);
 		}
 
 	private:

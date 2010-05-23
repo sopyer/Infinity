@@ -211,7 +211,7 @@ namespace ui
 			void showCursor()
 			{
 				mShowCursor = true;
-				mBlinkTask = scheduler::addTimedTask<Edit, &Edit::onBlink>(this, 400);
+				mBlinkTask = mt::addTimedTask<Edit, &Edit::onBlink>(this, 400);
 			}
 
 			void hideCursor()
@@ -219,7 +219,7 @@ namespace ui
 				mShowCursor = false;
 				if (mBlinkTask)
 				{
-					scheduler::terminateTask(mBlinkTask);
+					mt::terminateTask(mBlinkTask);
 					mBlinkTask = 0;
 				}
 			}
@@ -230,7 +230,7 @@ namespace ui
 			}
 
 		private:
-			scheduler::Task	mBlinkTask;
+			mt::Task	mBlinkTask;
 			
 			bool	mShowCursor;
 			int		mCaretPos;

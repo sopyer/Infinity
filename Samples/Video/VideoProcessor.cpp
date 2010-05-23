@@ -4,9 +4,14 @@
 
 VideoPlaybackEngine engine;
 
-void init()
+void init(GLsizei numTextures, GLuint* textures, ALsizei numBuffers, ALuint* buffers)
 {
-	engine.init();
+	engine.init(numTextures, textures, numBuffers, buffers);
+}
+
+void init(ctx::Context context)
+{
+	engine.init(context);
 }
 
 void cleanup()
@@ -14,7 +19,8 @@ void cleanup()
 	engine.cleanup();
 }
 
-void processFrame(GLuint texture, ALuint buffer, unsigned int& frameTime)
+void processFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime)
 {
-	engine.decodeVideoTask(texture, buffer, frameTime);
+	//engine.decodeVideoTask(texture, buffer, frameTime);
+	engine.getFrame(texture, buffer, frameTime);
 }

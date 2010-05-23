@@ -5,6 +5,7 @@
 
 #include <UI.h>
 #include <ResourceHelpers.h>
+#include <Context.h>
 
 namespace logging
 {
