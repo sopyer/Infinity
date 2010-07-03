@@ -7,6 +7,8 @@ void processFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime);
 void init(ctx::Context context);
 void init(GLsizei numTextures, GLuint* textures, ALsizei numBuffers, ALuint* buffers);
 void cleanup();
+void getFrame(GLuint& texture, unsigned int& frameTime);
+void getAudio(ALuint& buffer);
 
 #include <mmsystem.h>
 
@@ -124,9 +126,22 @@ class VideoSample: public UI::SDLStage
 
 				if (buffer)
 					alSourceQueueBuffers(mSource, 1, &buffer);
-
+				
+				//getFrame(mTexture, frameTime);
 				timeOfNextFrame = baseTime+frameTime;
 			}
+			
+			//ALuint buffer = 0;
+			//ALint count;
+
+			//alGetSourcei(mSource, AL_BUFFERS_PROCESSED, &count);
+			//if (count>0)
+			//{
+			//	alSourceUnqueueBuffers(mSource, 1, &buffer);
+			//	getAudio(buffer);
+			//	//if (buffer)
+			//		alSourceQueueBuffers(mSource, 1, &buffer);
+			//}
 			
 			ALint state, bufCount;
 			alGetSourcei(mSource, AL_BUFFERS_QUEUED, &bufCount);

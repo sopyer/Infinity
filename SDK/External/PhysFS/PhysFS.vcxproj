@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{242667CF-FE79-459F-BAF1-19C6C6C95342}</ProjectGuid>
+    <RootNamespace>PhysFS</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Temp\SDK\$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)Temp\SDK\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.;.\lzma;.\zlib123;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_SZ_ONE_DIRECTORY;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;PHYSFS_SUPPORTS_7Z;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.;.\lzma;.\zlib123;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_SZ_ONE_DIRECTORY;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;PHYSFS_SUPPORTS_7Z;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="archivers\dir.c" />
+    <ClCompile Include="archivers\lzma.c" />
+    <ClCompile Include="archivers\zip.c" />
+    <ClCompile Include="platform\windows.c" />
+    <ClCompile Include="zlib123\adler32.c" />
+    <ClCompile Include="zlib123\compress.c" />
+    <ClCompile Include="zlib123\crc32.c" />
+    <ClCompile Include="zlib123\deflate.c" />
+    <ClCompile Include="zlib123\gzio.c" />
+    <ClCompile Include="zlib123\infback.c" />
+    <ClCompile Include="zlib123\inffast.c" />
+    <ClCompile Include="zlib123\inflate.c" />
+    <ClCompile Include="zlib123\inftrees.c" />
+    <ClCompile Include="zlib123\trees.c" />
+    <ClCompile Include="zlib123\uncompr.c" />
+    <ClCompile Include="zlib123\zutil.c" />
+    <ClCompile Include="lzma\7zBuffer.c" />
+    <ClCompile Include="lzma\7zCrc.c" />
+    <ClCompile Include="lzma\7zDecode.c" />
+    <ClCompile Include="lzma\7zExtract.c" />
+    <ClCompile Include="lzma\7zHeader.c" />
+    <ClCompile Include="lzma\7zIn.c" />
+    <ClCompile Include="lzma\7zItem.c" />
+    <ClCompile Include="lzma\7zMethodID.c" />
+    <ClCompile Include="lzma\LzmaDecode.c" />
+    <ClCompile Include="lzma\LzmaStateDecode.c" />
+    <ClCompile Include="physfs.c" />
+    <ClCompile Include="physfs_byteorder.c" />
+    <ClCompile Include="physfs_unicode.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="zlib123\crc32.h" />
+    <ClInclude Include="zlib123\deflate.h" />
+    <ClInclude Include="zlib123\inffast.h" />
+    <ClInclude Include="zlib123\inffixed.h" />
+    <ClInclude Include="zlib123\inflate.h" />
+    <ClInclude Include="zlib123\inftrees.h" />
+    <ClInclude Include="zlib123\trees.h" />
+    <ClInclude Include="zlib123\zconf.h" />
+    <ClInclude Include="zlib123\zlib.h" />
+    <ClInclude Include="zlib123\zutil.h" />
+    <ClInclude Include="lzma\7zAlloc.h" />
+    <ClInclude Include="lzma\7zBuffer.h" />
+    <ClInclude Include="lzma\7zCrc.h" />
+    <ClInclude Include="lzma\7zDecode.h" />
+    <ClInclude Include="lzma\7zExtract.h" />
+    <ClInclude Include="lzma\7zHeader.h" />
+    <ClInclude Include="lzma\7zIn.h" />
+    <ClInclude Include="lzma\7zItem.h" />
+    <ClInclude Include="lzma\7zMethodID.h" />
+    <ClInclude Include="lzma\7zTypes.h" />
+    <ClInclude Include="lzma\LzmaDecode.h" />
+    <ClInclude Include="lzma\LzmaStateDecode.h" />
+    <ClInclude Include="lzma\LzmaTypes.h" />
+    <ClInclude Include="physfs.h" />
+    <ClInclude Include="physfs_casefolding.h" />
+    <ClInclude Include="physfs_internal.h" />
+    <ClInclude Include="physfs_platforms.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

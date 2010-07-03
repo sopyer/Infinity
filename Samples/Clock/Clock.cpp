@@ -121,7 +121,7 @@ class ClockSample: public UI::SDLStage
 
 			add(mGroup.setPos(mWidth/2, mHeight/2));
 
-			scheduler::addTimedTask<ClockSample, &ClockSample::timeTick>(this, 200);
+			mt::addTimedTask<ClockSample, &ClockSample::timeTick>(this, 200);
 		}
 
 		~ClockSample()

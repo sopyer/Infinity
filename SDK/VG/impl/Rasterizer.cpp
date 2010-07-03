@@ -23,10 +23,10 @@ namespace impl
 		return res;
 	}
 
-	void buildFillGeometry(const VGint    numSegments,
+	void buildFillGeometry(FillGeometry&  geom,
+						   const VGint    numSegments,
 						   const VGubyte* pathSegments,
-						   const VGfloat* pathData,
-						   FillGeometry&  geom)
+						   const VGfloat* pathData)
 	{
 		FillGeometryBuilder	builder;
 		Array<glm::vec2>	points;
@@ -353,12 +353,12 @@ namespace impl
 		PRIM_TYPE_ALL = 15
 	};
 
-	void FillGeometry::RasterizeEvenOdd(VGuint prims)
+	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims)
 	{
-		if (vertices.empty())
+		if (geom.vertices.empty())
 			return;
 
-		FillVertex& vtx = vertices[0];
+		FillVertex& vtx = geom.vertices[0];
 		
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
@@ -374,46 +374,46 @@ namespace impl
 		glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
 
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
+		glVertexPointer(2, GL_FLOAT, sizeof(FillVertex), &vtx.p);
 		
 		if (prims&PRIM_TYPE_TRI)
 		{
 			glUseProgram(0);
-			drawElements(FILL_PRIM_TYPE_TRI);
+			geom.drawElements(FILL_PRIM_TYPE_TRI);
 		}
 
 		glClientActiveTexture(GL_TEXTURE0);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(FillVertex), &vtx.tc);
 
 		if (prims&PRIM_TYPE_QUAD)
 		{
 			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-			drawElements(FILL_PRIM_TYPE_QUAD);
+			geom.drawElements(FILL_PRIM_TYPE_QUAD);
 		}
 
 		if (prims&PRIM_TYPE_CUBIC)
 		{
 			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
-			drawElements(FILL_PRIM_TYPE_CUBIC);
+			geom.drawElements(FILL_PRIM_TYPE_CUBIC);
 		}
 
 		if (prims&PRIM_TYPE_ARC)
 		{
 			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-			drawElements(FILL_PRIM_TYPE_ARC);
+			geom.drawElements(FILL_PRIM_TYPE_ARC);
 		}
 
 		glPopClientAttrib();
 		glPopAttrib();
 	}
 
-	void FillGeometry::RasterizeNonZero()
+	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom)
 	{
-		if (vertices.empty())
+		if (geom.vertices.empty())
 			return;
 
-		FillVertex& vtx = vertices[0];
+		FillVertex& vtx = geom.vertices[0];
 
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
@@ -428,23 +428,23 @@ namespace impl
 		glStencilMask(0xFF);
 
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_FLOAT, VertexSize, &vtx.p);
+		glVertexPointer(2, GL_FLOAT, sizeof(FillVertex), &vtx.p);
 
 		glUseProgram(0);
-		drawElementsNZ(FILL_PRIM_TYPE_TRI);
+		geom.drawElementsNZ(FILL_PRIM_TYPE_TRI);
 
 		glClientActiveTexture(GL_TEXTURE0);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(3, GL_FLOAT, VertexSize, &vtx.tc);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(FillVertex), &vtx.tc);
 
 		glUseProgram(programs[PRG_RAST_FILL_QUAD]);
-		drawElementsNZ(FILL_PRIM_TYPE_QUAD);
+		geom.drawElementsNZ(FILL_PRIM_TYPE_QUAD);
 
 		glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
-		drawElementsNZ(FILL_PRIM_TYPE_CUBIC);
+		geom.drawElementsNZ(FILL_PRIM_TYPE_CUBIC);
 
 		glUseProgram(programs[PRG_RAST_FILL_ARC]);
-		drawElementsNZ(FILL_PRIM_TYPE_ARC);
+		geom.drawElementsNZ(FILL_PRIM_TYPE_ARC);
 
 		glPopClientAttrib();
 		glPopAttrib();

@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="iniparser">
+      <UniqueIdentifier>{83acd528-e94e-4070-b55d-ca45da3ed50e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ResourceManagement">
+      <UniqueIdentifier>{28cd357f-ae25-4a87-b16e-bb15b413d8b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cameras">
+      <UniqueIdentifier>{73a16ea1-aacd-4cb3-a73a-07ab4b58292b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cameras\SOIL">
+      <UniqueIdentifier>{fb02f643-94e2-4580-8679-2aa94e7fcfcc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{7e05eaa5-338c-4aab-a833-b66b28dd1898}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI\Controls">
+      <UniqueIdentifier>{79a09642-f9ec-447f-9246-42a5e2651363}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="iniparser\dictionary.c">
+      <Filter>iniparser</Filter>
+    </ClCompile>
+    <ClCompile Include="iniparser\iniparser.c">
+      <Filter>iniparser</Filter>
+    </ClCompile>
+    <ClCompile Include="iniparser\strlib.c">
+      <Filter>iniparser</Filter>
+    </ClCompile>
+    <ClCompile Include="FontManager.cpp">
+      <Filter>ResourceManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="ProgramManager.cpp">
+      <Filter>ResourceManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceHelpers.cpp">
+      <Filter>ResourceManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderManager.cpp">
+      <Filter>ResourceManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>ResourceManagement</Filter>
+    </ClCompile>
+    <ClCompile Include="SOIL\image_DXT.c">
+      <Filter>Cameras\SOIL</Filter>
+    </ClCompile>
+    <ClCompile Include="SOIL\image_helper.c">
+      <Filter>Cameras\SOIL</Filter>
+    </ClCompile>
+    <ClCompile Include="SOIL\SOIL.c">
+      <Filter>Cameras\SOIL</Filter>
+    </ClCompile>
+    <ClCompile Include="SOIL\stb_image_aug.c">
+      <Filter>Cameras\SOIL</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="SDLStage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="Stage.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="UI.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ContextWin.cpp" />
+    <ClCompile Include="Framework.cpp" />
+    <ClCompile Include="Scheduler.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="iniparser\dictionary.h">
+      <Filter>iniparser</Filter>
+    </ClInclude>
+    <ClInclude Include="iniparser\iniparser.h">
+      <Filter>iniparser</Filter>
+    </ClInclude>
+    <ClInclude Include="iniparser\strlib.h">
+      <Filter>iniparser</Filter>
+    </ClInclude>
+    <ClInclude Include="FontManager.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="ProgramManager.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceHandle.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceHelpers.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceManager.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderManager.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>ResourceManagement</Filter>
+    </ClInclude>
+    <ClInclude Include="FirstPersonCamera.h">
+      <Filter>Cameras</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\image_DXT.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\image_helper.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\SOIL.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\stb_image_aug.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\stbi_DDS_aug.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="SOIL\stbi_DDS_aug_c.h">
+      <Filter>Cameras\SOIL</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Container.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Events.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="KeySyms.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="SDLStage.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Stage.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="UI.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Controls.h">
+      <Filter>UI\Controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Context.h" />
+    <ClInclude Include="Framework.h" />
+    <ClInclude Include="Scheduler.h" />
+    <ClInclude Include="Timer.h" />
+  </ItemGroup>
+</Project>

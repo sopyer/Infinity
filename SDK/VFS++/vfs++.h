@@ -1,6 +1,8 @@
-#pragma once
+#ifndef __VFSPP_H_INCLUDED__
+#	define __VFSPP_H_INCLUDED__
 
-#include <physfs/physfs.h>
+#	include <physfs/physfs.h>
+
 #include <Singleton.h>
 
 class File
@@ -44,3 +46,5 @@ public:
 	static File openRead(const char* fname) {return PHYSFS_openRead(fname);}
 	static void close(File fileObj) {PHYSFS_close(fileObj);}
 };
+
+#endif

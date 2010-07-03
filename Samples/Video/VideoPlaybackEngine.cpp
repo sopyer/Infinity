@@ -187,7 +187,7 @@ void VideoPlaybackEngine::decodeThreadFunc()
 
 }
 
-void VideoPlaybackEngine::getFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime)
+void VideoPlaybackEngine::getFrame(GLuint& texture, unsigned int& frameTime)
 {
 	mt::Lock	lock(mMutex);
 
@@ -203,6 +203,11 @@ void VideoPlaybackEngine::getFrame(GLuint& texture, ALuint& buffer, unsigned int
 		mDecodedTextures.pop();
 		mFrameTimes.pop();
 	}
+}
+
+void VideoPlaybackEngine::getAudio(ALuint& buffer)
+{
+	mt::Lock	lock(mMutex);
 
 	if (buffer)
 	{
@@ -218,7 +223,42 @@ void VideoPlaybackEngine::getFrame(GLuint& texture, ALuint& buffer, unsigned int
 	{
 		buffer = 0;
 	}
-	printf("t %d|b %d\n", texture, buffer);
+}
+
+void VideoPlaybackEngine::getFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime)
+{
+	getFrame(texture, frameTime);
+	getAudio(buffer);
+	//mt::Lock	lock(mMutex);
+
+	//assert(mFrameTimes.size()==mDecodedTextures.size());
+
+	//if (!mDecodedTextures.empty())
+	//{
+	//	if (texture)
+	//		mFreeTextures.push(texture);
+	//	texture = mDecodedTextures.front();
+	//	frameTime = mFrameTimes.front();
+
+	//	mDecodedTextures.pop();
+	//	mFrameTimes.pop();
+	//}
+
+	//if (buffer)
+	//{
+	//	mFreeBuffers.push(buffer);
+	//}
+
+	//if (!mDecodedBuffers.empty())
+	//{
+	//	buffer = mDecodedBuffers.front();
+	//	mDecodedBuffers.pop();
+	//}
+	//else
+	//{
+	//	buffer = 0;
+	//}
+	//printf("t %d|b %d\n", texture, buffer);
 }
 
 void VideoPlaybackEngine::cleanup()

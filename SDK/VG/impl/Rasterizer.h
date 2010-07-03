@@ -115,11 +115,12 @@ namespace impl
 
 	struct FillGeometry: public Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>
 	{
-		void RasterizeEvenOdd(VGuint prims);
-
-		//Safetly supports up to 127 self intersections
-		void RasterizeNonZero();
 	};
+
+	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims);
+
+	//Safetly supports up to 127 self intersections
+	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 
 	//Strokes for quads and cubics essentially are approximations and not a good ones - they would not work in some cases
 	struct StrokeGeometry: public Geometry<StrokeVertex, STROKE_PRIM_TYPE_COUNT>
@@ -131,10 +132,10 @@ namespace impl
 		void Rasterize(float halfWidth=5, bool capRound = false, bool capButt = false);
 	};
 
-	void buildFillGeometry(const VGint    numSegments,
+	void buildFillGeometry(FillGeometry&  geom,
+						   const VGint    numSegments,
 						   const VGubyte* pathSegments,
-						   const VGfloat* pathData,
-						   FillGeometry&  geom);
+						   const VGfloat* pathData);
 
 	void buildStrokeGeometry(const VGint      numSegments,
 							 const VGubyte*   pathSegments,

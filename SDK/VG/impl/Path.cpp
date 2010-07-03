@@ -42,7 +42,7 @@ namespace impl
 	void Path::rasterizeFill()
 	{
 		prepareGeom();
-		mFillGeom.RasterizeEvenOdd(mPrims);
+		RasterizeEvenOdd(mFillGeom, mPrims);
 	}
 
 	void Path::prepareGeom()
@@ -50,7 +50,7 @@ namespace impl
 		if (mRebuildGeometry)
 		{
 			assert(mSegments.size()<VG_MAXINT);
-			impl::buildFillGeometry((VGint)mSegments.size(), mSegments.begin(), mData.begin(), mFillGeom);
+			impl::buildFillGeometry(mFillGeom, (VGint)mSegments.size(), mSegments.begin(), mData.begin());
 		}
 
 		mRebuildGeometry = false;

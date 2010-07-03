@@ -33,6 +33,9 @@ class VideoPlaybackEngine
 		void updateALBuffer(ALuint buffer);
 
 		void decodeThreadFunc();
+		
+		void getFrame(GLuint& texture, unsigned int& frameTime);
+		void getAudio(ALuint& buffer);
 
 		void getFrame(GLuint& texture, ALuint& buffer, unsigned int& frameTime);
 

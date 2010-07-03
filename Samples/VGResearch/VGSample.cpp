@@ -231,15 +231,15 @@ class VGSample: public UI::SDLStage
 			glClearDepth(1.0);
 			glClearStencil(0);
 
-			impl::buildFillGeometry(ARRAY_SIZE(segs), segs, data, fill);
+			impl::buildFillGeometry(fill, ARRAY_SIZE(segs), segs, data);
 			//path = vg::createPath();
 
 			//path.appendData(ARRAY_SIZE(segs), segs, data);
 
 			//path  = vg::Path::create(ARRAY_SIZE(segs), segs, data);
 			point = vg::Path::createUnitQuad();
-			//path  = vg::Path::create(ARRAY_SIZE(hourHandSegs), hourHandSegs, hourHandData);
-			path  = vg::Path::create(ARRAY_SIZE(minuteHandSegs), minuteHandSegs, minuteHandData);
+			path  = vg::Path::create(ARRAY_SIZE(hourHandSegs), hourHandSegs, hourHandData);
+			//path  = vg::Path::create(ARRAY_SIZE(minuteHandSegs), minuteHandSegs, minuteHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(secondHandSegs), secondHandSegs, secondHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(arcTest), arcTest, arcData);
 			paint = vg::Paint::createSolid(glm::vec4(0.0f, 0.8f, 0.65f, 1.0f));

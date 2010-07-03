@@ -49,12 +49,12 @@ namespace ml
 
 	inline bool lessThenE(float a, float b, float tolerance = EPS7)
 	{
-		return b-a>tolerance;
+		return (b-a)>tolerance;
 	}
 
 	inline bool greaterThenE(float a, float b, float tolerance = EPS7)
 	{
-		return a-b>tolerance;
+		return (a-b)>tolerance;
 	}
 }
 

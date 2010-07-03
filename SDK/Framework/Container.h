@@ -1,6 +1,8 @@
 #ifndef __CONTAINER_H_INCLUDED__
 #	define __CONTAINER_H_INCLUDED__
 
+#include <algorithm>
+
 namespace UI
 {
 	class Container: public Actor

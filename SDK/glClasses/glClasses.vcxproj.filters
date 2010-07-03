@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="GLee">
+      <UniqueIdentifier>{cd05cbe8-b92c-4a0d-8edc-923bd65219a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="classes">
+      <UniqueIdentifier>{1d1e4a41-6059-4e5a-9e0e-cfea5c1adce1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="glee\GLee.c">
+      <Filter>GLee</Filter>
+    </ClCompile>
+    <ClCompile Include="glContext.cpp">
+      <Filter>classes</Filter>
+    </ClCompile>
+    <ClCompile Include="UniformTable.cpp">
+      <Filter>classes</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="glee\GLee.h">
+      <Filter>GLee</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glBuffer.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glCommandList.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glContext.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glShader.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glTexture.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="UniformTable.h">
+      <Filter>classes</Filter>
+    </ClInclude>
+    <ClInclude Include="glClasses.h" />
+  </ItemGroup>
+</Project>

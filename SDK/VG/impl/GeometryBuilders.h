@@ -178,7 +178,7 @@ namespace impl
 					setVertex(begin+i, FillVertex(pos[i], tc[i]));
 				}
 
-				for (VGuint i0=begin; i<end-1; i+=2)
+				for (VGuint i0=begin; i0<end-1; i0+=2)
 				{
 					addPrim(FILL_PRIM_TYPE_ARC,  i0+0,  i0+1, i0+2);
 					addPrim(FILL_PRIM_TYPE_TRI,  begin, i0+0, i0+2);

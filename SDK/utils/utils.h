@@ -2,7 +2,7 @@
 #	define _UTILS_H_INCLUDED_
 
 #	include <windows.h>
-#	include <boost\smart_ptr.hpp>
+//#	include <boost\smart_ptr.hpp>
 #	include <string>
 //#	include "..\Utils\iniparser\iniparser.h"
 
