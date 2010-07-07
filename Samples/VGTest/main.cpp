@@ -8,6 +8,8 @@ glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm:
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
 
+Geometry<RCubicVertex>	rcubic;
+
 namespace ml
 {
 	template<typename T, typename U>
@@ -207,10 +209,10 @@ void testRCubic()
 	calcDets(pts, dett);
 
 	glm::vec3 cp[4] = {
-		glm::vec3(-1.0f, 0.0f, 1.0f),
-		glm::vec3(-1.0f*w1, 2.0f*w1, w1),
-		glm::vec3(1.0f*w2, 2.0f*w2, w2),
-		glm::vec3(1.0f, 0.0f, 1.0f),
+		glm::vec3(-10.0f,     0.0f,    1.0f),
+		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+		glm::vec3( 10.0f,     0.0f,    1.0f),
 	};
 
 	glm::vec2 bzPt;
@@ -220,7 +222,7 @@ void testRCubic()
 	for (int i=0; i<ARRAY_SIZE(ttt); ++i)
 	{
 		evalRationalBezier(ml::as<float>(cp), ttt[i], bzPt); 
-		assert(checkUnitCircle(bzPt));
+		//assert(checkUnitCircle(bzPt));
 	}
 
 	//glm::vec3 cp[4] = {
@@ -290,7 +292,7 @@ void testRCubic()
 	{
 		klmn[0] = glm::vec4(     0.0f,      0.0f,      0.0f, 1.0f);
 		klmn[1] = glm::vec4(1.0f/3.0f,      0.0f, 1.0f/3.0f, 1.0f);
-		klmn[2] = glm::vec4(1.0f/3.0f, 1.0f/3.0f, 1.0f/3.0f, 1.0f);
+		klmn[2] = glm::vec4(2.0f/3.0f, 1.0f/3.0f, 2.0f/3.0f, 1.0f);
 		klmn[3] = glm::vec4(     1.0f,      1.0f,      1.0f, 1.0f);
 	}
 	else if (det>=0)
@@ -333,6 +335,17 @@ void testRCubic()
 
 		assert(ml::equalE(f, 0));
 	}
+
+	rcubic.vertices.resize(4);
+	for (int i=0; i<4; ++i)
+	{
+
+		rcubic.vertices[i].pos = glm::vec4(cp[i].x, cp[i].y, 0, cp[i].z);
+		rcubic.vertices[i].klmn = klmn[i];
+	}
+
+	rcubic.indices.pushBack(0); rcubic.indices.pushBack(1); rcubic.indices.pushBack(3);
+	rcubic.indices.pushBack(1); rcubic.indices.pushBack(2); rcubic.indices.pushBack(3);
 }
 
 class VGTest: public UI::SDLStage
@@ -418,7 +431,8 @@ class VGTest: public UI::SDLStage
 			//rasterizeEvenOdd(mRasterCubic);
 			glPushMatrix();
 			//glScalef(-1, 1, 1);
-			drawCubicAA(mRasterCubic);
+			drawRCubicAA(rcubic);
+			//drawCubicAA(mRasterCubic);
 			glPopMatrix();
 			//rasterizeEvenOdd(mTri);
 			glUseProgram(0);

@@ -3,7 +3,7 @@
 #include <cassert>
 #include <gl/glee.h>
 
-GLuint	cubicProgram, cubicProgramAA;
+GLuint	cubicProgram, cubicProgramAA, rcubicProgram, rcubicProgramAA;
 
 void clearStencil()
 {
@@ -130,6 +130,36 @@ void drawCubicAA(Geometry<CubicVertex>& geom)
 	glPopAttrib();
 }
 
+void drawRCubicAA(Geometry<RCubicVertex>& geom)
+{
+	if (geom.vertices.empty())
+		return;
+
+	RCubicVertex& vtx = geom.vertices[0];
+		
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_STENCIL_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_ADD);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.pos);
+		
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.klmn);
+
+	glUseProgram(rcubicProgramAA);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
+
+	glPopClientAttrib();
+	glPopAttrib();
+}
+
 void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Array<glm::vec2>& v)
 {
 	assert(v.size()==4);
@@ -206,6 +236,22 @@ const char cubicAAFSSource[] =
 				"	gl_FragColor = vec4(1.0, 1.0, 1.0, a);						\n"
 				"}																\n";
 
+const char rcubicAAFSSource[] = 
+				"void main(void)												\n"
+				"{																\n"
+				"	vec4   uv = gl_TexCoord[0];									\n"
+				"	vec4   dF = vec4(3*uv.x*uv.x, -uv.y, -uv.z, -uv.w);			\n"
+				"	vec2   grad = vec2(dot(dFdx(uv), dF), dot(dFdy(uv), dF));	\n"
+				"	float  F = uv.x*uv.x*uv.x - uv.y*uv.z*uv.w;					\n"
+				"	float  sdist = 0.5-F/length(grad);							\n"
+				"	float  a = clamp(sdist, 0.0, 1.0);							\n"
+				"																\n"
+				"	if( a==0.0 )												\n"
+				"		discard;												\n"
+				"																\n"
+				"	gl_FragColor = vec4(1.0, 1.0, 1.0, a);						\n"
+				"}																\n";
+
 #define MAX_INFOLOG_LENGTH 256
 bool compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source)
 {
@@ -268,10 +314,12 @@ void initVGExp()
 {
 	cubicProgram = createProgram(GL_FRAGMENT_SHADER, cubicFSSource);
 	cubicProgramAA = createProgram(GL_FRAGMENT_SHADER, cubicAAFSSource);
+	rcubicProgramAA = createProgram(GL_FRAGMENT_SHADER, rcubicAAFSSource);
 }
 
 void terminateVGExp()
 {
+	glDeleteProgram(rcubicProgramAA);
 	glDeleteProgram(cubicProgramAA);
 	glDeleteProgram(cubicProgram);
 }

@@ -9,6 +9,12 @@ struct CubicVertex
 	glm::vec4	klmn;
 };
 
+struct RCubicVertex
+{
+	glm::vec4	pos;
+	glm::vec4	klmn;
+};
+
 template<typename VertexType>
 struct Geometry
 {
@@ -23,6 +29,7 @@ void drawQuad();
 void rasterizeEvenOdd(Geometry<glm::vec2>& geom);
 void rasterizeEvenOdd(Geometry<CubicVertex>& geom);
 void drawCubicAA(Geometry<CubicVertex>& geom);
+void drawRCubicAA(Geometry<RCubicVertex>& geom);
 void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Array<glm::vec2>& v);
 
 #endif
