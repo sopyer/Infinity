@@ -2,11 +2,18 @@
 
 #include "VGExp.h"
 
-float w1 = -0.35f;
-float w2 = -0.35f;
-glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
+//float w1 = -0.35f;
+//float w2 = -0.35f;
+//glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
+float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
+glm::vec3 controlPts[4] = {
+	glm::vec3(-10.0f,     0.0f,    1.0f),
+	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+	glm::vec3( 10.0f,     0.0f,    1.0f),
+};
 
 Geometry<RCubicVertex>	rcubic;
 
@@ -424,22 +431,23 @@ class VGTest: public UI::SDLStage
 			glScalef(zoom, zoom, 1);
 			glPushMatrix();
 			glTranslatef(-40, -40, 0);
-			glScalef(70, 70, 1);
-			//clearStencil();
+			glScalef(80, 80, 1);
+			clearStencil();
 			glPopMatrix();
 			//rasterizeEvenOdd(mRationalCubic);
 			//rasterizeEvenOdd(mRasterCubic);
+			rasterizeEvenOdd(rcubic);
 			glPushMatrix();
 			//glScalef(-1, 1, 1);
-			drawRCubicAA(rcubic);
+			//drawRCubicAA(rcubic);
 			//drawCubicAA(mRasterCubic);
 			glPopMatrix();
 			//rasterizeEvenOdd(mTri);
 			glUseProgram(0);
 			glPushMatrix();
 			glTranslatef(-40, -40, 0);
-			glScalef(70, 70, 1);
-			//drawQuad();
+			glScalef(80, 80, 1);
+			drawQuad();
 			glPopMatrix();
 			glDisable(GL_STENCIL_TEST);
 			glColor3f(1, 0, 0);

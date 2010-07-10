@@ -94,7 +94,40 @@ void rasterizeEvenOdd(Geometry<CubicVertex>& geom)
 	glTexCoordPointer(4, GL_FLOAT, sizeof(CubicVertex), &vtx.klmn);
 
 	glUseProgram(cubicProgram);
-	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]+6);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
+
+	glPopClientAttrib();
+	glPopAttrib();
+}
+
+void rasterizeEvenOdd(Geometry<RCubicVertex>& geom)
+{
+	if (geom.vertices.empty())
+		return;
+
+	RCubicVertex& vtx = geom.vertices[0];
+		
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+		
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_ALWAYS, 0, 1);
+	glStencilMask(0x01);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.pos);
+		
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.klmn);
+
+	glUseProgram(rcubicProgram);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
 
 	glPopClientAttrib();
 	glPopAttrib();
@@ -208,13 +241,22 @@ void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Arr
 }
 
 const char cubicFSSource[] = 
-				"#version 120												\n"
-				"															\n"
 				"void main(void)											\n"
 				"{															\n"
 				"	vec3 uv = gl_TexCoord[0].stp;							\n"
 				"															\n"
-				"	if( (uv.s*uv.s*uv.s - uv.t*uv.p)>=0.0 )					\n"
+				"	if ((uv.s*uv.s*uv.s - uv.t*uv.p) >= 0.0)				\n"
+				"		discard;											\n"
+				"															\n"
+				"	gl_FragColor = vec4(1.0);								\n"
+				"}															\n";
+
+const char rcubicFSSource[] = 
+				"void main(void)											\n"
+				"{															\n"
+				"	vec4 uv = gl_TexCoord[0];								\n"
+				"															\n"
+				"	if (uv.x*uv.x*uv.x-uv.y*uv.z*uv.w >= 0.0)				\n"
 				"		discard;											\n"
 				"															\n"
 				"	gl_FragColor = vec4(1.0);								\n"
@@ -313,6 +355,7 @@ GLuint createProgram(GLenum type, const char* source)
 void initVGExp()
 {
 	cubicProgram = createProgram(GL_FRAGMENT_SHADER, cubicFSSource);
+	rcubicProgram = createProgram(GL_FRAGMENT_SHADER, rcubicFSSource);
 	cubicProgramAA = createProgram(GL_FRAGMENT_SHADER, cubicAAFSSource);
 	rcubicProgramAA = createProgram(GL_FRAGMENT_SHADER, rcubicAAFSSource);
 }
@@ -321,5 +364,6 @@ void terminateVGExp()
 {
 	glDeleteProgram(rcubicProgramAA);
 	glDeleteProgram(cubicProgramAA);
+	glDeleteProgram(rcubicProgram);
 	glDeleteProgram(cubicProgram);
 }
