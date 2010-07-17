@@ -7,14 +7,20 @@
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
-float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
-glm::vec3 controlPts[4] = {
-	glm::vec3(-10.0f,     0.0f,    1.0f),
-	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-	glm::vec3( 10.0f,     0.0f,    1.0f),
-};
+float w1 = 1.0f/8.0f, w2 = 1.0f/*/3.0f*/;
+//glm::vec3 controlPts[4] = {
+//	glm::vec3(-10.0f,     0.0f,    1.0f),
+//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+//	glm::vec3( 10.0f,     0.0f,    1.0f),
+//};
 
+	glm::vec3 controlPts[4] = {
+		glm::vec3(-10.0f,     0.0f,    1.0f),
+		glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
+		glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
+		glm::vec3( 30.0f,    20.0f,    1.0f),
+	};
 Geometry<RCubicVertex>	rcubic;
 
 namespace ml
@@ -49,6 +55,20 @@ void calcLinearFunctionals(float r[6], float koef[4])
 	float	t1=r[0], s1 = r[1],
 			t2=r[2], s2 = r[3],
 			t3=r[4], s3 = r[5];
+
+	koef[0] =  t1*t2*t3;
+	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;
+	koef[2] =  s1*s2*t3+s1*t2*s3+t1*s2*s3;
+	koef[3] = -s1*s2*s3;
+}
+
+void calcLinearFunctionals(float r0[2], float r1[2], float r2[2], float koef[4])
+{
+	//assert(false && "Debug me!!!!");
+	//I have confused variables and they should be fixed
+	float	t1=r0[0], s1 = r0[1],
+			t2=r1[0], s2 = r1[1],
+			t3=r2[0], s3 = r2[1];
 
 	koef[0] =  t1*t2*t3;
 	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;
@@ -201,9 +221,28 @@ void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*v
 	bary[2] = area(v0, v1, pt)/triArea;
 }
 
+float evalHomogeneousCubic(float* d, float* r)
+{
+	float rt = r[0], rs = r[1];
+
+	float d1 = d[0]*rt*rt*rt;
+	float d2 = d[1]*rt*rt*rs;
+	float d3 = d[2]*rt*rs*rs;
+	float d4 = d[3]*rs*rs*rs;
+
+	float res = d1+d2+d3+d4;
+
+	return d[0]*rt*rt*rt + d[1]*rt*rt*rs + d[2]*rt*rs*rs + d[3]*rs*rs*rs;
+}
+
+float evalCubic(float* d, float rt)
+{
+	return d[0]*rt*rt*rt + d[1]*rt*rt + d[2]*rt + d[3];
+}
+
 void testRCubic()
 {
-	float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
+	float w1 = 1.0f/8.0f, w2 = 1.0f/*/3.0f*/;
 
 	Array<glm::vec2> pts;
 
@@ -215,13 +254,20 @@ void testRCubic()
 	Determinants dett;
 	calcDets(pts, dett);
 
+	//glm::vec3 cp[4] = {
+	//	glm::vec3(-10.0f,     0.0f,    1.0f),
+	//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+	//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+	//	glm::vec3( 10.0f,     0.0f,    1.0f),
+	//};
+
 	glm::vec3 cp[4] = {
 		glm::vec3(-10.0f,     0.0f,    1.0f),
-		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-		glm::vec3( 10.0f,     0.0f,    1.0f),
+		glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
+		glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
+		glm::vec3( 30.0f,    20.0f,    1.0f),
 	};
-
+	
 	glm::vec2 bzPt;
 
 	float ttt[] = {0, 1, 0.5f, 0.75f, 0.25f, 0.333333f, 0.4f};
@@ -286,7 +332,7 @@ void testRCubic()
 
 	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
 
-	float r[6];
+	glm::vec2 r[3];
 	int   count;
 
 	d[1] *= -3.0f;
@@ -304,17 +350,48 @@ void testRCubic()
 	}
 	else if (det>=0)
 	{
-		solveCubic(d, count, r);
-		int i = 0;
-		++i;
+		solveCubic(d, count, ml::as<float>(r));
+ 		assert(count==3);
+
+		r[0] = glm::normalize(r[0]);
+		r[1] = glm::normalize(r[1]);
+		r[2] = glm::normalize(r[2]);
+
+		assert(ml::equalE(evalCubic(d, r[0].x/r[0].y), 0, ml::EPS3));
+		assert(ml::equalE(evalCubic(d, r[1].x/r[1].y), 0, ml::EPS3));
+		assert(ml::equalE(evalCubic(d, r[2].x/r[2].y), 0, ml::EPS3));
+		assert(ml::equalE(evalHomogeneousCubic(d, r[0]), 0, ml::EPS3));
+		assert(ml::equalE(evalHomogeneousCubic(d, r[1]), 0, ml::EPS3));
+		assert(ml::equalE(evalHomogeneousCubic(d, r[2]), 0, ml::EPS3));
+
+		glm::mat4	k;
+		
+		calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+		calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+		calcLinearFunctionals(r[1], r[1], r[1], k[2]);
+		calcLinearFunctionals(r[2], r[2], r[2], k[3]);
+		
+		glm::vec2 r1[3];
+		solveCubic(k[0], count, ml::as<float>(r1));
+ 		assert(count==3);
+		assert(ml::equalE(evalCubic(k[0], r[0].y/r[0].x), 0, ml::EPS3));
+
+		k = glm::transpose(k);
+
+		klmn[0] = k[0];
+		klmn[1] = k[0] + 1.0f/3.0f*k[1];
+		klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
+		klmn[3] = k[0] + k[1] + k[2] + k[3];
 	}
 	else
 	{
 		//loop
-		solveCubic(d, count, r);
+		solveCubic(d, count, ml::as<float>(r));
+		assert(count==1);
 
-		int i = 0;
-		++i;
+		r[0] = glm::normalize(r[0]);
+
+		assert(ml::equalE(evalHomogeneousCubic(d, r[0]), 0, ml::EPS3));
 	}
 
 	glm::vec2	tri[4] = {
@@ -340,7 +417,7 @@ void testRCubic()
 
 		float f = klmnI.x*klmnI.x*klmnI.x - klmnI.y*klmnI.z*klmnI.w;
 
-		assert(ml::equalE(f, 0));
+		assert(ml::equalE(f, 0, 0.01f));
 	}
 
 	rcubic.vertices.resize(4);
@@ -351,7 +428,7 @@ void testRCubic()
 		rcubic.vertices[i].klmn = klmn[i];
 	}
 
-	rcubic.indices.pushBack(0); rcubic.indices.pushBack(1); rcubic.indices.pushBack(3);
+	rcubic.indices.pushBack(0); rcubic.indices.pushBack(1); rcubic.indices.pushBack(2);
 	rcubic.indices.pushBack(1); rcubic.indices.pushBack(2); rcubic.indices.pushBack(3);
 }
 
@@ -434,7 +511,7 @@ class VGTest: public UI::SDLStage
 			glScalef(80, 80, 1);
 			clearStencil();
 			glPopMatrix();
-			//rasterizeEvenOdd(mRationalCubic);
+			rasterizeEvenOdd(mRationalCubic);
 			//rasterizeEvenOdd(mRasterCubic);
 			rasterizeEvenOdd(rcubic);
 			glPushMatrix();
