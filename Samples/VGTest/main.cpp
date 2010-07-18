@@ -7,7 +7,7 @@
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
-float w1 = 1.0f/8.0f, w2 = 1.0f/*/3.0f*/;
+float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
 //glm::vec3 controlPts[4] = {
 //	glm::vec3(-10.0f,     0.0f,    1.0f),
 //	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
@@ -78,7 +78,7 @@ void calcLinearFunctionals(float r0[2], float r1[2], float r2[2], float koef[4])
 
 void solveQuadratic(float k[3], int& count, float r[4])
 {
-	assert(false && "Debug me!!!!");
+	//assert(false && "Debug me!!!!");
 
 	float a = k[0], b = k[1], c = k[2];
 	float D = b*b-4*a*c;
@@ -89,8 +89,6 @@ void solveQuadratic(float k[3], int& count, float r[4])
 	}
 	else
 	{
-		float rr = b + (b<0?-1:1)*sqrt(D);
-		
 		count = 2;
 
 		if (D==0)
@@ -100,10 +98,17 @@ void solveQuadratic(float k[3], int& count, float r[4])
 		}
 		else
 		{
+			float rr = -b + (b<0?1:-1)*sqrt(D);
+		
 			r[0] = rr;
 			r[1] = 2*a;
+			float t = rr/2/a;
+			float det = a*t*t+b*t+c;
 			r[2] = 2*c;
 			r[3] = rr;
+			t = 2*c/rr;
+			det = a*t*t+b*t+c;
+			t++;
 		}
 	}
 }
@@ -221,7 +226,7 @@ void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*v
 	bary[2] = area(v0, v1, pt)/triArea;
 }
 
-float evalHomogeneousCubic(float* d, float* r)
+float evalHomogeneousCubic(float d[4], float r[2])
 {
 	float rt = r[0], rs = r[1];
 
@@ -235,9 +240,20 @@ float evalHomogeneousCubic(float* d, float* r)
 	return d[0]*rt*rt*rt + d[1]*rt*rt*rs + d[2]*rt*rs*rs + d[3]*rs*rs*rs;
 }
 
-float evalCubic(float* d, float rt)
+float evalCubic(float d[4], float rt)
 {
 	return d[0]*rt*rt*rt + d[1]*rt*rt + d[2]*rt + d[3];
+}
+
+float evalHomogeneousQuadratic(float d[3], float r[2])
+{
+	float t = r[0], s = r[1];
+	return d[0]*t*t+d[1]*t*s+d[2]*s*s;
+}
+
+float evalQuadratic(float d[3], float rt)
+{
+	return d[0]*rt*rt + d[1]*rt + d[2];
 }
 
 void testRCubic()
@@ -261,16 +277,18 @@ void testRCubic()
 	//	glm::vec3( 10.0f,     0.0f,    1.0f),
 	//};
 
-	glm::vec3 cp[4] = {
-		glm::vec3(-10.0f,     0.0f,    1.0f),
-		glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
-		glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
-		glm::vec3( 30.0f,    20.0f,    1.0f),
-	};
+	//glm::vec3 cp[4] = {
+	//	glm::vec3(-10.0f,     0.0f,    1.0f),
+	//	glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
+	//	glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
+	//	glm::vec3( 30.0f,    20.0f,    1.0f),
+	//};
+
+	glm::vec3	(&cp)[4] = controlPts;
 	
 	glm::vec2 bzPt;
 
-	float ttt[] = {0, 1, 0.5f, 0.75f, 0.25f, 0.333333f, 0.4f};
+	float ttt[] = {0, 1, 0.5f, 0.75f, 0.25f, 0.333333f, 0.4f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
 
 	for (int i=0; i<ARRAY_SIZE(ttt); ++i)
 	{
@@ -315,7 +333,8 @@ void testRCubic()
 		-glm::dot(cp2[2], glm::cross(cp2[1], cp2[0]))
 	};
 	
-	float d[4];
+	//float d[4];
+	glm::vec4	d;
 
 	d[0] = a2[0];//3*(3*a[3] + 3*a[2] + 3*a[1] + 3*a[0]);
 	d[1] = a2[1];//3*(3*a[3] + 2*a[2] +   a[1]);
@@ -324,11 +343,15 @@ void testRCubic()
 
 	glm::vec3 cr = cross(cp2[2], cp2[1]);
 
-	float dt[3];
+	d = glm::normalize(d);
+	//float dt[3];
+	glm::vec3	dt;
 
 	dt[0] = d[0]*d[2]-d[1]*d[1];
 	dt[1] = d[1]*d[2]-d[0]*d[3];
 	dt[2] = d[1]*d[3]-d[2]*d[2];
+
+	//dt = glm::normalize(dt);
 
 	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
 
@@ -388,10 +411,39 @@ void testRCubic()
 		//loop
 		solveCubic(d, count, ml::as<float>(r));
 		assert(count==1);
+		assert(ml::equalE(evalCubic(d, r[0].x/r[0].y), 0, ml::EPS3));
+		
+		solveQuadratic(dt, count, ml::as<float>(r+1));
+		assert(ml::equalE(evalQuadratic(dt, r[1].x/r[1].y), 0, ml::EPS3));
+		assert(ml::equalE(evalQuadratic(dt, r[2].x/r[2].y), 0, ml::EPS3));
+		assert(count==2);
+
+		glm::mat4	k;
 
 		r[0] = glm::normalize(r[0]);
+		r[1] = glm::normalize(r[1]);
+		r[2] = glm::normalize(r[2]);
 
 		assert(ml::equalE(evalHomogeneousCubic(d, r[0]), 0, ml::EPS3));
+		assert(ml::equalE(evalHomogeneousQuadratic(dt, r[1]), 0, ml::EPS3));
+		assert(ml::equalE(evalHomogeneousQuadratic(dt, r[2]), 0, ml::EPS3));
+
+		calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+		calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+		calcLinearFunctionals(r[1], r[1], r[2], k[2]);
+		calcLinearFunctionals(r[1], r[2], r[2], k[3]);
+		
+		glm::vec2 r1[3];
+		solveCubic(k[0], count, ml::as<float>(r1));
+ 		assert(count==3);
+		assert(ml::equalE(evalCubic(k[0], r[0].y/r[0].x), 0, ml::EPS3));
+
+		k = glm::transpose(k);
+
+		klmn[0] = k[0];
+		klmn[1] = k[0] + 1.0f/3.0f*k[1];
+		klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
+		klmn[3] = k[0] + k[1] + k[2] + k[3];
 	}
 
 	glm::vec2	tri[4] = {
@@ -481,7 +533,7 @@ class VGTest: public UI::SDLStage
 		
 		void tessellateCubic()
 		{
-			int numPts = 300;
+			int numPts = 13000;
 			float step = 1.0f/(numPts-1);
 
 			mRationalCubic.vertices.resize(numPts);
@@ -511,7 +563,7 @@ class VGTest: public UI::SDLStage
 			glScalef(80, 80, 1);
 			clearStencil();
 			glPopMatrix();
-			rasterizeEvenOdd(mRationalCubic);
+			//rasterizeEvenOdd(mRationalCubic);
 			//rasterizeEvenOdd(mRasterCubic);
 			rasterizeEvenOdd(rcubic);
 			glPushMatrix();
