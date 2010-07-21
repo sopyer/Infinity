@@ -7,7 +7,7 @@
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
-//float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
+float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
 //glm::vec3 controlPts[4] = {
 //	glm::vec3(-10.0f,     0.0f,    1.0f),
 //	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
@@ -15,12 +15,12 @@ glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(
 //	glm::vec3( 10.0f,     0.0f,    1.0f),
 //};
 
-	//glm::vec3 controlPts[4] = {
-	//	glm::vec3(-10.0f,     0.0f,    1.0f),
-	//	glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
-	//	glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
-	//	glm::vec3( 30.0f,    20.0f,    1.0f),
-	//};
+	glm::vec3 controlPts[4] = {
+		glm::vec3(-10.0f,     0.0f,    1.0f),
+		glm::vec3( 0.0f*w1,  10.0f*w1,   w1),
+		glm::vec3( 10.0f*w2,  0.0f*w2,   w2),
+		glm::vec3( 30.0f,    20.0f,    1.0f),
+	};
 
 	//float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
 	//glm::vec3 controlPts[4] = {
@@ -30,12 +30,12 @@ glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(
 	//	glm::vec3( 10.0f,     0.0f,    1.0f),
 	//};
 
-	glm::vec3 controlPts[4] = {
-		glm::vec3(-20.0f,  0.0f, 1.0f),
-		glm::vec3( 30.0f, 40.0f, 1.0f),
-		glm::vec3(-30.0f, 40.0f, 1.0f),
-		glm::vec3( 20.0f,  0.0f, 1.0f),
-	};
+	//glm::vec3 controlPts[4] = {
+	//	glm::vec3(-20.0f,  0.0f, 1.0f),
+	//	glm::vec3( 30.0f, 40.0f, 1.0f),
+	//	glm::vec3(-30.0f, 40.0f, 1.0f),
+	//	glm::vec3( 20.0f,  0.0f, 1.0f),
+	//};
 
 Geometry<RCubicVertex>	rcubic;
 
@@ -511,21 +511,47 @@ enum
 	DEGENERATE_CUBIC
 };
 
+float calcImplicit(const glm::vec4& tc)
+{
+	return tc.x*tc.x*tc.x - tc.y*tc.z*tc.w;
+}
+
+void changeOrient(glm::vec4& tc)
+{
+	tc.x = -tc.x;
+	tc.y = -tc.y;
+}
+
+void correctOrient(glm::vec4 tc[4])
+{
+	if (ml::lessThenE(calcImplicit(tc[1]), 0) || ml::lessThenE(calcImplicit(tc[2]),0))
+	//if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
+	{
+		changeOrient(tc[0]);
+		changeOrient(tc[1]);
+		changeOrient(tc[2]);
+		changeOrient(tc[3]);
+	}
+}
+
 void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 {
+	glm::vec3	bezierBasisCP[4*4];
+	memcpy(bezierBasisCP, cp, 4*sizeof(glm::vec3));
+
 	//Transform from Bezier to power basis
-	glm::vec3 cp2[4] = {
-		      cp[0],
-		-3.0f*cp[0] +  3.0f*cp[1],
-		 3.0f*cp[0] + -6.0f*cp[1] +  3.0f*cp[2],
-		     -cp[0] +  3.0f*cp[1] + -3.0f*cp[2] +  cp[3],
+	glm::vec3 powerBasisCP[4] = {
+		      bezierBasisCP[0],
+		-3.0f*bezierBasisCP[0] +  3.0f*bezierBasisCP[1],
+		 3.0f*bezierBasisCP[0] + -6.0f*bezierBasisCP[1] +  3.0f*bezierBasisCP[2],
+		     -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],
 	};
 
 	glm::vec4	d = glm::vec4(
-		 glm::dot(cp2[3], glm::cross(cp2[2], cp2[1])),
-		-glm::dot(cp2[3], glm::cross(cp2[2], cp2[0])),
-		 glm::dot(cp2[3], glm::cross(cp2[1], cp2[0])),
-		-glm::dot(cp2[2], glm::cross(cp2[1], cp2[0]))
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[1])),
+		-glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[0])),
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[1], powerBasisCP[0])),
+		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
 	);
 
 	//Mitigates precision issues
@@ -546,8 +572,14 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 	d[2] *=  3.0f;
 	d[3]  = -d[3];
 	
-	glm::vec4	klmn[4];
-	glm::vec2	r[3];
+	glm::vec2	r[3] = 
+	{
+		glm::vec2(1, 0),
+		glm::vec2(1, 0),
+		glm::vec2(1, 0)
+	};
+
+	glm::vec4	klmn[4*4];
 	glm::mat4	k;
 	int			count;
 
@@ -600,7 +632,7 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 		case INTEGRAL_LOOP_CUBIC:
 			solveQuadratic(dt, count, ml::as<float>(r+1));
 			assert(count==2);
-			r[0] = glm::vec2(1, 0);
+			//r[0] = glm::vec2(1, 0);
 			
 			//Mitigate precision issues
 			r[1] = glm::normalize(r[1]);
@@ -617,7 +649,7 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 		case INTEGRAL_SERPENTINE_CUSP_CUBIC:
 			solveQuadratic((float*)d+1, count, ml::as<float>(r));
 			assert(count==2);
-			r[2] = glm::vec2(1, 0);
+			//r[2] = glm::vec2(1, 0);
 
 			//Mitigate precision issues
 			r[0] = glm::normalize(r[0]);
@@ -633,8 +665,8 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 		//TODO : merge with rational case
 		case CUSP_AT_INFINITY_CUBIC:
 			r[0] = glm::vec2(-d[3], d[2]);
-			r[1] = glm::vec2(1, 0);
-			r[2] = glm::vec2(1, 0);
+			//r[1] = glm::vec2(1, 0);
+			//r[2] = glm::vec2(1, 0);
 
 			r[0] = glm::normalize(r[0]);
 
@@ -666,88 +698,6 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 	klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
 	klmn[3] = k[0] + k[1] + k[2] + k[3];
 
-	//if (ml::equalE(dt[0], 0) && ml::equalE(dt[1], 0) && ml::equalE(dt[2], 0))
-	//{
-	//	klmn[0] = glm::vec4(     0.0f,      0.0f,      0.0f, 1.0f);
-	//	klmn[1] = glm::vec4(1.0f/3.0f,      0.0f, 1.0f/3.0f, 1.0f);
-	//	klmn[2] = glm::vec4(2.0f/3.0f, 1.0f/3.0f, 2.0f/3.0f, 1.0f);
-	//	klmn[3] = glm::vec4(     1.0f,      1.0f,      1.0f, 1.0f);
-	//}
-	//else if (det>=0)
-	//{
-	//	solveCubic(d, count, ml::as<float>(r));
- //		assert(count==3);
-
-	//	r[0] = glm::normalize(r[0]);
-	//	r[1] = glm::normalize(r[1]);
-	//	r[2] = glm::normalize(r[2]);
-
-	//	assert(ml::equalE(evalCubic(d, r[0].x/r[0].y), 0, ml::EPS3));
-	//	assert(ml::equalE(evalCubic(d, r[1].x/r[1].y), 0, ml::EPS3));
-	//	assert(ml::equalE(evalCubic(d, r[2].x/r[2].y), 0, ml::EPS3));
-	//	assert(ml::equalE(evalHomogeneousCubic(d, r[0]), 0, ml::EPS3));
-	//	assert(ml::equalE(evalHomogeneousCubic(d, r[1]), 0, ml::EPS3));
-	//	assert(ml::equalE(evalHomogeneousCubic(d, r[2]), 0, ml::EPS3));
-
-	//	glm::mat4	k;
-	//	
-	//	calcLinearFunctionals(r[0], r[1], r[2], k[0]);
-	//	calcLinearFunctionals(r[0], r[0], r[0], k[1]);
-	//	calcLinearFunctionals(r[1], r[1], r[1], k[2]);
-	//	calcLinearFunctionals(r[2], r[2], r[2], k[3]);
-	//	
-	//	glm::vec2 r1[3];
-	//	solveCubic(k[0], count, ml::as<float>(r1));
- //		assert(count==3);
-	//	assert(ml::equalE(evalCubic(k[0], r[0].y/r[0].x), 0, ml::EPS3));
-
-	//	k = glm::transpose(k);
-
-	//	klmn[0] = k[0];
-	//	klmn[1] = k[0] + 1.0f/3.0f*k[1];
-	//	klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
-	//	klmn[3] = k[0] + k[1] + k[2] + k[3];
-	//}
-	//else
-	//{
-	//	//loop
-	//	solveCubic(d, count, ml::as<float>(r));
-	//	assert(count==1);
-	//	assert(ml::equalE(evalCubic(d, r[0].x/r[0].y), 0, ml::EPS3));
-	//	
-	//	solveQuadratic(dt, count, ml::as<float>(r+1));
-	//	assert(ml::equalE(evalQuadratic(dt, r[1].x/r[1].y), 0, ml::EPS3));
-	//	assert(ml::equalE(evalQuadratic(dt, r[2].x/r[2].y), 0, ml::EPS3));
-	//	assert(count==2);
-
-	//	glm::mat4	k;
-
-	//	r[0] = glm::normalize(r[0]);
-	//	r[1] = glm::normalize(r[1]);
-	//	r[2] = glm::normalize(r[2]);
-
-	//	assert(ml::equalE(evalHomogeneousCubic(d, r[0]), 0, ml::EPS3));
-	//	assert(ml::equalE(evalHomogeneousQuadratic(dt, r[1]), 0, ml::EPS3));
-	//	assert(ml::equalE(evalHomogeneousQuadratic(dt, r[2]), 0, ml::EPS3));
-
-	//	calcLinearFunctionals(r[0], r[1], r[2], k[0]);
-	//	calcLinearFunctionals(r[0], r[0], r[0], k[1]);
-	//	calcLinearFunctionals(r[1], r[1], r[2], k[2]);
-	//	calcLinearFunctionals(r[1], r[2], r[2], k[3]);
-	//	
-	//	glm::vec2 r1[3];
-	//	solveCubic(k[0], count, ml::as<float>(r1));
- //		assert(count==3);
-	//	assert(ml::equalE(evalCubic(k[0], r[0].y/r[0].x), 0, ml::EPS3));
-
-	//	k = glm::transpose(k);
-
-	//	klmn[0] = k[0];
-	//	klmn[1] = k[0] + 1.0f/3.0f*k[1];
-	//	klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
-	//	klmn[3] = k[0] + k[1] + k[2] + k[3];
-	//}
-
 	glm::vec2	tri[4] = {
 		cp[0]._xy()/cp[0].z,
 		cp[1]._xy()/cp[1].z,
@@ -759,7 +709,7 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 	glm::vec2 pt;
 
 	float ttt[] = {0, 1, 0.5f, 0.75f, 0.25f, 0.333333f, 0.4f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f};
-	for (int i=0; i<ARRAY_SIZE(ttt); ++i)
+	for (size_t i=0; i<ARRAY_SIZE(ttt); ++i)
 	{
 		evalRationalBezier(ml::as<float>(cp),  ttt[i], pt);
 
@@ -774,16 +724,63 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& geom)
 		assert(ml::equalE(f, 0, 0.01f));
 	}
 
-	rcubic.vertices.resize(4);
-	for (int i=0; i<4; ++i)
+	glm::vec2	intervals[4] = {glm::vec2(0, 1)};
+	glm::vec2*	intervalLast = intervals+4;
+	size_t		intervalCount = 1;
+
+	for (int i=0; i<3; i++)
 	{
+		glm::vec2* intervalToSubdivide = intervals;
+		
+		r[i] = (r[i].x<0)?-r[i]:r[i];
 
-		rcubic.vertices[i].pos = glm::vec4(cp[i].x, cp[i].y, 0, cp[i].z);
-		rcubic.vertices[i].klmn = klmn[i];
+		if (!(0<r[i].x && r[i].x<r[i].y))
+			continue;
+		
+		float t = r[i].x/r[i].y;
+
+		int left = 0;
+		int right = intervalCount++;
+
+		while (left<4 && !(ml::lessThenE(intervals[left].x, t) && ml::lessThenE(t, intervals[left].y)))
+			++left;
+
+		if (left==4) continue;
+
+		glm::vec2 oldInterval = intervals[left];
+		
+		intervals[left]  = glm::vec2(oldInterval.x, t);
+		intervals[right] = glm::vec2(t, oldInterval.y);
+
+		left*=4;
+		right*=4;
+
+		float tt = (t-oldInterval.x)/(oldInterval.y-oldInterval.x);
+
+		cubic::subdivide(bezierBasisCP+left, tt, bezierBasisCP+left, bezierBasisCP+right);
+		cubic::subdivide(klmn+left, tt, klmn+left, klmn+right);
 	}
+	
+	size_t vertBase = rcubic.vertices.size();
 
-	rcubic.indices.pushBack(0); rcubic.indices.pushBack(1); rcubic.indices.pushBack(2);
-	rcubic.indices.pushBack(1); rcubic.indices.pushBack(0); rcubic.indices.pushBack(3);
+	rcubic.vertices.resize(4*intervalCount);
+
+	for (size_t base=0; base<4*intervalCount; base+=4, vertBase+=4)
+	{
+		correctOrient(klmn+base);
+
+		rcubic.vertices[vertBase+0].pos = glm::vec4(bezierBasisCP[base+0].x, bezierBasisCP[base+0].y, 0, bezierBasisCP[base+0].z);
+		rcubic.vertices[vertBase+0].klmn = klmn[base+0];
+		rcubic.vertices[vertBase+1].pos = glm::vec4(bezierBasisCP[base+1].x, bezierBasisCP[base+1].y, 0, bezierBasisCP[base+1].z);
+		rcubic.vertices[vertBase+1].klmn = klmn[base+1];
+		rcubic.vertices[vertBase+2].pos = glm::vec4(bezierBasisCP[base+2].x, bezierBasisCP[base+2].y, 0, bezierBasisCP[base+2].z);
+		rcubic.vertices[vertBase+2].klmn = klmn[base+2];
+		rcubic.vertices[vertBase+3].pos = glm::vec4(bezierBasisCP[base+3].x, bezierBasisCP[base+3].y, 0, bezierBasisCP[base+3].z);
+		rcubic.vertices[vertBase+3].klmn = klmn[base+3];
+
+		rcubic.indices.pushBack(vertBase+0); rcubic.indices.pushBack(vertBase+1); rcubic.indices.pushBack(vertBase+2);
+		rcubic.indices.pushBack(vertBase+0); rcubic.indices.pushBack(vertBase+2); rcubic.indices.pushBack(vertBase+3);
+	}
 }
 
 class VGTest: public UI::SDLStage
