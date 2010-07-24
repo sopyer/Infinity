@@ -7,7 +7,7 @@
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
 glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(0, 10), glm::vec2(10, 0)};
 //glm::vec2	controlPts2[4] = {glm::vec2(10, 0), glm::vec2(20.0f, 40.0f), glm::vec2(40, 40), glm::vec2(50, 0)};
-float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
+//float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
 //glm::vec3 controlPts[4] = {
 //	glm::vec3(-10.0f,     0.0f,    1.0f),
 //	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
@@ -22,20 +22,20 @@ float w1 = /*1.0f/*/6.0f, w2 = 1.0f/*/3.0f*/;
 	//	glm::vec3( 30.0f,    20.0f,    1.0f),
 	//};
 
-	//float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
-	//glm::vec3 controlPts[4] = {
-	//	glm::vec3(-10.0f,     0.0f,    1.0f),
-	//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-	//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-	//	glm::vec3( 10.0f,     0.0f,    1.0f),
-	//};
-
+	float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
 	glm::vec3 controlPts[4] = {
-		glm::vec3(-20.0f,  0.0f, 1.0f),
-		glm::vec3( 30.0f, 40.0f, 1.0f),
-		glm::vec3(-30.0f, 40.0f, 1.0f),
-		glm::vec3( 20.0f,  0.0f, 1.0f),
+		glm::vec3(-10.0f,     0.0f,    1.0f),
+		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+		glm::vec3( 10.0f,     0.0f,    1.0f),
 	};
+
+	//glm::vec3 controlPts[4] = {
+	//	glm::vec3(-20.0f,  0.0f, 1.0f),
+	//	glm::vec3( 30.0f, 40.0f, 1.0f),
+	//	glm::vec3(-30.0f, 40.0f, 1.0f),
+	//	glm::vec3( 20.0f,  0.0f, 1.0f),
+	//};
 
 Geometry<RCubicVertex>	rcubic;
 Geometry<glm::vec2>		rtri;
@@ -307,11 +307,8 @@ void correctOrient(glm::vec4 tc[4])
 	}
 }
 
-void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::vec2>& triGeom)
+void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4], int& specialPointsCount, float specialPoints[3])
 {
-	glm::vec3	bezierBasisCP[4*4];
-	memcpy(bezierBasisCP, cp, 4*sizeof(glm::vec3));
-
 	//Transform from Bezier to power basis
 	glm::vec3 powerBasisCP[4] = {
 		      bezierBasisCP[0],
@@ -352,7 +349,6 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::
 		glm::vec2(1, 0)
 	};
 
-	glm::vec4	klmn[4*4];
 	glm::mat4	k;
 	int			count;
 
@@ -469,6 +465,28 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::
 	klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
 	klmn[3] = k[0] + k[1] + k[2] + k[3];
 
+	specialPointsCount = 0;
+	for (int i=0; i<3; i++)
+	{
+		r[i] = (r[i].x<0)?-r[i]:r[i];
+
+		if (!(0<r[i].x && r[i].x<r[i].y))
+			continue;
+		
+		specialPoints[specialPointsCount++] = r[i].x/r[i].y;
+	}
+}
+
+void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::vec2>& triGeom)
+{
+	glm::vec3	bezierBasisCP[4*4];
+	glm::vec4	klmn[4*4];
+	int			count;
+	float		subdPt[3];
+
+	memcpy(bezierBasisCP, cp, 4*sizeof(glm::vec3));
+	implicitizeRationalBezierCubic(bezierBasisCP, klmn, count, subdPt);
+
 	glm::vec2	tri[4] = {
 		cp[0]._xy()/cp[0].z,
 		cp[1]._xy()/cp[1].z,
@@ -499,32 +517,23 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::
 	glm::vec2*	intervalLast = intervals+4;
 	size_t		intervalCount = 1;
 
-	for (int i=0; i<3; i++)
+	for (int i=0; i<count; i++)
 	{
-		glm::vec2* intervalToSubdivide = intervals;
-		
-		r[i] = (r[i].x<0)?-r[i]:r[i];
+		float	t = subdPt[i];
+		int		left = 0;
+		int		right = intervalCount++;
 
-		if (!(0<r[i].x && r[i].x<r[i].y))
-			continue;
-		
-		float t = r[i].x/r[i].y;
-
-		int left = 0;
-		int right = intervalCount++;
-
-		while (left<4 && !(ml::lessThenE(intervals[left].x, t) && ml::lessThenE(t, intervals[left].y)))
+		while (left<right && !(ml::lessThenE(intervals[left].x, t) && ml::lessThenE(t, intervals[left].y)))
 			++left;
 
-		if (left==4) continue;
+		if (left==right) continue;
 
 		glm::vec2 oldInterval = intervals[left];
 		
 		intervals[left]  = glm::vec2(oldInterval.x, t);
 		intervals[right] = glm::vec2(t, oldInterval.y);
 
-		left*=4;
-		right*=4;
+		left*=4; right*=4;
 
 		float tt = (t-oldInterval.x)/(oldInterval.y-oldInterval.x);
 
@@ -553,7 +562,9 @@ void addCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& cubicGeom, Geometry<glm::
 		cubicGeom.indices.pushBack(cvertBase+0); cubicGeom.indices.pushBack(cvertBase+1); cubicGeom.indices.pushBack(cvertBase+2);
 		cubicGeom.indices.pushBack(cvertBase+0); cubicGeom.indices.pushBack(cvertBase+2); cubicGeom.indices.pushBack(cvertBase+3);
 
-		//we assume first cubic is at the beginning of curve
+		if (intervalCount==1) break;
+
+		//we assume first iinterval is at the beginning of the curve
 		if (base==0)
 		{
 			triGeom.vertices.pushBack(glm::vec2(bezierBasisCP[base+0].x, bezierBasisCP[base+0].y)/bezierBasisCP[base+0].z);
@@ -650,11 +661,11 @@ class VGTest: public UI::SDLStage
 			glPopMatrix();
 			//rasterizeEvenOdd(mRationalCubic);
 			//rasterizeEvenOdd(mRasterCubic);
-			rasterizeEvenOdd(rcubic);
-			rasterizeEvenOdd(rtri);
+			//rasterizeEvenOdd(rcubic);
+			//rasterizeEvenOdd(rtri);
 			glPushMatrix();
 			//glScalef(-1, 1, 1);
-			//drawRCubicAA(rcubic);
+			drawRCubicAA(rcubic);
 			//drawCubicAA(mRasterCubic);
 			glPopMatrix();
 			//rasterizeEvenOdd(mTri);
