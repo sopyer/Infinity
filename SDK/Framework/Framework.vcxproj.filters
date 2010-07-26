@@ -30,21 +30,6 @@
     <ClCompile Include="iniparser\strlib.c">
       <Filter>iniparser</Filter>
     </ClCompile>
-    <ClCompile Include="FontManager.cpp">
-      <Filter>ResourceManagement</Filter>
-    </ClCompile>
-    <ClCompile Include="ProgramManager.cpp">
-      <Filter>ResourceManagement</Filter>
-    </ClCompile>
-    <ClCompile Include="ResourceHelpers.cpp">
-      <Filter>ResourceManagement</Filter>
-    </ClCompile>
-    <ClCompile Include="ShaderManager.cpp">
-      <Filter>ResourceManagement</Filter>
-    </ClCompile>
-    <ClCompile Include="TextureManager.cpp">
-      <Filter>ResourceManagement</Filter>
-    </ClCompile>
     <ClCompile Include="SOIL\image_DXT.c">
       <Filter>Cameras\SOIL</Filter>
     </ClCompile>
@@ -72,6 +57,7 @@
     <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
+    <ClCompile Include="ResourceHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iniparser\dictionary.h">
@@ -82,27 +68,6 @@
     </ClInclude>
     <ClInclude Include="iniparser\strlib.h">
       <Filter>iniparser</Filter>
-    </ClInclude>
-    <ClInclude Include="FontManager.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="ProgramManager.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceHandle.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceHelpers.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="ResourceManager.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderManager.h">
-      <Filter>ResourceManagement</Filter>
-    </ClInclude>
-    <ClInclude Include="TextureManager.h">
-      <Filter>ResourceManagement</Filter>
     </ClInclude>
     <ClInclude Include="FirstPersonCamera.h">
       <Filter>Cameras</Filter>
@@ -134,9 +99,6 @@
     <ClInclude Include="Events.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="KeySyms.h">
-      <Filter>UI</Filter>
-    </ClInclude>
     <ClInclude Include="SDLStage.h">
       <Filter>UI</Filter>
     </ClInclude>
@@ -153,5 +115,6 @@
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="ResourceHelpers.h" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@
 int count = 100;
 clock_t t1 = 0;
 
-scheduler::Task handle;
+mt::Task handle;
 
 struct TestCPPBind
 {
@@ -19,8 +19,8 @@ struct TestCPPBind
 		t1 = t2;
 		if (count==3)
 		{
-			scheduler::terminateTask(handle);
-			handle = scheduler::addTimedTask<TestCPPBind, &TestCPPBind::func2>(this, 20);
+			mt::terminateTask(handle);
+			handle = mt::addTimedTask<TestCPPBind, &TestCPPBind::func2>(this, 20);
 		}
 	}
 
@@ -33,7 +33,7 @@ struct TestCPPBind
 
 		if (!count)
 		{
-			scheduler::terminateLoop();
+			mt::terminateLoop();
 		}
 	}
 } test = {10};
@@ -46,7 +46,7 @@ void func(void* userData)
 	t1 = t2;
 	if (!count)
 	{
-		scheduler::terminateLoop();
+		mt::terminateLoop();
 	}
 }
 
@@ -56,15 +56,15 @@ int main()
 	SetThreadPriority(h, THREAD_PRIORITY_TIME_CRITICAL);
 	Sleep(1000);
 
-	scheduler::init();
+	mt::init();
 
 	//scheduler::addTimedTask(func, 0, 20);
-	handle = scheduler::addTimedTask<TestCPPBind, &TestCPPBind::func>(&test, 20);
+	handle = mt::addTimedTask<TestCPPBind, &TestCPPBind::func>(&test, 20);
 
 	t1 = clock();
-	scheduler::mainLoop();
+	mt::mainLoop();
 
-	scheduler::cleanup();
+	mt::cleanup();
 
 	return 0;
 }

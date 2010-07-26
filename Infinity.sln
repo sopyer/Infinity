@@ -63,12 +63,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VG", "SDK\VG\VG.vcxproj", "
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RM", "Tests\RM\RM.vcxproj", "{65BBF438-3A97-4502-8897-938D52900C59}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "SDK\External\freetype\builds\win32\visualc\freetype.vcxproj", "{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "glFont", "SDK\External\glFont\glFont.vcxproj", "{FAFB97F9-712C-47F3-8BE2-F259FED45C5A}"
@@ -80,6 +74,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SDLmain", "SDK\External\SDL\VisualC\SDLmain\SDLmain.vcxproj", "{DA956FD3-E142-46F2-9DD5-C78BEBB56B7A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SchedulerDev", "Samples\SchedulerDev\SchedulerDev.vcxproj", "{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}"
+	ProjectSection(ProjectDependencies) = postProject
+		{81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68} = {81CE8DAF-EBB2-4761-8E45-B71ABCCA8C68}
+		{DA956FD3-E142-46F2-9DD5-C78BEBB56B7A} = {DA956FD3-E142-46F2-9DD5-C78BEBB56B7A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3D", "Samples\3D\3D.vcxproj", "{2AE33CF6-D774-4CC4-AA7C-30465A8E4CFE}"
 EndProject
@@ -172,12 +170,6 @@ Global
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release|Win32.ActiveCfg = Release|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release|Win32.Build.0 = Release|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Debug|Win32.ActiveCfg = Debug|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Debug|Win32.Build.0 = Debug|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Release|Win32.ActiveCfg = Release|Win32
-		{65BBF438-3A97-4502-8897-938D52900C59}.Release|Win32.Build.0 = Release|Win32
 		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}.Debug|Win32.Build.0 = Debug|Win32
 		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32

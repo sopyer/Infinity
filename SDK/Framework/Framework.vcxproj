@@ -82,17 +82,7 @@
     <ClCompile Include="iniparser\dictionary.c" />
     <ClCompile Include="iniparser\iniparser.c" />
     <ClCompile Include="iniparser\strlib.c" />
-    <ClCompile Include="FontManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="ProgramManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="ResourceHelpers.cpp" />
-    <ClCompile Include="ShaderManager.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="SOIL\image_DXT.c" />
     <ClCompile Include="SOIL\image_helper.c" />
     <ClCompile Include="SOIL\SOIL.c" />
@@ -109,22 +99,8 @@
     <ClInclude Include="iniparser\dictionary.h" />
     <ClInclude Include="iniparser\iniparser.h" />
     <ClInclude Include="iniparser\strlib.h" />
-    <ClInclude Include="FontManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="ProgramManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="ResourceHandle.h" />
-    <ClInclude Include="ResourceHelpers.h" />
-    <ClInclude Include="ResourceManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="ShaderManager.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="FirstPersonCamera.h" />
+    <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />
     <ClInclude Include="SOIL\image_helper.h" />
     <ClInclude Include="SOIL\SOIL.h" />
@@ -134,7 +110,6 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Container.h" />
     <ClInclude Include="Events.h" />
-    <ClInclude Include="KeySyms.h" />
     <ClInclude Include="SDLStage.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="UI.h" />

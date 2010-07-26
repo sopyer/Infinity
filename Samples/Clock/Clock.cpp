@@ -1,8 +1,9 @@
 #include <framework.h>
-#include <TextureManager.h>
 #include <time.h>
 
-//#define RASTER_ACTORS
+#include "ResourceHelpers.h"
+
+#define RASTER_ACTORS
 
 #ifdef RASTER_ACTORS
 class Image: public UI::Actor
@@ -103,7 +104,8 @@ class ClockSample: public UI::SDLStage
 			
 			for (int i=0; i<IMG_COUNT; ++i)
 			{
-				loadTexture(imageNames[i], mTextures[i]);
+				//loadTexture(imageNames[i], mTextures[i]);
+				mTextures[i] = resources::createTexture2D(imageNames[i]);
 				mGroup.add(
 					mImages[i].setTexture(mTextures[i]).
 					//setPos(mWidth/2, mHeight/2).
