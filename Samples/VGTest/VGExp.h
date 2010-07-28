@@ -31,6 +31,7 @@ void rasterizeEvenOdd(Geometry<CubicVertex>& geom);
 void rasterizeEvenOdd(Geometry<RCubicVertex>& geom);
 void drawCubicAA(Geometry<CubicVertex>& geom);
 void drawRCubicAA(Geometry<RCubicVertex>& geom);
+void drawRCubicA2C(Geometry<RCubicVertex>& geom);
 void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Array<glm::vec2>& v);
 
 #endif

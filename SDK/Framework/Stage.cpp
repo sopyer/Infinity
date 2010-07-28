@@ -183,6 +183,8 @@ namespace UI
 		u8	pixel[4];
 		glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 		
+		assert(glGetError()==GL_NO_ERROR);
+
 		if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
 			return this;
 

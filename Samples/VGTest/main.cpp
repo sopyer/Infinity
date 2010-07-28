@@ -22,20 +22,20 @@ glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(
 	//	glm::vec3( 30.0f,    20.0f,    1.0f),
 	//};
 
-	float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
-	glm::vec3 controlPts[4] = {
-		glm::vec3(-10.0f,     0.0f,    1.0f),
-		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-		glm::vec3( 10.0f,     0.0f,    1.0f),
-	};
-
+	//float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
 	//glm::vec3 controlPts[4] = {
-	//	glm::vec3(-20.0f,  0.0f, 1.0f),
-	//	glm::vec3( 30.0f, 40.0f, 1.0f),
-	//	glm::vec3(-30.0f, 40.0f, 1.0f),
-	//	glm::vec3( 20.0f,  0.0f, 1.0f),
+	//	glm::vec3(-10.0f,     0.0f,    1.0f),
+	//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+	//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+	//	glm::vec3( 10.0f,     0.0f,    1.0f),
 	//};
+
+	glm::vec3 controlPts[4] = {
+		glm::vec3(-20.0f,  0.0f, 1.0f),
+		glm::vec3( 30.0f, 40.0f, 1.0f),
+		glm::vec3(-30.0f, 40.0f, 1.0f),
+		glm::vec3( 20.0f,  0.0f, 1.0f),
+	};
 
 Geometry<RCubicVertex>	rcubic;
 Geometry<glm::vec2>		rtri;
@@ -597,6 +597,40 @@ void addAATriangle(glm::vec3 cp[3], Geometry<RCubicVertex>& cubicGeom)
 	cubicGeom.indices.pushBack(cvertBase+0); cubicGeom.indices.pushBack(cvertBase+1); cubicGeom.indices.pushBack(cvertBase+2);
 }
 
+GLuint createRenderbuffer(GLenum type, GLuint samples, GLsizei width, GLsizei height)
+{
+	GLuint rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, type, width, height);
+	//glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	return rbo;
+}
+
+//Use framebuffers just like layouts using shared components
+GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
+{
+	GLuint fbo;
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRenderbuffer);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthRenderbuffer);
+	//glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthRenderbuffer);
+
+	GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+	if(status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		glDeleteFramebuffers(1, &fbo);
+		fbo = 0;
+	}
+			
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	return fbo;
+}
+
 class VGTest: public UI::SDLStage
 {
 	public:
@@ -608,15 +642,15 @@ class VGTest: public UI::SDLStage
 		{
 			initVGExp();
 
-			//addCubic(controlPts, rcubic, rtri);
-			glm::vec3 cpt[3] = 
-			{
-				glm::vec3(-20, 0, 1),
-				glm::vec3(0, 20, 1),
-				glm::vec3(20, 5, 1)
-			};
+			addCubic(controlPts, rcubic, rtri);
+			//glm::vec3 cpt[3] = 
+			//{
+			//	glm::vec3(-20, 0, 1),
+			//	glm::vec3(0, 20, 1),
+			//	glm::vec3(20, 5, 1)
+			//};
 
-			addAATriangle(cpt, rcubic);
+			//addAATriangle(cpt, rcubic);
 			//testRCubic();
 			tessellateCubic();
 
@@ -633,15 +667,23 @@ class VGTest: public UI::SDLStage
 				  .setFont(mFont)
 				  .setPos(300, 10));
 			glClearStencil(0x80);
+			colorRB = createRenderbuffer(GL_RGBA8, 8, 800, 600);
+			depthRB = createRenderbuffer(GL_DEPTH24_STENCIL8, 8, 800, 600);
+			fbo = createFramebuffer(colorRB, depthRB);
 		}
 
 		~VGTest()
 		{
+			glDeleteFramebuffers(1, &fbo);
+			glDeleteRenderbuffers(1, &depthRB);
+			glDeleteRenderbuffers(1, &colorRB);
+
 			terminateVGExp();
 			sui::destroyFont(mFont);
 		}
 		
 	protected:
+		GLuint colorRB, depthRB, fbo;
 		Geometry<CubicVertex>	mRasterCubic;
 		Geometry<glm::vec2>		mRationalCubic, mTri;
 		
@@ -677,38 +719,103 @@ class VGTest: public UI::SDLStage
 
 		void onPaint()
 		{
-			glEnable(GL_STENCIL_TEST);
-			glTranslatef(offsetX, offsetY, 0);
-			glScalef(zoom, zoom, 1);
-			glPushMatrix();
-			glTranslatef(-40, -40, 0);
-			glScalef(80, 80, 1);
-			clearStencil();
-			glPopMatrix();
-			//rasterizeEvenOdd(mRationalCubic);
-			//rasterizeEvenOdd(mRasterCubic);
-			//rasterizeEvenOdd(rcubic);
-			//rasterizeEvenOdd(rtri);
-			glPushMatrix();
-			//glScalef(-1, 1, 1);
-			drawRCubicAA(rcubic);
-			//drawCubicAA(mRasterCubic);
-			glPopMatrix();
-			//rasterizeEvenOdd(mTri);
-			glUseProgram(0);
-			glPushMatrix();
-			glTranslatef(-40, -40, 0);
-			glScalef(80, 80, 1);
-			drawQuad();
-			glPopMatrix();
-			glDisable(GL_STENCIL_TEST);
-			glColor3f(1, 0, 0);
-			glBegin(GL_LINE_STRIP);
-			glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
-			glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
-			glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
-			glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
-			glEnd();
+			float vp[4];
+			glGetFloatv(GL_VIEWPORT, vp);
+			if (bool multisample = true)
+			{
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+				glEnable(GL_STENCIL_TEST);
+				glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+				glMatrixMode(GL_MODELVIEW);
+				glTranslatef(offsetX, offsetY, 0);
+				glScalef(zoom, zoom, 1);
+
+				glPushMatrix();
+				glTranslatef(-40, -40, 0);
+				glScalef(80, 80, 1);
+				clearStencil();
+				glPopMatrix();
+
+				glPushMatrix();
+					//glScalef(-1, 1, 1);
+					drawRCubicA2C(rcubic);
+					rasterizeEvenOdd(rtri);
+				glPopMatrix();
+
+				glUseProgram(0);
+
+				glPushMatrix();
+					glTranslatef(-40, -40, 0);
+					glScalef(80, 80, 1);
+					drawQuad();
+				glPopMatrix();
+
+				glDisable(GL_STENCIL_TEST);
+				
+				glColor3f(1, 0, 0);
+				glBegin(GL_LINE_STRIP);
+					glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
+					glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
+					glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
+					glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
+				glEnd();
+
+				glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+				
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
+
+				glBlitFramebuffer(
+						0, 0, 800, 600,
+						0, 0, 800, 600,
+						//if enable depth and stencil resolve - label stops to render.
+						GL_COLOR_BUFFER_BIT/*|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT*/,
+						GL_NEAREST);
+
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+			}
+			else
+			{
+				glEnable(GL_STENCIL_TEST);
+
+				glMatrixMode(GL_MODELVIEW);
+				glTranslatef(offsetX, offsetY, 0);
+				glScalef(zoom, zoom, 1);
+
+				glPushMatrix();
+				glTranslatef(-40, -40, 0);
+				glScalef(80, 80, 1);
+				clearStencil();
+				glPopMatrix();
+				//rasterizeEvenOdd(mRationalCubic);
+				//rasterizeEvenOdd(mRasterCubic);
+				//rasterizeEvenOdd(rcubic);
+				//rasterizeEvenOdd(rtri);
+				glPushMatrix();
+				//glScalef(-1, 1, 1);
+				drawRCubicAA(rcubic);
+				//drawCubicAA(mRasterCubic);
+				glPopMatrix();
+				//rasterizeEvenOdd(mTri);
+				glUseProgram(0);
+				glPushMatrix();
+				glTranslatef(-40, -40, 0);
+				glScalef(80, 80, 1);
+				drawQuad();
+				glPopMatrix();
+				glDisable(GL_STENCIL_TEST);
+				glColor3f(1, 0, 0);
+				glBegin(GL_LINE_STRIP);
+				glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
+				glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
+				glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
+				glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
+				glEnd();
+			}
 		}
 
 		void onTouch(const ButtonEvent& event)

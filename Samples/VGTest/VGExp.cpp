@@ -163,6 +163,39 @@ void drawCubicAA(Geometry<CubicVertex>& geom)
 	glPopAttrib();
 }
 
+void drawRCubicA2C(Geometry<RCubicVertex>& geom)
+{
+	if (geom.vertices.empty())
+		return;
+
+	RCubicVertex& vtx = geom.vertices[0];
+		
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+		
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_ALWAYS, 0, 1);
+	glStencilMask(0x01);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_INVERT);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.pos);
+		
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.klmn);
+
+	glUseProgram(rcubicProgramAA);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
+
+	glPopClientAttrib();
+	glPopAttrib();
+}
+
 void drawRCubicAA(Geometry<RCubicVertex>& geom)
 {
 	if (geom.vertices.empty())
