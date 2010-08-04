@@ -585,14 +585,12 @@ void addAATriangle(glm::vec3 cp[3], Geometry<RCubicVertex>& cubicGeom)
 
 	cubicGeom.vertices.resize(cvertBase+3);
 
-	float d = glm::dot(cp[1], glm::cross(cp[0], cp[2]));
-
-	cubicGeom.vertices[cvertBase+0].pos = glm::vec4(cp[0].x, cp[0].y, 0, cp[0].z);
-	cubicGeom.vertices[cvertBase+0].klmn = glm::vec4(0.5f, 0.5f, 0.5f, 1.1f);
-	cubicGeom.vertices[cvertBase+1].pos = glm::vec4(cp[1].x, cp[1].y, 0, cp[1].z);
-	cubicGeom.vertices[cvertBase+1].klmn = -glm::vec4(d, d, d, 1.0f);
-	cubicGeom.vertices[cvertBase+2].pos = glm::vec4(cp[2].x, cp[2].y, 0, cp[2].z);
-	cubicGeom.vertices[cvertBase+2].klmn = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+	cubicGeom.vertices[cvertBase+0].pos  = glm::vec4(cp[0].x, cp[0].y,    0, cp[0].z);
+	cubicGeom.vertices[cvertBase+0].klmn = glm::vec4(   0.0f,    0.0f, 1.0f,    1.0f);
+	cubicGeom.vertices[cvertBase+1].pos  = glm::vec4(cp[1].x, cp[1].y,    0, cp[1].z);
+	cubicGeom.vertices[cvertBase+1].klmn = glm::vec4(   0.0f,     1.0, 1.0f,    1.0f);
+	cubicGeom.vertices[cvertBase+2].pos  = glm::vec4(cp[2].x, cp[2].y,    0, cp[2].z);
+	cubicGeom.vertices[cvertBase+2].klmn = glm::vec4(   0.0f,    0.0f, 1.0f,    1.0f);
 
 	cubicGeom.indices.pushBack(cvertBase+0); cubicGeom.indices.pushBack(cvertBase+1); cubicGeom.indices.pushBack(cvertBase+2);
 }
@@ -642,15 +640,15 @@ class VGTest: public UI::SDLStage
 		{
 			initVGExp();
 
-			addCubic(controlPts, rcubic, rtri);
-			//glm::vec3 cpt[3] = 
-			//{
-			//	glm::vec3(-20, 0, 1),
-			//	glm::vec3(0, 20, 1),
-			//	glm::vec3(20, 5, 1)
-			//};
+			//addCubic(controlPts, rcubic, rtri);
+			glm::vec3 cpt[3] = 
+			{
+				glm::vec3(-20, 0, 1),
+				glm::vec3(0, 20, 1),
+				glm::vec3(20, 5, 1)
+			};
 
-			//addAATriangle(cpt, rcubic);
+			addAATriangle(cpt, rcubic);
 			//testRCubic();
 			tessellateCubic();
 
@@ -721,7 +719,7 @@ class VGTest: public UI::SDLStage
 		{
 			float vp[4];
 			glGetFloatv(GL_VIEWPORT, vp);
-			if (bool multisample = true)
+			if (bool multisample = false)
 			{
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 

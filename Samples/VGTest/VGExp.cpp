@@ -147,7 +147,7 @@ void drawCubicAA(Geometry<CubicVertex>& geom)
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND);
-	glBlendEquation(GL_ADD);
+	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -210,7 +210,7 @@ void drawRCubicAA(Geometry<RCubicVertex>& geom)
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_STENCIL_TEST);
 	glEnable(GL_BLEND);
-	glBlendEquation(GL_ADD);
+	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -299,7 +299,7 @@ const char cubicAAFSSource[] =
 				"void main(void)												\n"
 				"{																\n"
 				"	vec3   uv = gl_TexCoord[0].stp;								\n"
-				"	vec3   dF = vec3(3*uv.x*uv.x, -uv.y, -uv.z);				\n"
+				"	vec3   dF = vec3(3*uv.x*uv.x, -uv.z, -uv.y);				\n"
 				"	vec2   grad = vec2(dot(dFdx(uv), dF), dot(dFdy(uv), dF));	\n"
 				"	float  F = uv.x*uv.x*uv.x - uv.y*uv.z;						\n"
 				"	float  sdist = 0.5-F/length(grad);							\n"
@@ -312,20 +312,20 @@ const char cubicAAFSSource[] =
 				"}																\n";
 
 const char rcubicAAFSSource[] = 
-				"void main(void)												\n"
-				"{																\n"
-				"	vec4   uv = gl_TexCoord[0];									\n"
-				"	vec4   dF = vec4(3*uv.x*uv.x, -uv.y, -uv.z, -uv.w);			\n"
-				"	vec2   grad = vec2(dot(dFdx(uv), dF), dot(dFdy(uv), dF));	\n"
-				"	float  F = uv.x*uv.x*uv.x - uv.y*uv.z*uv.w;					\n"
-				"	float  sdist = 0.5-F/length(grad);							\n"
-				"	float  a = clamp(sdist, 0.0, 1.0);							\n"
-				"																\n"
-				"	if( a==0.0 )												\n"
-				"		discard;												\n"
-				"																\n"
-				"	gl_FragColor = vec4(1.0, 1.0, 1.0, a);						\n"
-				"}																\n";
+				"void main(void)																\n"
+				"{																				\n"
+				"	vec4   uv = gl_TexCoord[0];													\n"
+				"	vec4   dF = vec4(3*uv.x*uv.x, -uv.z*uv.w, -uv.y*uv.w, -uv.y*uv.z);			\n"
+				"	vec2   grad = vec2(dot(dFdx(uv), dF), dot(dFdy(uv), dF));					\n"
+				"	float  F = uv.x*uv.x*uv.x - uv.y*uv.z*uv.w;									\n"
+				"	float  sdist = 0.5-F/length(grad);											\n"
+				"	float  a = clamp(sdist, 0.0, 1.0);											\n"
+				"																				\n"
+				"	if( a==0.0 )																\n"
+				"		discard;																\n"
+				"																				\n"
+				"	gl_FragColor = vec4(1.0, 1.0, 1.0, a);										\n"
+				"}																				\n";
 
 #define MAX_INFOLOG_LENGTH 256
 bool compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source)
