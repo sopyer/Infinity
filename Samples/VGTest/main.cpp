@@ -22,20 +22,20 @@ glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(
 	//	glm::vec3( 30.0f,    20.0f,    1.0f),
 	//};
 
-	//float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
-	//glm::vec3 controlPts[4] = {
-	//	glm::vec3(-10.0f,     0.0f,    1.0f),
-	//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-	//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-	//	glm::vec3( 10.0f,     0.0f,    1.0f),
-	//};
-
+	float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
 	glm::vec3 controlPts[4] = {
-		glm::vec3(-20.0f,  0.0f, 1.0f),
-		glm::vec3( 30.0f, 40.0f, 1.0f),
-		glm::vec3(-30.0f, 40.0f, 1.0f),
-		glm::vec3( 20.0f,  0.0f, 1.0f),
+		glm::vec3(-10.0f,     0.0f,    1.0f),
+		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+		glm::vec3( 10.0f,     0.0f,    1.0f),
 	};
+
+	//glm::vec3 controlPts[4] = {
+	//	glm::vec3(-20.0f,  0.0f, 1.0f),
+	//	glm::vec3( 30.0f, 40.0f, 1.0f),
+	//	glm::vec3(-30.0f, 40.0f, 1.0f),
+	//	glm::vec3( 20.0f,  0.0f, 1.0f),
+	//};
 
 Geometry<RCubicVertex>	rcubic;
 Geometry<glm::vec2>		rtri;
@@ -238,9 +238,22 @@ float area(float* v0, float* v1, float* v2)
 void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*vec2*/float* pt, /*vec3*/float* bary)
 {
 	float triArea = area(v0, v1, v2);
-	bary[0] = area(v1, v2, pt)/triArea;
-	bary[1] = area(v2, v0, pt)/triArea;
-	bary[2] = area(v0, v1, pt)/triArea;
+	if (ml::equalE(triArea, 0))
+	{
+		assert(!"Degenerate triangle!!!");
+	}
+	else
+	{
+		bary[0] = area(v1, v2, pt);///triArea;
+		bary[1] = area(v2, v0, pt);///triArea;
+		bary[2] = area(v0, v1, pt);///triArea;
+		float sum = bary[0]+bary[1]+bary[2];
+		assert(sum>0);
+		assert(sum==triArea);
+		bary[0]/=sum;
+		bary[1]/=sum;
+		bary[2]/=sum;
+	}
 }
 
 float evalHomogeneousCubic(float d[4], float r[2])
@@ -595,6 +608,158 @@ void addAATriangle(glm::vec3 cp[3], Geometry<RCubicVertex>& cubicGeom)
 	cubicGeom.indices.pushBack(cvertBase+0); cubicGeom.indices.pushBack(cvertBase+1); cubicGeom.indices.pushBack(cvertBase+2);
 }
 
+template<typename T>
+T perspectiveInterpolate(const glm::vec3& bary, const glm::vec3& www,
+						 const T& V0, const T& V1, const T& V2, float& invw)
+{
+	glm::vec3 scale = bary/www;
+	invw = (scale.x + scale.y + scale.z);
+	return (scale.x*V0 + scale.y*V1 + scale.z*V2)/invw;
+}
+
+void addDistanceTransformCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& distTransGeom)
+{
+	glm::vec4	klmn[4];
+	int			count;
+	float		subdPt[3];
+
+	implicitizeRationalBezierCubic(cp, klmn, count, subdPt);
+
+	glm::vec2	tri[4] = {
+		cp[0]._xy()/cp[0].z,
+		cp[1]._xy()/cp[1].z,
+		cp[2]._xy()/cp[2].z,
+		cp[3]._xy()/cp[3].z,
+	};
+
+	glm::vec3 bary;
+	glm::vec2 pt;
+
+	glm::vec2 pts[] = {
+		glm::vec2(-10, 0),
+		glm::vec2(10, 0),
+		//glm::vec2(-10, 20),
+		//glm::vec2(10, 20),
+		//glm::vec2(0, 20),
+		glm::vec2(0, 0),
+		glm::vec2(-10, 10),
+		glm::vec2(10, 10),
+		glm::vec2(0, 10),
+		glm::vec2(-11, 0),
+		glm::vec2(11, 0)
+	};
+
+	for (size_t i=0; i<ARRAY_SIZE(pts); ++i)
+	{
+		pt = pts[i];
+
+		calcBarycentric(tri[0], tri[1], tri[3], pt, bary);
+		assert(glm::equalEpsilonGTX(pt, bary.x*tri[0]+bary.y*tri[1]+bary.z*tri[3], ml::EPS7));
+
+		glm::vec3 scale = bary/glm::vec3(cp[0].z, cp[1].z, cp[3].z);
+		glm::vec4 klmnI1 = (scale.x*klmn[0] + scale.y*klmn[1] + scale.z*klmn[3])/(scale.x + scale.y + scale.z);
+
+		float f1  = klmnI1.x*klmnI1.x*klmnI1.x - klmnI1.y*klmnI1.z*klmnI1.w;
+		float iw1 = scale.x+scale.y+scale.z;
+
+		calcBarycentric(tri[1], tri[2], tri[3], pt, bary);
+		assert(glm::equalEpsilonGTX(pt, bary.x*tri[1]+bary.y*tri[2]+bary.z*tri[3], ml::EPS7));
+		scale = bary/glm::vec3(cp[1].z, cp[2].z, cp[3].z);
+		glm::vec4 klmnI2 = (scale.x*klmn[1] + scale.y*klmn[2] + scale.z*klmn[3])/(scale.x + scale.y + scale.z);
+
+		float f2  = klmnI2.x*klmnI2.x*klmnI2.x - klmnI2.y*klmnI2.z*klmnI2.w;
+		float iw2 = scale.x+scale.y+scale.z;
+		
+		glm::vec4 sc = klmnI1/klmnI2;
+		float s2s = iw2/iw1;
+
+		assert(ml::equalE(f1*iw1*iw1*iw1, f2*iw2*iw2*iw2, ml::EPS5));
+		//assert(ml::equalE(iw1, iw2));
+
+		calcBarycentric(tri[1], tri[2], pt, tri[3], bary);
+		assert(glm::equalEpsilonGTX(tri[3], bary.x*tri[1]+bary.y*tri[2]+bary.z*pt, ml::EPS7));
+		scale = bary/glm::vec3(cp[1].z, cp[2].z, 1/iw2);
+		glm::vec4 klmnII = (scale.x*klmn[1] + scale.y*klmn[2] + scale.z*klmnI2)/(scale.x + scale.y + scale.z);
+
+		float f3  = klmnII.x*klmnII.x*klmnII.x - klmnII.y*klmnII.z*klmnII.w;
+		float iw3 = scale.x+scale.y+scale.z;
+
+		assert(ml::equalE(cp[3].z, 1/iw3, ml::EPS5));
+		assert(glm::equalEpsilonGTX(klmn[3], klmnII, ml::EPS7));
+	}
+
+	glm::vec2 n1 = glm::normalize(perpendicularCCW(tri[1]-tri[0]));
+	glm::vec2 n2 = glm::normalize(perpendicularCCW(tri[2]-tri[1]));
+	glm::vec2 n3 = glm::normalize(perpendicularCCW(tri[3]-tri[2]));
+
+	glm::vec2 o1 = 10.0f*n1;
+	glm::vec2 o2 = 10.0f*calcOffsetN(n1, n2);
+	glm::vec2 o3 = 10.0f*calcOffsetN(n2, n3);
+	glm::vec2 o4 = 10.0f*n3;
+
+	size_t base = distTransGeom.vertices.size();
+	distTransGeom.vertices.resize(base+6);
+
+	float iw;
+	float fv;
+	glm::vec4 klmnN;
+
+	pt = tri[0]+o1;//glm::vec2(-40, 0);//tri[0]+o1;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	assert(glm::equalEpsilonGTX(pt, bary.x*tri[0]+bary.y*tri[1]+bary.z*tri[3], ml::EPS7));
+	klmnN = distTransGeom.vertices[base+0].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	//distTransGeom.vertices[base+0].klmn.x = -distTransGeom.vertices[base+0].klmn.x;
+	//distTransGeom.vertices[base+0].klmn.z = -distTransGeom.vertices[base+0].klmn.z;
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+0].pos = glm::vec4(pt, 0, 1)/iw;
+
+	pt = tri[1]+o2;//glm::vec2(-40, 100);//tri[1]+o2;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	klmnN = distTransGeom.vertices[base+1].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+1].pos = glm::vec4(pt, 0, 1)/iw;
+
+	pt = tri[2]+o3;//glm::vec2(40, 100);//tri[2]+o3;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	klmnN = distTransGeom.vertices[base+2].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+2].pos = glm::vec4(pt, 0, 1)/iw;
+
+	pt = tri[3]+o4;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	klmnN = distTransGeom.vertices[base+3].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+3].pos = glm::vec4(pt, 0, 1)/iw;
+
+	pt = tri[3]-o4;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	klmnN = distTransGeom.vertices[base+4].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+4].pos = glm::vec4(pt, 0, 1)/iw;
+
+	pt = tri[0]-o1;//glm::vec2(40, 0);//tri[0]-o1;
+	calcBarycentric(tri[0], tri[1], tri[2], pt, bary);
+	klmnN = distTransGeom.vertices[base+5].klmn = perspectiveInterpolate(bary, glm::vec3(cp[0].z, cp[1].z, cp[2].z), klmn[0], klmn[1], klmn[2], iw);
+	fv  = klmnN.x*klmnN.x*klmnN.x - klmnN.y*klmnN.z*klmnN.w;
+	distTransGeom.vertices[base+5].pos = glm::vec4(pt, 0, 1)/iw;
+
+	distTransGeom.indices.pushBack(base+0);
+	distTransGeom.indices.pushBack(base+1);
+	distTransGeom.indices.pushBack(base+5);
+
+	distTransGeom.indices.pushBack(base+1);
+	distTransGeom.indices.pushBack(base+2);
+	distTransGeom.indices.pushBack(base+5);
+
+	distTransGeom.indices.pushBack(base+2);
+	distTransGeom.indices.pushBack(base+3);
+	distTransGeom.indices.pushBack(base+4);
+
+	distTransGeom.indices.pushBack(base+2);
+	distTransGeom.indices.pushBack(base+4);
+	distTransGeom.indices.pushBack(base+5);
+}
+
 GLuint createRenderbuffer(GLenum type, GLuint samples, GLsizei width, GLsizei height)
 {
 	GLuint rbo;
@@ -640,6 +805,7 @@ class VGTest: public UI::SDLStage
 		{
 			initVGExp();
 
+			addDistanceTransformCubic(controlPts, rcubic);
 			//addCubic(controlPts, rcubic, rtri);
 			glm::vec3 cpt[3] = 
 			{
@@ -648,7 +814,7 @@ class VGTest: public UI::SDLStage
 				glm::vec3(20, 5, 1)
 			};
 
-			addAATriangle(cpt, rcubic);
+			//addAATriangle(cpt, rcubic);
 			//testRCubic();
 			tessellateCubic();
 
@@ -795,7 +961,8 @@ class VGTest: public UI::SDLStage
 				//rasterizeEvenOdd(rtri);
 				glPushMatrix();
 				//glScalef(-1, 1, 1);
-				drawRCubicAA(rcubic);
+				//drawRCubicAA(rcubic);
+				drawRCubicDTAA(rcubic);
 				//drawCubicAA(mRasterCubic);
 				glPopMatrix();
 				//rasterizeEvenOdd(mTri);
