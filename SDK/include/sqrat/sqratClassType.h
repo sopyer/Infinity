@@ -30,7 +30,7 @@
 
 #include <squirrel.h>
 
-namespace Sqrat {
+namespace sqrat {
 
 	//
 	// ClassType

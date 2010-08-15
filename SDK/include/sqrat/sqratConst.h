@@ -33,7 +33,7 @@
 
 #include "sqratObject.h"
 
-namespace Sqrat {
+namespace sqrat {
 	
 	//
 	// Enumerations
@@ -41,7 +41,7 @@ namespace Sqrat {
 
 	class Enumeration : public Object {
 	public:
-		Enumeration(HSQUIRRELVM v = DefaultVM::Get(), bool createTable = true) : Object(v, false) {
+		Enumeration(HSQUIRRELVM v, bool createTable = true) : Object(v, false) {
 			if(createTable) {
 				sq_newtable(vm);
 				sq_getstackobj(vm,-1,&obj);
@@ -77,7 +77,7 @@ namespace Sqrat {
 
 	class ConstTable : public Enumeration {
 	public:
-		ConstTable(HSQUIRRELVM v = DefaultVM::Get()) : Enumeration(v, false) {
+		ConstTable(HSQUIRRELVM v) : Enumeration(v, false) {
 			sq_pushconsttable(vm);
 			sq_getstackobj(vm,-1, &obj);
 			sq_pop(v,1); // No addref needed, since the consttable is always around

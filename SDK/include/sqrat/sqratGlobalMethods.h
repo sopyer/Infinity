@@ -31,7 +31,7 @@
 #include <squirrel.h>
 #include "sqratTypes.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	//
 	// Squirrel Global Functions

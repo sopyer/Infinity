@@ -36,7 +36,7 @@
 #include "sqratMemberMethods.h"
 #include "sqratAllocator.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	/**
 		@tparam	C	class type to expose
@@ -55,7 +55,7 @@ namespace Sqrat {
 			@param v	Squirrel virtual machine to bind to
 		*/
 		/// Constructor
-		Class(HSQUIRRELVM v = DefaultVM::Get(), bool createClass = true) : Object(v, false) {
+		Class(HSQUIRRELVM v, bool createClass = true) : Object(v, false) {
 			if(createClass && !ClassType<C>::Initialized()) {
 				HSQOBJECT& classObj = ClassType<C>::ClassObject();
 				sq_resetobject(&classObj);
@@ -327,7 +327,7 @@ namespace Sqrat {
 	template<class C, class B, class A = DefaultAllocator<C> >
 	class DerivedClass : public Class<C, A> {
 	public:
-		DerivedClass(HSQUIRRELVM v = DefaultVM::Get()) : Class<C, A>(v, false) {
+		DerivedClass(HSQUIRRELVM v) : Class<C, A>(v, false) {
 			if(!ClassType<C>::Initialized()) {
 				HSQOBJECT& classObj = ClassType<C>::ClassObject();
 				sq_resetobject(&classObj);

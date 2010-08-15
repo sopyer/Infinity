@@ -34,7 +34,7 @@
 #include "sqratOverloadMethods.h"
 #include "sqratUtil.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	class Object {
 	protected:
@@ -55,12 +55,12 @@ namespace Sqrat {
 			sq_addref(vm, &obj);
 		}
 
-		Object(HSQOBJECT o, HSQUIRRELVM v = DefaultVM::Get()) : vm(v), obj(o), release(true) {
+		Object(HSQOBJECT o, HSQUIRRELVM v) : vm(v), obj(o), release(true) {
 			sq_addref(vm, &obj);
 		}
 
 		template<class T>
-		Object(T* instance, HSQUIRRELVM v = DefaultVM::Get()) : vm(v), release(true) {
+		Object(T* instance, HSQUIRRELVM v) : vm(v), release(true) {
 			ClassType<T>::PushInstance(vm, instance);
 			sq_getstackobj(vm, -1, &obj);
 			sq_addref(vm, &obj);

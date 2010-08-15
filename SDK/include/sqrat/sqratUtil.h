@@ -33,22 +33,8 @@
 
 #include "sqratTypes.h"
 
-namespace Sqrat {
-
-	class DefaultVM {
-	private:
-		static HSQUIRRELVM& staticVm() {
-			static HSQUIRRELVM vm;
-			return vm;
-		}
-	public:
-		static HSQUIRRELVM Get() {
-			return staticVm();
-		}
-		static void Set(HSQUIRRELVM vm) {
-			staticVm() = vm;
-		}
-	};
+namespace sqrat
+{
 
 	class ErrorHandling {
 	private:
@@ -63,19 +49,6 @@ namespace Sqrat {
 		static void Enable(bool enable) {
 			errorHandling() = enable;
 		}
-	};
-
-	class Exception {
-	public:
-		Exception(const string& msg) : message(msg) {}
-		Exception(const Exception& ex) : message(ex.message) {}
-		
-		const string Message() const {
-			return message;
-		}
-
-	private:
-		string message;
 	};
 
 	inline string LastErrorString( HSQUIRRELVM vm ) {

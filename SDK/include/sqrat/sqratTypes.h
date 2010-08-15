@@ -33,7 +33,7 @@
 
 #include "sqratClassType.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	//
 	// Variable Accessors

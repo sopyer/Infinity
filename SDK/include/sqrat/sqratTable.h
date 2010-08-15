@@ -35,11 +35,11 @@
 #include "sqratFunction.h"
 #include "sqratGlobalMethods.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	class TableBase : public Object {
 	public:
-		TableBase(HSQUIRRELVM v = DefaultVM::Get()) : Object(v, true) {
+		TableBase(HSQUIRRELVM v) : Object(v, true) {
 		}
 		// Bind a Table or Class to the Table (Can be used to facilitate Namespaces)
 		// Note: Bind cannot be called "inline" like other functions because it introduces order-of-initialization bugs.
@@ -110,7 +110,7 @@ namespace Sqrat {
 
 	class Table : public TableBase {
 	public:
-		Table(HSQUIRRELVM v = DefaultVM::Get()) : TableBase(v) {
+		Table(HSQUIRRELVM v) : TableBase(v) {
 			sq_newtable(vm);
 			sq_getstackobj(vm,-1,&obj);
 			sq_addref(vm, &obj);
@@ -124,7 +124,7 @@ namespace Sqrat {
 
 	class RootTable : public TableBase {
 	public:
-		RootTable(HSQUIRRELVM v = DefaultVM::Get()) : TableBase(v) {
+		RootTable(HSQUIRRELVM v) : TableBase(v) {
 			sq_pushroottable(vm);
 			sq_getstackobj(vm,-1,&obj);
 			sq_addref(vm, &obj);

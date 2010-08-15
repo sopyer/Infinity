@@ -31,7 +31,7 @@
 #include <squirrel.h>
 #include "sqratObject.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	class Function  {
 		friend class TableBase;

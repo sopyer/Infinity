@@ -33,7 +33,7 @@
 
 #include "sqratObject.h"
 
-namespace Sqrat {
+namespace sqrat {
 	
 	//
 	// DefaultAllocator

@@ -34,7 +34,7 @@
 #include "sqratTypes.h"
 #include "sqratUtil.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	//
 	// Overload name generator

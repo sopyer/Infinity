@@ -34,35 +34,38 @@
 
 #include "sqratObject.h"
 
-namespace Sqrat {
+namespace sqrat {
 
 	class Script : public Object {
 	public:
-		Script(HSQUIRRELVM v = DefaultVM::Get()) : Object(v, false) {
+		Script(HSQUIRRELVM v) : Object(v, false) {
 		}
 
-		void CompileString(const string& script) {
+		bool CompileString(const string& script) {
 			if(SQ_FAILED(sq_compilebuffer(vm, script.c_str(), static_cast<SQInteger>(script.size() * sizeof(SQChar)), _SC(""), true))) {
-				throw Exception(LastErrorString(vm));
+				return false;
 			}
 			sq_getstackobj(vm,-1,&obj);
+			return true;
 		}
 
-		void CompileFile(const string& path) {
+		bool CompileFile(const string& path) {
 			if(SQ_FAILED(sqstd_loadfile(vm, path.c_str(), true))) {
-				throw Exception(LastErrorString(vm));
+				return false;
 			}
 			sq_getstackobj(vm,-1,&obj);
+			return true;
 		}
 
-		void Run() {
+		bool Run() {
 			if(!sq_isnull(obj)) {
 				sq_pushobject(vm, obj);
 				sq_pushroottable(vm);
 				if(SQ_FAILED(sq_call(vm, 1, false, true))) {
-					throw Exception(LastErrorString(vm));
+					return false;
 				}
 			}
+			return true;
 		}
 
 		void WriteCompiledFile(const string& path) {
