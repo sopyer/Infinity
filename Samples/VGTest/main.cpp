@@ -1,7 +1,7 @@
 #include <framework.h>
 
 #include "VGExp.h"
-
+#include <SOIL.h> // remove later
 //float w1 = -0.35f;
 //float w2 = -0.35f;
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
@@ -22,20 +22,20 @@ glm::vec2	controlPts2[4] = {glm::vec2(0, 0), glm::vec2(10.0f, 10.0f), glm::vec2(
 	//	glm::vec3( 30.0f,    20.0f,    1.0f),
 	//};
 
-	float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
-	glm::vec3 controlPts[4] = {
-		glm::vec3(-10.0f,     0.0f,    1.0f),
-		glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
-		glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
-		glm::vec3( 10.0f,     0.0f,    1.0f),
-	};
-
+	//float w1 = 1.0f/3.0f, w2 = 1.0f/3.0f;
 	//glm::vec3 controlPts[4] = {
-	//	glm::vec3(-20.0f,  0.0f, 1.0f),
-	//	glm::vec3( 30.0f, 40.0f, 1.0f),
-	//	glm::vec3(-30.0f, 40.0f, 1.0f),
-	//	glm::vec3( 20.0f,  0.0f, 1.0f),
+	//	glm::vec3(-10.0f,     0.0f,    1.0f),
+	//	glm::vec3(-10.0f*w1, 20.0f*w1,   w1),
+	//	glm::vec3( 10.0f*w2, 20.0f*w2,   w2),
+	//	glm::vec3( 10.0f,     0.0f,    1.0f),
 	//};
+
+	glm::vec3 controlPts[4] = {
+		glm::vec3(-20.0f,  0.0f, 1.0f),
+		glm::vec3( 30.0f, 40.0f, 1.0f),
+		glm::vec3(-30.0f, 40.0f, 1.0f),
+		glm::vec3( 20.0f,  0.0f, 1.0f),
+	};
 
 Geometry<RCubicVertex>	rcubic;
 Geometry<glm::vec2>		rtri;
@@ -248,8 +248,8 @@ void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*v
 		bary[1] = area(v2, v0, pt);///triArea;
 		bary[2] = area(v0, v1, pt);///triArea;
 		float sum = bary[0]+bary[1]+bary[2];
-		assert(sum>0);
-		assert(sum==triArea);
+		//assert(sum>0);
+		//assert(sum==triArea);
 		bary[0]/=sum;
 		bary[1]/=sum;
 		bary[2]/=sum;
@@ -805,8 +805,8 @@ class VGTest: public UI::SDLStage
 		{
 			initVGExp();
 
-			addDistanceTransformCubic(controlPts, rcubic);
-			//addCubic(controlPts, rcubic, rtri);
+			//addDistanceTransformCubic(controlPts, rcubic);
+			addCubic(controlPts, rcubic, rtri);
 			glm::vec3 cpt[3] = 
 			{
 				glm::vec3(-20, 0, 1),
@@ -885,7 +885,40 @@ class VGTest: public UI::SDLStage
 		{
 			float vp[4];
 			glGetFloatv(GL_VIEWPORT, vp);
-			if (bool multisample = false)
+			
+			if (bool alphaAA = true)
+			{
+				glDisable(GL_STENCIL_TEST);
+
+				glMatrixMode(GL_MODELVIEW);
+				glTranslatef(offsetX, offsetY, 0);
+				glScalef(zoom, zoom, 1);
+
+				glPushMatrix();
+				glTranslatef(-40, -40, 0);
+				glScalef(80, 80, 1);
+				clearAlpha();
+				glPopMatrix();
+
+				rasterizeEvenOddAA(rcubic);
+				rasterizeEvenOddAA(rtri);
+
+				glUseProgram(0);
+				glPushMatrix();
+				glTranslatef(-40, -40, 0);
+				glScalef(80, 80, 1);
+				drawAlphaQuad();
+				glPopMatrix();
+				
+				glColor3f(1, 0, 0);
+				glBegin(GL_LINE_STRIP);
+				glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
+				glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
+				glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
+				glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
+				glEnd();
+			}
+			else if (bool multisample = false)
 			{
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 

@@ -5,6 +5,110 @@
 
 GLuint	cubicProgram, cubicProgramAA, rcubicProgram, rcubicProgramAA, rcubicDTProgramAA;
 
+void clearAlpha()
+{
+	glUseProgram(0);
+	
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	
+	glColor4ub(0, 0, 0, 0);
+	glBegin(GL_QUADS);
+	glVertex2f(0.0, 0.0);
+	glVertex2f(0.0,	1.0);
+	glVertex2f(1.0, 1.0);
+	glVertex2f(1.0, 0.0);
+	glEnd();
+	
+	glPopAttrib();
+}
+
+void rasterizeEvenOddAA(Geometry<glm::vec2>& geom)
+{
+	if (geom.vertices.empty())
+		return;
+
+	glm::vec2& vtx = geom.vertices[0];
+		
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_STENCIL_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(2, GL_FLOAT, sizeof(glm::vec2), &vtx);
+	
+	glColor4ub(0, 0, 0, 255);
+	glUseProgram(0);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
+
+	glPopClientAttrib();
+	glPopAttrib();
+}
+
+void rasterizeEvenOddAA(Geometry<RCubicVertex>& geom)
+{
+	if (geom.vertices.empty())
+		return;
+
+	RCubicVertex& vtx = geom.vertices[0];
+		
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_STENCIL_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.pos);
+		
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(4, GL_FLOAT, sizeof(RCubicVertex), &vtx.klmn);
+
+	glUseProgram(rcubicProgramAA);
+	glDrawElements(GL_TRIANGLES, (GLsizei)geom.indices.size(), GL_UNSIGNED_SHORT, &geom.indices[0]);
+
+	glPopClientAttrib();
+	glPopAttrib();
+}
+
+void drawAlphaQuad()
+{
+	glUseProgram(0);
+
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+	GLenum err = glGetError();
+
+	glColor4f(1, 1, 1, 1);//glCallList(paint.mHandle);
+	glBegin(GL_QUADS);
+	glVertex2f(0.0, 0.0);
+	glVertex2f(0.0,	1.0);
+	glVertex2f(1.0, 1.0);
+	glVertex2f(1.0, 0.0);
+	glEnd();
+
+	glPopAttrib();
+}
+
 void clearStencil()
 {
 	glPushAttrib(GL_ALL_ATTRIB_BITS);

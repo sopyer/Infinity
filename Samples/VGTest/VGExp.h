@@ -35,4 +35,10 @@ void drawRCubicA2C(Geometry<RCubicVertex>& geom);
 void drawRCubicDTAA(Geometry<RCubicVertex>& geom);
 void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Array<glm::vec2>& v);
 
+
+void rasterizeEvenOddAA(Geometry<RCubicVertex>& geom);
+void rasterizeEvenOddAA(Geometry<glm::vec2>& geom);
+void clearAlpha();
+void drawAlphaQuad();
+
 #endif
