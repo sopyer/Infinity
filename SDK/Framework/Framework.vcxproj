@@ -48,7 +48,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>

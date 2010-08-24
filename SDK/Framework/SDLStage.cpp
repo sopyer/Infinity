@@ -121,7 +121,7 @@ namespace UI
 		//}
 		mt::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
 		//Do not make this too small ro there will be input handling lag
-		mt::addTimedTask<SDLStage, &SDLStage::handleRender>(this, 10);
+		mt::addFrameTask<SDLStage, &SDLStage::handleRender>(this);
 
 		mt::mainLoop();
 	}

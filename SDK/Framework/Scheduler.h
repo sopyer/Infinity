@@ -29,6 +29,7 @@ namespace mt
 
 	//Adds timed task to execution queue
 	Task addTimedTask(TimedTaskFunc func, void* userData, size_t msTimeout/*, size_t flags*/);
+	Task addFrameTask(TaskFunc func, void* userData/*, size_t flags*/);
 
 	//Dispatches tasks for execution
 	void mainLoop();
@@ -47,6 +48,12 @@ namespace mt
 	Task addTimedTask(T* obj, size_t msTimeout)
 	{
 		return addTimedTask(&taskFuncStub<T, callback>, obj, msTimeout);
+	}
+
+	template<class T, void (T::*callback)()>
+	Task addFrameTask(T* obj)
+	{
+		return addFrameTask(&taskFuncStub<T, callback>, obj);
 	}
 
 	Thread createThread(int (__cdecl *fn)(void *), void *data);

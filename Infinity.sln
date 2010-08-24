@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Framework", "SDK\Framework\Framework.vcxproj", "{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}"
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
@@ -81,8 +81,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SchedulerDev", "Samples\Sch
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3D", "Samples\3D\3D.vcxproj", "{2AE33CF6-D774-4CC4-AA7C-30465A8E4CFE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Clock", "Samples\Clock\Clock.vcxproj", "{378D89DF-F490-4D86-B042-56CBD9B04FAA}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AO", "Samples\AO\AO.vcxproj", "{F9605E64-D3F7-48DA-8D15-4CBF362161D1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Video", "Samples\Video\Video.vcxproj", "{3B5EC04A-DDDB-4760-B264-9043388B9F76}"
@@ -115,6 +113,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Flash", "Samples\Flash\Flash.vcxproj", "{8956BE42-FE05-480E-8E34-2B9C5D3DFA91}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "SDK\External\zlib\win32\zlib.vcxproj", "{BB574242-C804-4CC8-A083-171332E77101}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Clock", "Samples\Clock\Clock.vcxproj", "{378D89DF-F490-4D86-B042-56CBD9B04FAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -223,12 +223,6 @@ Global
 		{2AE33CF6-D774-4CC4-AA7C-30465A8E4CFE}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{2AE33CF6-D774-4CC4-AA7C-30465A8E4CFE}.Release|Win32.ActiveCfg = Release|Win32
 		{2AE33CF6-D774-4CC4-AA7C-30465A8E4CFE}.Release|Win32.Build.0 = Release|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Debug|Win32.ActiveCfg = Debug|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Debug|Win32.Build.0 = Debug|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.ActiveCfg = Release|Win32
-		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.Build.0 = Release|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Debug|Win32.Build.0 = Debug|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
@@ -277,6 +271,12 @@ Global
 		{BB574242-C804-4CC8-A083-171332E77101}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{BB574242-C804-4CC8-A083-171332E77101}.Release|Win32.ActiveCfg = Release|Win32
 		{BB574242-C804-4CC8-A083-171332E77101}.Release|Win32.Build.0 = Release|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Debug|Win32.Build.0 = Debug|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.ActiveCfg = Release|Win32
+		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

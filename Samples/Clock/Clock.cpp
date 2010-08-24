@@ -3,7 +3,7 @@
 
 #include "ResourceHelpers.h"
 
-#define RASTER_ACTORS
+//#define RASTER_ACTORS
 
 #ifdef RASTER_ACTORS
 class Image: public UI::Actor
@@ -97,7 +97,7 @@ class ClockSample: public UI::SDLStage
 	public:
 		ClockSample()
 		{
-			VFS::mount("../AppData");
+			VFS::mount("../../AppData");
 			
 #ifdef	RASTER_ACTORS
 			glGenTextures(IMG_COUNT, mTextures);

@@ -40,6 +40,7 @@ namespace mt
 			{
 				TaskFunc	taskFunc;
 				void*		userData;
+				size_t		frameToExecute;
 			} taskDesc;
 
 			struct
@@ -101,19 +102,38 @@ namespace mt
 		}
 	};
 
-	bool operator<(const TaskHandle& lhs, const TaskHandle& rhs)
+	struct compareTimedTasks
 	{
-		assert(lhs.entry->type==SCHED_ENTRY_TIMED_TASK && rhs.entry->type==SCHED_ENTRY_TIMED_TASK);
-		return lhs.entry->timedTaskDesc.msDueTime > rhs.entry->timedTaskDesc.msDueTime;
-	}
+		bool operator()(const TaskHandle& left, const TaskHandle& right) const
+		{
+			assert(left.entry->type==SCHED_ENTRY_TIMED_TASK && right.entry->type==SCHED_ENTRY_TIMED_TASK);
+			return left.entry->timedTaskDesc.msDueTime > right.entry->timedTaskDesc.msDueTime;
+		}
+	};
 
-	bool	isInitialized=false;
-	bool	doTerminate=false;
-	clock_t	startTime=0;
+	struct compareTasks
+	{
+		bool operator()(const TaskHandle& left, const TaskHandle& right) const
+		{
+			assert(left.entry->type==SCHED_ENTRY_TASK && right.entry->type==SCHED_ENTRY_TASK);
+			return left.entry->taskDesc.frameToExecute > right.entry->taskDesc.frameToExecute;
+		}
+	};
+
+	//bool operator<(const TaskHandle& lhs, const TaskHandle& rhs)
+	//{
+	//	assert(lhs.entry->type==SCHED_ENTRY_TIMED_TASK && rhs.entry->type==SCHED_ENTRY_TIMED_TASK);
+	//	return lhs.entry->timedTaskDesc.msDueTime > rhs.entry->timedTaskDesc.msDueTime;
+	//}
+
+	bool		isInitialized=false;
+	bool		doTerminate=false;
+	size_t		curFrame=0;
+	clock_t		startTime=0;
 	TaskPool	taskPool;
 
-	std::priority_queue<TaskHandle>	timedTaskQueue;
-	std::priority_queue<TaskHandle>	taskQueue;
+	std::priority_queue<TaskHandle, std::vector<TaskHandle>, compareTimedTasks>	timedTaskQueue;
+	std::priority_queue<TaskHandle, std::vector<TaskHandle>, compareTasks>		taskQueue;
 
 	size_t	timeElapsedMS()
 	{
@@ -131,6 +151,7 @@ namespace mt
 		assert(timedTaskQueue.empty());
 		assert(taskQueue.empty());
 		startTime = clock();
+		curFrame = 0;
 	}
 
 	void cleanup()
@@ -172,6 +193,19 @@ namespace mt
 		return entry;
 	}
 
+	Task addFrameTask(TaskFunc func, void* userData/*, size_t flags*/)
+	{
+		SchedEntry* entry = taskPool.get();
+		entry->flags = SCHED_DESC_RECURRING|SCHED_DESC_IMMEDIATE;
+		entry->type  = SCHED_ENTRY_TASK;
+		entry->taskDesc.taskFunc = func;
+		entry->taskDesc.userData = userData;
+		entry->taskDesc.frameToExecute = curFrame;
+		taskQueue.push(entry);
+
+		return entry;
+	}
+
 	void terminateLoop()
 	{
 		doTerminate = true;
@@ -207,6 +241,28 @@ namespace mt
 						timedTaskQueue.push(&entry);
 				}
 			}
+
+			if (!taskQueue.empty())
+			{
+				SchedEntry& entry = taskQueue.top();
+				if (entry.taskDesc.frameToExecute>curFrame)
+					continue;
+				assert(entry.type == SCHED_ENTRY_TASK);
+				taskQueue.pop();
+				if (entry.flags&SCHED_DESC_STOP_TASK)
+				{
+					taskPool.put(&entry);
+				}
+				else
+				{
+					entry.taskDesc.taskFunc(entry.taskDesc.userData);
+					++entry.taskDesc.frameToExecute;
+					if ((entry.flags&SCHED_MASK_TASK_REPEAT_MODE) == SCHED_DESC_RECURRING)
+						taskQueue.push(&entry);
+				}
+			}
+
+			++curFrame;
 		}
 	}
 

@@ -123,6 +123,12 @@ namespace sqrat {
 			return up;
 		}
 
+		template<typename T>
+		T getSlotAs(const SQChar* slot)
+		{
+			return GetSlot(slot).Cast<T>();
+		}
+
 		Object GetSlot(const SQChar* slot) const {
 			HSQOBJECT slotObj;
 			sq_pushobject(vm, GetObject());
