@@ -8,6 +8,7 @@ namespace impl
 	enum
 	{
 		PRG_SIMPLE_UI,
+		PRG_RAST_FILL_CUBIC_AA,
 		PRG_RAST_FILL_CUBIC,
 		PRG_RAST_FILL_QUAD,
 		PRG_RAST_FILL_ARC,

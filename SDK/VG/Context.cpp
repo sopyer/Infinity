@@ -133,4 +133,35 @@ namespace vg
 		glDisable(GL_TEXTURE_2D);
 		glPopMatrix();
 	}
+
+	void clearAlpha(const glm::vec2& min, const glm::vec2& max, float offset)
+	{
+		glUseProgram(0);
+	
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+	
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+		glColor4ub(0, 0, 0, 0);
+		drawQuad(min, max, offset);
+
+		glPopAttrib();
+	}
+
+	void drawPathAA(Path path, Paint paint)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		glEnable(GL_STENCIL_TEST);
+		clearAlpha(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		path.mHandle->rasterizeFillAA();
+
+		glCallList(paint.mHandle);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+
+		glPopAttrib();
+	}
 }

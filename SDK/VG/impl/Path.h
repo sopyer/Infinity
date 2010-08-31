@@ -23,6 +23,7 @@ namespace impl
 		
 		//private:
 			void rasterizeFill();
+			void rasterizeFillAA();
 			void prepareGeom();
 
 		//private:

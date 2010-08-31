@@ -25,6 +25,7 @@ namespace vg
 	void	destroyPath(Path path);
 
 	void	drawPath(Path path, Paint paint);
+	void	drawPathAA(Path path, Paint paint);
 	void	drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
 
 	class Context

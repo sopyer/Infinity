@@ -118,6 +118,7 @@ namespace impl
 	};
 
 	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims);
+	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims);
 
 	//Safetly supports up to 127 self intersections
 	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);

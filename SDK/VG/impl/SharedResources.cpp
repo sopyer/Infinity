@@ -23,6 +23,7 @@ namespace impl
 			fsRastArc,
 			fsRastQuad,
 			fsRastCubic,
+			fsRastCubicAA,
 			vsRastStroke,
 			
 			vsSimpleUI,
@@ -55,6 +56,13 @@ namespace impl
 				CArray3<const char*, UNI_NAME_FILL_COLOR, UNI_NAME_BORDER_COLOR, UNI_NAME_ZONES>::ptr,
 				CArray3<size_t, UNI_SIMPLE_UI_FILL_COLOR, UNI_SIMPLE_UI_BORDER_COLOR, UNI_SIMPLE_UI_ZONES>::ptr
 			},
+			
+			//PRG_RAST_FILL_CUBIC_AA,
+			{
+				1, CArray1<size_t, fsRastCubicAA>::ptr,
+				0, 0, 0
+			},
+
 			//PRG_RAST_FILL_CUBIC,
 			{
 				1, CArray1<size_t, fsRastCubic>::ptr,
@@ -139,6 +147,24 @@ namespace impl
 				"															\n"
 				"	gl_FragColor = vec4(1.0);								\n"
 				"}															\n"
+			},
+
+			{
+				GL_FRAGMENT_SHADER,
+				"void main(void)												\n"
+				"{																\n"
+				"	vec3   uv = gl_TexCoord[0].xyz;								\n"
+				"	vec3   dF = vec3(3*uv.x*uv.x, -uv.z, -uv.y);				\n"
+				"	vec2   grad = vec2(dot(dFdx(uv), dF), dot(dFdy(uv), dF));	\n"
+				"	float  F = uv.x*uv.x*uv.x - uv.y*uv.z;						\n"
+				"	float  sdist = 0.5-F/length(grad);							\n"
+				"	float  a = clamp(sdist, 0.0, 1.0);							\n"
+				"																\n"
+				"	if( a==0.0 )												\n"
+				"		discard;												\n"
+				"																\n"
+				"	gl_FragColor = vec4(1.0, 1.0, 1.0, a);						\n"
+				"}																\n"
 			},
 
 			{

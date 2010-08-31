@@ -83,7 +83,7 @@ class VectorImage: public UI::Actor
 	protected:
 		virtual void onPaint()
 		{
-			vg::drawPath(mPath, mPaint);
+			vg::drawPathAA(mPath, mPaint);
 		}
 
 	protected:
@@ -95,7 +95,15 @@ class VectorImage: public UI::Actor
 class ClockSample: public UI::SDLStage
 {
 	public:
-		ClockSample()
+		ClockSample():
+			mOffsetX(mWidth/2),
+			mOffsetY(mHeight/2),
+#ifndef	RASTER_ACTORS
+			mScale(7),
+#else
+			mScale(1),
+#endif
+			mIsDragging(false)
 		{
 			VFS::mount("../../AppData");
 			
@@ -104,11 +112,9 @@ class ClockSample: public UI::SDLStage
 			
 			for (int i=0; i<IMG_COUNT; ++i)
 			{
-				//loadTexture(imageNames[i], mTextures[i]);
 				mTextures[i] = resources::createTexture2D(imageNames[i]);
 				mGroup.add(
 					mImages[i].setTexture(mTextures[i]).
-					//setPos(mWidth/2, mHeight/2).
 					setSize(w, h)
 				);
 			}
@@ -121,7 +127,8 @@ class ClockSample: public UI::SDLStage
 			loadClockHands();
 #endif
 
-			add(mGroup.setPos(mWidth/2, mHeight/2));
+			updateClock();
+			add(mGroup);
 
 			mt::addTimedTask<ClockSample, &ClockSample::timeTick>(this, 200);
 		}
@@ -142,8 +149,6 @@ class ClockSample: public UI::SDLStage
 
 	protected:
 #ifndef RASTER_ACTORS
-		static const float mScale;
-
 		void loadClockFacePaths()
 		{
 			float w, h, x, y;
@@ -157,12 +162,11 @@ class ClockSample: public UI::SDLStage
 				mClockPaths[i].getBounds(x1, y1, x2, y2);
 				
 				w = x2-x1; h = y2-y1;
-				x = (-w/2.0f-x1)*mScale; y = (-h/2.0f-y1)*mScale;
+				x = (-w/2.0f-x1); y = (-h/2.0f-y1);
 
 				mGroup.add(mClockActors[i].setPath(mClockPaths[i]).
 					setPaint(i==PATH_CLOCK_BKG?mWhite:mBlack).
-					setPos(x, y).
-					setScale(mScale, mScale)
+					setPos(x, y)
 					);
 			}
 		}
@@ -175,8 +179,7 @@ class ClockSample: public UI::SDLStage
 					clockVectorImages[i].segs, clockVectorImages[i].data);
 
 				mGroup.add(mClockActors[i].setPath(mClockPaths[i]).
-					setPaint(i==PATH_SECOND_HAND?mRed:mBlack).
-					setScale(mScale, mScale)
+					setPaint(i==PATH_SECOND_HAND?mRed:mBlack)
 					);
 			}
 		}
@@ -200,8 +203,63 @@ class ClockSample: public UI::SDLStage
 #endif
 		}
 
+		void onTouch(const ButtonEvent& event)
+		{
+			if (event.button == SDL_BUTTON_WHEELUP)
+			{
+				mScale *= 1.2f;
+				mOffsetX -= (event.x-mOffsetX)*(1.2f - 1);
+				mOffsetY -= (event.y-mOffsetY)*(1.2f - 1);
+			}
+			else if (event.button == SDL_BUTTON_WHEELDOWN)
+			{
+				mScale /= 1.2f;
+				if (mScale<1.0f)
+				{
+					//fix it a bit
+					mOffsetX -= (event.x-mOffsetX)*(1/mScale/1.2f - 1);
+					mOffsetY -= (event.y-mOffsetY)*(1/mScale/1.2f - 1);
+					mScale = 1.0f;
+				}
+				else
+				{
+					mOffsetX -= (event.x-mOffsetX)*(1/1.2f - 1);
+					mOffsetY -= (event.y-mOffsetY)*(1/1.2f - 1);
+				}
+			}
+			else
+				mIsDragging = true;
+
+			updateClock();
+		}
+
+		void onUntouch(const ButtonEvent& event)
+		{
+			mIsDragging = false;
+			updateClock();
+		}
+
+		void onMotion(const MotionEvent& event)
+		{
+			if (mIsDragging)
+			{
+				mOffsetX += event.xrel;
+				mOffsetY += event.yrel;
+			}
+			updateClock();
+		}
+		
+		void updateClock()
+		{
+			mGroup.setScale(mScale, mScale).setPos(mOffsetX, mOffsetY);
+		}
+
 	private:
 		VFS			mVFS;
+		bool		mIsDragging;
+		float		mOffsetX;
+		float		mOffsetY;
+		float		mScale;
 
 #ifdef	RASTER_ACTORS
 		GLuint		mTextures[IMG_COUNT];
@@ -220,10 +278,6 @@ class ClockSample: public UI::SDLStage
 
 		Container	mGroup;
 };
-
-#ifndef RASTER_ACTORS
-const float ClockSample::mScale = 7;
-#endif
 
 int main(int argc, char** argv)
 {

@@ -408,6 +408,62 @@ namespace impl
 		glPopAttrib();
 	}
 
+	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims)
+	{
+		//assert(!"Not implemented");
+		if (geom.vertices.empty())
+			return;
+
+		FillVertex& vtx = geom.vertices[0];
+		
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
+		glDisable(GL_STENCIL_TEST);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(FillVertex), &vtx.p);
+		
+		if (prims&PRIM_TYPE_TRI)
+		{
+			glUseProgram(0);
+			glColor4ub(0, 0, 0, 255);
+			geom.drawElements(FILL_PRIM_TYPE_TRI);
+		}
+
+		glClientActiveTexture(GL_TEXTURE0);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(3, GL_FLOAT, sizeof(FillVertex), &vtx.tc);
+
+		if (prims&PRIM_TYPE_QUAD)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+			geom.drawElements(FILL_PRIM_TYPE_QUAD);
+		}
+
+		if (prims&PRIM_TYPE_CUBIC)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_CUBIC_AA]);
+			geom.drawElements(FILL_PRIM_TYPE_CUBIC);
+		}
+
+		if (prims&PRIM_TYPE_ARC)
+		{
+			glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+			geom.drawElements(FILL_PRIM_TYPE_ARC);
+		}
+
+		glPopClientAttrib();
+		glPopAttrib();
+	}
+
 	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom)
 	{
 		if (geom.vertices.empty())

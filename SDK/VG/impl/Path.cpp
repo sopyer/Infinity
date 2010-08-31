@@ -45,6 +45,12 @@ namespace impl
 		RasterizeEvenOdd(mFillGeom, mPrims);
 	}
 
+	void Path::rasterizeFillAA()
+	{
+		prepareGeom();
+		RasterizeEvenOddAA(mFillGeom, mPrims);
+	}
+
 	void Path::prepareGeom()
 	{	
 		if (mRebuildGeometry)
