@@ -11,10 +11,8 @@
 
 namespace UI
 {
-	SDLStage::SDLStage()/*: mInputTicker(50)*/
+	SDLStage::SDLStage()
 	{
-		//mRunning = false;
-
 		if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)											// Init The SDL Library, The VIDEO Subsystem
 		{
 			logging::message("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
@@ -40,6 +38,8 @@ namespace UI
 		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );							// colors and doublebuffering
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );							// colors and doublebuffering
 		//SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );							// colors and doublebuffering
 
 		if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
@@ -105,22 +105,12 @@ namespace UI
 
 	void SDLStage::close()
 	{
-		//mRunning = false;
 		mt::terminateLoop();
 	}
 
 	void SDLStage::run()
 	{
-		//mRunning = true;
-
-		//mTimer.resetFrame();
-		//while (mRunning)
-		//{
-		//	mScheduler.mainLoop();
-		//	mTimer.resetFrame();
-		//}
 		mt::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
-		//Do not make this too small ro there will be input handling lag
 		mt::addFrameTask<SDLStage, &SDLStage::handleRender>(this);
 
 		mt::mainLoop();

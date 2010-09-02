@@ -10,6 +10,12 @@
 #include <map>
 #include <string>
 
+//TODO:
+//Implement simple wrapper around physfs: vfs::open, vfs::close, vfs::map, vfs::size, vfs::unmap, vfs::read, vfs::write etc
+//Merge DataPtr with MemReader
+//Types declarations+tests
+
+
 #define UNUSED(var)			((void)(var))
 #define ELEMENT_COUNT(arr)	sizeof(arr)/sizeof(arr[0])
 #define ARRAY_SIZE(arr)		sizeof(arr)/sizeof(arr[0])

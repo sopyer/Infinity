@@ -19,8 +19,6 @@ namespace UI
 			void run();
 			void close();
 			
-			//bool isRunning() {return mRunning;}
-
 		protected:
 			bool	mFullscreen;
 
@@ -31,14 +29,7 @@ namespace UI
 			void handleRender();
 		
 		private:
-			//Scheduler	mScheduler;
-			//Timeline	mInputTicker;
-
-			//bool	mRunning;
-			
 			SDL_Surface *mScreen;
-			
-			//char mPaths[1024];	//! Is's terrible;
 	};
 }
 

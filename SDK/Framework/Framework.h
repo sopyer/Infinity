@@ -7,6 +7,7 @@
 #include <ResourceHelpers.h>
 #include <Context.h>
 
+//TODO: make shorter e.g. log
 namespace logging
 {
 	void message(const char *s,...);
