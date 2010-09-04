@@ -1,6 +1,5 @@
 #define GLEW_STATIC
 #include <windows.h>
-#include <iniparser.h>
 #include <cstdlib>
 #include <gl\glee.h>
 #include "UI.h"

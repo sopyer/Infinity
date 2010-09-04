@@ -21,15 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="iniparser\dictionary.c">
-      <Filter>iniparser</Filter>
-    </ClCompile>
-    <ClCompile Include="iniparser\iniparser.c">
-      <Filter>iniparser</Filter>
-    </ClCompile>
-    <ClCompile Include="iniparser\strlib.c">
-      <Filter>iniparser</Filter>
-    </ClCompile>
     <ClCompile Include="SOIL\image_DXT.c">
       <Filter>Cameras\SOIL</Filter>
     </ClCompile>
@@ -60,15 +51,6 @@
     <ClCompile Include="ResourceHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="iniparser\dictionary.h">
-      <Filter>iniparser</Filter>
-    </ClInclude>
-    <ClInclude Include="iniparser\iniparser.h">
-      <Filter>iniparser</Filter>
-    </ClInclude>
-    <ClInclude Include="iniparser\strlib.h">
-      <Filter>iniparser</Filter>
-    </ClInclude>
     <ClInclude Include="FirstPersonCamera.h">
       <Filter>Cameras</Filter>
     </ClInclude>

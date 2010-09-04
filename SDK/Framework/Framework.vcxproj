@@ -79,9 +79,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="iniparser\dictionary.c" />
-    <ClCompile Include="iniparser\iniparser.c" />
-    <ClCompile Include="iniparser\strlib.c" />
     <ClCompile Include="ResourceHelpers.cpp" />
     <ClCompile Include="SOIL\image_DXT.c" />
     <ClCompile Include="SOIL\image_helper.c" />
@@ -96,9 +93,6 @@
     <ClCompile Include="Scheduler.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="iniparser\dictionary.h" />
-    <ClInclude Include="iniparser\iniparser.h" />
-    <ClInclude Include="iniparser\strlib.h" />
     <ClInclude Include="FirstPersonCamera.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />

@@ -3,7 +3,6 @@
 #include "Framework.h"
 #include "SDLStage.h"
 #include <windows.h>
-#include <iniparser.h>
 #include <cstdlib>
 #include <SOIL.h> // remove later
 #include <SDL.h>

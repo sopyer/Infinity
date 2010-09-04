@@ -1,5 +1,4 @@
 #include <windows.h>
-#include <iniparser.h>
 #include <cstdlib>
 #include "Framework.h"
 
