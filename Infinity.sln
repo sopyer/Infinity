@@ -116,6 +116,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "SDK\External\zlib\w
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Clock", "Samples\Clock\Clock.vcxproj", "{378D89DF-F490-4D86-B042-56CBD9B04FAA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SVGRendering", "Samples\SVGRendering\SVGRendering.vcxproj", "{0F479481-9CEC-4B26-A1FC-1758485BF01C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
+		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -277,6 +283,12 @@ Global
 		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.ActiveCfg = Release|Win32
 		{378D89DF-F490-4D86-B042-56CBD9B04FAA}.Release|Win32.Build.0 = Release|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Debug|Win32.Build.0 = Debug|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release|Win32.ActiveCfg = Release|Win32
+		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

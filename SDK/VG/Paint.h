@@ -10,6 +10,7 @@ namespace vg
 {
 	struct Paint: public Handle<GLuint>
 	{
+		static Paint createSolid(unsigned int color);
 		static Paint createSolid(float* color4f);
 		static Paint createPattern();
 		static void  destroy(Paint paint);

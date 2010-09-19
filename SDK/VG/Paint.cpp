@@ -7,6 +7,30 @@
 
 namespace vg
 {
+	Paint Paint::createSolid(unsigned int color)
+	{
+		//GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
+		//mObject->fillProgram.begin();
+		//	glUseProgram(impl::shared::prgFillColor);
+		//	glUniform4fv(uLocColor, 1, color);
+		//	glBindTexture(GL_TEXTURE_2D, 0);
+		//mObject->fillProgram.end();
+
+		//mObject->color = color;
+		//mObject->texture = 0;
+	
+		Paint	newPaint;
+
+		newPaint.mHandle = glGenLists(1);
+
+		glNewList(newPaint.mHandle, GL_COMPILE);
+		glUseProgram(0);
+		glColor4ubv((GLubyte*)&color);
+		glEndList();
+
+		return newPaint;
+	}
+
 	Paint Paint::createSolid(float* color4f)
 	{
 		//GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
