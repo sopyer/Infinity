@@ -255,6 +255,9 @@ namespace UI
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClearDepth(1.0f);
 		glClearStencil(0);
+
+		glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
+		glDisable(GL_MULTISAMPLE);
 		glDepthMask(GL_TRUE);
 		glStencilMask( 0xFF );
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -276,6 +279,7 @@ namespace UI
 			glPopMatrix();
 		}
 
+		glPopAttrib();
 		glFinish();
 	}
 
