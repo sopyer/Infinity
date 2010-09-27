@@ -42,13 +42,19 @@ namespace impl
 	void Path::rasterizeFill()
 	{
 		prepareGeom();
-		RasterizeEvenOdd(mFillGeom, mPrims);
+		RasterizeEvenOdd(mFillGeom);
+	}
+
+	void Path::rasterizeFillA2C()
+	{
+		prepareGeom();
+		rasterizeEvenOddA2C(mFillGeom);
 	}
 
 	void Path::rasterizeFillAA()
 	{
 		prepareGeom();
-		RasterizeEvenOddAA(mFillGeom, mPrims);
+		RasterizeEvenOddAA(mFillGeom);
 	}
 
 	void Path::prepareGeom()

@@ -26,5 +26,8 @@
     <ClInclude Include="nanosvg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vgtest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

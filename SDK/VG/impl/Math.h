@@ -61,6 +61,8 @@ namespace ml
 namespace cubic
 {
 	float calcImplicit(const glm::vec3& tc);
+	void changeOrient(glm::vec3& tc);
+	void correctOrient(glm::vec3 tc[4]);
 
 	template<typename T>
 	void subdivide(const T cubic[4], float t, T subCubic1[4], T subCubic2[4])
@@ -94,3 +96,56 @@ void cubicTriVertices(const Array<glm::vec2>& pts, Array<glm::vec2>& pos, Array<
 void arcTriVertices(VGPathSegment type, const glm::vec2& radius, VGfloat angle,
 					const glm::vec2& p0, const glm::vec2& p1,
 					Array<glm::vec2>& pos, Array<glm::vec3>& tc);
+
+namespace ml
+{
+	template<typename T, typename U>
+	T* as(U* value)
+	{
+		return reinterpret_cast<T*>(value);
+	}
+}
+
+enum
+{
+	RATIONAL_LOOP_CUBIC,
+	RATIONAL_SERPENTINE_CUSP_CUBIC,
+	INTEGRAL_LOOP_CUBIC,
+	INTEGRAL_SERPENTINE_CUSP_CUBIC,
+	CUSP_AT_INFINITY_CUBIC,
+	RATIONAL_QUADRATIC_CUBIC,
+	DEGENERATE_CUBIC
+};
+
+template<typename T>
+T perspectiveInterpolate(const glm::vec3& bary, const glm::vec3& www,
+						 const T& V0, const T& V1, const T& V2, float& invw)
+{
+	glm::vec3 scale = bary/www;
+	invw = (scale.x + scale.y + scale.z);
+	return (scale.x*V0 + scale.y*V1 + scale.z*V2)/invw;
+}
+
+void evalRationalBezier(float* cp, float t, float* pt);
+bool checkUnitCircle(float* pt);
+void calcLinearFunctionals(float r[6], float koef[4]);
+void calcLinearFunctionals(float r0[2], float r1[2], float r2[2], float koef[4]);
+void solveQuadratic(float k[3], int& count, float r[4]);
+void solveCubic(float k[4], int& count, float r[6]);
+float area(float* v0, float* v1, float* v2);
+void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*vec2*/float* pt, /*vec3*/float* bary);
+float evalHomogeneousCubic(float d[4], float r[2]);
+float evalCubic(float d[4], float rt);
+float evalHomogeneousQuadratic(float d[3], float r[2]);
+float evalQuadratic(float d[3], float rt);
+float calcImplicit(const glm::vec4& tc);
+void changeOrient(glm::vec4& tc);
+void correctOrient(glm::vec4 tc[4]);
+void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4], int& specialPointsCount, float specialPoints[3]);
+void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& count, float* subdPts);
+
+template< typename T >
+void orderAscend(T& value1, T& value2)
+{
+	if (value1>value2) std::swap(value1, value2);
+}

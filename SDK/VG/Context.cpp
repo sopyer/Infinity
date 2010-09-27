@@ -79,6 +79,21 @@ namespace vg
 		glPopAttrib();
 	}
 
+	void drawPathA2C(Path path, Paint paint)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
+		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		path.mHandle->rasterizeFillA2C();
+
+		glCallList(paint.mHandle);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		glPopAttrib();
+	}
+
 	void destroyPath(Path path)
 	{
 		delete path.mHandle;

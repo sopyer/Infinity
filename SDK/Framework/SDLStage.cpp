@@ -37,9 +37,9 @@ namespace UI
 		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 		SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
 		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
-		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );							// colors and doublebuffering
-		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );							// colors and doublebuffering
-		//SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );							// colors and doublebuffering
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
+		SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
+		SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 
 		if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
 		{

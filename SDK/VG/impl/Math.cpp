@@ -18,8 +18,15 @@ namespace cubic
 
 	void correctOrient(glm::vec3 tc[4])
 	{
-		if (ml::lessThenE(calcImplicit(tc[1]), 0) || ml::lessThenE(calcImplicit(tc[2]),0))
-		//if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
+		float valueCP1 = calcImplicit(tc[1]);
+		float valueCP2 = calcImplicit(tc[2]);
+		bool areCPOutside = ml::lessThenE(valueCP1, 0) || ml::lessThenE(valueCP2, 0);
+		if (areCPOutside || (valueCP1<0)&&(valueCP2<0))
+		//Test fails if two non-curve control points are outside but curve value is close to zero 
+		//if (ml::lessThenE(valueCP1, 0) || ml::lessThenE(valueCP2, 0))
+		//Test fails if one of the control points coincides with start or
+		//end control point but has a different sign due to a rounding error
+		//if (valueCP1<0 || valueCP2<0)
 		{
 			cubic::changeOrient(tc[0]);
 			cubic::changeOrient(tc[1]);
@@ -380,7 +387,7 @@ void arcTriVertices(VGPathSegment type, const glm::vec2& radius, VGfloat angle,
 
 		for (size_t i = 0; i<pos.size(); ++i)
 		{
-			//opder is important;)
+			//order is important;)
 			tc[i] = glm::vec3(pos[i]/r, 0);
 			pos[i] = glm::rotateGTX((center+pos[i])*glm::vec2(1, ry/rx), angle);
 		}
@@ -389,5 +396,508 @@ void arcTriVertices(VGPathSegment type, const glm::vec2& radius, VGfloat angle,
 	{
 		pos.clear();
 		tc.clear();
+	}
+}
+
+void evalRationalBezier(float* cp, float t, float* pt)
+{
+	glm::vec3* controlPts = ml::as<glm::vec3>(cp);
+	glm::vec2& res = *ml::as<glm::vec2>(pt);
+
+	float it = 1-t;
+	glm::vec3	pp = it*it*it*controlPts[0]+3*it*it*t*controlPts[1]+3*it*t*t*controlPts[2]+t*t*t*controlPts[3];
+	res = glm::vec2(pp)/pp.z;
+}
+
+bool checkUnitCircle(float* pt)
+{
+	glm::vec2& circlePt = *ml::as<glm::vec2>(pt);
+	return ml::equalE(glm::length(circlePt), 1.0f, ml::EPS5);
+}
+
+void calcLinearFunctionals(float r[6], float koef[4])
+{
+	assert(false && "Debug me!!!!");
+
+	float	t1=r[0], s1 = r[1],
+			t2=r[2], s2 = r[3],
+			t3=r[4], s3 = r[5];
+
+	koef[0] =  t1*t2*t3;
+	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;
+	koef[2] =  s1*s2*t3+s1*t2*s3+t1*s2*s3;
+	koef[3] = -s1*s2*s3;
+}
+
+void calcLinearFunctionals(float r0[2], float r1[2], float r2[2], float koef[4])
+{
+	//assert(false && "Debug me!!!!");
+	//I have confused variables and they should be fixed
+	float	t1=r0[0], s1 = r0[1],
+			t2=r1[0], s2 = r1[1],
+			t3=r2[0], s3 = r2[1];
+
+	koef[0] =  t1*t2*t3;
+	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;
+	koef[2] =  s1*s2*t3+s1*t2*s3+t1*s2*s3;
+	koef[3] = -s1*s2*s3;
+}
+
+void solveQuadratic(float k[3], int& count, float r[4])
+{
+	float a = k[0], b = k[1], c = k[2];
+	float D = b*b-4*a*c;
+
+	if (D<0)
+	{
+		count = 0;
+	}
+	else
+	{
+		count = 2;
+
+		if (D==0)
+		{
+			r[0] = r[2] = -b;
+			r[1] = r[3] = 2*a;
+		}
+		else
+		{
+			float rr = -b + (b<0?1:-1)*sqrt(D);
+		
+			r[0] = rr;
+			r[1] = 2*a;
+			float t = rr/2/a;
+			float det = a*t*t+b*t+c;
+			r[2] = 2*c;
+			r[3] = rr;
+			t = 2*c/rr;
+			det = a*t*t+b*t+c;
+			t++;
+		}
+	}
+}
+
+void solveCubic(float k[4], int& count, float r[6])
+{
+	float a=k[0], b=k[1], c=k[2], d=k[3];
+
+	float u = 3*a*c-b*b;
+	float v = 27*a*a*d-9*a*b*c+2*b*b*b;
+
+	float j = 4*u*u*u+v*v;
+
+	if (j<=0)
+	{
+		float s = sqrt(-u);
+	
+		float cs=0, sn=0;
+
+		if (s!=0)
+		{
+			float t = -v/2/s/s/s;
+			float ang = acos(t)/3;
+
+			cs = cos(ang);
+			sn = sqrt(3.0f)*sin(ang);
+		}
+
+		count = 3;
+
+		r[0] = 2*s*cs-b;
+		r[1] = 3*a;
+		r[2] = s*(-cs+sn)-b;
+		r[3] = 3*a;
+		r[4] = s*(-cs-sn)-b;
+		r[5] = 3*a;
+	}
+	else
+	{
+		float w = sqrt(j);
+		float wv2 = (w+abs(v))/2.0f;
+
+		wv2 = pow (wv2, 1.0f/3.0f);
+
+		count = 1;
+		r[0] = (v<0?-1:1)*(u/wv2-wv2)-b;
+		r[1] = 3*a;
+	}
+}
+
+float area(float* v0, float* v1, float* v2)
+{
+	return 0.5f*((v1[0]-v0[0])*(v1[1]+v0[1]) + 
+				 (v2[0]-v1[0])*(v2[1]+v1[1]) + 
+				 (v0[0]-v2[0])*(v0[1]+v2[1]));
+}
+
+void calcBarycentric(/*vec2*/float* v0, /*vec2*/float* v1, /*vec2*/float* v2,/*vec2*/float* pt, /*vec3*/float* bary)
+{
+	float triArea = area(v0, v1, v2);
+	if (ml::equalE(triArea, 0))
+	{
+		assert(!"Degenerate triangle!!!");
+	}
+	else
+	{
+		bary[0] = area(v1, v2, pt)/triArea;
+		bary[1] = area(v2, v0, pt)/triArea;
+		bary[2] = area(v0, v1, pt)/triArea;
+	}
+}
+
+float evalHomogeneousCubic(float d[4], float r[2])
+{
+	float rt = r[0], rs = r[1];
+
+	return d[0]*rt*rt*rt + d[1]*rt*rt*rs + d[2]*rt*rs*rs + d[3]*rs*rs*rs;
+}
+
+float evalCubic(float d[4], float rt)
+{
+	return d[0]*rt*rt*rt + d[1]*rt*rt + d[2]*rt + d[3];
+}
+
+float evalHomogeneousQuadratic(float d[3], float r[2])
+{
+	float t = r[0], s = r[1];
+	return d[0]*t*t+d[1]*t*s+d[2]*s*s;
+}
+
+float evalQuadratic(float d[3], float rt)
+{
+	return d[0]*rt*rt + d[1]*rt + d[2];
+}
+
+float calcImplicit(const glm::vec4& tc)
+{
+	return tc.x*tc.x*tc.x - tc.y*tc.z*tc.w;
+}
+
+void changeOrient(glm::vec4& tc)
+{
+	tc.x = -tc.x;
+	tc.y = -tc.y;
+}
+
+void correctOrient(glm::vec4 tc[4])
+{
+	if (ml::lessThenE(calcImplicit(tc[1]), 0) || ml::lessThenE(calcImplicit(tc[2]),0))
+	//if (cubic::calcImplicit(tc[1])<0 || cubic::calcImplicit(tc[2])<0)
+	{
+		changeOrient(tc[0]);
+		changeOrient(tc[1]);
+		changeOrient(tc[2]);
+		changeOrient(tc[3]);
+	}
+}
+
+void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4], int& specialPointsCount, float specialPoints[3])
+{
+	//Transform from Bezier to power basis
+	glm::vec3 powerBasisCP[4] = {
+		      bezierBasisCP[0],
+		-3.0f*bezierBasisCP[0] +  3.0f*bezierBasisCP[1],
+		 3.0f*bezierBasisCP[0] + -6.0f*bezierBasisCP[1] +  3.0f*bezierBasisCP[2],
+		     -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],
+	};
+
+	glm::vec4	d = glm::vec4(
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[1])),
+		-glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[0])),
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[1], powerBasisCP[0])),
+		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
+	);
+
+	//Mitigates precision issues
+	d = glm::normalize(d);
+
+	//Hessian coefficients
+	glm::vec3	dt = glm::vec3(
+		d[0]*d[2]-d[1]*d[1],
+		d[1]*d[2]-d[0]*d[3],
+		d[1]*d[3]-d[2]*d[2]
+	);
+
+	//Evaluate cubic determinant
+	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
+
+	//Final adjustments to make inflection point polynomial
+	d[1] *= -3.0f;
+	d[2] *=  3.0f;
+	d[3]  = -d[3];
+	
+	glm::vec2	r[3] = 
+	{
+		glm::vec2(1, 0),
+		glm::vec2(1, 0),
+		glm::vec2(1, 0)
+	};
+
+	glm::mat4	k;
+	int			count;
+
+	//det>0 - sepentine, det==0 - cusp, det<0 - loop
+	int subCubicType = !!(det>=0);
+	//Determine cubic type
+	int cubicType = d[0]!=0?subCubicType:
+					d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
+					d[2]!=0?CUSP_AT_INFINITY_CUBIC:
+					d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+
+	switch (cubicType)
+	{
+		case RATIONAL_LOOP_CUBIC:
+			solveCubic(d, count, ml::as<float>(r));
+			assert(count==1);
+		
+			solveQuadratic(dt, count, ml::as<float>(r+1));
+			assert(count==2);
+			
+			//Mitigate precision issues
+			r[0] = glm::normalize(r[0]);
+			r[1] = glm::normalize(r[1]);
+			r[2] = glm::normalize(r[2]);
+
+			calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[2], k[2]);
+			calcLinearFunctionals(r[1], r[2], r[2], k[3]);
+		
+			break;
+
+		case RATIONAL_SERPENTINE_CUSP_CUBIC:
+			solveCubic(d, count, ml::as<float>(r));
+ 			assert(count==3);
+
+			//Mitigate precision issues
+			r[0] = glm::normalize(r[0]);
+			r[1] = glm::normalize(r[1]);
+			r[2] = glm::normalize(r[2]);
+
+			calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[1], k[2]);
+			calcLinearFunctionals(r[2], r[2], r[2], k[3]);
+		
+			break;
+
+		//TODO : merge with rational case
+		case INTEGRAL_LOOP_CUBIC:
+			solveQuadratic(dt, count, ml::as<float>(r+1));
+			assert(count==2);
+			//r[0] = glm::vec2(1, 0);
+			
+			//Mitigate precision issues
+			r[1] = glm::normalize(r[1]);
+			r[2] = glm::normalize(r[2]);
+
+			calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[2], k[2]);
+			calcLinearFunctionals(r[1], r[2], r[2], k[3]);
+		
+			break;
+
+		//TODO : merge with rational case
+		case INTEGRAL_SERPENTINE_CUSP_CUBIC:
+			solveQuadratic((float*)d+1, count, ml::as<float>(r));
+			assert(count==2);
+			//r[2] = glm::vec2(1, 0);
+
+			//Mitigate precision issues
+			r[0] = glm::normalize(r[0]);
+			r[1] = glm::normalize(r[1]);
+
+			calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[1], k[2]);
+			calcLinearFunctionals(r[2], r[2], r[2], k[3]);
+
+			break;
+
+		//TODO : merge with rational case
+		case CUSP_AT_INFINITY_CUBIC:
+			r[0] = glm::vec2(-d[3], d[2]);
+			//r[1] = glm::vec2(1, 0);
+			//r[2] = glm::vec2(1, 0);
+
+			r[0] = glm::normalize(r[0]);
+
+			calcLinearFunctionals(r[0], r[1], r[2], k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[1], k[2]);
+			calcLinearFunctionals(r[2], r[2], r[2], k[3]);
+
+			break;
+
+		case RATIONAL_QUADRATIC_CUBIC:
+			k[0] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+			k[1] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+			k[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+			k[3] = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+			break;
+
+		case DEGENERATE_CUBIC:
+			//TODO: implement proper handling of this case
+
+		default:
+			assert(false && "Algorithm failed to determine correct cubic curve");
+	}
+
+	k = glm::transpose(k);
+
+	klmn[0] = k[0];
+	klmn[1] = k[0] + 1.0f/3.0f*k[1];
+	klmn[2] = k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2];
+	klmn[3] = k[0] + k[1] + k[2] + k[3];
+
+	specialPointsCount = 0;
+	for (int i=0; i<3; i++)
+	{
+		r[i] = (r[i].x<0)?-r[i]:r[i];
+
+		if (!(0<r[i].x && r[i].x<r[i].y))
+			continue;
+		
+		specialPoints[specialPointsCount++] = r[i].x/r[i].y;
+	}
+}
+
+void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, float* subdPts)
+{
+	glm::vec3 bezierBasisCP[4] = {
+		glm::vec3(pos[0], 1.0f),
+		glm::vec3(pos[1], 1.0f),
+		glm::vec3(pos[2], 1.0f),
+		glm::vec3(pos[3], 1.0f),
+	};
+
+	//Transform from Bezier to power basis
+	glm::vec3 powerBasisCP[4] = {
+			  bezierBasisCP[0],
+		-3.0f*bezierBasisCP[0] +  3.0f*bezierBasisCP[1],
+		 3.0f*bezierBasisCP[0] + -6.0f*bezierBasisCP[1] +  3.0f*bezierBasisCP[2],
+			 -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],
+	};
+
+	glm::vec4	d = glm::vec4(
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[1])),
+		-glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[0])),
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[1], powerBasisCP[0])),
+		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
+	);
+
+	//Mitigates precision issues
+	d = glm::normalize(d);
+	assert(ml::equalE(d[0], 0.0f));
+
+	//Hessian coefficients
+	glm::vec3	dt = glm::vec3(
+		d[0]*d[2]-d[1]*d[1],
+		d[1]*d[2]-d[0]*d[3],
+		d[1]*d[3]-d[2]*d[2]
+	);
+
+	//Evaluate cubic determinant
+	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
+
+	//Final adjustments to make inflection point polynomial
+	d[1] *= -3.0f;
+	d[2] *=  3.0f;
+	d[3]  = -d[3];
+	
+	glm::vec2	r[2] = 
+	{
+		glm::vec2(1, 0),
+		glm::vec2(1, 0),
+	};
+
+	glm::mat4	k;
+	int			count;
+
+	//det>0 - sepentine, det==0 - cusp, det<0 - loop
+	int subCubicType = !!(det>=0);
+	int cubicType = d[0]!=0?subCubicType:
+					d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
+					d[2]!=0?CUSP_AT_INFINITY_CUBIC:
+					d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+
+	assert(cubicType!=RATIONAL_LOOP_CUBIC && cubicType!=RATIONAL_SERPENTINE_CUSP_CUBIC);
+	switch (cubicType)
+	{
+		case INTEGRAL_LOOP_CUBIC:
+			solveQuadratic(dt, count, ml::as<float>(r));
+			assert(count==2);
+		
+			//Mitigate precision issues
+			r[0] = glm::normalize(r[0]);
+			r[1] = glm::normalize(r[1]);
+
+			calcLinearFunctionals(r[0], r[1], glm::vec2(1.0f, 0.0f), k[0]);
+			calcLinearFunctionals(r[0], r[0], r[1], k[1]);
+			calcLinearFunctionals(r[0], r[1], r[1], k[2]);
+			k[3] = glm::vec4(1.0f);
+	
+			break;
+
+		case INTEGRAL_SERPENTINE_CUSP_CUBIC:
+			solveQuadratic((float*)d+1, count, ml::as<float>(r));
+			assert(count==2);
+
+			//Mitigate precision issues
+			r[0] = glm::normalize(r[0]);
+			r[1] = glm::normalize(r[1]);
+
+			calcLinearFunctionals(r[0], r[1], glm::vec2(1.0f, 0.0f), k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			calcLinearFunctionals(r[1], r[1], r[1], k[2]);
+			k[3] = glm::vec4(1.0f);
+
+			break;
+
+		case CUSP_AT_INFINITY_CUBIC:
+			r[0] = glm::vec2(-d[3], d[2]);
+			count = 1;
+
+			r[0] = glm::normalize(r[0]);
+
+			calcLinearFunctionals(r[0], glm::vec2(1.0f), glm::vec2(1.0f), k[0]);
+			calcLinearFunctionals(r[0], r[0], r[0], k[1]);
+			k[2] = glm::vec4(1.0f);
+			k[3] = glm::vec4(1.0f);
+
+			break;
+
+		case RATIONAL_QUADRATIC_CUBIC:
+			count = 0;
+
+			k[0] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+			k[1] = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+			k[2] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+			k[3] = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+			break;
+
+		case DEGENERATE_CUBIC:
+		default:
+			assert(false && "Algorithm failed to determine correct cubic curve");
+	}
+
+	k = glm::transpose(k);
+
+	klm[0] = glm::vec3(k[0]);
+	klm[1] = glm::vec3(k[0] + 1.0f/3.0f*k[1]);
+	klm[2] = glm::vec3(k[0] + 2.0f/3.0f*k[1] + 1.0f/3.0f*k[2]);
+	klm[3] = glm::vec3(k[0] + k[1] + k[2] + k[3]);
+
+	subdPtCount = 0;
+	for (int i=0; i<2; i++)
+	{
+		r[i] = (r[i].x<0)?-r[i]:r[i];
+
+		if (!(0<r[i].x && r[i].x<r[i].y))
+			continue;
+	
+		subdPts[subdPtCount++] = r[i].x/r[i].y;
 	}
 }

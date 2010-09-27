@@ -61,6 +61,20 @@ namespace impl
 
 	typedef Array<VGuint>	IndexVector;
 	
+	typedef unsigned short u16;
+
+	struct Bezier3Vertex
+	{
+		float x, y;
+		float k, l, m;
+		
+		static void construct(Bezier3Vertex* v, const glm::vec2& pos, const glm::vec3& klm)
+		{
+			v->x = pos.x; v->y = pos.y;
+			v->k = klm.x; v->l= klm.y; v->m = klm.z;
+		}
+	};
+
 	template<class VertexType, VGuint PRIM_COUNT>
 	struct Geometry
 	{
@@ -73,21 +87,54 @@ namespace impl
 		
 		static const VGuint VertexSize = sizeof(VertexType);
 
-		void drawElements(VGuint primType) const
+		////////////////////////////////////////////////
+		Array<glm::vec2>	shapeVertices;
+		Array<u16>			shapeIndices;
+
+		u16	shapeAddVertex(const glm::vec2& v)
 		{
-			assert(primType<PRIM_COUNT);
-			if (count[primType])
-				glDrawElements(GL_TRIANGLES, count[primType], GL_UNSIGNED_INT, &indices[0]+offset[primType]);
+			size_t idx = shapeVertices.size();
+			shapeVertices.pushBack(v);
+			assert(idx<=USHRT_MAX);
+			return (u16)idx;
 		}
 
-		void drawElementsNZ(VGuint primType)
+		void shapeAddTri(u16 i0, u16 i1, u16 i2)
 		{
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glCullFace(GL_FRONT);
-			drawElements(primType);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			glCullFace(GL_BACK);
-			drawElements(primType);
+			shapeIndices.push_back(i0);
+			shapeIndices.push_back(i1);
+			shapeIndices.push_back(i2);
+		}
+
+		Array<Bezier3Vertex>	bezier3Vertices;
+		Array<u16>				bezier3Indices;
+
+		void bezier3AddVertices(glm::vec2 pos[4], glm::vec3 klm[4])
+		{
+			Bezier3Vertex* v = bezier3Vertices.expand(4);
+
+			Bezier3Vertex::construct(v++, pos[0], klm[0]);
+			Bezier3Vertex::construct(v++, pos[1], klm[1]);
+			Bezier3Vertex::construct(v++, pos[2], klm[2]);
+			Bezier3Vertex::construct(v++, pos[3], klm[3]);
+		}
+		
+		//TODO: change this properly later
+		void bezier3GenIndices()
+		{
+			assert(bezier3Vertices.size()%4 == 0);
+			assert(bezier3Vertices.size()<=USHRT_MAX);
+
+			for (size_t i = 0; i<bezier3Vertices.size(); i+=4)
+			{
+				bezier3Indices.push_back((u16)i+0);
+				bezier3Indices.push_back((u16)i+1);
+				bezier3Indices.push_back((u16)i+3);
+
+				bezier3Indices.push_back((u16)i+1);
+				bezier3Indices.push_back((u16)i+2);
+				bezier3Indices.push_back((u16)i+3);
+			}
 		}
 	};
 
@@ -117,8 +164,10 @@ namespace impl
 	{
 	};
 
-	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims);
-	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom, VGuint prims);
+	void rasterizeEvenOddA2C(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
+
+	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
+	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 
 	//Safetly supports up to 127 self intersections
 	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);

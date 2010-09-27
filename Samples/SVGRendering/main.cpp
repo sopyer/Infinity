@@ -7,7 +7,7 @@
 class SVGSample: public UI::SDLStage
 {
 	public:
-		SVGSample():
+		SVGSample(const char* svgFile):
 			mOffsetX(mWidth/2),
 			mOffsetY(mHeight/2),
 			mScale(1),
@@ -16,7 +16,7 @@ class SVGSample: public UI::SDLStage
 			VFS::mount("../../AppData");
 			
 			SVGPath* plist;
-			plist = svgParseFromFile("butterfly.svg");
+			plist = svgParseFromFile(svgFile);
 			SVGPath* cur = plist;
 			
 			while (cur && cur->hasFill)
@@ -32,6 +32,11 @@ class SVGSample: public UI::SDLStage
 			}
 
 			svgDelete(plist);
+
+			//TODO: remove hack
+			mScale = 197.0f;
+			mOffsetX = -39978.813;
+			mOffsetY = -28407.711f;
 		}
 
 		~SVGSample()
@@ -99,14 +104,7 @@ class SVGSample: public UI::SDLStage
 			glScalef(mScale, mScale, 1);
 
 			for (size_t i=mPaths.size(); i!=0; i--)
-				vg::drawPathAA(mPaths[i-1], mPaints[i-1]);
-			//glColor3f(1, 0, 0);
-			//glBegin(GL_QUADS);
-			//glVertex2f(-100, 100);
-			//glVertex2f(100, 100);
-			//glVertex2f(100, -100);
-			//glVertex2f(-100, 100);
-			//glEnd();
+				vg::drawPathA2C(mPaths[i-1], mPaints[i-1]);
 		}
 
 	private:
@@ -124,7 +122,7 @@ int main(int argc, char** argv)
 {
 	ui::init();
 	{
-		SVGSample app;
+		SVGSample app(argc==2?argv[1]:"butterfly.svg");
 		app.run();
 	}
 	ui::cleanup();
