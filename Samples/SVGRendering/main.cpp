@@ -34,9 +34,9 @@ class SVGSample: public UI::SDLStage
 			svgDelete(plist);
 
 			//TODO: remove hack
-			mScale = 197.0f;
-			mOffsetX = -39978.813;
-			mOffsetY = -28407.711f;
+			//mScale = 197.0f;
+			//mOffsetX = -39978.813;
+			//mOffsetY = -28407.711f;
 		}
 
 		~SVGSample()

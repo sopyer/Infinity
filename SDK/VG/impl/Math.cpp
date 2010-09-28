@@ -766,11 +766,17 @@ void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4
 
 void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, float* subdPts)
 {
+	//TODO: to many fp safeguards???? Requires cleanup?
+	//TODO: what about rational curves???
+
+	//Some black magic to alleviate precision loss
+	glm::vec2 midPt = (pos[0]+pos[1]+pos[2]+pos[3])*0.25f;
+
 	glm::vec3 bezierBasisCP[4] = {
-		glm::vec3(pos[0], 1.0f),
-		glm::vec3(pos[1], 1.0f),
-		glm::vec3(pos[2], 1.0f),
-		glm::vec3(pos[3], 1.0f),
+		glm::vec3(pos[0]-midPt, 1.0f),
+		glm::vec3(pos[1]-midPt, 1.0f),
+		glm::vec3(pos[2]-midPt, 1.0f),
+		glm::vec3(pos[3]-midPt, 1.0f),
 	};
 
 	//Transform from Bezier to power basis

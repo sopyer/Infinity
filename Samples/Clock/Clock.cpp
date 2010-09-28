@@ -3,7 +3,7 @@
 
 #include "ResourceHelpers.h"
 
-#define RASTER_ACTORS
+//#define RASTER_ACTORS
 
 #ifdef RASTER_ACTORS
 class Image: public UI::Actor
