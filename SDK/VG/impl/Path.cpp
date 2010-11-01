@@ -39,24 +39,6 @@ namespace impl
 		*maxY = mFillGeom.mMax.y;
 	}
 
-	void Path::rasterizeFill()
-	{
-		prepareGeom();
-		RasterizeEvenOdd(mFillGeom);
-	}
-
-	void Path::rasterizeFillA2C()
-	{
-		prepareGeom();
-		rasterizeEvenOddA2C(mFillGeom);
-	}
-
-	void Path::rasterizeFillAA()
-	{
-		prepareGeom();
-		RasterizeEvenOddAA(mFillGeom);
-	}
-
 	void Path::prepareGeom()
 	{	
 		if (mRebuildGeometry)

@@ -1,7 +1,3 @@
-#include <TextureManager.h>
-#include <ProgramManager.h>
-#include <ShaderManager.h>
-#include <FontManager.h>
 #include <framework.h>
 #include <FTGLTextureFont.h>
 #include "Controls.h"

@@ -64,6 +64,9 @@ namespace UI
 			glm::mat4	mProjection;
 
 			std::vector<RenderItem>		mRenderQueue;
+#if defined(DEBUG) || defined(_DEBUG)
+			int		dumpPickImage:1;
+#endif
 	};
 }
 

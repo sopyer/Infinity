@@ -113,10 +113,6 @@
     <ClInclude Include="impl\SharedResources.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\External\freetype\builds\win32\visualc\freetype.vcxproj">
-      <Project>{78b079bd-9fc7-4b9e-b4a6-96da0f00248b}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\External\glFont\glFont.vcxproj">
       <Project>{fafb97f9-712c-47f3-8be2-f259fed45c5a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

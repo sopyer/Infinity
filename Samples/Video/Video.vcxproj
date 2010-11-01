@@ -94,14 +94,6 @@
     <ClInclude Include="VideoPlaybackEngine.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SDK\External\SDL\VisualC\SDLmain\SDLmain.vcxproj">
-      <Project>{da956fd3-e142-46f2-9dd5-c78bebb56b7a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\External\SDL\VisualC\SDL\SDL.vcxproj">
-      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\SDK\Framework\Framework.vcxproj">
       <Project>{61f6a3d7-f203-40ca-95b6-fde1adef0163}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -10,6 +10,9 @@ namespace UI
 {
 	Stage::Stage():	mFocused(0), mDoAllocate(true),
 		mLastVisited(0), mPhase(PHASE_DEFAULT)
+#if defined(DEBUG) || defined(_DEBUG)
+		,dumpPickImage(0)
+#endif
 	{
 	}
 
@@ -50,7 +53,14 @@ namespace UI
 	void Stage::processKeyDown(const KeyEvent& event)
 	{
 		//Also here should be and hotkeys handling
-
+#if defined(DEBUG) || defined(_DEBUG)
+		if (event.keysym.sym == SDLK_p && event.type==SDL_KEYDOWN &&
+			((event.keysym.mod&KMOD_LALT) || (event.keysym.mod&KMOD_RALT)))
+		{
+			dumpPickImage = TRUE;
+			return;
+		}
+#endif
 		if (mFocused)
 			mFocused->onKeyDown(event);
 
@@ -182,23 +192,13 @@ namespace UI
 		u8	pixel[4];
 		glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 		
-		assert(glGetError()==GL_NO_ERROR);
+		GLenum err = glGetError();
+		assert(err==GL_NO_ERROR);
 
 		if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
 			return this;
 
 		u32 id = pixelToId(pixel);
-#if defined(DEBUG) || defined(_DEBUG)
-		if (id >= mRenderQueue.size())
-		{
-			GLuint w = (GLuint)mWidth;
-			GLuint h = (GLuint)mHeight;
-			u8* p = new u8[w*h*4];
-			glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
-			SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
-			delete [] p;
-		}
-#endif
 		assert(id < mRenderQueue.size());
 		return mRenderQueue[id].actor;
 	}
@@ -281,6 +281,19 @@ namespace UI
 
 		glPopAttrib();
 		glFinish();
+#if defined(DEBUG) || defined(_DEBUG)
+		if (dumpPickImage)
+		{
+			//GLuint w = (GLuint)mWidth;
+			//GLuint h = (GLuint)mHeight;
+			//u8* p = new u8[w*h*4];
+			//glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
+			//SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
+			//delete [] p;
+			SOIL_save_screenshot("pick.tga", SOIL_SAVE_TYPE_TGA, 0, 0, (GLuint)mWidth, (GLuint)mHeight);
+			dumpPickImage = FALSE;
+		}
+#endif
 	}
 
 	void Stage::renderActors()

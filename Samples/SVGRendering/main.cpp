@@ -8,10 +8,12 @@ class SVGSample: public UI::SDLStage
 {
 	public:
 		SVGSample(const char* svgFile):
-			mOffsetX(mWidth/2),
-			mOffsetY(mHeight/2),
-			mScale(1),
-			mIsDragging(false)
+			mOffsetX(128/*mWidth/2*/),
+			mOffsetY(-18/*mHeight/2*/),
+			mScale(2.5f),
+			mIsDragging(false),
+			mDrawTimeCPU(0),
+			mDrawTimeGPU(0)
 		{
 			VFS::mount("../../AppData");
 			
@@ -33,14 +35,48 @@ class SVGSample: public UI::SDLStage
 
 			svgDelete(plist);
 
-			//TODO: remove hack
-			//mScale = 197.0f;
-			//mOffsetX = -39978.813;
-			//mOffsetY = -28407.711f;
+			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
+			mFont.setSize(16);
+
+			add(mBkgRect.setPos(10, 10)
+				  .setSize(300, 100));
+			add(mCPUSubmitTimeLabel.setFont(mFont)
+				  .setPos(20, 40));
+			add(mGPUExecuteTimeLabel.setFont(mFont)
+				  .setPos(20, 60));
+			add(mAAChoice.setChecked(false)
+				  .setText(L"Enable AA")
+				  .setFont(mFont)
+				  .setPos(20, 80)
+				  .setSize(60, 20));
+			add(mVideoAdapterLabel.setFont(mFont)
+				  .setPos(20, 20));
+			
+			wchar_t str[256];
+			mbstowcs(str, (char*)glGetString(GL_RENDERER), 256);
+			mVideoAdapterLabel.setText(str);
+
+			mt::addTimedTask<SVGSample, &SVGSample::onUpdateStats>(this, 100);
+
+			assert(GLEE_EXT_timer_query);
+
+			glGenQueries(1, &mTimeQuery);
+
+			SDL_WM_SetCaption("GPU accelerated SVG rendering", NULL);
 		}
 
+		mt::Task		mUpdateTask;
+		ui::Rectangle	mBkgRect;
+		ui::CheckBox	mAAChoice;
+		ui::Label	mVideoAdapterLabel;
+		ui::Label	mCPUSubmitTimeLabel;
+		ui::Label	mGPUExecuteTimeLabel;
+		sui::Font	mFont;
+		
 		~SVGSample()
 		{
+			glDeleteQueries(1, &mTimeQuery);
+
 			struct DeletePath
 			{void operator ()(vg::Path path) {vg::Path::destroy(path);}};
 
@@ -50,9 +86,20 @@ class SVGSample: public UI::SDLStage
 			{void operator ()(vg::Paint paint) {vg::Paint::destroy(paint);}};
 
 			for_each(mPaints.begin(), mPaints.end(), DeletePaint());
+
+			sui::destroyFont(mFont);
 		}
 
 	protected:
+		void onUpdateStats()
+		{
+			wchar_t str[256];
+			_snwprintf(str, 256, L"CPU time - %f ms", mDrawTimeCPU);
+			mCPUSubmitTimeLabel.setText(str);
+			_snwprintf(str, 256, L"GPU time - %f ms", mDrawTimeGPU);
+			mGPUExecuteTimeLabel.setText(str);
+		}
+
 		void onTouch(const ButtonEvent& event)
 		{
 			if (event.button == SDL_BUTTON_WHEELUP)
@@ -97,22 +144,49 @@ class SVGSample: public UI::SDLStage
 		
 		void onPaint()
 		{
+			Timer2 drawTimer;
+			drawTimer.start();
+
+			glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);
+			
 			glClearColor(1, 1, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(mOffsetX, mOffsetY, 0);
 			glScalef(mScale, mScale, 1);
 
-			for (size_t i=mPaths.size(); i!=0; i--)
-				vg::drawPathA2C(mPaths[i-1], mPaints[i-1]);
+			if (mAAChoice.isChecked())
+			{
+				for (size_t i=mPaths.size(); i!=0; i--)
+					vg::drawPathNZA2C(mPaths[i-1], mPaints[i-1]);
+			}
+			else
+			{
+				glDisable(GL_MULTISAMPLE);
+				for (size_t i=mPaths.size(); i!=0; i--)
+					vg::drawPathNZ(mPaths[i-1], mPaints[i-1]);
+				glEnable(GL_MULTISAMPLE);
+			}
+
+			glEndQuery(GL_TIME_ELAPSED_EXT);
+
+			mDrawTimeCPU = 0.8f*drawTimer.elapsed()+0.2f*mDrawTimeCPU;
+
+			GLuint64EXT result;
+			glGetQueryObjectui64vEXT(mTimeQuery, GL_QUERY_RESULT, &result);
+			mDrawTimeGPU = 0.8f*result/1000.0f/1000.0f+0.2f*mDrawTimeGPU;
 		}
 
 	private:
+		GLuint		mTimeQuery;
 		VFS			mVFS;
 		bool		mIsDragging;
 		float		mOffsetX;
 		float		mOffsetY;
 		float		mScale;
+
+		float		mDrawTimeCPU;
+		float		mDrawTimeGPU;
 
 		std::vector<vg::Path>	mPaths;
 		std::vector<vg::Paint>	mPaints;	

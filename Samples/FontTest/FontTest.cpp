@@ -8,7 +8,7 @@ int main()
 
     FT_Error error = FT_Init_FreeType(&library);
 
-    FT_Error error = FT_New_Face(library, "C:\\WINDOWS\\Fonts\\times.ttf", 0, &face);
+    error = FT_New_Face(library, "C:\\WINDOWS\\Fonts\\times.ttf", 0, &face);
 
 	//FT_Load_Glyph();
 	//FT_Load_Char();
@@ -19,7 +19,7 @@ int main()
 
 	FT_Done_Face(face);
 
-	FT_Error error = FT_Done_FreeType(library);
+	error = FT_Done_FreeType(library);
 
 	return 0;
 }

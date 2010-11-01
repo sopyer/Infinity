@@ -16,10 +16,18 @@ namespace cubic
 		tc.y = -tc.y;
 	}
 
+	//Function only works on simple cubic subcurve - which does
+	//not change curvature direction on oposite anywhere it is defined
 	void correctOrient(glm::vec3 tc[4])
 	{
 		float valueCP1 = calcImplicit(tc[1]);
 		float valueCP2 = calcImplicit(tc[2]);
+
+		//TODO: Test following
+		//float valueToCheck = abs(valueCP1)>abs(valueCP2)?valueCP1:valueCP2;
+		////using exact comparison!!!! to avoid problems with values near zero of implicit function
+		//if (valueToCheck<0)
+
 		bool areCPOutside = ml::lessThenE(valueCP1, 0) || ml::lessThenE(valueCP2, 0);
 		if (areCPOutside || (valueCP1<0)&&(valueCP2<0))
 		//Test fails if two non-curve control points are outside but curve value is close to zero 
@@ -33,10 +41,6 @@ namespace cubic
 			cubic::changeOrient(tc[2]);
 			cubic::changeOrient(tc[3]);
 		}
-		//assert(cubic::calcImplicit(tc[1])>=0);
-		//assert(cubic::calcImplicit(tc[2])>=0);
-		//assert(cubic::calcImplicit(tc[0])==0);
-		//assert(cubic::calcImplicit(tc[3])==0);
 	}
 
 	struct Determinants

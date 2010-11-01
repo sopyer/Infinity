@@ -91,24 +91,8 @@
     <ClInclude Include="Controls.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SDK\External\freetype\builds\win32\visualc\freetype.vcxproj">
-      <Project>{78b079bd-9fc7-4b9e-b4a6-96da0f00248b}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\SDK\External\glFont\glFont.vcxproj">
       <Project>{fafb97f9-712c-47f3-8be2-f259fed45c5a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\External\PhysFS\PhysFS.vcxproj">
-      <Project>{242667cf-fe79-459f-baf1-19c6c6c95342}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\External\SDL\VisualC\SDLmain\SDLmain.vcxproj">
-      <Project>{da956fd3-e142-46f2-9dd5-c78bebb56b7a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\External\SDL\VisualC\SDL\SDL.vcxproj">
-      <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\SDK\Framework\Framework.vcxproj">

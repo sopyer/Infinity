@@ -216,17 +216,19 @@ namespace mt
 		handle->flags |= SCHED_DESC_STOP_TASK;
 	}
 
+#include "Timer.h"
+
 	void mainLoop()
 	{
 		while(!doTerminate)
 		{
 			size_t time = timeElapsedMS();
 
-			if (!timedTaskQueue.empty())
+			while (!timedTaskQueue.empty())
 			{
 				SchedEntry& entry = timedTaskQueue.top();
 				if (entry.timedTaskDesc.msDueTime>time)
-					continue;
+					break;
 				assert(entry.type == SCHED_ENTRY_TIMED_TASK);
 				timedTaskQueue.pop();
 				if (entry.flags&SCHED_DESC_STOP_TASK)
@@ -242,11 +244,11 @@ namespace mt
 				}
 			}
 
-			if (!taskQueue.empty())
+			while (!taskQueue.empty())
 			{
 				SchedEntry& entry = taskQueue.top();
 				if (entry.taskDesc.frameToExecute>curFrame)
-					continue;
+					break;
 				assert(entry.type == SCHED_ENTRY_TASK);
 				taskQueue.pop();
 				if (entry.flags&SCHED_DESC_STOP_TASK)
@@ -261,7 +263,6 @@ namespace mt
 						taskQueue.push(&entry);
 				}
 			}
-
 			++curFrame;
 		}
 	}

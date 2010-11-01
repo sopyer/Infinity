@@ -57,20 +57,82 @@ namespace resources
 		return program;
 	}
 
+	#define MAX_INFOLOG_LENGTH 4096
+	bool compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source)
+	{
+		GLint	status, length;
+		char	logStr[MAX_INFOLOG_LENGTH];
+	
+		GLuint	shader = glCreateShader(type);
+
+		glShaderSource(shader, 1, &source, &len);
+		glCompileShader(shader);
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+		if (!status)
+		{
+			glGetShaderInfoLog(shader, 256, &length, logStr);
+			printf("%s", logStr);
+			return false;
+		}
+
+		glAttachShader(program, shader);
+		glDeleteShader(shader);
+
+		return true;
+	}
+
+	GLuint createProgram(GLenum type, const char* source)
+	{
+		GLchar	logStr[MAX_INFOLOG_LENGTH];
+		GLint	status, length;
+
+		GLuint program = glCreateProgram();
+
+		compileAndAttachShader(program, type, strlen(source), source);
+
+		glLinkProgram(program);
+		glGetProgramiv(program, GL_LINK_STATUS, &status);
+
+		if (!status)
+		{
+			glGetProgramInfoLog(program, MAX_INFOLOG_LENGTH, &length, logStr);
+			printf("%s", logStr);
+			glDeleteProgram(program);
+
+			return 0;
+		}
+
+		glValidateProgram(program);
+		glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
+
+		if (!status)
+		{
+			glGetProgramInfoLog(program, MAX_INFOLOG_LENGTH, &length, logStr);
+			printf("%s", logStr);
+		}
+	
+		return program;
+	}
+
 	GLuint createTexture2D(const char* name)
 	{
 		File	src = VFS::openRead(name);
 
-		unsigned char* data = new unsigned char[src.size()+1];
+		//explicit conversion to avoid warning on 32-bit system
+		assert(src.size()<SIZE_MAX);
+		size_t fileSize = (size_t)src.size();
 
-		src.read(data, src.size(), 1);
+		unsigned char* data = new unsigned char[fileSize+1];
+
+		src.read(data, fileSize, 1);
 
 		GLuint texture;
 
 		glGenTextures(1, &texture);
 
 		int	imgWidth, imgHeight, imgChannels;
-		unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, src.size(),
+		unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
 			&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
 
 		glBindTexture(GL_TEXTURE_2D, texture);

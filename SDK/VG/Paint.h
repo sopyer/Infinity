@@ -15,6 +15,11 @@ namespace vg
 		static Paint createPattern();
 		static void  destroy(Paint paint);
 	};
+
+	Paint	createSolidPaint(unsigned int color);
+	void	destroyPaint(Paint paint);
+
+	void	applyPaintAsGLProgram(Paint paint);
 }
 
 #endif

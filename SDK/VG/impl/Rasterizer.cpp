@@ -49,13 +49,10 @@ namespace impl
 			cubic::correctOrient(klm+4);
 			geom.bezier3AddVertices(ctrlPt+4, klm+4);
 
-			//Carefully, we changed order of subdivided curse,
+			//Carefully, we changed places of subdivided curves,
 			//that's why suitable points are 0 and 7
 			u16 idx = geom.shapeAddVertex(ctrlPt[0]);
-			//TODO: check correct version
 			geom.shapeAddTri(prevIdx, idx, curIdx);
-			//TODO: reverting order to test bug
-			//geom.shapeAddTri(prevIdx, curIdx, idx);
 			prevIdx = idx;
 		}
 
@@ -446,9 +443,6 @@ namespace impl
 
 	void rasterizeEvenOddA2C(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom)
 	{
-		if (geom.vertices.empty())
-			return;
-
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
 
@@ -489,6 +483,65 @@ namespace impl
 		//TODO: implement elliptic arcs
 		//glUseProgram(programs[PRG_RAST_FILL_QUAD]);
 		//drawElements(geom, FILL_PRIM_TYPE_ARC);
+		glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+		glPopClientAttrib();
+		glPopAttrib();
+	}
+
+	void rasterizeNonZeroA2C(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+		glEnable(GL_CULL_FACE);
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_STENCIL_TEST);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilMask(0xFF);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		if (!geom.shapeIndices.empty())
+		{
+			glUseProgram(0);
+			glVertexPointer(2, GL_FLOAT, sizeof(glm::vec2), geom.shapeVertices.begin());
+			
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glCullFace(GL_FRONT);
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom.shapeIndices.size(), GL_UNSIGNED_SHORT, geom.shapeIndices.begin());
+			
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			glCullFace(GL_BACK);
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom.shapeIndices.size(), GL_UNSIGNED_SHORT, geom.shapeIndices.begin());
+		}
+
+		glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+		glClientActiveTexture(GL_TEXTURE0);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		if (!geom.bezier3Indices.empty())
+		{
+			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
+			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
+			glUseProgram(programs[PRG_RAST_FILL_CUBIC_AA]);
+
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glCullFace(GL_FRONT);
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
+
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			glCullFace(GL_BACK);
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
+		}
+
+		//glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+		//drawElementsNZ(geom, FILL_PRIM_TYPE_QUAD);
+
+		//glUseProgram(programs[PRG_RAST_FILL_ARC]);
+		//drawElementsNZ(geom, FILL_PRIM_TYPE_ARC);
 		glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
 		glPopClientAttrib();

@@ -22,8 +22,6 @@ namespace UI
 		protected:
 			bool	mFullscreen;
 
-			Timer	mTimer;
-
 		private:
 			void handleInput();
 			void handleRender();

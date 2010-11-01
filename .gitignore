@@ -8,3 +8,5 @@ temp
 *.suo
 *.ncb
 *.user
+*.opensdf
+*.sdf

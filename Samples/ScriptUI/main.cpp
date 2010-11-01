@@ -256,10 +256,21 @@ namespace sqlink
 	};
 }
 
+const char* testClass = 
+	"cls <- class {													\n"
+	"	height = 720												\n"
+	"};																\n"
+	"inst <- cls()													\n";
+
 int main(int argc, char* argv[]) 
 { 
 	HSQUIRRELVM v; 
 	v = sq_open(1024); // creates a VM with initial stack size 1024 
+	
+	{
+		sqlink::Table root = sqlink::getRootTable(v);
+		sqlink::Function script = sqlink::compileString(v, testClass);
+	}
 
 	//REGISTRATION OF STDLIB
 	//sq_pushroottable(v); //push the root table where the std function will be registered

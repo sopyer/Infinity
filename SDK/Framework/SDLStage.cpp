@@ -20,8 +20,8 @@ namespace UI
 
 		//!!!! Refactor
 		mFullscreen = false;
-		mWidth = 800;
-		mHeight = 600;
+		mWidth = 1280;
+		mHeight = 720;
 
 		u32 flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
 
@@ -96,10 +96,23 @@ namespace UI
 
 	void SDLStage::handleRender()
 	{
+		Timer2 t, alloc, rend, def;
+		t.start();
+		double talloc, trend, tdef;
+		alloc.start();
 		enterPhase(PHASE_ALLOCATE);
+		talloc = alloc.elapsed();
+		rend.start();
 		enterPhase(PHASE_RENDERING);
+		trend = rend.elapsed();
+		def.start();
 		enterPhase(PHASE_DEFAULT);
+		tdef = def.elapsed();
 		SDL_GL_SwapBuffers();										// And Swap The Buffers (We're Double-Buffering, Remember?)
+		//printf("Render:%f\n", t.elapsed());
+		//printf("--->Allocate:%f\n", talloc);
+		//printf("--->Render:%f\n", trend);
+		//printf("--->Defaault:%f\n", tdef);
 	}
 
 	void SDLStage::close()

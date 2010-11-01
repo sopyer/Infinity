@@ -22,9 +22,6 @@ namespace impl
 						VGfloat* maxY);
 		
 		//private:
-			void rasterizeFill();
-			void rasterizeFillAA();
-			void rasterizeFillA2C();
 			void prepareGeom();
 
 		//private:

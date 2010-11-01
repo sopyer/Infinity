@@ -93,6 +93,7 @@
     <ClCompile Include="VGExp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Path.h" />
     <ClInclude Include="VGExp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

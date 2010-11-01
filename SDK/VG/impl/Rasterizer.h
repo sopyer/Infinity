@@ -165,6 +165,7 @@ namespace impl
 	};
 
 	void rasterizeEvenOddA2C(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
+	void rasterizeNonZeroA2C(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 
 	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);

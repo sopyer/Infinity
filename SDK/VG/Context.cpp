@@ -3,6 +3,7 @@
 #include "impl/Path.h"
 #include "impl/SharedResources.h"
 #include <FTGLTextureFont.h>
+#include <impl/Rasterizer.h>
 
 namespace vg
 {
@@ -53,7 +54,7 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		path.mHandle->rasterizeFill();
+		impl::RasterizeEvenOdd(path.mHandle->mFillGeom);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glUseProgram(0);
@@ -69,7 +70,7 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		path.mHandle->rasterizeFill();
+		impl::RasterizeEvenOdd(path.mHandle->mFillGeom);
 
 		glCallList(paint.mHandle);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -84,7 +85,37 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		path.mHandle->rasterizeFillA2C();
+		impl::rasterizeEvenOddA2C(path.mHandle->mFillGeom);
+
+		glCallList(paint.mHandle);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		glPopAttrib();
+	}
+
+	void drawPathNZA2C(Path path, Paint paint)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
+		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		rasterizeNonZeroA2C(path.mHandle->mFillGeom);
+
+		glCallList(paint.mHandle);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		glPopAttrib();
+	}
+
+	void drawPathNZ(Path path, Paint paint)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
+		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		impl::RasterizeNonZero(path.mHandle->mFillGeom);
 
 		glCallList(paint.mHandle);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -168,7 +199,7 @@ namespace vg
 
 		glEnable(GL_STENCIL_TEST);
 		clearAlpha(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		path.mHandle->rasterizeFillAA();
+		impl::RasterizeEvenOddAA(path.mHandle->mFillGeom);
 
 		glCallList(paint.mHandle);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);

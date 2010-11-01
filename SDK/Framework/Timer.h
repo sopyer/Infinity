@@ -2,34 +2,61 @@
 #	define _TIMER_H_INCLUDED_
 
 #include <windows.h>
+//#include <stdint.h>
 
-class Timer
+//class Timer
+//{
+//public:
+//	Timer(): mStartTime(0), mFrameStartTime(0) {QueryPerformanceFrequency(&mFrequency);}
+//	~Timer() {}
+//
+//	void resetFrame(){mFrameStartTime = getAbsTime();}
+//
+//	uint32_t getFrameTime() {return mFrameStartTime ? getAbsTime() - mFrameStartTime : 0;}
+//	uint32_t getTime() {return mStartTime ? getAbsTime() - mStartTime : 0;}
+//
+//	void start() {mStartTime = getAbsTime();}
+//	void stop() {mStartTime = 0; mFrameStartTime = 0;}
+//
+//private:
+//	uint32_t getAbsTime()
+//	{
+//		LARGE_INTEGER	time;
+//		QueryPerformanceCounter(&time);
+//		return uint32_t(time.QuadPart * 1000 / mFrequency.QuadPart);
+//	}
+//
+//private:
+//	uint32_t mStartTime;
+//	uint32_t mFrameStartTime;
+//
+//	LARGE_INTEGER mFrequency;
+//};
+//
+struct Timer2
 {
-public:
-	Timer(): mStartTime(0), mFrameStartTime(0) {QueryPerformanceFrequency(&mFrequency);}
-	~Timer() {}
-
-	void resetFrame(){mFrameStartTime = getAbsTime();}
-
-	u32 getFrameTime() {return mFrameStartTime ? getAbsTime() - mFrameStartTime : 0;}
-	u32 getTime() {return mStartTime ? getAbsTime() - mStartTime : 0;}
-
-	void start() {mStartTime = getAbsTime();}
-	void stop() {mStartTime = 0; mFrameStartTime = 0;}
-
-private:
-	u32 getAbsTime()
+	void start()
 	{
-		LARGE_INTEGER	time;
-		QueryPerformanceCounter(&time);
-		return u32(time.QuadPart * 1000 / mFrequency.QuadPart);
+		QueryPerformanceCounter(&startTime);
 	}
 
-private:
-	u32 mStartTime;
-	u32 mFrameStartTime;
+	void stop()
+	{
+		startTime.QuadPart = 0;
+	}
 
-	LARGE_INTEGER mFrequency;
+	double elapsed()
+	{
+		LARGE_INTEGER	frequency;
+		LARGE_INTEGER	time;
+
+		QueryPerformanceCounter(&time);
+		QueryPerformanceFrequency(&frequency);
+
+		return (time.QuadPart-startTime.QuadPart)*1000.0/frequency.QuadPart;
+	}
+
+	LARGE_INTEGER startTime;
 };
 
 #include <Scheduler.h>
