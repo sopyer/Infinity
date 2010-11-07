@@ -122,8 +122,8 @@ static const char* rectProgramSrc =
 		"void main()																	\n"
 		"{																				\n"
 		"	float dist = min(gl_TexCoord[0].x, gl_TexCoord[0].y)/uWidth;		\n"
-		"	float a  = smoothstep(0.0, 1.0, 1+dist);									\n"
-		"	float b  = smoothstep(0.0, 1.0, dist);										\n"
+		"	float a  = sqrt(smoothstep(0.0, 1.0, 1+dist));									\n"
+		"	float b  = sqrt(smoothstep(0.0, 1.0, dist));										\n"
 		"	gl_FragColor = mix(uBorderColor, uFillColor, b);							\n"
 		"	gl_FragColor.a *= a;														\n"
 		"}																				\n";
@@ -167,6 +167,30 @@ struct ShaderDef
 	GLsizei		srcLen;
 	const char*	src;
 };
+
+static const char terrainVertSrc[] =
+		"uniform vec2	uOffset;														\n"
+		"uniform vec2	uScale;															\n"
+		"uniform vec2	uViewPos;															\n"
+		"uniform vec2	uMorphParams;													\n"
+		"																				\n"
+		"void main()																	\n"
+		"{																				\n"
+		"	vec2 pos = uOffset+uScale*gl_Vertex.xy;										\n"
+		"	float d = length(pos-uViewPos);												\n"
+		"	float morphK = clamp(d*uMorphParams.x+uMorphParams.y, 0.0, 1.0);			\n"
+		"	vec2 dir = fract(gl_Vertex.xy*vec2(0.5))*vec2(2.0);					\n"
+		"	pos += dir*vec2(morphK*uScale);"
+		"	gl_Position = gl_ModelViewProjectionMatrix*vec4(pos, 0, 1);					\n"
+		"	gl_FrontColor=gl_BackColor = gl_Color;"
+		"}																				\n";
+
+static const char terrainFragSrc[] =
+		"void main()																	\n"
+		"{																				\n"
+		"	gl_FragColor = gl_Color;													\n"
+		"}																				\n";
+
 
 #define MAX_INFOLOG_LENGTH 256
 GLuint createProgram(size_t shaderCount, ShaderDef* shaderList)
@@ -226,9 +250,15 @@ class Exest: public UI::SDLStage
 		GLint	uniP1, uniP2, uniTimeStops, uniColorStops;
 		GLuint	gradDisplayList;
 
+		GLuint	terrainProgram;
+		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams;
+
+		VFS				mVFS;
+
 	public:
 		Exest()
 		{
+			VFS::mount("..\\..\\AppData");
 			rectProgram = resources::createProgram(GL_FRAGMENT_SHADER, rectProgramSrc);
 			uniWidth = glGetUniformLocation(rectProgram, "uWidth");
 			uniFillColor = glGetUniformLocation(rectProgram, "uFillColor");
@@ -244,6 +274,18 @@ class Exest: public UI::SDLStage
 			uniP2 = glGetUniformLocation(gradProgram, "uP2");
 			uniTimeStops = glGetUniformLocation(gradProgram, "uTimeStops");
 			uniColorStops = glGetUniformLocation(gradProgram, "uColorStops");
+
+			ShaderDef	terrainProgramDef[] = {
+				{GL_VERTEX_SHADER,   ARRAY_SIZE(terrainVertSrc), terrainVertSrc},
+				{GL_FRAGMENT_SHADER, ARRAY_SIZE(terrainFragSrc), terrainFragSrc}
+			};
+
+			//terrainProgram = createProgram(ARRAY_SIZE(terrainProgramDef), terrainProgramDef);
+			terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.vert", "FF.Color.frag");
+			uniOffset = glGetUniformLocation(terrainProgram, "uOffset");
+			uniScale = glGetUniformLocation(terrainProgram, "uScale");
+			uniViewPos = glGetUniformLocation(terrainProgram, "uViewPos");
+			uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
 
 			gradDisplayList = glGenLists(1);
 			glNewList(gradDisplayList, GL_COMPILE);
@@ -265,6 +307,8 @@ class Exest: public UI::SDLStage
 			glEndList();
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
+
+			setupTerrainParams();
 		}
 
 		~Exest()
@@ -285,10 +329,160 @@ class Exest: public UI::SDLStage
 #define RGBA_ALPHA_FLOAT(color) (RGBA_ALPHA(color)/255.0f)
 #define RGBA(r, g, b, a) (((a&0xFF)<<24)|((b&0xFF)<<16)|((g&0xFF)<<8)|(r&0xFF))
 
+		float resX;
+		float resY;
+		float size;
+		float startX;
+		float startY;
+		float endX;
+		float endY;
+		float visibilityDistance;
+		GLint LODCount;
+		float detailBalance;
+		float morphZoneRatio;
+		float gridSizeX, gridSizeY;
+
+		void setupTerrainParams()
+		{
+			resX = 257;
+			resY = 257;
+			size = 20;
+			startX = 0.5f*(mWidth  - size*(resX-1));
+			startY = 0.5f*(mHeight - size*(resY-1));
+			endX = mWidth -startX;
+			endY = mHeight-startY;
+			gridSizeX = 4.0f;
+			gridSizeY = 4.0f;
+
+			visibilityDistance = size*50;
+			LODCount = 4;
+			detailBalance = 2.0f;
+			morphZoneRatio = 0.30f;
+
+			setupLODParams();
+		}
+		
+		struct LODDesc
+		{
+			float scaleX, scaleY;
+			float rangeEnd;
+			float range;
+			float minRange;
+			float morphStart;
+			float morphInvRange, morphStartRatio;
+		};
+
+		LODDesc	LODs[16];
+
+		void setupLODParams()
+		{
+			float	curScale=size,
+					curDetailBalance=1.0f,
+					totalDetail = 0.0f,
+					curRange=0.0f;
+
+			for (GLint i=0; i<LODCount; ++i)
+			{
+				LODs[i].scaleX = curScale;
+				LODs[i].scaleY = curScale;
+				LODs[i].minRange = sqrt(LODs[i].scaleX*LODs[i].scaleX*gridSizeX*gridSizeX+LODs[i].scaleY*LODs[i].scaleY*gridSizeY*gridSizeY);
+
+				curScale *= 2;
+				totalDetail += curDetailBalance;
+				curDetailBalance *= detailBalance;
+			}
+
+			float minDetailDist = visibilityDistance/totalDetail;
+			curDetailBalance = 1.0f;
+
+			for (GLint i=0; i<LODCount; ++i)
+			{
+				LODs[i].range = std::max(minDetailDist*curDetailBalance, LODs[i].minRange);
+				curRange += LODs[i].range;
+				LODs[i].rangeEnd = curRange;
+				float morphRange = LODs[i].range*morphZoneRatio;
+				LODs[i].morphStart = LODs[i].rangeEnd-morphRange;
+				LODs[i].morphInvRange = 1.0f/morphRange;
+				LODs[i].morphStartRatio = -LODs[i].morphStart/morphRange;
+
+				curDetailBalance *= 2.0f;
+			}
+		}
+
+		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level)
+		{
+			glUseProgram(terrainProgram);
+
+			glColor3f(1.0f, 1.0f, 0.0f);
+			glUniform2f(uniOffset, baseX, baseY);
+			glUniform2f(uniViewPos, startX+128*size, startY+128*size);
+			glUniform2f(uniScale, LODs[level].scaleX, LODs[level].scaleY);
+			
+			//Implement in proper way - acces to this params on per level basis
+			float startMorph = 2.0f*size;
+			float endMorph = 4.0f*size;
+			glUniform2f(uniMorphParams, LODs[level].morphInvRange, LODs[level].morphStartRatio);
+
+			glPushAttrib(GL_ALL_ATTRIB_BITS);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glBegin(GL_TRIANGLES);
+				for (float y=0; y<gridSizeY; y+=1.0f)
+				{
+					for (float x=0; x<gridSizeX; x+=1.0f)
+					{
+						glVertex2f(x,	y);
+						glVertex2f(x+1,	y);
+						glVertex2f(x,	y+1);
+						glVertex2f(x+1,	y);
+						glVertex2f(x,	y+1);
+						glVertex2f(x+1,	y+1);
+					}
+				}
+			glEnd();
+			glPopAttrib();
+		}
+
+		struct PatchData
+		{
+			float baseX, baseY;
+			float scaleX, scaleY; //TODO: Can be accessed from level???
+			GLint level;
+		};
+
+		std::vector<PatchData>	patchList;
+
+		void drawTerrain()
+		{
+			patchList.resize(16);
+
+			auto	it  = patchList.begin(),
+					end = patchList.end();
+
+			for (int i=0; i<4; ++i)
+				for (int j=0; j<4; ++j)
+				{
+					float scale = size;
+					float baseX = 128.0f+(i-2)*4.0f;
+					float baseY = 128.0f+(j-2)*4.0f;
+					it->baseX = startX+baseX*scale;
+					it->baseY = startY+baseY*scale;
+					it->scaleX = scale;
+					it->scaleY = scale;
+					it->level = 0;
+					++it;
+				}
+
+			it  = patchList.begin();
+			for(; it!=end; ++it)
+			{
+				drawPatch(it->baseX, it->baseY, it->scaleX, it->scaleY, it->level);
+			}
+		}
+
 		void drawRect(float x0, float y0, float x1, float y1, uint32_t fillColor, uint32_t borderColor)
 		{
 			float w = 0.5f;
-			if (0)
+			if (1)
 			{
 				glUseProgram(rectProgram);
 
@@ -403,13 +597,6 @@ class Exest: public UI::SDLStage
 			glUseProgram(0);
 			//glEnable(GL_DEPTH_TEST);
 			//glDisable(GL_TEXTURE_2D);
-			float resX = 257;
-			float resY = 257;
-			float size = 20;
-			float startX = 0.5f*(mWidth  - size*(resX-1));
-			float startY = 0.5f*(mHeight - size*(resY-1));
-			float endX = mWidth -startX;
-			float endY = mHeight-startY;
 			for(float i = 0; i <= 257; ++i)
 			{
 				glBegin(GL_LINES);
@@ -419,11 +606,12 @@ class Exest: public UI::SDLStage
 				glEnd();
 			}
 
+			drawTerrain();
 			//sui::drawRect(100, 100, 700, 500, sui::cBase+1, sui::cOutline);
-			sui::drawBoolFrame(0, 0, 100, 100, 16, 16, false, false, false );
+			//sui::drawBoolFrame(0, 0, 100, 100, 16, 16, false, false, false );
 
 			glDisable(GL_BLEND);
-			drawRect(20, 20, 80, 80, RGBA(255, 0, 0, 255), RGBA(255, 255, 255, 255));
+			//drawRect(20, 20, 80, 80, RGBA(255, 0, 0, 255), RGBA(255, 255, 255, 255));
 
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
