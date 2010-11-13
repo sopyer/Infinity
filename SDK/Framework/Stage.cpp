@@ -8,12 +8,13 @@
 
 namespace UI
 {
-	Stage::Stage():	mFocused(0), mDoAllocate(true),
+	Stage::Stage():	mDoAllocate(true),
 		mLastVisited(0), mPhase(PHASE_DEFAULT)
 #if defined(DEBUG) || defined(_DEBUG)
 		,dumpPickImage(0)
 #endif
 	{
+		mFocused = this;
 	}
 
 	Stage& Stage::queueRelayout()
