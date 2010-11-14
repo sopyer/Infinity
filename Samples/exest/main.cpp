@@ -3,6 +3,7 @@
 #include <glm\glmext.h>
 #include <cassert>
 #include <ResourceHelpers.h>
+//#include <scheduler.h>
 
 #ifdef _DEBUG
 #	include <string>
@@ -237,6 +238,8 @@ GLuint createProgram(size_t shaderCount, ShaderDef* shaderList)
 	return program;
 }
 
+#include "CDLODTerrain.h"
+
 class Exest: public UI::SDLStage
 {
 	private:
@@ -257,14 +260,12 @@ class Exest: public UI::SDLStage
 		GLint	uniP1, uniP2, uniTimeStops, uniColorStops;
 		GLuint	gradDisplayList;
 
-		GLuint	terrainProgram;
-		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams;
-
 		VFS				mVFS;
 
 		glm::mat4	mProj;
 
 		float vertAngle, horzAngle;
+		CDLODTerrain terrain;
 
 	public:
 		Exest()
@@ -291,13 +292,6 @@ class Exest: public UI::SDLStage
 				{GL_FRAGMENT_SHADER, ARRAY_SIZE(terrainFragSrc), terrainFragSrc}
 			};
 
-			//terrainProgram = createProgram(ARRAY_SIZE(terrainProgramDef), terrainProgramDef);
-			terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.vert", "FF.Color.frag");
-			uniOffset = glGetUniformLocation(terrainProgram, "uOffset");
-			uniScale = glGetUniformLocation(terrainProgram, "uScale");
-			uniViewPos = glGetUniformLocation(terrainProgram, "uViewPos");
-			uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
-
 			gradDisplayList = glGenLists(1);
 			glNewList(gradDisplayList, GL_COMPILE);
 				glUseProgram(gradProgram);
@@ -319,19 +313,19 @@ class Exest: public UI::SDLStage
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
 
-			setupTerrainParams();
+			terrain.setupTerrainParams();
 
-			mProj = glm::perspectiveGTX(90.0f, mWidth/mHeight, 0.1f, visibilityDistance);
+			mProj = glm::perspectiveGTX(90.0f, mWidth/mHeight, 0.1f, 1000.0f);
 			camera.set(glm::vec3(0, 20, 0), glm::vec3(0, 0, -20));
 
-			viewPoint = glm::vec3(0, 0, 0);
-			glm::mat4 lookAt = glm::lookAtGTX<float>(viewPoint, glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
-			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 600.0f);
+			terrain.viewPoint = glm::vec3(0, 0, 0);
+			glm::mat4 lookAt = glm::lookAtGTX<float>(terrain.viewPoint, glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
+			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
-			VP = proj*lookAt;
+			terrain.VP = proj*lookAt;
+
+			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 		}
-		glm::vec3 viewPoint;
-		glm::mat4 VP;
 		
 		~Exest()
 		{
@@ -351,265 +345,6 @@ class Exest: public UI::SDLStage
 #define RGBA_ALPHA_FLOAT(color) (RGBA_ALPHA(color)/255.0f)
 #define RGBA(r, g, b, a) (((a&0xFF)<<24)|((b&0xFF)<<16)|((g&0xFF)<<8)|(r&0xFF))
 
-		size_t gridDimX;
-		size_t gridDimY;
-		float size;
-		float startX;
-		float startY;
-		float endX;
-		float endY;
-		float visibilityDistance;
-		GLint LODCount;
-		float detailBalance;
-		float morphZoneRatio;
-		size_t minPatchDimX, minPatchDimY;
-
-		void setupTerrainParams()
-		{
-			gridDimX = 257;
-			gridDimY = 257;
-			size = 20;
-			startX = 0.5f*(mWidth  - size*(gridDimX-1));
-			startY = 0.5f*(mHeight - size*(gridDimY-1));
-			endX = mWidth -startX;
-			endY = mHeight-startY;
-			minPatchDimX = 4;
-			minPatchDimY = 4;
-
-			visibilityDistance = size*50;
-			LODCount = 4;
-			detailBalance = 2.0f;
-			morphZoneRatio = 0.30f;
-
-			setupLODParams();
-		}
-		
-		struct LODDesc
-		{
-			float scaleX, scaleY;
-			float rangeStart;
-			float rangeEnd;
-			float minRange;
-			size_t patchDimX, patchDimY;
-			float morphStart;
-			float morphInvRange, morphStartRatio;
-		};
-
-		LODDesc	LODs[16];
-
-		void setupLODParams()
-		{
-			float	curScale=size,
-					curDetailBalance=1.0f,
-					totalDetail = 0.0f,
-					curRange=0.0f;
-
-			for (GLint i=0; i<LODCount; ++i)
-			{
-				LODs[i].scaleX = curScale;
-				LODs[i].scaleY = curScale;
-				LODs[i].minRange = sqrt(LODs[i].scaleX*LODs[i].scaleX*minPatchDimX*minPatchDimX+LODs[i].scaleY*LODs[i].scaleY*minPatchDimY*minPatchDimY);
-
-				curScale *= 2;
-				totalDetail += curDetailBalance;
-				curDetailBalance *= detailBalance;
-			}
-
-			size_t dimX = minPatchDimX, dimY = minPatchDimY;
-			float minDetailDist = visibilityDistance/totalDetail;
-			curDetailBalance = 1.0f;
-
-			for (GLint i=0; i<LODCount; ++i)
-			{
-				float range = std::max(minDetailDist*curDetailBalance, LODs[i].minRange);
-				
-				LODs[i].rangeStart = curRange;
-				curRange += range;
-				LODs[i].rangeEnd = curRange;
-				
-				float morphRange = range*morphZoneRatio;
-				
-				LODs[i].morphStart = LODs[i].rangeEnd-morphRange;
-				LODs[i].morphInvRange = 1.0f/morphRange;
-				LODs[i].morphStartRatio = -LODs[i].morphStart/morphRange;
-				LODs[i].patchDimX = dimX;
-				LODs[i].patchDimY = dimY;
-				
-				dimX *= 2;
-				dimY *= 2;
-				curDetailBalance *= 2.0f;
-			}
-		}
-	
-		void addPatchToQueue(size_t level, size_t i, size_t j)
-		{
-			size_t index = patchList.size();
-			patchList.resize(index+1);
-
-			float scaleX = LODs[level].scaleX;
-			float scaleY = LODs[level].scaleY;
-
-			patchList[index].baseX = startX+i*size;
-			patchList[index].baseY = startY+j*size;
-			patchList[index].scaleX = scaleX;
-			patchList[index].scaleY = scaleY;
-			patchList[index].level = level;
-		}
-
-		bool intersectViewFrustum(size_t level, size_t i, size_t j)
-		{
-			float sizeX = LODs[level].patchDimX*size;
-			float sizeY = LODs[level].patchDimY*size;
-
-			float baseX = startX+i*size;
-			float baseY = startY+j*size;
-
-			glm::vec4 pts[4] = {
-				glm::vec4(baseX, 0, baseY, 1),
-				glm::vec4(baseX+sizeX, 0, baseY, 1),
-				glm::vec4(baseX, 0, baseY+sizeY, 1),
-				glm::vec4(baseX+sizeX, 0, baseY+sizeY, 1)
-			};
-
-			bool outside = false;
-
-			for (size_t i=0; i<4; ++i)
-			{
-				glm::vec4 p = VP*pts[i];
-				outside |= p.w>0 &&
-							-p.w<=p.x && p.x<=p.w &&
-							/*-p.w>p.y || p.y>p.w ||*/
-							-p.w<=p.z && p.z<=p.w;
-			}
-
-			return outside;
-		}
-
-		bool intersectSphere(size_t level, size_t i, size_t j)
-		{
-			float baseX = startX+i*size;
-			float baseY = startY+j*size;
-
-			float sizeX = LODs[level].patchDimX*size;
-			float sizeY = LODs[level].patchDimY*size;
-
-			//find the square of the distance
-			//from the sphere to the box
-			glm::vec3 bmin = glm::vec3(baseX, 0, baseY);
-			glm::vec3 bmax = glm::vec3(baseX+sizeX, 0, baseY+sizeY);
-			float s, d = 0;
-
-			for (size_t i=0 ; i<3 ; i++) 
-			{
-				if (viewPoint[i] < bmin[i])
-				{
-					s = viewPoint[i] - bmin[i];
-					d += s*s;
-				}
-				else if (viewPoint[i] > bmax[i])
-				{
-					s = viewPoint[i] - bmax[i];
-					d += s*s;
-				}
-			}
-
-			float r = LODs[level].rangeStart;
-
-			return d <= r*r;
-		}
-
-		//TODO: implement min rendering dist - essentially startRange
-		//TODO: list of high level quads.
-		//TODO: when rendring terrain - pyramid of min, max height
-		//TODO: optimize - skip frustum test if parent inside
-		void selectQuadsForDrawing(size_t level, size_t i, size_t j)
-		{
-			if (!intersectViewFrustum(level, i, j))
-				return;
-
-			if (level==0)
-			{
-				addPatchToQueue(level, i, j);
-				return;
-			}
-
-			if (!intersectSphere(level, i, j))
-				addPatchToQueue(level, i, j);
-			else
-			{
-				size_t offsetX = LODs[level].patchDimX/2;
-				size_t offsetY = LODs[level].patchDimY/2;
-				selectQuadsForDrawing(level-1, i, j);
-				selectQuadsForDrawing(level-1, i+offsetX, j);
-				selectQuadsForDrawing(level-1, i, j+offsetY);
-				selectQuadsForDrawing(level-1, i+offsetX, j+offsetY);
-			}
-		}
-
-		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level)
-		{
-			glUseProgram(terrainProgram);
-
-			glColor3f(1.0f, 1.0f, 0.0f);
-			glUniform2f(uniOffset, baseX, baseY);
-			glUniform3fv(uniViewPos, 1, viewPoint);
-			glUniform2f(uniScale, LODs[level].scaleX, LODs[level].scaleY);
-			
-			//TODO: HACK!!!!
-			glDisable(GL_DEPTH_TEST);
-
-			//Implement in proper way - acces to this params on per level basis
-			float startMorph = 2.0f*size;
-			float endMorph = 4.0f*size;
-			glUniform2f(uniMorphParams, LODs[level].morphInvRange, LODs[level].morphStartRatio);
-
-			glPushAttrib(GL_ALL_ATTRIB_BITS);
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-			glBegin(GL_TRIANGLES);
-				for (float y=0; y<minPatchDimY; y+=1.0f)
-				{
-					for (float x=0; x<minPatchDimX; x+=1.0f)
-					{
-						glVertex2f(x,	y);
-						glVertex2f(x+1,	y);
-						glVertex2f(x,	y+1);
-						glVertex2f(x+1,	y);
-						glVertex2f(x,	y+1);
-						glVertex2f(x+1,	y+1);
-					}
-				}
-			glEnd();
-			glPopAttrib();
-		}
-
-		struct PatchData
-		{
-			float baseX, baseY;
-			float scaleX, scaleY; //TODO: Can be accessed from level???
-			GLint level;
-		};
-
-		std::vector<PatchData>	patchList;
-
-		void drawTerrain()
-		{
-			patchList.reserve(2048);
-			patchList.clear();
-
-			size_t level = 1;
-			for (size_t j=0; j<gridDimY; j+=LODs[level].patchDimY)
-				for (size_t i=0; i<gridDimX; i+=LODs[level].patchDimX)
-					selectQuadsForDrawing(level, i, j);
-
-			auto	it  = patchList.begin(),
-					end = patchList.end();
-
-			it  = patchList.begin();
-			for(; it!=end; ++it)
-			{
-				drawPatch(it->baseX, it->baseY, it->scaleX, it->scaleY, it->level);
-			}
-		}
 
 		void drawRect(float x0, float y0, float x1, float y1, uint32_t fillColor, uint32_t borderColor)
 		{
@@ -795,16 +530,16 @@ class Exest: public UI::SDLStage
 			glUseProgram(0);
 			glBegin(GL_LINES);
 			glColor3ub(68, 193, 181);						
-			for(float i = 0; i < gridDimX; ++i)
+			for(float i = 0; i < terrain.gridDimX; ++i)
 			{
-					glVertex3f(startX, 0, startY+i*size); glVertex3f(endX, 0, startY+i*size);
-					glVertex3f(startX+i*size, 0, startY); glVertex3f(startX+i*size, 0, endY);
+					glVertex3f(terrain.startX, 0, terrain.startY+i*terrain.size); glVertex3f(terrain.endX, 0, terrain.startY+i*terrain.size);
+					glVertex3f(terrain.startX+i*terrain.size, 0, terrain.startY); glVertex3f(terrain.startX+i*terrain.size, 0, terrain.endY);
 			}
 			glEnd();
 
-			drawTerrain();
+			terrain.drawTerrain();
 
-			drawFrustum(VP);
+			drawFrustum(terrain.VP);
 
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
@@ -821,43 +556,67 @@ class Exest: public UI::SDLStage
 			assert(err==GL_NO_ERROR);
 		}
 
+		void handleInput()
+		{
+			uint8_t *keystate = SDL_GetKeyState(NULL);
+			if (keystate[SDLK_ESCAPE])
+				close();
+			if (keystate[SDLK_w])
+				camera.moveFB(5.1f);
+			if (keystate[SDLK_s])
+				camera.moveFB(-5.1f);
+			if (keystate[SDLK_a])
+				camera.moveLR(5.1f);
+			if (keystate[SDLK_d])
+				camera.moveLR(-5.1f);
+			if (keystate[SDLK_KP8])
+				camera.rotateUD(1.5);
+			if (keystate[SDLK_KP5])
+				camera.rotateUD(-1.5);
+			if (keystate[SDLK_KP4])
+				camera.rotateLR(-1.5);
+			if (keystate[SDLK_KP6])
+				camera.rotateLR(1.5);
+		}
+
 		virtual void onKeyDown(const KeyEvent& event)
 		{
-			u32 key = event.keysym.sym;
-			switch (key)
-			{
-				case SDLK_ESCAPE:
-					close();
-					break;
-				case SDLK_w:
-					camera.moveFB(1.1f);
-					break;
-				case SDLK_s:
-					camera.moveFB(-1.1f);
-					break;
-				case SDLK_a:
-					camera.moveLR(1.1f);
-					break;
-				case SDLK_d:
-					camera.moveLR(-1.1f);
-					break;
-				case SDLK_KP8:
-					camera.rotateUD(1.5);
-					vertAngle+=0.5f;
-					break;
-				case SDLK_KP5:
-					camera.rotateUD(-1.5);
-					vertAngle-=0.5f;
-					break;
-				case SDLK_KP4:
-					horzAngle-=0.5f;
-					camera.rotateLR(-1.5);
-					break;
-				case SDLK_KP6:
-					horzAngle+=0.5f;
-					camera.rotateLR(1.5);
-					break;
-			}
+			return;
+			//u32 key = event.keysym.sym;
+			//switch (key)
+			//{
+			//	case SDLK_ESCAPE:
+			//		close();
+			//		break;
+			//	case SDLK_w:
+			//		camera.moveFB(5.1f);
+			//		break;
+			//	case SDLK_s:
+			//		camera.moveFB(-5.1f);
+			//		break;
+			//	case SDLK_a:
+			//		camera.moveLR(5.1f);
+			//		break;
+			//	case SDLK_d:
+			//		camera.moveLR(-5.1f);
+			//		break;
+			//	case SDLK_KP8:
+			//		camera.rotateUD(1.5);
+			//		vertAngle+=1.5f;
+			//		break;
+			//	case SDLK_KP5:
+			//		camera.rotateUD(-1.5);
+			//		vertAngle-=1.5f;
+			//		break;
+			//	case SDLK_KP4:
+			//		horzAngle-=1.5f;
+			//		camera.rotateLR(-1.5);
+			//		break;
+			//	case SDLK_KP6:
+			//		horzAngle+=1.5f;
+			//		camera.rotateLR(1.5);
+			//		break;
+			//}
 			//static int look = 0;
 			//
 			//if(!look && glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT)) 
