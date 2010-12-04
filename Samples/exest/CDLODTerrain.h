@@ -4,36 +4,42 @@
 #include <framework.h>
 #include <vector>
 #include <glm/glm.h>
+#include <vi.h>
+#include "math.h"
 
 class CDLODTerrain
 {
 	public:
 	//private:
-		size_t gridDimX;
-		size_t gridDimY;
-		float size;
-		float startX;
-		float startY;
-		float endX;
-		float endY;
+		size_t gridDimX, gridDimY;
+
+		float size;//cellSizeX, cellSizeY
+
+		float startX, startY; //offset
+
 		float visibilityDistance;
+		
 		GLint LODCount;
 		float detailBalance;
 		float morphZoneRatio;
-		size_t minPatchDimX, minPatchDimY;
+		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
+		
 		GLuint	terrainProgram;
 		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams;
-		
+		std::vector<glm::vec2>	mTerrainVtx;
+		std::vector<uint16_t>	mTerrainIdx;
+
 		glm::vec3 viewPoint;
-		glm::mat4 VP;
+		ml::mat4x4 sseVP;
+
+		void generateGeometry();
 
 		void setupTerrainParams();
 	
 		struct LODDesc
 		{
 			float scaleX, scaleY;
-			float rangeStart;
-			float rangeEnd;
+			float rangeStart, rangeEnd;
 			float minRange;
 			size_t patchDimX, patchDimY;
 			float morphStart;
@@ -42,6 +48,7 @@ class CDLODTerrain
 
 		LODDesc	LODs[16];
 
+		void setViewProj(glm::mat4& mat);
 		void setupLODParams();
 		void addPatchToQueue(size_t level, size_t i, size_t j);
 		bool intersectViewFrustum(size_t level, size_t i, size_t j);

@@ -8,17 +8,23 @@ uniform vec2	uMorphParams;
 
 void main()
 {
-	vec2	gridPos = uOffset+uScale*gl_Vertex.xy;
-	vec3	worldPos = vec3(gridPos.x, 0, gridPos.y);
-	float	distance = length(worldPos-uViewPos);
-
-	float	morphK = clamp(distance*uMorphParams.x+uMorphParams.y, 0.0, 1.0);
+	vec2	patchPos, gridPos;
+	vec3	worldPos;
 	
-	//TODO: This is known during mesh creation, make it an attribute
-	vec2	dir = fract(gl_Vertex.xy*vec2(0.5))*vec2(2.0);
-	//TODO: Is there a way to move morphK*uScale out of shader?
+	patchPos = gl_Vertex.xy;
+	gridPos = uOffset+uScale*gl_Vertex.xy;
+	worldPos = vec3(gridPos.x, 0, gridPos.y);
+	
+	float	distance, morphK;
+	vec2	morphDir;
+	
+	distance = length(worldPos-uViewPos);
+	morphK = clamp(distance*uMorphParams.x+uMorphParams.y, 0.0, 1.0);
+	morphDir = fract(patchPos*vec2(0.5))*vec2(2.0);
+
+	//Applying morphing for seamless connectivity
 	//TODO: make correct dir evaluation as 3d vector
-	worldPos.xz += dir*vec2(morphK*uScale);
+	worldPos.xz += morphDir*vec2(morphK*uScale);
 
 	gl_FrontColor = gl_BackColor = gl_Color;
 	gl_Position = gl_ModelViewProjectionMatrix*vec4(worldPos, 1);

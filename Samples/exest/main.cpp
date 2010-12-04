@@ -262,7 +262,7 @@ class Exest: public UI::SDLStage
 
 		VFS				mVFS;
 
-		glm::mat4	mProj;
+		glm::mat4	mProj, VP;
 
 		float vertAngle, horzAngle;
 		CDLODTerrain terrain;
@@ -316,13 +316,15 @@ class Exest: public UI::SDLStage
 			terrain.setupTerrainParams();
 
 			mProj = glm::perspectiveGTX(90.0f, mWidth/mHeight, 0.1f, 1000.0f);
-			camera.set(glm::vec3(0, 20, 0), glm::vec3(0, 0, -20));
+			camera.rotateLR(180);
 
 			terrain.viewPoint = glm::vec3(0, 0, 0);
 			glm::mat4 lookAt = glm::lookAtGTX<float>(terrain.viewPoint, glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
 			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
-			terrain.VP = proj*lookAt;
+			VP = proj*lookAt;
+
+			terrain.setViewProj(VP);
 
 			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 		}
@@ -530,16 +532,16 @@ class Exest: public UI::SDLStage
 			glUseProgram(0);
 			glBegin(GL_LINES);
 			glColor3ub(68, 193, 181);						
-			for(float i = 0; i < terrain.gridDimX; ++i)
-			{
-					glVertex3f(terrain.startX, 0, terrain.startY+i*terrain.size); glVertex3f(terrain.endX, 0, terrain.startY+i*terrain.size);
-					glVertex3f(terrain.startX+i*terrain.size, 0, terrain.startY); glVertex3f(terrain.startX+i*terrain.size, 0, terrain.endY);
-			}
+			//for(float i = 0; i < terrain.gridDimX; ++i)
+			//{
+			//		glVertex3f(terrain.startX, 0, terrain.startY+i*terrain.size); glVertex3f(terrain.endX, 0, terrain.startY+i*terrain.size);
+			//		glVertex3f(terrain.startX+i*terrain.size, 0, terrain.startY); glVertex3f(terrain.startX+i*terrain.size, 0, terrain.endY);
+			//}
 			glEnd();
 
 			terrain.drawTerrain();
 
-			drawFrustum(terrain.VP);
+			drawFrustum(VP);
 
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
@@ -577,74 +579,6 @@ class Exest: public UI::SDLStage
 				camera.rotateLR(-1.5);
 			if (keystate[SDLK_KP6])
 				camera.rotateLR(1.5);
-		}
-
-		virtual void onKeyDown(const KeyEvent& event)
-		{
-			return;
-			//u32 key = event.keysym.sym;
-			//switch (key)
-			//{
-			//	case SDLK_ESCAPE:
-			//		close();
-			//		break;
-			//	case SDLK_w:
-			//		camera.moveFB(5.1f);
-			//		break;
-			//	case SDLK_s:
-			//		camera.moveFB(-5.1f);
-			//		break;
-			//	case SDLK_a:
-			//		camera.moveLR(5.1f);
-			//		break;
-			//	case SDLK_d:
-			//		camera.moveLR(-5.1f);
-			//		break;
-			//	case SDLK_KP8:
-			//		camera.rotateUD(1.5);
-			//		vertAngle+=1.5f;
-			//		break;
-			//	case SDLK_KP5:
-			//		camera.rotateUD(-1.5);
-			//		vertAngle-=1.5f;
-			//		break;
-			//	case SDLK_KP4:
-			//		horzAngle-=1.5f;
-			//		camera.rotateLR(-1.5);
-			//		break;
-			//	case SDLK_KP6:
-			//		horzAngle+=1.5f;
-			//		camera.rotateLR(1.5);
-			//		break;
-			//}
-			//static int look = 0;
-			//
-			//if(!look && glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT)) 
-			//{
-			//	glfwDisable(GLFW_MOUSE_CURSOR);
-			//	glfwSetMousePos(mWidth / 2, mHeight/ 2);
-			//	look = 1;
-			//}
-			//
-			//if(glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT)) 
-			//{
-			//	look = 0;
-			//	glfwEnable(GLFW_MOUSE_CURSOR);
-			//}
-
-			//if(look)
-			//{
-			//	int mouseX=0, mouseY=0;
-			//	glfwGetMousePos(&mouseX, &mouseY);
-			//	float psi = (mouseX - mWidth / 2) * 0.2f;
-			//	float phi = (mouseY - mHeight / 2) * 0.2f;
-			//	if(phi < -89) phi = -89;
-			//	if(phi > 89) phi = 89;
-			//	camera.rotate(psi, -phi);
-			//	//camera.rotateLR(psi);
-			//	//camera.rotateUD(-phi);
-			//	glfwSetMousePos(mWidth / 2, mHeight / 2);
-			//} 
 		}
 };
 

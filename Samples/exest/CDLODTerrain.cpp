@@ -10,11 +10,9 @@ void CDLODTerrain::setupTerrainParams()
 
 	gridDimX = 257;
 	gridDimY = 257;
-	size = 20;
+	size = 10;
 	startX = -0.5f*size*(gridDimX-1);
 	startY = -0.5f*size*(gridDimY-1);
-	endX = -startX;
-	endY = -startY;
 	minPatchDimX = 4;
 	minPatchDimY = 4;
 
@@ -24,6 +22,8 @@ void CDLODTerrain::setupTerrainParams()
 	morphZoneRatio = 0.30f;
 
 	setupLODParams();
+
+	generateGeometry();
 }
 		
 void CDLODTerrain::setupLODParams()
@@ -70,7 +70,15 @@ void CDLODTerrain::setupLODParams()
 		curDetailBalance *= 2.0f;
 	}
 }
-	
+
+void CDLODTerrain::setViewProj(glm::mat4& mat)
+{
+	sseVP.r0 = vi_loadu(mat[0]);
+	sseVP.r1 = vi_loadu(mat[1]);
+	sseVP.r2 = vi_loadu(mat[2]);
+	sseVP.r3 = vi_loadu(mat[3]);
+}
+
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 {
 	size_t index = patchList.size();
@@ -94,25 +102,12 @@ bool CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
 	float baseX = startX+i*size;
 	float baseY = startY+j*size;
 
-	glm::vec4 pts[4] = {
-		glm::vec4(baseX, 0, baseY, 1),
-		glm::vec4(baseX+sizeX, 0, baseY, 1),
-		glm::vec4(baseX, 0, baseY+sizeY, 1),
-		glm::vec4(baseX+sizeX, 0, baseY+sizeY, 1)
-	};
+	ml::aabb AABB;
 
-	bool outside = false;
+	AABB.min = vi_set(baseX, 0, baseY, 1);
+	AABB.max = vi_set(baseX+sizeX, 0, baseY+sizeY, 1);
 
-	for (size_t i=0; i<4; ++i)
-	{
-		glm::vec4 p = VP*pts[i];
-		outside |= p.w>0 &&
-					-p.w<=p.x && p.x<=p.w &&
-					/*-p.w>p.y || p.y>p.w ||*/
-					-p.w<=p.z && p.z<=p.w;
-	}
-
-	return outside;
+	return ml::intersectionTest(&AABB, &sseVP)!=ml::IT_OUTSIDE;
 }
 
 bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
@@ -188,6 +183,32 @@ glm::vec3 colors[] =
 	glm::vec3(0.0f, 1.0f, 1.0f)
 };
 
+void CDLODTerrain::generateGeometry()
+{
+	for (size_t y=0; y<=minPatchDimY; ++y)
+	{
+		for (size_t x=0; x<=minPatchDimX; ++x)
+		{
+			mTerrainVtx.push_back(glm::vec2(x, y));
+		}
+	}
+
+#define INDEX_FOR_LOCATION(x, y) ((y)*(minPatchDimY+1)+(x))
+
+	for (size_t y=0; y<minPatchDimY; ++y)
+	{
+		for (size_t x=0; x<minPatchDimX; ++x)
+		{
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y));
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y));
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y+1));
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y));
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y+1));
+			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y+1));
+		}
+	}
+}
+
 void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level)
 {
 	glUseProgram(terrainProgram);
@@ -209,6 +230,7 @@ void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scale
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#if 0
 	glBegin(GL_TRIANGLES);
 		for (float y=0; y<minPatchDimY; y+=1.0f)
 		{
@@ -223,6 +245,12 @@ void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scale
 			}
 		}
 	glEnd();
+#else
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(2, GL_FLOAT, 0, &mTerrainVtx[0].x);
+	glDrawElements(GL_TRIANGLES, (GLsizei)mTerrainIdx.size(), GL_UNSIGNED_SHORT, &mTerrainIdx[0]);
+	glDisableClientState(GL_VERTEX_ARRAY);
+#endif
 	glPopAttrib();
 }
 
@@ -231,7 +259,7 @@ void CDLODTerrain::drawTerrain()
 	patchList.reserve(2048);
 	patchList.clear();
 
-	size_t level = 2;
+	size_t level = 3;
 	for (size_t j=0; j<gridDimY; j+=LODs[level].patchDimY)
 		for (size_t i=0; i<gridDimX; i+=LODs[level].patchDimX)
 			selectQuadsForDrawing(level, i, j);
