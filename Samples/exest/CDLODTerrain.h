@@ -25,7 +25,7 @@ class CDLODTerrain
 		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
 		
 		GLuint	terrainProgram;
-		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams;
+		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams, uniPatchBase, uniPatchDim;
 		std::vector<glm::vec2>	mTerrainVtx;
 		std::vector<uint16_t>	mTerrainIdx;
 
@@ -35,7 +35,9 @@ class CDLODTerrain
 		void generateGeometry();
 
 		void setupTerrainParams();
-	
+		
+		GLuint	mHeightmapTex;
+
 		struct LODDesc
 		{
 			float scaleX, scaleY;
@@ -48,6 +50,7 @@ class CDLODTerrain
 
 		LODDesc	LODs[16];
 
+		void setHeightmap(GLuint tex) {mHeightmapTex = tex;}
 		void setViewProj(glm::mat4& mat);
 		void setupLODParams();
 		void addPatchToQueue(size_t level, size_t i, size_t j);

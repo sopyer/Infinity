@@ -11,7 +11,11 @@ namespace resources
 	bool	compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source);
 	GLuint	createProgram(GLenum type, const char* source);
 
-	GLuint createTexture2D(const char* name);
+	GLuint createTexture2D(const char* name,
+		GLint minFilter=GL_LINEAR_MIPMAP_LINEAR,
+		GLint magFilter=GL_LINEAR,
+		GLint genMipmap=GL_TRUE);
+
 	GLuint createSpecialTexture1D(GLint internalformat, GLsizei width,
 								  GLenum format, GLenum type, const GLvoid *pixels);
 

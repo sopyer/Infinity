@@ -6,11 +6,11 @@ namespace logging
 {
 	void message(const char *s,...)
 	{
-		char str[256];
+		char str[4096];
 		DWORD written=0;
 		va_list vl;
 		va_start(vl, s);
-		vsnprintf(str, 255, s, vl);
+		vsnprintf(str, 4096, s, vl);
 		WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), str, strlen(str), &written, 0);
 		OutputDebugString(str);
 		va_end(vl);

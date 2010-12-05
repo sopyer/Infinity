@@ -3,21 +3,28 @@
 void CDLODTerrain::setupTerrainParams()
 {
 	terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.vert", "FF.Color.frag");
+	uniPatchBase = glGetUniformLocation(terrainProgram, "uPatchBase");
+	uniPatchDim = glGetUniformLocation(terrainProgram, "uPatchDim");
 	uniOffset = glGetUniformLocation(terrainProgram, "uOffset");
 	uniScale = glGetUniformLocation(terrainProgram, "uScale");
 	uniViewPos = glGetUniformLocation(terrainProgram, "uViewPos");
 	uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
 
-	gridDimX = 257;
-	gridDimY = 257;
-	size = 10;
+	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
+
+	glUseProgram(terrainProgram);
+	glUniform1i(uniHeightmap, 0);
+
+	gridDimX = 2049;
+	gridDimY = 2049;
+	size = 1;
 	startX = -0.5f*size*(gridDimX-1);
 	startY = -0.5f*size*(gridDimY-1);
 	minPatchDimX = 4;
 	minPatchDimY = 4;
 
 	visibilityDistance = size*50;
-	LODCount = 4;
+	LODCount = 6;
 	detailBalance = 2.0f;
 	morphZoneRatio = 0.30f;
 
@@ -87,8 +94,8 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 	float scaleX = LODs[level].scaleX;
 	float scaleY = LODs[level].scaleY;
 
-	patchList[index].baseX = startX+i*size;
-	patchList[index].baseY = startY+j*size;
+	patchList[index].baseX = i;
+	patchList[index].baseY = j;
 	patchList[index].scaleX = scaleX;
 	patchList[index].scaleY = scaleY;
 	patchList[index].level = level;
@@ -216,9 +223,11 @@ void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scale
 	//glColor3f(1.0f, 1.0f, 0.0f);
 	glColor3fv(colors[level]);
 
-	glUniform2f(uniOffset, baseX, baseY);
+	glUniform2f(uniOffset, startX, startY);
+	glUniform2f(uniPatchBase, baseX, baseY);
+	glUniform2f(uniPatchDim, 1<<level, 1<<level);
 	glUniform3fv(uniViewPos, 1, viewPoint);
-	glUniform2f(uniScale, LODs[level].scaleX, LODs[level].scaleY);
+	glUniform2f(uniScale, size/*LODs[level].scaleX*/, size/*LODs[level].scaleY*/);
 			
 	//TODO: HACK!!!!
 	glDisable(GL_DEPTH_TEST);
@@ -259,7 +268,7 @@ void CDLODTerrain::drawTerrain()
 	patchList.reserve(2048);
 	patchList.clear();
 
-	size_t level = 3;
+	size_t level = 5;
 	for (size_t j=0; j<gridDimY; j+=LODs[level].patchDimY)
 		for (size_t i=0; i<gridDimX; i+=LODs[level].patchDimX)
 			selectQuadsForDrawing(level, i, j);
@@ -267,6 +276,8 @@ void CDLODTerrain::drawTerrain()
 	auto	it  = patchList.begin(),
 			end = patchList.end();
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
 	it  = patchList.begin();
 	for(; it!=end; ++it)
 	{

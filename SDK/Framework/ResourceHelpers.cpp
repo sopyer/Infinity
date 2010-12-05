@@ -71,8 +71,8 @@ namespace resources
 
 		if (!status)
 		{
-			glGetShaderInfoLog(shader, 256, &length, logStr);
-			printf("%s", logStr);
+			glGetShaderInfoLog(shader, MAX_INFOLOG_LENGTH, &length, logStr);
+			printf("%s\n", logStr);
 			return false;
 		}
 
@@ -115,7 +115,7 @@ namespace resources
 		return program;
 	}
 
-	GLuint createTexture2D(const char* name)
+	GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap)
 	{
 		File	src = VFS::openRead(name);
 
@@ -136,9 +136,10 @@ namespace resources
 			&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
 
 		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
 		
 		SOIL_free_image_data(pixelsPtr);

@@ -327,10 +327,19 @@ class Exest: public UI::SDLStage
 			terrain.setViewProj(VP);
 
 			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
+
+			mHeightmapTex = resources::createTexture2D("heightmap.tga", GL_LINEAR, GL_LINEAR, GL_FALSE);
+			mOverlayTex = resources::createTexture2D("overlaymap.tga");
+
+			terrain.setHeightmap(mHeightmapTex);
 		}
 		
+		GLuint mHeightmapTex, mOverlayTex;
+
 		~Exest()
 		{
+			glDeleteTextures(1, &mHeightmapTex);
+			glDeleteTextures(1, &mOverlayTex);
 			glDeleteLists(gradDisplayList, 1);
 			glDeleteProgram(gradProgram);
 			glDeleteProgram(rectProgram);
@@ -564,13 +573,13 @@ class Exest: public UI::SDLStage
 			if (keystate[SDLK_ESCAPE])
 				close();
 			if (keystate[SDLK_w])
-				camera.moveFB(5.1f);
+				camera.moveFB(keystate[SDLK_LSHIFT]?5.1f:0.5f);
 			if (keystate[SDLK_s])
-				camera.moveFB(-5.1f);
+				camera.moveFB(keystate[SDLK_LSHIFT]?-5.1f:-0.5f);
 			if (keystate[SDLK_a])
-				camera.moveLR(5.1f);
+				camera.moveLR(keystate[SDLK_LSHIFT]?5.1f:0.5f);
 			if (keystate[SDLK_d])
-				camera.moveLR(-5.1f);
+				camera.moveLR(keystate[SDLK_LSHIFT]?-5.1f:-0.5f);
 			if (keystate[SDLK_KP8])
 				camera.rotateUD(1.5);
 			if (keystate[SDLK_KP5])
