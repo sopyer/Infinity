@@ -176,30 +176,6 @@ struct ShaderDef
 	const char*	src;
 };
 
-static const char terrainVertSrc[] =
-		"uniform vec2	uOffset;														\n"
-		"uniform vec2	uScale;															\n"
-		"uniform vec2	uViewPos;															\n"
-		"uniform vec2	uMorphParams;													\n"
-		"																				\n"
-		"void main()																	\n"
-		"{																				\n"
-		"	vec2 pos = uOffset+uScale*gl_Vertex.xy;										\n"
-		"	float d = length(pos-uViewPos);												\n"
-		"	float morphK = clamp(d*uMorphParams.x+uMorphParams.y, 0.0, 1.0);			\n"
-		"	vec2 dir = fract(gl_Vertex.xy*vec2(0.5))*vec2(2.0);					\n"
-		"	pos += dir*vec2(morphK*uScale);"
-		"	gl_Position = gl_ModelViewProjectionMatrix*vec4(pos, 0, 1);					\n"
-		"	gl_FrontColor=gl_BackColor = gl_Color;"
-		"}																				\n";
-
-static const char terrainFragSrc[] =
-		"void main()																	\n"
-		"{																				\n"
-		"	gl_FragColor = gl_Color;													\n"
-		"}																				\n";
-
-
 #define MAX_INFOLOG_LENGTH 256
 GLuint createProgram(size_t shaderCount, ShaderDef* shaderList)
 {
@@ -243,15 +219,6 @@ GLuint createProgram(size_t shaderCount, ShaderDef* shaderList)
 class Exest: public UI::SDLStage
 {
 	private:
-		//TextureManager	mTexMgr;
-		//ShaderManager	mShaderMgr;
-		//ProgramManager	mProgMgr;
-		
-		GLint timeLoc, tex1Loc, tex0Loc;
-		glRenderer	renderer_;
-		//TextureRef	mImage[2];
-		//ProgramRef	mProg;
-		//MeshPtr		mesh;
 		FirstPersonCamera1	camera;
 		GLuint	rectProgram;
 		GLint	uniWidth, uniFillColor, uniBorderColor;
@@ -268,7 +235,7 @@ class Exest: public UI::SDLStage
 		CDLODTerrain terrain;
 
 	public:
-		Exest()
+		Exest(): fixedMode(false)
 		{
 			VFS::mount("..\\..\\AppData");
 			rectProgram = resources::createProgram(GL_FRAGMENT_SHADER, rectProgramSrc);
@@ -286,11 +253,6 @@ class Exest: public UI::SDLStage
 			uniP2 = glGetUniformLocation(gradProgram, "uP2");
 			uniTimeStops = glGetUniformLocation(gradProgram, "uTimeStops");
 			uniColorStops = glGetUniformLocation(gradProgram, "uColorStops");
-
-			ShaderDef	terrainProgramDef[] = {
-				{GL_VERTEX_SHADER,   ARRAY_SIZE(terrainVertSrc), terrainVertSrc},
-				{GL_FRAGMENT_SHADER, ARRAY_SIZE(terrainFragSrc), terrainFragSrc}
-			};
 
 			gradDisplayList = glGenLists(1);
 			glNewList(gradDisplayList, GL_COMPILE);
@@ -313,9 +275,9 @@ class Exest: public UI::SDLStage
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
 
-			terrain.setupTerrainParams();
+			terrain.initialize();
 
-			mProj = glm::perspectiveGTX(90.0f, mWidth/mHeight, 0.1f, 1000.0f);
+			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 1000.0f);
 			camera.rotateLR(180);
 
 			terrain.viewPoint = glm::vec3(0, 0, 0);
@@ -328,18 +290,29 @@ class Exest: public UI::SDLStage
 
 			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 
-			mHeightmapTex = resources::createTexture2D("heightmap.tga", GL_LINEAR, GL_LINEAR, GL_FALSE);
-			mOverlayTex = resources::createTexture2D("overlaymap.tga");
+			File	src = VFS::openRead("heightmap_small.tga");
+			//explicit conversion to avoid warning on 32-bit system
+			assert(src.size()<SIZE_MAX);
+			size_t fileSize = (size_t)src.size();
 
-			terrain.setHeightmap(mHeightmapTex);
+			unsigned char* data = new unsigned char[fileSize+1];
+			src.read(data, fileSize, 1);
+
+			int	imgWidth, imgHeight, imgChannels;
+			unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
+				&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
+			assert(imgChannels==1);
+			terrain.setHeightmap(pixelsPtr, imgWidth, imgHeight);
+
+			SOIL_free_image_data(pixelsPtr);
+			delete [] data;
+
+			memset(prevKeystate, 0, SDLK_LAST);
 		}
 		
-		GLuint mHeightmapTex, mOverlayTex;
-
 		~Exest()
 		{
-			glDeleteTextures(1, &mHeightmapTex);
-			glDeleteTextures(1, &mOverlayTex);
+			terrain.cleanup();
 			glDeleteLists(gradDisplayList, 1);
 			glDeleteProgram(gradProgram);
 			glDeleteProgram(rectProgram);
@@ -410,37 +383,6 @@ class Exest: public UI::SDLStage
 			glPopAttrib();
 		}
 
-		void OnCreate()
-		{
-			//mesh = loadMesh1("sky.mesh");
-
-			//mImage[0].create("HorizontTex", "horizon.png");
-			//mImage[0]->setWrap(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE);
-			//mImage[1].create("CloudsTex", "clouds.png");
-
-			//mProg.create("SkyProg", "sky.vert", "sky.frag");
-
-			glMatrixMode(GL_PROJECTION);
-			glLoadIdentity();
-			//gluPerspective(90.0, (float)mWidth/mHeight,1,2048);
-			glShadeModel(GL_SMOOTH);							// Enable Smooth Shading
-			glClearColor(0.0f, 0.0f, 0.0f, 0.5f);				// Black Background
-			glClearDepth(1.0f);									// Depth Buffer Setup
-			glEnable(GL_DEPTH_TEST);							// Enables Depth Testing
-			glDepthFunc(GL_LEQUAL);								// The Type Of Depth Testing To Do
-			glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// Really Nice Perspective Calculations
-			//timeLoc = mProg->bindUniform("time");
-			//tex0Loc = mProg->bindUniform("tex0");
-			//tex1Loc = mProg->bindUniform("tex1");
-			//renderer_.useProgram(mProg.get());
-			//renderer_.setUniform1f(timeLoc, (float)glfwGetTime());
-			//renderer_.setUniform1i(tex0Loc, 0);
-			//renderer_.setUniform1i(tex1Loc, 1);
-			//renderer_.useProgram(0);
-			//camera.rotate(180, 0);
-			//camera.move(glm::vec3(0, 1, -4)); 
-		}
-
 		void drawFrustum(const glm::mat4& frustum)
 		{
 			glm::mat4 inverted = glm::inverseGTX(frustum);
@@ -485,35 +427,6 @@ class Exest: public UI::SDLStage
 		void onPaint()
 		{
 			glClearDepth(1.0);
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			
-			//glMatrixMode(GL_MODELVIEW);
-			//glLoadIdentity();
-			//glLoadMatrixf(camera.getViewMatrix());
-			//glTranslatef(-camera.pos[0], -camera.pos[1], -camera.pos[2]);
-			//glTranslatef(0.0f, -1.0f, -4.0f);
-			//renderer_.begin();
-			//	glDisable(GL_DEPTH_TEST);
-			//	glColor3f(1.0f, 1.0f, 1.0f);
-			//	renderer_.setTexture(GL_TEXTURE0, mImage[0].get());
-			//	renderer_.setTexture(GL_TEXTURE1, mImage[1].get());
-			//	renderer_.useProgram(mProg.get());
-			//	renderer_.setUniform1f(timeLoc, (float)glfwGetTime());
-			//	glPushMatrix();
-			//		//glLoadIdentity();
-			//		glTranslatef(camera.pos[0], camera.pos[1], camera.pos[2]);
-			//		glMultMatrixf(glm::mat4(1,0,0,0,
-			//								0,0,1,0,
-			//								0,1,0,0,
-			//								0,0,0,1));
-			//		glTranslatef(0,0,-400);
-			//		renderer_.addAttribBuffer((*mesh)[0]->vert_, 1, SubMesh::decl_);
-			//		renderer_.setIndexBuffer((*mesh)[0]->ind_, GL_UNSIGNED_INT);
-			//		renderer_.drawPrimitives(GL_TRIANGLES, (*mesh)[0]->numInd_);
-			//	glPopMatrix();
-			//	renderer_.useProgram(0);
-			//glEnable(GL_DEPTH_TEST);
-			//glDisable(GL_TEXTURE_2D);
 			
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
@@ -523,8 +436,11 @@ class Exest: public UI::SDLStage
 			glm::mat4 view = camera.getViewMatrix();
 
 			glLoadMatrixf(view);
+			glm::mat4 xm;
+			glGetFloatv(GL_MODELVIEW_MATRIX, xm);
 			glTranslatef(-camera.pos[0], -camera.pos[1], -camera.pos[2]);
-			//glLoadIdentity();
+
+			glGetFloatv(GL_MODELVIEW_MATRIX, xm);
 
 			glDisable(GL_CULL_FACE);
 
@@ -548,9 +464,19 @@ class Exest: public UI::SDLStage
 			//}
 			glEnd();
 
-			terrain.drawTerrain();
+			if (!fixedMode)
+			{
+				terrain.viewPoint = camera.pos;
+				terrain.setViewProj(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
+			}
+			else
+			{
+				terrain.viewPoint = VPpp;
+				terrain.setViewProj(VP);
+				drawFrustum(VP);
+			}
 
-			drawFrustum(VP);
+			terrain.drawTerrain();
 
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
@@ -566,6 +492,10 @@ class Exest: public UI::SDLStage
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
 		}
+
+		bool fixedMode;
+		glm::vec3 VPpp;
+		uint8_t prevKeystate[SDLK_LAST];
 
 		void handleInput()
 		{
@@ -588,6 +518,22 @@ class Exest: public UI::SDLStage
 				camera.rotateLR(-1.5);
 			if (keystate[SDLK_KP6])
 				camera.rotateLR(1.5);
+
+			bool lockView = false;
+			if (keystate[SDLK_l]&&!prevKeystate[SDLK_l])
+			{
+				fixedMode = !fixedMode;
+				lockView = fixedMode==true;
+			}
+
+			if (lockView)
+			{
+				printf("%d\n", fixedMode);
+				VP = glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos);
+				VPpp = camera.pos;
+			}
+
+			memcpy(prevKeystate, keystate, SDLK_LAST);
 		}
 };
 

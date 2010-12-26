@@ -2,6 +2,7 @@
 #	define __FRAMEWORK_RESOURCEHELPERS_H_INCLUDED__
 
 #include <gl/glee.h>
+#include <SOIL.h>
 
 namespace resources
 {

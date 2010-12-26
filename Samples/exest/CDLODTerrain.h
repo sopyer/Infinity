@@ -23,9 +23,11 @@ class CDLODTerrain
 		float detailBalance;
 		float morphZoneRatio;
 		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
+		float heightScale;
 		
 		GLuint	terrainProgram;
-		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams, uniPatchBase, uniPatchDim;
+		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
+				uniPatchBase, uniPatchDim, uniInvHMSize, uniHeightScale;
 		std::vector<glm::vec2>	mTerrainVtx;
 		std::vector<uint16_t>	mTerrainIdx;
 
@@ -33,31 +35,41 @@ class CDLODTerrain
 		ml::mat4x4 sseVP;
 
 		void generateGeometry();
+		void generateBBoxData(uint8_t* data);
 
-		void setupTerrainParams();
-		
+		float*	bboxZData;
+		size_t	bboxZDataSize;
+
 		GLuint	mHeightmapTex;
 
 		struct LODDesc
 		{
-			float scaleX, scaleY;
-			float rangeStart, rangeEnd;
-			float minRange;
-			size_t patchDimX, patchDimY;
-			float morphStart;
-			float morphInvRange, morphStartRatio;
+			float	scaleX, scaleY;
+			float	rangeStart, rangeEnd;
+			float	minRange;
+			size_t	patchDimX, patchDimY;
+			float	morphStart;
+			float	morphInvRange, morphStartRatio;
+			size_t	bboxZDataOffset, pitch;	
 		};
 
 		LODDesc	LODs[16];
 
-		void setHeightmap(GLuint tex) {mHeightmapTex = tex;}
+		void setHeightmap(uint8_t* data, size_t width, size_t height);
 		void setViewProj(glm::mat4& mat);
 		void setupLODParams();
+
 		void addPatchToQueue(size_t level, size_t i, size_t j);
+		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level);
+
 		bool intersectViewFrustum(size_t level, size_t i, size_t j);
 		bool intersectSphere(size_t level, size_t i, size_t j);
 		void selectQuadsForDrawing(size_t level, size_t i, size_t j);
-		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level);
+
+		void getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ);
+
+		void initialize();
+		void cleanup();
 
 		struct PatchData
 		{
