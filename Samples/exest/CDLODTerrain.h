@@ -62,9 +62,9 @@ class CDLODTerrain
 		void addPatchToQueue(size_t level, size_t i, size_t j);
 		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level);
 
-		bool intersectViewFrustum(size_t level, size_t i, size_t j);
+		int intersectViewFrustum(size_t level, size_t i, size_t j);
 		bool intersectSphere(size_t level, size_t i, size_t j);
-		void selectQuadsForDrawing(size_t level, size_t i, size_t j);
+		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
 
 		void getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ);
 

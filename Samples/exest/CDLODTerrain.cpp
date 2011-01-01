@@ -124,7 +124,7 @@ void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, flo
 }
 
 
-bool CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
+int CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
 {
 	float sizeX = LODs[level].patchDimX*size;
 	float sizeY = LODs[level].patchDimY*size;
@@ -139,7 +139,7 @@ bool CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
 	AABB.min = vi_set(baseX, minZ, baseY, 1);
 	AABB.max = vi_set(baseX+sizeX, maxZ, baseY+sizeY, 1);
 
-	return ml::intersectionTest(&AABB, &sseVP)!=ml::IT_OUTSIDE;
+	return ml::intersectionTest(&AABB, &sseVP);
 }
 
 bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
@@ -177,11 +177,16 @@ bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
 	return d <= r*r;
 }
 
-//TODO: optimize - skip frustum test if parent inside
-void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j)
+void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
 {
-	if (!intersectViewFrustum(level, i, j))
-		return;
+	if (!skipFrustumTest)
+	{
+		int result;
+
+		result = intersectViewFrustum(level, i, j);
+		if (result==ml::IT_OUTSIDE) return;
+		skipFrustumTest = result==ml::IT_INSIDE;
+	}
 
 	if (level==0)
 	{
@@ -195,10 +200,10 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j)
 	{
 		size_t offsetX = LODs[level].patchDimX/2;
 		size_t offsetY = LODs[level].patchDimY/2;
-		selectQuadsForDrawing(level-1, i, j);
-		selectQuadsForDrawing(level-1, i+offsetX, j);
-		selectQuadsForDrawing(level-1, i, j+offsetY);
-		selectQuadsForDrawing(level-1, i+offsetX, j+offsetY);
+		selectQuadsForDrawing(level-1, i, j, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i+offsetX, j, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i, j+offsetY, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i+offsetX, j+offsetY, skipFrustumTest);
 	}
 }
 
