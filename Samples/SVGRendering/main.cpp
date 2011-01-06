@@ -144,7 +144,7 @@ class SVGSample: public UI::SDLStage
 		
 		void onPaint()
 		{
-			Timer2 drawTimer;
+			CPUTimer drawTimer;
 			drawTimer.start();
 
 			glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);

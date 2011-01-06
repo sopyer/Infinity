@@ -96,7 +96,7 @@ namespace UI
 
 	void SDLStage::handleRender()
 	{
-		Timer2 t, alloc, rend, def;
+		CPUTimer t, alloc, rend, def;
 		t.start();
 		double talloc, trend, tdef;
 		alloc.start();

@@ -25,11 +25,16 @@ void CDLODTerrain::initialize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &ibo);
 }
 
 void CDLODTerrain::cleanup()
 {
-	free(bboxZData);
+	glDeleteBuffers(1, &vbo);
+	glDeleteBuffers(1, &ibo);
+	if (bboxZData) free(bboxZData);
 	glDeleteProgram(terrainProgram);
 	glDeleteTextures(1, &mHeightmapTex);
 }
@@ -123,21 +128,43 @@ void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, flo
 	assert(*minZ<=*maxZ && *maxZ<=64.0f);
 }
 
-
-int CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
+void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
 {
+	float* minmax = bboxZData+LODs[level].bboxZDataOffset;
+
+	float minZ = minmax[2*((j/LODs[level].patchDimY)*LODs[level].pitch+(i/LODs[level].patchDimX))+0];
+	float maxZ = minmax[2*((j/LODs[level].patchDimY)*LODs[level].pitch+(i/LODs[level].patchDimX))+1];
+
+	assert(0<=minZ && minZ<=maxZ);
+	assert(minZ<=maxZ && maxZ<=heightScale);
+
 	float sizeX = LODs[level].patchDimX*size;
 	float sizeY = LODs[level].patchDimY*size;
 
 	float baseX = startX+i*size;
 	float baseY = startY+j*size;
 
-	ml::aabb AABB;
-	float minZ, maxZ;
+	patchAABB->min = vi_set(baseX, minZ, baseY, 1);
+	patchAABB->max = vi_set(baseX+sizeX, maxZ, baseY+sizeY, 1);
+}
 
-	getMinMaxZ(level, i, j, &minZ, &maxZ);
-	AABB.min = vi_set(baseX, minZ, baseY, 1);
-	AABB.max = vi_set(baseX+sizeX, maxZ, baseY+sizeY, 1);
+
+int CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
+{
+	//float sizeX = LODs[level].patchDimX*size;
+	//float sizeY = LODs[level].patchDimY*size;
+
+	//float baseX = startX+i*size;
+	//float baseY = startY+j*size;
+
+	ml::aabb AABB;
+	//float minZ, maxZ;
+
+	//getMinMaxZ(level, i, j, &minZ, &maxZ);
+	//AABB.min = vi_set(baseX, minZ, baseY, 1);
+	//AABB.max = vi_set(baseX+sizeX, maxZ, baseY+sizeY, 1);
+
+	getAABB(level, i, j, &AABB);
 
 	return ml::intersectionTest(&AABB, &sseVP);
 }
@@ -150,6 +177,13 @@ bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
 	float sizeX = LODs[level].patchDimX*size;
 	float sizeY = LODs[level].patchDimY*size;
 
+	float r = LODs[level].rangeStart;
+
+	ml::aabb bb;
+	getAABB(level, i, j, &bb);
+	bool b1 = ml::sphereAABBTest(&bb, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0), r); 
+
+	//TODO: remove scalar version
 	//find the square of the distance
 	//from the sphere to the box
 	float minZ, maxZ;
@@ -172,18 +206,19 @@ bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
 		}
 	}
 
-	float r = LODs[level].rangeStart;
+	bool b2 = d <= r*r;
 
-	return d <= r*r;
+	assert(b1==b2);
+
+	return b1;
 }
 
 void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
 {
 	if (!skipFrustumTest)
 	{
-		int result;
+		int result = intersectViewFrustum(level, i, j);
 
-		result = intersectViewFrustum(level, i, j);
 		if (result==ml::IT_OUTSIDE) return;
 		skipFrustumTest = result==ml::IT_INSIDE;
 	}
@@ -221,28 +256,41 @@ glm::vec3 colors[] =
 
 void CDLODTerrain::generateGeometry()
 {
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(minPatchDimY+1)*(minPatchDimX+1), 0, GL_STATIC_DRAW);
+	glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	for (size_t y=0; y<=minPatchDimY; ++y)
 	{
 		for (size_t x=0; x<=minPatchDimX; ++x)
 		{
-			mTerrainVtx.push_back(glm::vec2(x, y));
+			*ptr++ = glm::vec2(x, y);
 		}
 	}
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*(minPatchDimY+1)+(x))
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*(minPatchDimY)*(minPatchDimX)*6, 0, GL_STATIC_DRAW);
+	uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
 	for (size_t y=0; y<minPatchDimY; ++y)
 	{
 		for (size_t x=0; x<minPatchDimX; ++x)
 		{
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y));
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y));
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y+1));
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y));
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x,   y+1));
-			mTerrainIdx.push_back(INDEX_FOR_LOCATION(x+1, y+1));
+			*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+			*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
 		}
 	}
+
+#undef INDEX_FOR_LOCATION
+
+	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level)
@@ -254,26 +302,28 @@ void CDLODTerrain::drawPatch(float baseX, float baseY, float scaleX, float scale
 	glUniform2f(uniPatchBase, baseX, baseY);
 	glUniform2f(uniPatchDim, 1<<level, 1<<level);
 	glUniform3fv(uniViewPos, 1, viewPoint);
-	glUniform2f(uniScale, size/*LODs[level].scaleX*/, size/*LODs[level].scaleY*/);
+	glUniform2f(uniScale, size, size);
 
-	//Implement in proper way - acces to this params on per level basis
-	float startMorph = 2.0f*size;
-	float endMorph = 4.0f*size;
 	glUniform2f(uniMorphParams, LODs[level].morphInvRange, LODs[level].morphStartRatio);
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(2, GL_FLOAT, 0, &mTerrainVtx[0].x);
-	glDrawElements(GL_TRIANGLES, (GLsizei)mTerrainIdx.size(), GL_UNSIGNED_SHORT, &mTerrainIdx[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexPointer(2, GL_FLOAT, 0, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
 	glDisableClientState(GL_VERTEX_ARRAY);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	glPopAttrib();
 }
 
 void CDLODTerrain::drawTerrain()
 {
+	cpuTimer.start();
 	patchList.reserve(2048);
 	patchList.clear();
 
@@ -285,6 +335,7 @@ void CDLODTerrain::drawTerrain()
 	auto	it  = patchList.begin(),
 			end = patchList.end();
 
+	gpuTimer.start();
 	glEnable(GL_DEPTH_TEST);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -293,6 +344,10 @@ void CDLODTerrain::drawTerrain()
 	{
 		drawPatch(it->baseX, it->baseY, it->scaleX, it->scaleY, it->level);
 	}
+	gpuTimer.stop();
+	cpuTime = cpuTimer.elapsed();
+	gpuTime = gpuTimer.getResult();
+	cpuTimer.stop();
 }
 
 void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)

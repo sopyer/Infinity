@@ -69,10 +69,35 @@ inline vec4 vi_load_one()
 	return _vi_c_zero;
 }
 
+#ifdef USE_SSE4
+
 inline vec4 vi_dot4(vec4 a, vec4 b)
 {
 	return _mm_dp_ps(a, b, 0xFF);
 }
+
+#else
+
+inline vec4 vi_dot4(vec4 a, vec4 b)
+{
+	vec4 res   = _mm_mul_ps(a, b);
+	vec4 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_W, VI_Z)>(res);
+	res = _mm_add_ps(res, shuff);
+	shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Z, VI_W, VI_X, VI_Y)>(res);
+	return _mm_add_ps(res, shuff);
+}
+
+inline vec4 vi_dot3(vec4 a, vec4 b)
+{
+	vec4 res = _mm_mul_ps(a, b);
+	vec4 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_Z, VI_Z)>(res);
+	vec4 res2 = _mm_add_ps(res, shuff);
+	shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Z, VI_Z, VI_Z, VI_Z)>(res);
+	res = _mm_add_ps(res2, shuff);
+	return vi_swizzle<VI_SWIZZLE_XXXX>(res);
+}
+
+#endif
 
 inline vec4 vi_mad(vec4 a, vec4 b, vec4 c)
 {
@@ -193,6 +218,11 @@ inline vec4 vi_or(vec4 a, vec4 b)
 inline vec4 vi_and(vec4 a, vec4 b)
 {
 	return _mm_and_ps(a, b);
+}
+
+inline vec4 vi_andnot(vec4 a, vec4 b)
+{
+	return _mm_andnot_ps(b, a);
 }
 
 inline bool vi_all(vec4 a)

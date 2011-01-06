@@ -2,6 +2,8 @@
 #	define _TIMER_H_INCLUDED_
 
 #include <windows.h>
+#include <gl/glee.h>
+
 //#include <stdint.h>
 
 //class Timer
@@ -33,7 +35,7 @@
 //	LARGE_INTEGER mFrequency;
 //};
 //
-struct Timer2
+struct CPUTimer
 {
 	void start()
 	{
@@ -57,6 +59,31 @@ struct Timer2
 	}
 
 	LARGE_INTEGER startTime;
+};
+
+struct GPUTimer
+{
+	GPUTimer() {glGenQueries(1, &mTimeQuery);}
+	~GPUTimer() {glDeleteQueries(1, &mTimeQuery);}
+
+	void start()
+	{
+		glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);
+	}
+
+	void stop()
+	{
+		glEndQuery(GL_TIME_ELAPSED_EXT);
+	}
+
+	double getResult()
+	{
+		GLuint64EXT result;
+		glGetQueryObjectui64vEXT(mTimeQuery, GL_QUERY_RESULT, &result);
+		return result/1000.0f/1000.0f;
+	}
+
+	GLuint		mTimeQuery;
 };
 
 #include <Scheduler.h>

@@ -17,6 +17,27 @@ namespace ml
 		vec4 min, max;
 	};
 
+	inline bool sphereAABBTest(aabb* AABB, vec4 center, float radius)
+	{
+		vec4 deltaMin, deltaMax, res, maskMin, maskMax, r2;
+
+		deltaMin = vi_sub(AABB->min, center);
+		maskMin = vi_cmp_gt(deltaMin, vi_load_zero());
+		deltaMin = vi_and(maskMin, deltaMin);
+		res = vi_dot3(deltaMin, deltaMin);
+
+		deltaMax = vi_sub(center, AABB->max);
+		maskMax = vi_cmp_gt(deltaMax, vi_load_zero());
+		maskMax = vi_andnot(maskMax, maskMin);
+		deltaMax = vi_and(maskMax, deltaMax);
+		res = vi_add(res, vi_dot3(deltaMax, deltaMax));
+
+		r2 = vi_set_all(radius);
+		r2 = vi_mul(r2, r2);
+
+		return vi_all(vi_cmp_le(res, r2));
+	}
+
 	inline void transformPointsSOA4(vec4* dest, vec4 xxxx, vec4 yyyy, vec4 zzzz, /*vec4 wwww,*/ const mat4x4* matrix)
 	{
 		vec4 tmp;
@@ -35,14 +56,14 @@ namespace ml
 #undef COMP
 	}
 
-	enum IntersectionResult
+	enum
 	{
 		IT_INSIDE,
 		IT_OUTSIDE,
 		IT_INTERSECT
 	};
 
-	inline IntersectionResult intersectionTest(const aabb* bbox, const mat4x4* frustum)
+	inline int intersectionTest(const aabb* bbox, const mat4x4* frustum)
 	{
 		vec4 min = bbox->min;
 		vec4 max = bbox->max;

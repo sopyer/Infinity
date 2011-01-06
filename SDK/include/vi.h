@@ -61,6 +61,7 @@ inline vec4 vi_load_one();
 
 //math functions
 inline vec4 vi_dot4(vec4 a, vec4 b);
+inline vec4 vi_dot3(vec4 a, vec4 b);
 inline vec4 vi_mad(vec4 a, vec4 b, vec4 c);
 inline vec4 vi_mul(vec4 a, vec4 b);
 inline vec4 vi_add(vec4 a, vec4 b);
@@ -88,6 +89,7 @@ inline vec4 vi_cmp_ne(vec4 a, vec4 b);
 inline vec4 vi_xor(vec4 a, vec4 b);
 inline vec4 vi_or(vec4 a, vec4 b);
 inline vec4 vi_and(vec4 a, vec4 b);
+inline vec4 vi_andnot(vec4 a, vec4 b);
 
 //logical result functions
 inline bool vi_all(vec4 a);

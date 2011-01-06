@@ -67,6 +67,7 @@ class CDLODTerrain
 		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
 
 		void getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ);
+		void getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB);
 
 		void initialize();
 		void cleanup();
@@ -81,6 +82,14 @@ class CDLODTerrain
 		std::vector<PatchData>	patchList;
 
 		void drawTerrain();
+
+		CPUTimer	cpuTimer;
+		GPUTimer	gpuTimer;
+
+		double cpuTime;
+		double gpuTime;
+
+		GLuint vbo, ibo;
 };
 
 #endif
