@@ -19,7 +19,7 @@ class CDLODTerrain
 
 		float visibilityDistance;
 		
-		GLint LODCount;
+		size_t LODCount;
 		float detailBalance;
 		float morphZoneRatio;
 		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
@@ -27,7 +27,7 @@ class CDLODTerrain
 		
 		GLuint	terrainProgram;
 		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
-				uniPatchBase, uniPatchDim, uniInvHMSize, uniHeightScale;
+				uniPatchBase, uniPatchDim, uniInvHMSize;
 		std::vector<glm::vec2>	mTerrainVtx;
 		std::vector<uint16_t>	mTerrainIdx;
 
@@ -44,11 +44,8 @@ class CDLODTerrain
 
 		struct LODDesc
 		{
-			float	scaleX, scaleY;
-			float	rangeStart, rangeEnd;
-			float	minRange;
-			size_t	patchDimX, patchDimY;
-			float	morphStart;
+			float	rangeStart;
+			size_t	width, height;
 			float	morphInvRange, morphStartRatio;
 			size_t	bboxZDataOffset, pitch;	
 		};
@@ -60,7 +57,7 @@ class CDLODTerrain
 		void setupLODParams();
 
 		void addPatchToQueue(size_t level, size_t i, size_t j);
-		void drawPatch(float baseX, float baseY, float scaleX, float scaleY, int level);
+		void drawPatch(float baseX, float baseY, int level);
 
 		int intersectViewFrustum(size_t level, size_t i, size_t j);
 		bool intersectSphere(size_t level, size_t i, size_t j);
@@ -75,7 +72,6 @@ class CDLODTerrain
 		struct PatchData
 		{
 			float baseX, baseY;
-			float scaleX, scaleY; //TODO: Can be accessed from level???
 			GLint level;
 		};
 

@@ -49,7 +49,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\External\SDL\include;..\..\SDK\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -61,7 +61,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;framework.lib;sdl.lib;sdlmain_d.lib;vg.lib;glFont.lib;glClasses.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>physfs_d.lib;opengl32.lib;framework.lib;sdl_d.lib;sdlmain_d.lib;vg.lib;glFont.lib;glClasses.lib;freetype_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>

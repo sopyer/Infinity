@@ -1,5 +1,5 @@
-uniform vec2		uOffset;
-uniform vec2		uScale;
+uniform vec3		uOffset;
+uniform vec3		uScale;
 
 uniform vec2		uPatchBase;
 uniform vec2		uPatchDim;
@@ -8,11 +8,10 @@ uniform vec3		uViewPos;
 
 uniform sampler2D	uHeightmap;
 uniform vec2		uInvHMSize;
-uniform float		uHeightScale;
 
-//Morph parameter are evaluated as follows:
-//uMorphParam.x=1.0/(morphEnd-morphStart)
-//uMorphParam.y=-morphStart/(morphEnd-morphStart)
+// Morph parameter are evaluated as follows:
+// uMorphParam.x = 1.0/(morphEnd-morphStart)
+// uMorphParam.y = -morphStart/(morphEnd-morphStart)
 uniform vec2		uMorphParams;
 
 float fetchHeight(vec2 gridPos)
@@ -24,12 +23,7 @@ float fetchHeight(vec2 gridPos)
 
 vec3 getWorldPos(vec2 gridPos)
 {
-	vec3 worldPos;
-	
-	worldPos.xz = uOffset+uScale*gridPos;
-	worldPos.y = fetchHeight(gridPos)*64;
-	
-	return worldPos;
+	return uOffset+uScale*vec3(gridPos.x, fetchHeight(gridPos), gridPos.y);
 }
 
 void main()
