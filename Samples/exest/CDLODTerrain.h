@@ -27,7 +27,7 @@ class CDLODTerrain
 		
 		GLuint	terrainProgram;
 		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
-				uniPatchBase, uniPatchDim, uniInvHMSize;
+				uniPatchBase, uniPatchDim, uniHMDim;
 		std::vector<glm::vec2>	mTerrainVtx;
 		std::vector<uint16_t>	mTerrainIdx;
 

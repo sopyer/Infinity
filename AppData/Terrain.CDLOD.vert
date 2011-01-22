@@ -7,7 +7,7 @@ uniform vec2		uPatchDim;
 uniform vec3		uViewPos;
 
 uniform sampler2D	uHeightmap;
-uniform vec2		uInvHMSize;
+uniform vec4		uHMDim;
 
 // Morph parameter are evaluated as follows:
 // uMorphParam.x = 1.0/(morphEnd-morphStart)
@@ -17,12 +17,14 @@ uniform vec2		uMorphParams;
 float fetchHeight(vec2 gridPos)
 {
 //Add support for proper mipmapping
-	vec2 tc = (gridPos+vec2(0.5))*uInvHMSize;
+	vec2 tc = (gridPos+vec2(0.5))*uHMDim.zw;
 	return textureLod(uHeightmap, tc, 0).r;
 }
 
 vec3 getWorldPos(vec2 gridPos)
 {
+	//clamping to match terrain dimentions
+	gridPos = clamp(gridPos, vec2(0), uHMDim.xy-vec2(1.0));
 	return uOffset+uScale*vec3(gridPos.x, fetchHeight(gridPos), gridPos.y);
 }
 

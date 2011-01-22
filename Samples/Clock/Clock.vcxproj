@@ -96,10 +96,6 @@
       <Project>{61f6a3d7-f203-40ca-95b6-fde1adef0163}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\VGResearch\VGResearch.vcxproj">
-      <Project>{21fae24e-0f31-412f-a277-0043b1f69aa8}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

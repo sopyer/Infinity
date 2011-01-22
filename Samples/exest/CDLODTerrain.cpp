@@ -8,7 +8,7 @@ void CDLODTerrain::initialize()
 	uniOffset      = glGetUniformLocation(terrainProgram, "uOffset");
 	uniScale       = glGetUniformLocation(terrainProgram, "uScale");
 	uniViewPos     = glGetUniformLocation(terrainProgram, "uViewPos");
-	uniInvHMSize   = glGetUniformLocation(terrainProgram, "uInvHMSize");
+	uniHMDim   = glGetUniformLocation(terrainProgram, "uHMDim");
 	uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
 
 	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
@@ -355,7 +355,7 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	heightScale = 64;
 
 	glUseProgram(terrainProgram);
-	glUniform2f(uniInvHMSize, 1.0f/width, 1.0f/height);
+	glUniform4f(uniHMDim, width, height, 1.0f/width, 1.0f/height);
 	glUniform3f(uniOffset, startX, 0, startY);
 	glUniform3f(uniScale, size, heightScale, size);
 	glUseProgram(0);
