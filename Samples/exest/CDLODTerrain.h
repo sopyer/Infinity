@@ -54,7 +54,8 @@ class CDLODTerrain
 
 		void setHeightmap(uint8_t* data, size_t width, size_t height);
 		void setViewProj(glm::mat4& mat);
-		void setupLODParams();
+		void calculateLODParams();
+		void calculateLODRanges(float* ranges);
 
 		void addPatchToQueue(size_t level, size_t i, size_t j);
 		void drawPatch(float baseX, float baseY, int level);

@@ -38,34 +38,52 @@ void CDLODTerrain::cleanup()
 	glDeleteTextures(1, &mHeightmapTex);
 }
 
-void CDLODTerrain::setupLODParams()
+void CDLODTerrain::calculateLODRanges(float* ranges)
 {
 	float	curDetailBalance=1.0f,
 			totalDetail = 0.0f;
 
 	for (size_t i=0; i<LODCount; ++i)
 	{
-		//Multiply by to to ensure at least one could be morphed into higher level quad, as another one can be subdivided
 		totalDetail += curDetailBalance;
 		curDetailBalance *= detailBalance;
 	}
+
+	float	minDetailDist = visibilityDistance/totalDetail;
+	
+	curDetailBalance = 1.0f;
+
+	for (size_t i=0; i<LODCount; ++i)
+	{
+		float range = minDetailDist*curDetailBalance;
+		ranges[i] = range;
+		curDetailBalance *= detailBalance;
+	}
+}
+
+void CDLODTerrain::calculateLODParams()
+{
+	const size_t MAX_LOD_COUNT = 8;
+	float ranges[MAX_LOD_COUNT]; 
+	assert(LODCount<=MAX_LOD_COUNT);
+
+	calculateLODRanges(ranges);
 
 	size_t	dimX = minPatchDimX, dimY = minPatchDimY;
 	size_t	patchCountX = (gridDimX+dimX-1)/dimX;
 	size_t	patchCountY = (gridDimY+dimY-1)/dimY;
 	size_t	patchCount = patchCountX*patchCountY;
 	float	width2=size*size*minPatchDimX*minPatchDimX,
-			height2=size*size*minPatchDimY*minPatchDimY;
-	float	minDetailDist = visibilityDistance/totalDetail,
+			height2=size*size*minPatchDimY*minPatchDimY,
 			curRange=0.0f;
-
-	curDetailBalance = 1.0f;
-
+			
 	bboxZDataSize = 0;
+	curRange=0.0f;
+
 	for (size_t i=0; i<LODCount; ++i)
 	{
 		float minRange = 2.0f*sqrt(width2+height2);
-		float range = std::max(minDetailDist*curDetailBalance, minRange);
+		float range = std::max(ranges[i], minRange);
 
 		LODs[i].rangeStart = curRange;
 		curRange += range;
@@ -89,7 +107,6 @@ void CDLODTerrain::setupLODParams()
 		height2 *= 4;
 		dimX *= 2;
 		dimY *= 2;
-		curDetailBalance *= detailBalance;
 	}
 }
 
@@ -355,12 +372,12 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	heightScale = 64;
 
 	glUseProgram(terrainProgram);
-	glUniform4f(uniHMDim, width, height, 1.0f/width, 1.0f/height);
+	glUniform4f(uniHMDim, (GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
 	glUniform3f(uniOffset, startX, 0, startY);
 	glUniform3f(uniScale, size, heightScale, size);
 	glUseProgram(0);
 
-	setupLODParams();
+	calculateLODParams();
 	generateGeometry();
 	generateBBoxData(data);
 }
