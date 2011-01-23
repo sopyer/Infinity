@@ -233,6 +233,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
 		addPatchToQueue(level, i, j);
 	else
 	{
+		//TODO: add front to back sorting to minimize overdraw(optimization)
 		size_t offsetX = LODs[level].width/2;
 		size_t offsetY = LODs[level].height/2;
 		selectQuadsForDrawing(level-1, i, j, skipFrustumTest);
@@ -279,8 +280,8 @@ void CDLODTerrain::generateGeometry()
 		for (size_t x=0; x<minPatchDimX; ++x)
 		{
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 			*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
@@ -306,6 +307,11 @@ void CDLODTerrain::drawPatch(float baseX, float baseY, int level)
 	glUniform2f(uniMorphParams, LODs[level].morphInvRange, LODs[level].morphStartRatio);
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+	//TODO: Enable triangle culling and fix mesh
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	glEnableClientState(GL_VERTEX_ARRAY);

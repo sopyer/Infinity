@@ -235,6 +235,10 @@ class Exest: public ui::SDLStage
 		float vertAngle, horzAngle;
 		CDLODTerrain terrain;
 
+		mt::Task		mUpdateTask;
+		ui::ProfileStatsBox		mStatsBox;
+		sui::Font	mFont;
+
 	public:
 		Exest(): fixedMode(false)
 		{
@@ -248,6 +252,9 @@ class Exest: public ui::SDLStage
 				{GL_VERTEX_SHADER,   ARRAY_SIZE(gradientVertSrc), gradientVertSrc},
 				{GL_FRAGMENT_SHADER, ARRAY_SIZE(gradientFragSrc), gradientFragSrc}
 			};
+
+			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
+			mFont.setSize(16);
 
 			gradProgram = createProgram(ARRAY_SIZE(gradProgramDef), gradProgramDef);
 			uniP1 = glGetUniformLocation(gradProgram, "uP1");
@@ -309,10 +316,17 @@ class Exest: public ui::SDLStage
 			delete [] data;
 
 			memset(prevKeystate, 0, SDLK_LAST);
+
+			add(mStatsBox.setFont(mFont)
+				  .setPos(10, 10)
+				  .setSize(300, 100));
+			
+			mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 100);
 		}
 		
 		~Exest()
 		{
+			sui::destroyFont(mFont);
 			terrain.cleanup();
 			glDeleteLists(gradDisplayList, 1);
 			glDeleteProgram(gradProgram);
@@ -492,6 +506,11 @@ class Exest: public ui::SDLStage
 
 			GLenum err = glGetError();
 			assert(err==GL_NO_ERROR);
+		}
+
+		void onUpdateStats()
+		{
+			mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
 		}
 
 		bool fixedMode;

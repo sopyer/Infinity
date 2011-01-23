@@ -28,6 +28,7 @@ class CDLODTerrain
 		GLuint	terrainProgram;
 		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
 				uniPatchBase, uniPatchDim, uniHMDim;
+		//TODO: add vbo/ibo support
 		std::vector<glm::vec2>	mTerrainVtx;
 		std::vector<uint16_t>	mTerrainIdx;
 
@@ -79,6 +80,9 @@ class CDLODTerrain
 		std::vector<PatchData>	patchList;
 
 		void drawTerrain();
+
+		float getCPUTime() {return (float)cpuTime;}
+		float getGPUTime() {return (float)gpuTime;}
 
 		CPUTimer	cpuTimer;
 		GPUTimer	gpuTimer;
