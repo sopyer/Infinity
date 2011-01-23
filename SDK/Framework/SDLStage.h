@@ -7,7 +7,7 @@
 
 struct SDL_Surface;
 
-namespace UI
+namespace ui
 {
 	//! Refactor initializing code
 	class SDLStage: public Stage

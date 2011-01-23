@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-namespace UI
+namespace ui
 {
 	class Container: public Actor
 	{

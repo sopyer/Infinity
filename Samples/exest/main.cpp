@@ -3,6 +3,7 @@
 #include <glm\glmext.h>
 #include <cassert>
 #include <ResourceHelpers.h>
+#include <SOIL.h>
 //#include <scheduler.h>
 
 #ifdef _DEBUG
@@ -216,7 +217,7 @@ GLuint createProgram(size_t shaderCount, ShaderDef* shaderList)
 
 #include "CDLODTerrain.h"
 
-class Exest: public UI::SDLStage
+class Exest: public ui::SDLStage
 {
 	private:
 		FirstPersonCamera1	camera;

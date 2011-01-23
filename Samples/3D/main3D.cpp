@@ -1,6 +1,6 @@
 #include <framework.h>
 
-class Rectangle1: public UI::Actor
+class Rectangle1: public ui::Actor
 {
 	protected:
 		virtual void onPaint()
@@ -23,7 +23,7 @@ const int numCols = 20;
 const float hMargin = 0.15f;
 const float vMargin = 0.15f;
 
-class Sample3D: public UI::SDLStage
+class Sample3D: public ui::SDLStage
 {
 	public:
 		Sample3D():doMove(false), offsetX(0), offsetY(0)

@@ -19,7 +19,7 @@ GLsizei len;
 
 float cubicData[] = {0, 0, 50, 50, 67, 20, 48, 30};
 
-class CubicActor: public UI::Actor
+class CubicActor: public ui::Actor
 {
 public:
 	CubicActor(const VGfloat* cp)
@@ -69,7 +69,7 @@ protected:
 		vg::drawPath(mCubic, mPaint);
 	}
 
-	virtual void onPick(UI::Color color)
+	virtual void onPick(ui::Color color)
 	{
 		vg::drawPath(mCubic, color.red, color.green, color.blue, color.alpha);
 	}
@@ -148,7 +148,7 @@ private:
 //};
 
 
-class VGSample: public UI::SDLStage
+class VGSample: public ui::SDLStage
 {
 	public:
 		VGSample():
@@ -459,7 +459,7 @@ class VGSample: public UI::SDLStage
 			mCubics.setScale(zoom, zoom).setPos(offsetX, offsetY);
 		}
 
-		void changePrimVisibility(UI::Actor* actor)
+		void changePrimVisibility(ui::Actor* actor)
 		{
 			if (ui::isSame(actor, &mRenderCubicCB))
 			{

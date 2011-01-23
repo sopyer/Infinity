@@ -8,7 +8,7 @@
 #include <SDL.h>
 #include <vg/vg.h>
 
-namespace UI
+namespace ui
 {
 	SDLStage::SDLStage()
 	{

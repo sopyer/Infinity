@@ -4,7 +4,7 @@
 #include <time.h>
 #include <vector>
 
-class SVGSample: public UI::SDLStage
+class SVGSample: public ui::SDLStage
 {
 	public:
 		SVGSample(const char* svgFile):
@@ -38,24 +38,15 @@ class SVGSample: public UI::SDLStage
 			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
 			mFont.setSize(16);
 
-			add(mBkgRect.setPos(10, 10)
+			add(mStatsBox.setPos(10, 10)
 				  .setSize(300, 100));
-			add(mCPUSubmitTimeLabel.setFont(mFont)
-				  .setPos(20, 40));
-			add(mGPUExecuteTimeLabel.setFont(mFont)
-				  .setPos(20, 60));
-			add(mAAChoice.setChecked(false)
-				  .setText(L"Enable AA")
-				  .setFont(mFont)
-				  .setPos(20, 80)
-				  .setSize(60, 20));
-			add(mVideoAdapterLabel.setFont(mFont)
-				  .setPos(20, 20));
-			
-			wchar_t str[256];
-			mbstowcs(str, (char*)glGetString(GL_RENDERER), 256);
-			mVideoAdapterLabel.setText(str);
 
+			mStatsBox.setFont(mFont)
+				.add(mAAChoice.setChecked(false)
+					  .setFont(mFont)
+					  .setText(L"Enable AA")
+					  .setWidth(60));
+			
 			mt::addTimedTask<SVGSample, &SVGSample::onUpdateStats>(this, 100);
 
 			assert(GLEE_EXT_timer_query);
@@ -66,11 +57,8 @@ class SVGSample: public UI::SDLStage
 		}
 
 		mt::Task		mUpdateTask;
-		ui::Rectangle	mBkgRect;
-		ui::CheckBox	mAAChoice;
-		ui::Label	mVideoAdapterLabel;
-		ui::Label	mCPUSubmitTimeLabel;
-		ui::Label	mGPUExecuteTimeLabel;
+		ui::ProfileStatsBox		mStatsBox;
+		ui::CheckBox			mAAChoice;
 		sui::Font	mFont;
 		
 		~SVGSample()
@@ -93,11 +81,7 @@ class SVGSample: public UI::SDLStage
 	protected:
 		void onUpdateStats()
 		{
-			wchar_t str[256];
-			_snwprintf(str, 256, L"CPU time - %f ms", mDrawTimeCPU);
-			mCPUSubmitTimeLabel.setText(str);
-			_snwprintf(str, 256, L"GPU time - %f ms", mDrawTimeGPU);
-			mGPUExecuteTimeLabel.setText(str);
+			mStatsBox.setStats(mDrawTimeCPU, mDrawTimeGPU);
 		}
 
 		void onTouch(const ButtonEvent& event)

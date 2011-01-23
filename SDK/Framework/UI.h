@@ -20,7 +20,7 @@ namespace ui
 	void cleanup();
 }
 
-namespace UI
+namespace ui
 {
 	class Actor;
 	class Container;

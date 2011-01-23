@@ -6,7 +6,7 @@
 //#define RASTER_ACTORS
 
 #ifdef RASTER_ACTORS
-class Image: public UI::Actor
+class Image: public ui::Actor
 {
 	public:
 		Image()  {}
@@ -71,7 +71,7 @@ const float h = 540;
 
 #	include "ClockData.h"
 
-class VectorImage: public UI::Actor
+class VectorImage: public ui::Actor
 {
 	public:
 		VectorImage()  {}
@@ -92,7 +92,7 @@ class VectorImage: public UI::Actor
 };
 #endif
 
-class ClockSample: public UI::SDLStage
+class ClockSample: public ui::SDLStage
 {
 	public:
 		ClockSample():

@@ -6,7 +6,7 @@
 #include "Framework.h"
 #include <SOIL.h> // remove later
 
-namespace UI
+namespace ui
 {
 	Stage::Stage():	mDoAllocate(true),
 		mLastVisited(0), mPhase(PHASE_DEFAULT)

@@ -13,7 +13,7 @@ struct ButtonEvent;
 struct MotionEvent;
 struct KeyEvent;
 
-namespace UI
+namespace ui
 {
 	struct Color
 	{
@@ -102,6 +102,9 @@ namespace UI
 
 			virtual void onPaint() {}
 			virtual void onPick(Color color);
+
+			//Be carefull, do not use any function that calls queueRelayout(e.g setSize, setPos, setScale)
+			//This will help to avoid relayouts on every frame
 			virtual void onAllocate() {}
 		
 		protected:

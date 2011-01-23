@@ -4,7 +4,7 @@
 #	include <Scheduler.h>
 #	include <queue>
 
-namespace UI
+namespace ui
 {
 	class Stage: public Container, public sigslot::has_slots<>
 	{

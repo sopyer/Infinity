@@ -81,6 +81,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Controls.cpp" />
     <ClCompile Include="ResourceHelpers.cpp" />
     <ClCompile Include="SOIL\image_DXT.c" />
     <ClCompile Include="SOIL\image_helper.c" />
@@ -89,7 +90,7 @@
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SDLStage.cpp" />
     <ClCompile Include="Stage.cpp" />
-    <ClCompile Include="UI.cpp" />
+    <ClCompile Include="ui.cpp" />
     <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
@@ -108,7 +109,7 @@
     <ClInclude Include="Events.h" />
     <ClInclude Include="SDLStage.h" />
     <ClInclude Include="Stage.h" />
-    <ClInclude Include="UI.h" />
+    <ClInclude Include="ui.h" />
     <ClInclude Include="Controls.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Framework.h" />

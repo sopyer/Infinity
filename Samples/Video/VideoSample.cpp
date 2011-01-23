@@ -47,7 +47,7 @@ int	SOIL_save_OGL_texture
 }
 
 
-class VideoSample: public UI::SDLStage
+class VideoSample: public ui::SDLStage
 {
 	public:
 		GLuint		textures[NUM_TEXTURES];

@@ -1,11 +1,10 @@
-//#define GLEW_STATIC
 #include <gl\glee.h>
 #include "UI.h"
 #include "Actor.h"
 #include "Container.h"
 #include "Stage.h"
 
-namespace UI
+namespace ui
 {
 	Actor&	Actor::queueRelayout()
 	{

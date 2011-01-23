@@ -70,7 +70,7 @@ struct Mesh
 Mesh	cube  = {0, (float*)cubeVertices, (float*)cubeNormals, ARRAY_SIZE(cubeIndices), cubeIndices};
 Mesh	plane = {0, (float*)planeVertices, (float*)planeNormals, ARRAY_SIZE(planeIndices), planeIndices};
 
-class AOSample: public UI::SDLStage
+class AOSample: public ui::SDLStage
 {
 	public:
 		static const GLuint VOXEL_DIM_X=32;

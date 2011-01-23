@@ -1,5 +1,6 @@
 #include "ResourceHelpers.h"
 #include "Framework.h"
+#include "SOIL.h"
 
 namespace resources
 {

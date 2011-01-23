@@ -7,13 +7,13 @@
 
 namespace ui
 {
-	inline bool isSame(UI::Actor* sender, UI::Actor* actor) {return sender==actor;}
+	inline bool isSame(ui::Actor* sender, ui::Actor* actor) {return sender==actor;}
 	
-	class Group: public UI::Container
+	class Group: public ui::Container
 	{
 	};
 
-	class Image: public UI::Actor
+	class Image: public ui::Actor
 	{
 		public:
 			Image()  {}
@@ -23,58 +23,30 @@ namespace ui
 			GLuint	getTexture() {return mTexture;}
 
 		protected:
-			virtual void onPaint()
-			{
-				float w = getWidth(), h = getHeight(),
-					  x = 0, y = 0;
-				glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-				glUseProgram(0);
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, mTexture);
-				glBegin(GL_TRIANGLE_STRIP);
-					glTexCoord2f(0, 1);
-					glVertex2f(x, y);
-					glTexCoord2f(0, 0);
-					glVertex2f(x, y+h);
-					glTexCoord2f(1, 1);
-					glVertex2f(x+w, y);
-					glTexCoord2f(1, 0);
-					glVertex2f(x+w, y+h);
-				glEnd();
-				glDisable(GL_TEXTURE_2D);
-			}
+			virtual void onPaint();
 
 		protected:
 			GLuint		mTexture;
 	};
 
-	class Rectangle: public UI::Actor
+	class Rectangle: public ui::Actor
 	{
 		protected:
-			virtual void onPaint()
-			{
-				float w = getWidth(), h = getHeight(),
-					x = 0, y = 0;
-				sui::drawFrame(x, y, w, h, 5, 5, false, false, false);
-			}
+			virtual void onPaint();
 	};
 
-	class Label: public UI::Actor
+	class Label: public ui::Actor
 	{
 		public:
 			Label(): mColor(1.0f, 1.0f, 1.0f, 1.0f) {}
 			
-			Label& setFont(sui::Font font) {mFont = font; return *this;}
+			Label& setFont(sui::Font font) {mFont = font; queueRelayout(); return *this;}
 			Label& setColor(const glm::vec4& color) {mColor = color; return *this;}
-			Label& setText(const wchar_t* text) {mText = text; return *this;}
+			Label& setText(const wchar_t* text) {mText = text; queueRelayout(); return *this;}
 
 		protected:
-			virtual void onPaint()
-			{
-				glColor4fv(mColor);
-				float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
-				sui::drawText(mFont, 0, (mHeight+y)/2, mText.c_str());
-			}
+			virtual void onPaint();
+			virtual void onAllocate();
 
 		protected:
 			glm::vec4		mColor;
@@ -100,7 +72,7 @@ namespace ui
 				mShowCursor = !mShowCursor;
 			}
 
-			virtual void onTouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
+			virtual void onTouch(const ButtonEvent& event)
 			{
 				getStage()->captureFocus(this);
 			}
@@ -115,119 +87,12 @@ namespace ui
 				hideCursor();
 			}
 
-			virtual void onKeyDown(const KeyEvent& event/*u32 key*/)
-			{
-				u32 key = event.keysym.sym;
-				// filter for special keys
-				// Enter, quit edition
-				if (key == SDLK_RETURN/*GLFW_KEY_ENTER*/)
-				{
-					return;
-				}
-				// Regular char, append it to the edited string
-				else if (event.keysym.unicode>=32)
-				{
-					std::wstring::iterator	where = mText.end();
-					if (mCaretPos < (int)mText.length())
-					{
-						where = mText.begin()+mCaretPos;
-					}
-					mText.insert(where, event.keysym.unicode);
-					mCaretPos++;
-					resetCursor();
-				}
-				// Special keys
-				else
-				{
-					switch (key)
-					{
-					case SDLK_LEFT:
-						{
-							// move cursor left one char
-							mCaretPos--;
-						} 
-						break;
-					case SDLK_RIGHT:
-						{
-							// move cursor right one char
-							mCaretPos++;
-						} 
-						break;
-					case SDLK_HOME:
-						{
-							mCaretPos = 0;
-						} 
-						break;
-					case SDLK_END:
-						{
-							mCaretPos = (int)mText.length();
-						} 
-						break;
-					case SDLK_INSERT:
-						{
-						} 
-						break;
-					case SDLK_DELETE:
-						{
-							if (mCaretPos < (int)mText.length())
-								mText.erase(mText.begin()+mCaretPos);
-						} 
-						break;
-					case SDLK_BACKSPACE:
-						{
-							if (mCaretPos > 0)
-								mText.erase(mText.begin()+mCaretPos-1);
-							mCaretPos--;
-						} 
-						break;
-					default :
-						{
-							// strange key pressed...
-							//mCaretPos--;
-						} 
-						break;
-					}
-					resetCursor();
-				}	
-				mCaretPos = std::min(mCaretPos, (int)mText.length());
-				mCaretPos = std::max(mCaretPos, 0);
-			}
+			virtual void onKeyDown(const KeyEvent& event);
+			virtual void onPaint();
 
-			virtual void onPaint()
-			{
-				sui::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 3);
-				
-				glColor4fv(mColor);
-				float y = (mHeight+sui::getTextAscender(mFont)+sui::getTextDescender(mFont))/2;
-				sui::drawText(mFont, 7, y, mText.c_str());
-
-				if (mShowCursor)
-				{
-					float tw = 7+sui::getTextHExtent(mFont, mText.substr(0, mCaretPos).c_str());
-					sui::drawRect(tw, y-sui::getTextDescender(mFont), tw+1, y-sui::getTextAscender(mFont), 4, 4);
-				}
-			}
-			
-			void showCursor()
-			{
-				mShowCursor = true;
-				mBlinkTask = mt::addTimedTask<Edit, &Edit::onBlink>(this, 400);
-			}
-
-			void hideCursor()
-			{
-				mShowCursor = false;
-				if (mBlinkTask)
-				{
-					mt::terminateTask(mBlinkTask);
-					mBlinkTask = 0;
-				}
-			}
-
-			void resetCursor()
-			{
-				mShowCursor = true;
-			}
+			void showCursor();
+			void hideCursor();
+			void resetCursor();
 
 		private:
 			mt::Task	mBlinkTask;
@@ -245,10 +110,10 @@ namespace ui
 			sigslot::signal1<Actor*>	onClicked;
 
 		protected:
-			virtual void onTouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
+			virtual void onTouch(const ButtonEvent& event)
 			{mIsPressed = true; onClicked.emit(this);}
 
-			virtual void onUntouch(const ButtonEvent& event/*float x, float y, u32 buttons*/)
+			virtual void onUntouch(const ButtonEvent& event)
 			{mIsPressed = false;}
 
 			virtual void onEnter()
@@ -257,14 +122,7 @@ namespace ui
 			virtual void onLeave()
 			{mIsHover = false; mIsPressed = false;}
 
-			virtual void onPaint()
-			{
-				sui::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
-				glColor4fv(mColor);
-				float x = sui::getTextHExtent(mFont, mText.c_str());
-				float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
-				sui::drawText(mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str());
-			}
+			virtual void onPaint();
 
 		protected:
 			bool		mIsHover;
@@ -280,27 +138,14 @@ namespace ui
 			CheckBox& setChecked(bool checked) {mIsChecked = checked; return *this;}
 
 		protected:
-			virtual void onTouch(const ButtonEvent& event)
-			{
-				mIsChecked = !mIsChecked;
-				Button::onTouch(event);
-			}
-
-			virtual void onPaint()
-			{
-				sui::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
-				glColor4fv(mColor);
-				float x = 20;
-				float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
-				y = (16+y)/2;
-				sui::drawText(mFont, x, y, mText.c_str());
-			}
+			virtual void onTouch(const ButtonEvent& event);
+			virtual void onPaint();
 
 		private:
 			bool		mIsChecked;
 	};
 
-	class HGroup: public UI::Container
+	class HGroup: public ui::Container
 	{
 		public:
 			HGroup()
@@ -328,8 +173,7 @@ namespace ui
 		protected:
 			void onAllocate()
 			{
-				float x = 0, y = 0;
-				float w = getWidth();
+				float x = 0, y = 0, w = getWidth();
 				ChildsVector::iterator	it = mChilds.begin(),
 										end = mChilds.end();
 				for (; it != end; ++it)
@@ -350,7 +194,7 @@ namespace ui
 			Button	m3;
 	};
 
-	class Layout: public UI::Container, public sigslot::has_slots<>
+	class Layout: public ui::Container, public sigslot::has_slots<>
 	{
 		public:
 			Layout()
@@ -411,7 +255,7 @@ namespace ui
 				mListBox.setWidth(w)
 					.setPos(0, h);
 
-				UI::Container::onAllocate();
+				ui::Container::onAllocate();
 			}
 
 		private:
@@ -420,5 +264,42 @@ namespace ui
 			Button	mButton;
 			Edit	mEdit;
 			HGroup	mListBox;
+	};
+
+	class VBox: public ui::Container
+	{
+		public:
+			enum Align {Left, Center, Right};
+		
+		public:
+			VBox():mSpacing(0), mHMargin(0), mVMargin(0), mAlign(Left)
+			{}
+
+			VBox& setSpacing(float spacing) {mSpacing = spacing; return *this;}
+			VBox& setHMargin(float hmargin) {mHMargin = hmargin; return *this;}
+			VBox& setVMargin(float vmargin) {mVMargin = vmargin; return *this;}
+			VBox& setAlign(Align align) {mAlign = align; return *this;}
+
+		protected:
+			virtual void onAllocate();
+			virtual void onPaint();
+
+		private:
+			float	mSpacing, mHMargin, mVMargin;
+			Align	mAlign;
+	};
+
+	class ProfileStatsBox: public VBox
+	{
+		public:
+			ProfileStatsBox();
+
+			ProfileStatsBox& setFont(sui::Font font);
+			ProfileStatsBox& setStats(float cpuTime, float gpuTime);
+
+		private:
+			ui::Label	mVCNameLabel;
+			ui::Label	mCPUTimeLabel;
+			ui::Label	mGPUTimeLabel;
 	};
 }

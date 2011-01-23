@@ -338,7 +338,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 
 #include "Path.h"
 
-class VGTest: public UI::SDLStage
+class VGTest: public ui::SDLStage
 {
 	public:
 		VGTest():

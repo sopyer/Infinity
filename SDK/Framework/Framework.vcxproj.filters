@@ -43,6 +43,9 @@
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
     <ClCompile Include="ResourceHelpers.cpp" />
+    <ClCompile Include="Controls.cpp">
+      <Filter>UI\Controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">
