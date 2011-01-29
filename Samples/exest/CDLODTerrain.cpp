@@ -4,11 +4,11 @@ void CDLODTerrain::initialize()
 {
 	terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.vert", "FF.Color.frag");
 	uniPatchBase   = glGetUniformLocation(terrainProgram, "uPatchBase");
-	uniPatchDim    = glGetUniformLocation(terrainProgram, "uPatchDim");
+	uniLevel       = glGetUniformLocation(terrainProgram, "uLevel");
 	uniOffset      = glGetUniformLocation(terrainProgram, "uOffset");
 	uniScale       = glGetUniformLocation(terrainProgram, "uScale");
 	uniViewPos     = glGetUniformLocation(terrainProgram, "uViewPos");
-	uniHMDim   = glGetUniformLocation(terrainProgram, "uHMDim");
+	uniHMDim       = glGetUniformLocation(terrainProgram, "uHMDim");
 	uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
 
 	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
@@ -33,7 +33,7 @@ void CDLODTerrain::cleanup()
 {
 	glDeleteBuffers(1, &vbo);
 	glDeleteBuffers(1, &ibo);
-	if (bboxZData) free(bboxZData);
+	if (minmaxData) free(minmaxData);
 	glDeleteProgram(terrainProgram);
 	glDeleteTextures(1, &mHeightmapTex);
 }
@@ -63,7 +63,6 @@ void CDLODTerrain::calculateLODRanges(float* ranges)
 
 void CDLODTerrain::calculateLODParams()
 {
-	const size_t MAX_LOD_COUNT = 8;
 	float ranges[MAX_LOD_COUNT]; 
 	assert(LODCount<=MAX_LOD_COUNT);
 
@@ -77,8 +76,9 @@ void CDLODTerrain::calculateLODParams()
 			height2=size*size*minPatchDimY*minPatchDimY,
 			curRange=0.0f;
 			
-	bboxZDataSize = 0;
+	minmaxDataSize = 0;
 	curRange=0.0f;
+	float*	morphParamsIt = morphParams;
 
 	for (size_t i=0; i<LODCount; ++i)
 	{
@@ -92,14 +92,15 @@ void CDLODTerrain::calculateLODParams()
 		float morphRange = range*morphZoneRatio;
 		float morphStart = rangeEnd-morphRange;
 		
-		LODs[i].morphInvRange = 1.0f/morphRange;
-		LODs[i].morphStartRatio = -morphStart/morphRange;
+		*morphParamsIt++ = 1.0f/morphRange; //morphInvRange
+		*morphParamsIt++ = -morphStart/morphRange; //morphStartRatio
+
 		LODs[i].width = dimX;
 		LODs[i].height = dimY;
-		LODs[i].pitch = patchCountX;
-		LODs[i].bboxZDataOffset = bboxZDataSize;
+		LODs[i].minmaxPitch = patchCountX;
+		LODs[i].minmaxOffset = minmaxDataSize;
 
-		bboxZDataSize += patchCount*2;
+		minmaxDataSize += patchCount*2;
 		patchCountX = (patchCountX+1)/2;
 		patchCountY = (patchCountY+1)/2;
 		patchCount = patchCountX*patchCountY;
@@ -108,6 +109,8 @@ void CDLODTerrain::calculateLODParams()
 		dimX *= 2;
 		dimY *= 2;
 	}
+
+	assert(morphParamsIt-morphParams==LODCount*2);
 }
 
 void CDLODTerrain::setViewProj(glm::mat4& mat)
@@ -130,10 +133,10 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 
 void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ)
 {
-	float* minmax = bboxZData+LODs[level].bboxZDataOffset;
+	float* minmax = minmaxData+LODs[level].minmaxOffset;
 
-	*minZ = minmax[2*((j/LODs[level].height)*LODs[level].pitch+(i/LODs[level].width))+0];
-	*maxZ = minmax[2*((j/LODs[level].height)*LODs[level].pitch+(i/LODs[level].width))+1];
+	*minZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+0];
+	*maxZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+1];
 
 	assert(0<=*minZ && *minZ<=*maxZ);
 	assert(*minZ<=*maxZ && *maxZ<=64.0f);
@@ -141,10 +144,10 @@ void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, flo
 
 void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
 {
-	float* minmax = bboxZData+LODs[level].bboxZDataOffset;
+	float* minmax = minmaxData+LODs[level].minmaxOffset;
 
-	float minZ = minmax[2*((j/LODs[level].height)*LODs[level].pitch+(i/LODs[level].width))+0];
-	float maxZ = minmax[2*((j/LODs[level].height)*LODs[level].pitch+(i/LODs[level].width))+1];
+	float minZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+0];
+	float maxZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+1];
 
 	assert(0<=minZ && minZ<=maxZ);
 	assert(minZ<=maxZ && maxZ<=heightScale);
@@ -294,38 +297,6 @@ void CDLODTerrain::generateGeometry()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void CDLODTerrain::drawPatch(float baseX, float baseY, int level)
-{
-	glUseProgram(terrainProgram);
-
-	glColor3fv(colors[level]);
-
-	glUniform2f(uniPatchBase, baseX, baseY);
-	glUniform2f(uniPatchDim, 1<<level, 1<<level);
-	glUniform3fv(uniViewPos, 1, viewPoint);
-
-	glUniform2f(uniMorphParams, LODs[level].morphInvRange, LODs[level].morphStartRatio);
-
-	glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-	//TODO: Enable triangle culling and fix mesh
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexPointer(2, GL_FLOAT, 0, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
-	glDisableClientState(GL_VERTEX_ARRAY);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	glPopAttrib();
-}
-
 void CDLODTerrain::drawTerrain()
 {
 	cpuTimer.start();
@@ -341,14 +312,41 @@ void CDLODTerrain::drawTerrain()
 			end = patchList.end();
 
 	gpuTimer.start();
-	glEnable(GL_DEPTH_TEST);
+
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+	glUseProgram(terrainProgram);
+	glUniform3fv(uniViewPos, 1, viewPoint);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexPointer(2, GL_FLOAT, 0, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+
+	//TODO: Enable triangle culling and fix mesh(Partially done)
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glEnable(GL_DEPTH_TEST);
+
 	it  = patchList.begin();
 	for(; it!=end; ++it)
 	{
-		drawPatch(it->baseX, it->baseY, it->level);
+		glColor3fv(colors[it->level]);
+		glUniform2f(uniPatchBase, it->baseX, it->baseY);
+		glUniform1i(uniLevel, it->level);
+
+		glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
 	}
+
+	glUseProgram(0);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glPopAttrib();
+
 	gpuTimer.stop();
 	cpuTime = cpuTimer.elapsed();
 	gpuTime = gpuTimer.getResult();
@@ -367,25 +365,26 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	minPatchDimX = 4;
 	minPatchDimY = 4;
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-
-	visibilityDistance = size*50;
+	visibilityDistance = size*1450;
 	LODCount = 6;
 	detailBalance = 2.0f;
 	morphZoneRatio = 0.30f;
 	heightScale = 64;
 
+	calculateLODParams();
+	generateGeometry();
+	generateBBoxData(data);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+
 	glUseProgram(terrainProgram);
 	glUniform4f(uniHMDim, (GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
 	glUniform3f(uniOffset, startX, 0, startY);
 	glUniform3f(uniScale, size, heightScale, size);
+	glUniform2fv(uniMorphParams, LODCount, morphParams);
 	glUseProgram(0);
-
-	calculateLODParams();
-	generateGeometry();
-	generateBBoxData(data);
 }
 
 void downsample(size_t w, size_t h, const float* inData,
@@ -461,15 +460,15 @@ void downsamplep1(size_t w, size_t h, const unsigned char* inData,
 
 void CDLODTerrain::generateBBoxData(uint8_t* data)
 {
-	bboxZData = (float*)malloc(bboxZDataSize*sizeof(float));
+	minmaxData = (float*)malloc(minmaxDataSize*sizeof(float));
 
 	size_t w, h;
-	downsamplep1(gridDimX, gridDimY, data, minPatchDimX+1, minPatchDimY+1, heightScale, w, h, bboxZData+LODs[0].bboxZDataOffset);
+	downsamplep1(gridDimX, gridDimY, data, minPatchDimX+1, minPatchDimY+1, heightScale, w, h, minmaxData+LODs[0].minmaxOffset);
 
 	for (size_t i=1; i<LODCount; ++i)
 	{
-		assert((LODs[i].bboxZDataOffset-LODs[i-1].bboxZDataOffset) == 2*w*h);
-		downsample(w, h,  bboxZData+LODs[i-1].bboxZDataOffset, 2, 2, w, h, bboxZData+LODs[i].bboxZDataOffset);
+		assert((LODs[i].minmaxOffset-LODs[i-1].minmaxOffset) == 2*w*h);
+		downsample(w, h,  minmaxData+LODs[i-1].minmaxOffset, 2, 2, w, h, minmaxData+LODs[i].minmaxOffset);
 	}
-	assert(LODs[LODCount-1].bboxZDataOffset+2*w*h==bboxZDataSize);
+	assert(LODs[LODCount-1].minmaxOffset+2*w*h==minmaxDataSize);
 }

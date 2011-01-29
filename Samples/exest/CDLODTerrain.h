@@ -10,7 +10,8 @@
 class CDLODTerrain
 {
 	public:
-	//private:
+		static const size_t MAX_LOD_COUNT = 8;
+
 		size_t gridDimX, gridDimY;
 
 		float size;//cellSizeX, cellSizeY
@@ -27,10 +28,7 @@ class CDLODTerrain
 		
 		GLuint	terrainProgram;
 		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
-				uniPatchBase, uniPatchDim, uniHMDim;
-		//TODO: add vbo/ibo support
-		std::vector<glm::vec2>	mTerrainVtx;
-		std::vector<uint16_t>	mTerrainIdx;
+				uniPatchBase, uniHMDim, uniLevel;
 
 		glm::vec3 viewPoint;
 		ml::mat4x4 sseVP;
@@ -38,8 +36,8 @@ class CDLODTerrain
 		void generateGeometry();
 		void generateBBoxData(uint8_t* data);
 
-		float*	bboxZData;
-		size_t	bboxZDataSize;
+		float*	minmaxData;
+		size_t	minmaxDataSize;
 
 		GLuint	mHeightmapTex;
 
@@ -47,11 +45,11 @@ class CDLODTerrain
 		{
 			float	rangeStart;
 			size_t	width, height;
-			float	morphInvRange, morphStartRatio;
-			size_t	bboxZDataOffset, pitch;	
+			size_t	minmaxOffset, minmaxPitch;	
 		};
 
-		LODDesc	LODs[16];
+		float		morphParams[MAX_LOD_COUNT*2];
+		LODDesc		LODs[MAX_LOD_COUNT];
 
 		void setHeightmap(uint8_t* data, size_t width, size_t height);
 		void setViewProj(glm::mat4& mat);
@@ -59,7 +57,6 @@ class CDLODTerrain
 		void calculateLODRanges(float* ranges);
 
 		void addPatchToQueue(size_t level, size_t i, size_t j);
-		void drawPatch(float baseX, float baseY, int level);
 
 		int intersectViewFrustum(size_t level, size_t i, size_t j);
 		bool intersectSphere(size_t level, size_t i, size_t j);
