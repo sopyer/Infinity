@@ -73,7 +73,7 @@ namespace sui
 		return x2-x1;
 	}
 
-	void	calcTextBasePt(
+	void calcTextBasePt(
 		Font font, float w, float h, VGuint flags,
 		const wchar_t* text, float& bx, float& by
 	)

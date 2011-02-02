@@ -39,9 +39,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)SDK\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>$(SolutionDir)SDK\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
+    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -55,6 +59,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>framework.lib;vg.lib;glclasses.lib;physfs_d.lib;sdl_d.lib;sdlmain_d.lib;freetype_d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -76,6 +82,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FontTest.cpp" />
+    <ClCompile Include="FTGLTextureFont.cpp" />
+    <ClCompile Include="FTLibrary.cpp" />
+    <ClCompile Include="FTPoint.cpp" />
+    <ClCompile Include="FTTextureGlyph.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FTBBox.h" />
+    <ClInclude Include="FTCharToGlyphIndexMap.h" />
+    <ClInclude Include="FTGL.h" />
+    <ClInclude Include="FTGLTextureFont.h" />
+    <ClInclude Include="FTLibrary.h" />
+    <ClInclude Include="FTPoint.h" />
+    <ClInclude Include="FTTextureGlyph.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
