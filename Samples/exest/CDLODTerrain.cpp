@@ -1,10 +1,27 @@
 #include "CDLODTerrain.h"
 
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+struct PatchData
+{
+	float baseX, baseY;
+	GLint level;
+};
+
+#define ATTR_POSITION	0
+#define ATTR_PATCH_BASE	1
+#define ATTR_LEVEL		2
+#endif
+
 void CDLODTerrain::initialize()
 {
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "FF.Color.frag");
+	uniColors      = glGetUniformLocation(terrainProgram, "uColors");
+#else
 	terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.vert", "FF.Color.frag");
 	uniPatchBase   = glGetUniformLocation(terrainProgram, "uPatchBase");
 	uniLevel       = glGetUniformLocation(terrainProgram, "uLevel");
+#endif
 	uniOffset      = glGetUniformLocation(terrainProgram, "uOffset");
 	uniScale       = glGetUniformLocation(terrainProgram, "uScale");
 	uniViewPos     = glGetUniformLocation(terrainProgram, "uViewPos");
@@ -26,12 +43,41 @@ void CDLODTerrain::initialize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
 	glGenBuffers(1, &vbo);
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glGenBuffers(1, &instVBO);
+#endif
 	glGenBuffers(1, &ibo);
+
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexPointer(2, GL_FLOAT, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+	glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
+	glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
+	glVertexAttribPointer(ATTR_LEVEL, 1, GL_INT, GL_FALSE, sizeof(PatchData), (void*)8);
+	glVertexAttribDivisor(ATTR_LEVEL, 1);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableVertexAttribArray(ATTR_LEVEL);
+	glEnableVertexAttribArray(ATTR_PATCH_BASE);
+#else
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glVertexPointer(2, GL_FLOAT, 0, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glEnableClientState(GL_VERTEX_ARRAY);
+#endif
+	glBindVertexArray(0);
 }
 
 void CDLODTerrain::cleanup()
 {
+	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glDeleteBuffers(1, &instVBO);
+#endif
 	glDeleteBuffers(1, &ibo);
 	if (minmaxData) free(minmaxData);
 	glDeleteProgram(terrainProgram);
@@ -123,12 +169,22 @@ void CDLODTerrain::setViewProj(glm::mat4& mat)
 
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 {
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	assert(instCount<MAX_PATCH_COUNT);
+	instData->baseX = (float)i;
+	instData->baseY = (float)j;
+	instData->level = level;
+
+	++instData;
+	++instCount;
+#else
 	size_t index = patchList.size();
 	patchList.resize(index+1);
 
 	patchList[index].baseX = (float)i;
 	patchList[index].baseY = (float)j;
 	patchList[index].level = level;
+#endif
 }
 
 void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ)
@@ -271,6 +327,12 @@ void CDLODTerrain::generateGeometry()
 		}
 	}
 	glUnmapBuffer(GL_ARRAY_BUFFER);
+
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+	glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+#endif
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*(minPatchDimY+1)+(x))
@@ -300,28 +362,36 @@ void CDLODTerrain::generateGeometry()
 void CDLODTerrain::drawTerrain()
 {
 	cpuTimer.start();
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+	//Discard data from previous frame
+	glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+	instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	instCount = 0;
+#else
 	patchList.reserve(2048);
 	patchList.clear();
+#endif
 
+	cpuSelectTimer.start();
 	size_t level = 5;
 	for (size_t j=0; j<gridDimY; j+=LODs[level].height)
 		for (size_t i=0; i<gridDimX; i+=LODs[level].width)
 			selectQuadsForDrawing(level, i, j);
+	cpuSelectTime = cpuSelectTimer.elapsed();
+	cpuSelectTimer.stop();
 
-	auto	it  = patchList.begin(),
-			end = patchList.end();
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+#endif
 
+	cpuDrawTimer.start();
 	gpuTimer.start();
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
-
 	glUseProgram(terrainProgram);
 	glUniform3fv(uniViewPos, 1, viewPoint);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexPointer(2, GL_FLOAT, 0, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -332,7 +402,13 @@ void CDLODTerrain::drawTerrain()
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glEnable(GL_DEPTH_TEST);
 
-	it  = patchList.begin();
+	glBindVertexArray(vao);
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	if (instCount)
+		glDrawElementsInstancedARB(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
+#else
+	auto	it  = patchList.begin(),
+			end = patchList.end();
 	for(; it!=end; ++it)
 	{
 		glColor3fv(colors[it->level]);
@@ -341,11 +417,15 @@ void CDLODTerrain::drawTerrain()
 
 		glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
 	}
+#endif
+	glBindVertexArray(0);
 
 	glUseProgram(0);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glPopAttrib();
+	cpuDrawTime = cpuDrawTimer.elapsed();
+	cpuDrawTimer.stop();
 
 	gpuTimer.stop();
 	cpuTime = cpuTimer.elapsed();
@@ -384,6 +464,9 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	glUniform3f(uniOffset, startX, 0, startY);
 	glUniform3f(uniScale, size, heightScale, size);
 	glUniform2fv(uniMorphParams, LODCount, morphParams);
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+	glUniform3fv(uniColors, 8, colors[0]);
+#endif
 	glUseProgram(0);
 }
 

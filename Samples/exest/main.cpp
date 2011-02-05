@@ -318,12 +318,18 @@ class Exest: public ui::SDLStage
 			memset(prevKeystate, 0, SDLK_LAST);
 
 			add(mStatsBox.setFont(mFont)
+				  .add(mSelectTimeLabel.setFont(mFont))
+				  .add(mDrawTimeLabel.setFont(mFont))
 				  .setPos(10, 10)
-				  .setSize(300, 100));
+				  .setSize(300, 120)
+			);
 			
 			mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 100);
 		}
 		
+		ui::Label	mDrawTimeLabel;
+		ui::Label	mSelectTimeLabel;
+
 		~Exest()
 		{
 			sui::destroyFont(mFont);
@@ -511,6 +517,11 @@ class Exest: public ui::SDLStage
 		void onUpdateStats()
 		{
 			mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
+			wchar_t str[256];
+			_snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
+			mSelectTimeLabel.setText(str);
+			_snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
+			mDrawTimeLabel.setText(str);
 		}
 
 		bool fixedMode;

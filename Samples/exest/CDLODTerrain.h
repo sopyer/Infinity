@@ -7,39 +7,50 @@
 #include <vi.h>
 #include "math.h"
 
+#define DRAW_TERRAIN_USING_INSTANCING
+struct PatchData;
+
 class CDLODTerrain
 {
 	public:
 		static const size_t MAX_LOD_COUNT = 8;
+		static const size_t MAX_PATCH_COUNT = 2048;
 
 		size_t gridDimX, gridDimY;
-
-		float size;//cellSizeX, cellSizeY
-
-		float startX, startY; //offset
-
-		float visibilityDistance;
-		
 		size_t LODCount;
+		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
+		float size;//cellSizeX, cellSizeY
+		float heightScale;
+		float startX, startY; //offset
+		float visibilityDistance;
 		float detailBalance;
 		float morphZoneRatio;
-		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
-		float heightScale;
 		
-		GLuint	terrainProgram;
-		GLint	uniOffset, uniScale, uniViewPos, uniMorphParams,
-				uniPatchBase, uniHMDim, uniLevel;
+		GLuint		terrainProgram;
+		GLint		uniOffset, uniScale, uniViewPos, uniMorphParams,
+					uniPatchBase, uniHMDim, uniLevel, uniColors;
+		GLuint		mHeightmapTex;
+		GLuint		vao;
+#ifdef DRAW_TERRAIN_USING_INSTANCING
+		PatchData*	instData;
+		size_t		instCount;
+		GLuint		vbo, instVBO, ibo;
+#else
+		struct PatchData
+		{
+			float baseX, baseY;
+			GLint level;
+		};
 
-		glm::vec3 viewPoint;
-		ml::mat4x4 sseVP;
+		std::vector<PatchData>	patchList;
+		GLuint vbo, ibo;
+#endif
 
-		void generateGeometry();
-		void generateBBoxData(uint8_t* data);
+		glm::vec3	viewPoint;
+		ml::mat4x4	sseVP;
 
 		float*	minmaxData;
 		size_t	minmaxDataSize;
-
-		GLuint	mHeightmapTex;
 
 		struct LODDesc
 		{
@@ -51,6 +62,9 @@ class CDLODTerrain
 		float		morphParams[MAX_LOD_COUNT*2];
 		LODDesc		LODs[MAX_LOD_COUNT];
 
+		void generateGeometry();
+		void generateBBoxData(uint8_t* data);
+
 		void setHeightmap(uint8_t* data, size_t width, size_t height);
 		void setViewProj(glm::mat4& mat);
 		void calculateLODParams();
@@ -58,7 +72,7 @@ class CDLODTerrain
 
 		void addPatchToQueue(size_t level, size_t i, size_t j);
 
-		int intersectViewFrustum(size_t level, size_t i, size_t j);
+		int  intersectViewFrustum(size_t level, size_t i, size_t j);
 		bool intersectSphere(size_t level, size_t i, size_t j);
 		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
 
@@ -68,26 +82,22 @@ class CDLODTerrain
 		void initialize();
 		void cleanup();
 
-		struct PatchData
-		{
-			float baseX, baseY;
-			GLint level;
-		};
-
-		std::vector<PatchData>	patchList;
-
 		void drawTerrain();
 
-		float getCPUTime() {return (float)cpuTime;}
-		float getGPUTime() {return (float)gpuTime;}
-
 		CPUTimer	cpuTimer;
+		CPUTimer	cpuSelectTimer;
+		CPUTimer	cpuDrawTimer;
 		GPUTimer	gpuTimer;
 
 		double cpuTime;
+		double cpuSelectTime;
+		double cpuDrawTime;
 		double gpuTime;
 
-		GLuint vbo, ibo;
+		float getCPUTime() {return (float)cpuTime;}
+		float getCPUSelectTime() {return (float)cpuSelectTime;}
+		float getCPUDrawTime() {return (float)cpuDrawTime;}
+		float getGPUTime() {return (float)gpuTime;}
 };
 
 #endif
