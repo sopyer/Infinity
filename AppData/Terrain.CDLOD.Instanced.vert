@@ -4,7 +4,6 @@
 #define ATTR_PATCH_BASE	1
 #define ATTR_LEVEL		2
 
-//layout(location = ATTR_POSITION)		in vec2		aPosition;
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
 layout(location = ATTR_LEVEL)			in float		aLevel;
 
@@ -12,9 +11,6 @@ layout(location = ATTR_LEVEL)			in float		aLevel;
 
 uniform vec3		uOffset;
 uniform vec3		uScale;
-
-//uniform vec2		uPatchBase;
-//uniform int			uLevel;
 
 uniform vec3		uViewPos;
 
@@ -62,7 +58,7 @@ void main()
 	morphK = clamp(distance*uMorphParams[int(aLevel)].x+uMorphParams[int(aLevel)].y, 0.0, 1.0);
 	worldPos = mix(worldPos, worldMorphDest, morphK);
 	
-	gl_FrontColor = gl_BackColor = vec4(uColors[int(aLevel)], 1);//gl_Color;
+	gl_FrontColor = gl_BackColor = vec4(uColors[int(aLevel)], 1);
 	gl_Position = gl_ModelViewProjectionMatrix*vec4(worldPos, 1);
 }
 
