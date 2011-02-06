@@ -37,6 +37,8 @@ vec3 getWorldPos(vec2 gridPos)
 	return uOffset+uScale*vec3(gridPos.x, fetchHeight(gridPos), gridPos.y);
 }
 
+out float vHeight;
+
 void main()
 {
 	vec2	patchPos, gridPos;
@@ -58,6 +60,7 @@ void main()
 	morphK = clamp(distance*uMorphParams[int(aLevel)].x+uMorphParams[int(aLevel)].y, 0.0, 1.0);
 	worldPos = mix(worldPos, worldMorphDest, morphK);
 	
+	vHeight = worldPos.y*0.04;
 	gl_FrontColor = gl_BackColor = vec4(uColors[int(aLevel)], 1);
 	gl_Position = gl_ModelViewProjectionMatrix*vec4(worldPos, 1);
 }

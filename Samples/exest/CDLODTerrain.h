@@ -7,7 +7,6 @@
 #include <vi.h>
 #include "math.h"
 
-#define DRAW_TERRAIN_USING_INSTANCING
 struct PatchData;
 
 class CDLODTerrain
@@ -31,20 +30,10 @@ class CDLODTerrain
 					uniPatchBase, uniHMDim, uniLevel, uniColors;
 		GLuint		mHeightmapTex;
 		GLuint		vao;
-#ifdef DRAW_TERRAIN_USING_INSTANCING
+
 		PatchData*	instData;
 		size_t		instCount;
 		GLuint		vbo, instVBO, ibo;
-#else
-		struct PatchData
-		{
-			float baseX, baseY;
-			GLint level;
-		};
-
-		std::vector<PatchData>	patchList;
-		GLuint vbo, ibo;
-#endif
 
 		glm::vec3	viewPoint;
 		ml::mat4x4	sseVP;
@@ -83,6 +72,8 @@ class CDLODTerrain
 		void cleanup();
 
 		void drawTerrain();
+
+		bool drawWireframe;
 
 		CPUTimer	cpuTimer;
 		CPUTimer	cpuSelectTimer;

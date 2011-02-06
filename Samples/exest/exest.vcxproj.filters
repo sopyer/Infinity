@@ -31,6 +31,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\AppData\Terrain.CDLOD.vert" />
+    <None Include="..\..\AppData\Terrain.CDLOD.Instanced.vert" />
   </ItemGroup>
 </Project>

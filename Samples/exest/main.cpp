@@ -240,7 +240,7 @@ class Exest: public ui::SDLStage
 		sui::Font	mFont;
 
 	public:
-		Exest(): fixedMode(false)
+		Exest(): fixedMode(false), wireframeMode(false)
 		{
 			VFS::mount("..\\..\\AppData");
 			rectProgram = resources::createProgram(GL_FRAGMENT_SHADER, rectProgramSrc);
@@ -324,7 +324,7 @@ class Exest: public ui::SDLStage
 				  .setSize(300, 120)
 			);
 			
-			mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 100);
+			mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
 		}
 		
 		ui::Label	mDrawTimeLabel;
@@ -524,7 +524,7 @@ class Exest: public ui::SDLStage
 			mDrawTimeLabel.setText(str);
 		}
 
-		bool fixedMode;
+		bool fixedMode, wireframeMode;
 		glm::vec3 VPpp;
 		uint8_t prevKeystate[SDLK_LAST];
 
@@ -554,7 +554,13 @@ class Exest: public ui::SDLStage
 			if (keystate[SDLK_l]&&!prevKeystate[SDLK_l])
 			{
 				fixedMode = !fixedMode;
-				lockView = fixedMode==true;
+				lockView  = fixedMode==true;
+			}
+
+			if (keystate[SDLK_f]&&!prevKeystate[SDLK_f])
+			{
+				wireframeMode = !wireframeMode;
+				terrain.drawWireframe = wireframeMode;
 			}
 
 			if (lockView)

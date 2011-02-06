@@ -98,7 +98,7 @@
     <ClInclude Include="math.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\AppData\Terrain.CDLOD.vert" />
+    <None Include="..\..\AppData\Terrain.CDLOD.Instanced.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
