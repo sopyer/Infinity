@@ -107,6 +107,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SVGRendering", "Samples\SVG
 		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "physis", "Samples\physis\physis.vcxproj", "{BEAEDA76-1FD1-4504-A268-A992EF51DED5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -238,6 +240,12 @@ Global
 		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release|Win32.ActiveCfg = Release|Win32
 		{0F479481-9CEC-4B26-A1FC-1758485BF01C}.Release|Win32.Build.0 = Release|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Debug|Win32.Build.0 = Debug|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Release|Win32.ActiveCfg = Release|Win32
+		{BEAEDA76-1FD1-4504-A268-A992EF51DED5}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

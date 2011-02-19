@@ -1,10 +1,11 @@
 #include <framework.h>
 
-class <SampleName>: public UI::SDLStage
+class <SampleName>: public ui::SDLStage
 {
 	public:
 		<SampleName>()
 		{
+			VFS::mount("..\\..\\AppData");
 		}
 		
 		~<SampleName>()
