@@ -1,6 +1,6 @@
 #include <framework.h>
 
-static unsigned char permutation[] = { 151,160,137,91,90,15,
+static unsigned char permutation256[] = { 151,160,137,91,90,15,
 131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
 190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
 88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
@@ -15,7 +15,7 @@ static unsigned char permutation[] = { 151,160,137,91,90,15,
 138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
 };
 
-// gradients for 3d noise
+// gradients for 2d noise
 static float g[] = {
 		 2, 1,
 		 2,-1,
@@ -38,7 +38,7 @@ class PhysisDemo: public ui::SDLStage
 
 		GLuint permTex, gradTex;
 
-		GLint uniSamplerGrad, uniSamplerPerm;
+		GLint uniSamplerGrad, uniSamplerPerm, uniInvTexDim;
 	
 		ui::ProfileStatsBox		mStatsBox;
 		sui::Font				mFont;
@@ -53,11 +53,19 @@ class PhysisDemo: public ui::SDLStage
 
 			glGetIntegerv(GL_VIEWPORT, vp);
 
-			GLuint shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, /*"TextureGtor.Metal.frag"*/"Perlin.Noise.frag");
 			texGtorProg = glCreateProgram();
+
+			GLuint shader;
+			
+			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "Perlin.Noise.frag");
 			glAttachShader(texGtorProg, shader);
-			glLinkProgram(texGtorProg);
 			glDeleteShader(shader);
+
+			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "TextureGtor.Metal.frag");
+			glAttachShader(texGtorProg, shader);
+			glDeleteShader(shader);
+
+			glLinkProgram(texGtorProg);
 
 			glGenTextures(1, &permTex);
 			glBindTexture(GL_TEXTURE_1D, permTex);
@@ -77,7 +85,7 @@ class PhysisDemo: public ui::SDLStage
 				GLenum err = glGetError();
 				assert(err==GL_NO_ERROR);
 			}
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, 256, 0, GL_RED, GL_UNSIGNED_BYTE, permutation);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, ARRAY_SIZE(permutation256), 0, GL_RED, GL_UNSIGNED_BYTE, permutation256);
 
 			{
 				GLenum err = glGetError();
@@ -96,10 +104,12 @@ class PhysisDemo: public ui::SDLStage
 
 			uniSamplerGrad = glGetUniformLocation(texGtorProg, "samplerGrad");
 			uniSamplerPerm = glGetUniformLocation(texGtorProg, "samplerPerm");
+			uniInvTexDim   = glGetUniformLocation(texGtorProg, "invTexDim");
 
 			glUseProgram(texGtorProg);
 			glUniform1i(uniSamplerPerm, 0);
 			glUniform1i(uniSamplerGrad, 1);
+			glUniform1f(uniInvTexDim, 1.0f/ARRAY_SIZE(permutation256));
 			glUseProgram(0);
 
 			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
