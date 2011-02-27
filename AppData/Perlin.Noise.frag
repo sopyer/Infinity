@@ -38,7 +38,7 @@ float perlin2D(vec2 P)
 		f.y
 	);
 	
-	return noise*0.4;
+	return noise*0.5;
 }
 
 // fractal sum
