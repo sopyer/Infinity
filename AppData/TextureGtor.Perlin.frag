@@ -6,10 +6,10 @@ uniform float uAmp;
 uniform float uAmpScale;
 uniform float uFreq;
 uniform float uFreqScale;
-
+uniform float uGamma;
 
 void main(void)
 {
-//	gl_FragColor = vec4(vec3(fBm(gl_TexCoord[0].st, 6, 1.36, 0.75, 6.0, 2.0)*0.5+0.5), 1);
-	gl_FragColor = vec4(vec3(fBm(gl_TexCoord[0].st, uOctaves, uAmp, uAmpScale, uFreq, uFreqScale)*0.5+0.5), 1);
+	vec3 color = clamp(vec3(fBm(gl_TexCoord[0].st, uOctaves, uAmp, uAmpScale, uFreq, uFreqScale)*0.5+0.5), vec3(0.0), vec3(1.0));
+	gl_FragColor = vec4(pow(color, vec3(uGamma)), 1);
 }

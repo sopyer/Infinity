@@ -33,12 +33,12 @@ float perlin2D(vec2 P)
 	vec2 f = fade(Pf);
 	
 	float noise = mix(
-		mix(grad(AA, Pf),                   grad(BA, Pf+vec2(-1,  0)), f.x),
+		mix(grad(AA, Pf),              grad(BA, Pf+vec2(-1,  0)), f.x),
 		mix(grad(AB, Pf+vec2(0, -1)),  grad(BB, Pf+vec2(-1, -1)), f.x),
 		f.y
 	);
 	
-	return noise*0.5;
+	return noise*0.27;
 }
 
 // fractal sum

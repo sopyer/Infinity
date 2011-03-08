@@ -19,4 +19,14 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\AppData\Perlin.Noise.frag" />
+    <None Include="..\..\AppData\TextureGtor.Metal.frag" />
+    <None Include="..\..\AppData\TextureGtor.Perlin.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Perlin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

@@ -1,31 +1,20 @@
 #include <framework.h>
 
-static unsigned char permutation256[] = { 151,160,137,91,90,15,
-131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
+#include "Perlin.h"
+
+struct VertexPosUV
+{
+	float x, y, u, v;
 };
 
-// gradients for 2d noise
-static float g[] = {
-		 2, 1,
-		 2,-1,
-		-2, 1,
-		-2,-1,
-         1, 2,
-		 1,-2,
-		-1, 2,
-		-1,-2
+static const VertexPosUV quadVertices[4] = {
+	{-1,  1, 0, 1},
+	{ 1,  1, 1, 1},
+	{ 1, -1, 1, 0},
+	{-1, -1, 0, 0}
 };
+
+static uint16_t quadIndices[6] = {0, 1, 3, 1, 2, 3};
 
 class PhysisDemo: public ui::SDLStage
 {
@@ -35,6 +24,11 @@ class PhysisDemo: public ui::SDLStage
 			PERLIN1,
 			PERLIN2,
 			PERLIN3,
+			PERLIN4,
+			PERLIN5,
+			PERLIN6,
+			PERLIN7,
+			TEXTURE_SRT,
 			COMBINED0,
 			COMBINED1,
 			COMBINED2,
@@ -54,7 +48,7 @@ class PhysisDemo: public ui::SDLStage
 
 		GLuint texGtorProg, perlinGtorProg;
 
-		GLuint permTex, gradTex;
+		GLuint permTex[9], gradTex;
 
 		GLint uniSamplerGrad, uniSamplerPerm, uniInvTexDim;
 		
@@ -67,6 +61,7 @@ class PhysisDemo: public ui::SDLStage
 		GLint	uniAmpScale;
 		GLint	uniFreq;
 		GLint	uniFreqScale;
+		GLint	uniGamma;
 
 		ui::ProfileStatsBox		mStatsBox;
 		sui::Font				mFont;
@@ -96,18 +91,26 @@ class PhysisDemo: public ui::SDLStage
 
 		void CreatePerlinNoiseGtor()
 		{
-			GLuint shader, shaderPerlin;
+			GLuint shader;
 
 			perlinGtorProg = glCreateProgram();
 
-			shaderPerlin = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "Perlin.Noise.frag");
+			shader = resources::createShaderFromFile(GL_VERTEX_SHADER, "FF.Copy.PosUV.vert");
+			glAttachShader(perlinGtorProg, shader);
+			glDeleteShader(shader);
+			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "Perlin.Noise.frag");
+			glAttachShader(perlinGtorProg, shader);
+			glDeleteShader(shader);
 			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "TextureGtor.Perlin.frag");
 			glAttachShader(perlinGtorProg, shader);
-			glAttachShader(perlinGtorProg, shaderPerlin);
 			glDeleteShader(shader);
-			glDeleteShader(shaderPerlin);
 
 			glLinkProgram(perlinGtorProg);
+
+			GLint res;
+			glGetProgramiv(perlinGtorProg, GL_LINK_STATUS, &res);
+
+			assert(res);
 
 			{
 				GLenum err = glGetError();
@@ -122,6 +125,7 @@ class PhysisDemo: public ui::SDLStage
 			uniAmpScale		= glGetUniformLocation(perlinGtorProg, "uAmpScale");
 			uniFreq			= glGetUniformLocation(perlinGtorProg, "uFreq");
 			uniFreqScale	= glGetUniformLocation(perlinGtorProg, "uFreqScale");
+			uniGamma        = glGetUniformLocation(perlinGtorProg, "uGamma");
 
 			{
 				GLenum err = glGetError();
@@ -131,7 +135,7 @@ class PhysisDemo: public ui::SDLStage
 			glUseProgram(perlinGtorProg);
 			glUniform1i(uniSamplerPerm, 0);
 			glUniform1i(uniSamplerGrad, 1);
-			glUniform1f(uniInvTexDim, 1.0f/ARRAY_SIZE(permutation256));
+			glUniform1f(uniInvTexDim, 1.0f/PERMUTATION_DIM);
 			glUseProgram(0);
 
 			{
@@ -140,13 +144,16 @@ class PhysisDemo: public ui::SDLStage
 			}
 
 			//Gen perlin permutation and gradient textures
-			glGenTextures(1, &permTex);
-			glBindTexture(GL_TEXTURE_1D, permTex);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, ARRAY_SIZE(permutation256), 0, GL_RED, GL_UNSIGNED_BYTE, permutation256);
+			glGenTextures(9, permTex);
+			for (size_t i=0; i<9; ++i)
+			{
+				glBindTexture(GL_TEXTURE_1D, permTex[i]);
+				glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, PERMUTATION_DIM, 0, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
+			}
 
 			glGenTextures(1, &gradTex);
 			glBindTexture(GL_TEXTURE_1D, gradTex);
@@ -154,23 +161,64 @@ class PhysisDemo: public ui::SDLStage
 			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, g);
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 
 		void CreateTextureGtor()
 		{
-			GLuint shader, shaderPerlin;
+			GLuint shader;
 			texGtorProg = glCreateProgram();
 
+			shader = resources::createShaderFromFile(GL_VERTEX_SHADER, "FF.Copy.PosUV.vert");
+			glAttachShader(texGtorProg, shader);
+			glDeleteShader(shader);
 			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "TextureGtor.Metal.frag");
 			glAttachShader(texGtorProg, shader);
 			glDeleteShader(shader);
 
 			glLinkProgram(texGtorProg);
 
-			uniSamplerInput1 = glGetUniformLocation(texGtorProg, "samInput1");
+			//uniSamplerInput1 = glGetUniformLocation(texGtorProg, "samInput1");
+			//uniSamplerInput2 = glGetUniformLocation(texGtorProg, "samInput2");
+			//uniHSCB = glGetUniformLocation(texGtorProg, "uHSCB");
+
+			glUseProgram(texGtorProg);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput0"), 0);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput1"), 1);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput2"), 2);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput3"), 3);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput4"), 4);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput5"), 5);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput6"), 6);
+			glUniform1i(glGetUniformLocation(texGtorProg, "samInput7"), 7);
+			glUniform1i(uniSamplerInput2, 1);
+			glUseProgram(0);
+
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
+		}
+
+		GLuint srtGtorProg;
+		GLint uniSamplerInput, uniRotationScale, uniTranslate;
+		void CreateSRTGtor()
+		{
+			GLuint shader;
+			srtGtorProg = glCreateProgram();
+
+			shader = resources::createShaderFromFile(GL_VERTEX_SHADER, "FF.Copy.PosUV.vert");
+			glAttachShader(texGtorProg, shader);
+			glDeleteShader(shader);
+			shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "TextureGtor.Metal.frag");
+			glAttachShader(texGtorProg, shader);
+			glDeleteShader(shader);
+
+			glLinkProgram(texGtorProg);
+
+			uniSamplerInput1 = glGetUniformLocation(texGtorProg, "samInput");
 			uniSamplerInput2 = glGetUniformLocation(texGtorProg, "samInput2");
 			uniHSCB = glGetUniformLocation(texGtorProg, "uHSCB");
 
@@ -215,8 +263,18 @@ class PhysisDemo: public ui::SDLStage
 			//Texture program
 			CreateTextureGtor();
 
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
+
 			//Perlin program
 			CreatePerlinNoiseGtor();
+
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
 
 			mFont = sui::createFont("C:\\Windows\\Fonts\\consola.ttf");
 			mFont.setSize(16);
@@ -247,36 +305,34 @@ class PhysisDemo: public ui::SDLStage
 			glDeleteProgram(perlinGtorProg);
 			glDeleteFramebuffers(1, &fbo);
 			glDeleteTextures(10, blurTex);
-			glDeleteTextures(1, &permTex);
+			glDeleteTextures(9, permTex);
 			glDeleteTextures(1, &gradTex);
 		}
 
 	protected:
-		void generateTexture(TextureNames dest, TextureNames src1, TextureNames src2)
+		void generateTextureCombined(TextureNames dest)
 		{
-			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[dest], 0);
-			
-			glViewport(0, 0, texSize, texSize);
-
-			glClearColor(0, 0, 0, 1);
-
 			{
 				GLenum err = glGetError();
 				assert(err==GL_NO_ERROR);
 			}
 
-			glMatrixMode(GL_PROJECTION);
-			glPushMatrix();
-			glLoadIdentity();
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
-			
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, mTextures[src1]);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN0]);
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, mTextures[src2]);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN1]);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN2]);
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN3]);
+			glActiveTexture(GL_TEXTURE4);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN4]);
+			glActiveTexture(GL_TEXTURE5);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN5]);
+			glActiveTexture(GL_TEXTURE6);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN6]);
+			glActiveTexture(GL_TEXTURE7);
+			glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN7]);
 
 			{
 				GLenum err = glGetError();
@@ -285,32 +341,14 @@ class PhysisDemo: public ui::SDLStage
 
 			glColor3f(1, 0, 1);
 			glUseProgram(texGtorProg);
-			glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
-			glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex2f(-1,  1);
-				glTexCoord2f(1, 1);
-				glVertex2f( 1,  1);
-				glTexCoord2f(1, 0);
-				glVertex2f( 1, -1);
-				glTexCoord2f(0, 0);
-				glVertex2f(-1, -1);
-			glEnd();
+			//glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
+
+			generateTexture(mTextures[dest], texSize);
+
 			glUseProgram(0);
-
-			{
-				GLenum err = glGetError();
-				assert(err==GL_NO_ERROR);
-			}
-
-			glPopMatrix();
-			glMatrixMode(GL_PROJECTION);
-			glPopMatrix();
-
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
-		void generatePerlin(TextureNames dest, int octaves, float amp, float ampScale, float freq, float freqScale)
+		void generateTexture(GLuint texID, GLsizei texSize)
 		{
 			{
 				GLenum err = glGetError();
@@ -318,7 +356,7 @@ class PhysisDemo: public ui::SDLStage
 			}
 
 			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[dest], 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
 			
 			{
 				GLenum err = glGetError();
@@ -327,19 +365,56 @@ class PhysisDemo: public ui::SDLStage
 
 			glViewport(0, 0, texSize, texSize);
 
-			glClearColor(0, 0, 0, 1);
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glVertexPointer(2, GL_FLOAT, sizeof(VertexPosUV), &quadVertices[0].x);
+			glClientActiveTexture(GL_TEXTURE0);
+			glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+			glTexCoordPointer(2, GL_FLOAT, sizeof(VertexPosUV), &quadVertices[0].u);
+			
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, quadIndices);
 
-			glMatrixMode(GL_PROJECTION);
-			glPushMatrix();
-			glLoadIdentity();
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glClientActiveTexture(GL_TEXTURE0);
+			glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+		void generatePerlin(TextureNames dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale, float gamma)
+		{
+			//{
+			//	GLenum err = glGetError();
+			//	assert(err==GL_NO_ERROR);
+			//}
+
+			//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[dest], 0);
+			//
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
+
+			//glViewport(0, 0, texSize, texSize);
+
+			//glClearColor(0, 0, 0, 1);
+
+			//glMatrixMode(GL_PROJECTION);
+			//glPushMatrix();
+			//glLoadIdentity();
+			//glMatrixMode(GL_MODELVIEW);
+			//glPushMatrix();
+			//glLoadIdentity();
 			
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_1D, permTex);
+			glBindTexture(GL_TEXTURE_1D, permTex[seed%9]);
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_1D, gradTex);
+
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
 
 			glColor3f(1, 0, 1);
 			glUseProgram(perlinGtorProg);
@@ -349,34 +424,45 @@ class PhysisDemo: public ui::SDLStage
 			glUniform1f(uniAmpScale,  ampScale);
 			glUniform1f(uniFreq,      freq);
 			glUniform1f(uniFreqScale, freqScale);
+			glUniform1f(uniGamma,     gamma);
 
-			glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex2f(-1,  1);
-				glTexCoord2f(1, 1);
-				glVertex2f( 1,  1);
-				glTexCoord2f(1, 0);
-				glVertex2f( 1, -1);
-				glTexCoord2f(0, 0);
-				glVertex2f(-1, -1);
-			glEnd();
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
+
+			generateTexture(mTextures[dest], texSize);
+			//glBegin(GL_QUADS);
+			//	glTexCoord2f(0, 1);
+			//	glVertex2f(-1,  1);
+			//	glTexCoord2f(1, 1);
+			//	glVertex2f( 1,  1);
+			//	glTexCoord2f(1, 0);
+			//	glVertex2f( 1, -1);
+			//	glTexCoord2f(0, 0);
+			//	glVertex2f(-1, -1);
+			//glEnd();
 			glUseProgram(0);
 
-			glPopMatrix();
-			glMatrixMode(GL_PROJECTION);
-			glPopMatrix();
+			{
+				GLenum err = glGetError();
+				assert(err==GL_NO_ERROR);
+			}
+			//glPopMatrix();
+			//glMatrixMode(GL_PROJECTION);
+			//glPopMatrix();
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
 		void downsample(GLuint tex, GLuint dest, GLuint dim)
 		{
-			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest, 0);
-			
-			glViewport(0, 0, dim, dim);
+			//glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dest, 0);
+			//
+			//glViewport(0, 0, dim, dim);
 
-			glClearColor(0, 0, 0, 1);
+			//glClearColor(0, 0, 0, 1);
 
 			glMatrixMode(GL_PROJECTION);
 			glPushMatrix();
@@ -394,23 +480,24 @@ class PhysisDemo: public ui::SDLStage
 
 			glColor4f(1, 1, 1, 1);
 			glUseProgram(0);
-			glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex2f(-1,  1);
-				glTexCoord2f(1, 1);
-				glVertex2f( 1,  1);
-				glTexCoord2f(1, 0);
-				glVertex2f( 1, -1);
-				glTexCoord2f(0, 0);
-				glVertex2f(-1, -1);
-			glEnd();
-			glDisable(GL_TEXTURE_2D);
+			generateTexture(dest, dim);
+			//glBegin(GL_QUADS);
+			//	glTexCoord2f(0, 1);
+			//	glVertex2f(-1,  1);
+			//	glTexCoord2f(1, 1);
+			//	glVertex2f( 1,  1);
+			//	glTexCoord2f(1, 0);
+			//	glVertex2f( 1, -1);
+			//	glTexCoord2f(0, 0);
+			//	glVertex2f(-1, -1);
+			//glEnd();
+			//glDisable(GL_TEXTURE_2D);
 
 			glPopMatrix();
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
 		glm::mat4 getHSCB(float hue, float saturation, float contrast, float brightness)
@@ -451,6 +538,7 @@ class PhysisDemo: public ui::SDLStage
 			glPushMatrix();
 			glTranslatef(x, y, -10);
 			
+			glUseProgram(0);
 			glColor4f(1, 1, 1, 1);
 			glActiveTexture(GL_TEXTURE0);
 			glEnable(GL_TEXTURE_2D);
@@ -476,32 +564,32 @@ class PhysisDemo: public ui::SDLStage
 			mCPUTimer.start();
 			mGPUTimer.start();
 
-			//generatePerlin(perlinTex, texSize, 5, 1.86, 0.75, 12.0, 2.0);
-			generatePerlin(PERLIN0, 6, 1.36, 0.75, 6.0, 2.0);
-			generatePerlin(PERLIN1, 1, 1.36, 0.75, 6.0, 2.0);
-			generateTexture(COMBINED0, PERLIN0, PERLIN1);
-			//generateTexture(COMBINED1, PERLIN1);
+			generatePerlin(PERLIN0, 8, 6, 1.86f, 0.75f, 4.0f, 2.0f, 2.050f);
+			generatePerlin(PERLIN1, 1, 5, 0.50f, 0.32f, 4.0f, 2.0f, 2.120f);
+			generatePerlin(PERLIN2, 5, 6, 1.86f, 0.75f, 4.0f, 2.0f, 2.050f);
+			generatePerlin(PERLIN3, 5, 1, 1.86f, 0.75f, 4.0f, 2.0f, 2.050f);
+			generatePerlin(PERLIN4, 5, 6, 1.36f, 0.75f, 4.0f, 2.0f, 1.090f);
+			generatePerlin(PERLIN5, 5, 1, 1.36f, 0.75f, 4.0f, 2.0f, 1.090f);
+			generatePerlin(PERLIN6, 0, 6, 0.68f, 1.00f,   8.0f, 2.0f, 1.000f);
+			generatePerlin(PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f, 1.000f);
 
-			generatePerlin(PERLIN2, 6, 3.36, 0.75, 6.0, 2.0);
-			generatePerlin(PERLIN3, 1, 3.36, 0.75, 6.0, 2.0);
-			generateTexture(COMBINED2, PERLIN2, PERLIN3);
-			//generateTexture(COMBINED3, PERLIN3);
+			generateTextureCombined(COMBINED0);
 
 			mGPUTimer.stop();
 			mCPUTime = mCPUTimer.elapsed();
 			mGPUTime = mGPUTimer.getResult();
 			mCPUTimer.stop();
 
-			downsample(mTextures[PERLIN0],  blurTex[0], texSize/2);
-			downsample(blurTex[0], blurTex[1], texSize/4);
-			downsample(blurTex[1], blurTex[2], texSize/8);
-			downsample(blurTex[2], blurTex[3], texSize/16);
-			downsample(blurTex[3], blurTex[4], texSize/32);
-			downsample(blurTex[4], blurTex[5], texSize/64);
-			downsample(blurTex[5], blurTex[6], texSize/128);
-			downsample(blurTex[6], blurTex[7], texSize/256);
-			downsample(blurTex[7], blurTex[8], texSize/512);
-			downsample(blurTex[8], blurTex[9], texSize/1024);
+			//downsample(mTextures[PERLIN0],  blurTex[0], texSize/2);
+			//downsample(blurTex[0], blurTex[1], texSize/4);
+			//downsample(blurTex[1], blurTex[2], texSize/8);
+			//downsample(blurTex[2], blurTex[3], texSize/16);
+			//downsample(blurTex[3], blurTex[4], texSize/32);
+			//downsample(blurTex[4], blurTex[5], texSize/64);
+			//downsample(blurTex[5], blurTex[6], texSize/128);
+			//downsample(blurTex[6], blurTex[7], texSize/256);
+			//downsample(blurTex[7], blurTex[8], texSize/512);
+			//downsample(blurTex[8], blurTex[9], texSize/1024);
 
 			{
 				GLenum err = glGetError();
@@ -514,12 +602,12 @@ class PhysisDemo: public ui::SDLStage
 			drawImage( -5,  2, PERLIN1);
 			drawImage( -2,  2, PERLIN2);
 			drawImage(  1,  2, PERLIN3);
-			drawImage(  4,  2, COMBINED0);
-			drawImage(  7,  2, COMBINED2);
+			drawImage(  4,  2, PERLIN4);
+			drawImage(  7,  2, PERLIN5);
 
-			drawImage( -8, -1, blurTex[1]);
-			drawImage( -5, -1, blurTex[2]);
-			drawImage( -2, -1, blurTex[3]);
+			drawImage( -8, -1, PERLIN6);
+			drawImage( -5, -1, PERLIN7);
+			drawImage( -2, -1, COMBINED0);
 			drawImage(  1, -1, blurTex[4]);
 			drawImage(  4, -1, blurTex[5]);
 			drawImage(  7, -1, blurTex[6]);
