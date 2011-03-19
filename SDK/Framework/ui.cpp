@@ -1,15 +1,19 @@
 #include "UI.h"
 #include "Scheduler.h"
 
+#include "DefaultFontData.h"
+
 namespace ui
 {
+	sui::Font defaultFont;
+
 	void init()
 	{
-		mt::init();
+		defaultFont = sui::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
 	}
 
 	void cleanup()
 	{
-		mt::cleanup();
+		sui::destroyFont(defaultFont);
 	}
 }

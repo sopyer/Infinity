@@ -64,7 +64,6 @@ class PhysisDemo: public ui::SDLStage
 		GLint	uniGamma;
 
 		ui::ProfileStatsBox		mStatsBox;
-		sui::Font				mFont;
 
 	public:
 		void allocTextures()
@@ -276,11 +275,7 @@ class PhysisDemo: public ui::SDLStage
 				assert(err==GL_NO_ERROR);
 			}
 
-			mFont = sui::createFont("C:\\Windows\\Fonts\\consola.ttf");
-			mFont.setSize(16);
-
-			add(mStatsBox.setFont(mFont)
-				  .setPos(10, 10)
+			add(mStatsBox.setPos(10, 10)
 				  .setSize(300, 70)
 			);
 
@@ -619,12 +614,8 @@ class PhysisDemo: public ui::SDLStage
 
 extern "C" int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		PhysisDemo app;
-		app.run();
-	}
-	ui::cleanup();
+	PhysisDemo app;
+	app.run();
 
 	return 0;
 }

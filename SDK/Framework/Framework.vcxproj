@@ -94,6 +94,7 @@
     <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
+    <ClCompile Include="DefaultFontData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h" />
@@ -115,6 +116,7 @@
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />
     <ClInclude Include="Timer.h" />
+    <ClInclude Include="DefaultFontData.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\External\glFont\glFont.vcxproj">

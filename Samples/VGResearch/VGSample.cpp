@@ -360,33 +360,27 @@ class VGSample: public ui::SDLStage
 			//strokeBuilder.end(false);
 
 			//strokeBuilder.copyDataTo(stroke);
-			mFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
-			mFont.setSize(16);
 
 			add(mRenderCubicCB.setChecked(true)
 				  .setText(L"Render Cubic")
-				  .setFont(mFont)
 				  .setPos(0, 0)
 				  .setSize(16, 16));
 			mRenderCubicCB.onClicked.connect(this, &VGSample::changePrimVisibility);
 
 			add(mRenderTriCB.setChecked(true)
 				  .setText(L"Render Tri")
-				  .setFont(mFont)
 				  .setPos(0, 20)
 				  .setSize(16, 16));
 			mRenderTriCB.onClicked.connect(this, &VGSample::changePrimVisibility);
 
 			add(mRenderQuadCB.setChecked(true)
 				  .setText(L"Render Quad")
-				  .setFont(mFont)
 				  .setPos(0, 40)
 				  .setSize(16, 16));
 			mRenderQuadCB.onClicked.connect(this, &VGSample::changePrimVisibility);
 
 			add(mRenderArcCB.setChecked(true)
 				  .setText(L"Render Arc")
-				  .setFont(mFont)
 				  .setPos(0, 60)
 				  .setSize(16, 16));
 			mRenderArcCB.onClicked.connect(this, &VGSample::changePrimVisibility);
@@ -394,10 +388,8 @@ class VGSample: public ui::SDLStage
 			wchar_t zoomStr[256];
 			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
 			add(mZoomLabel.setText(zoomStr)
-				  .setFont(mFont)
 				  .setPos(300, 10));
-			add(mCubicLabel.setFont(mFont)
-				  .setPos(0, 540));
+			add(mCubicLabel.setPos(0, 540));
 		}
 
 		~VGSample()
@@ -406,7 +398,6 @@ class VGSample: public ui::SDLStage
 			
 			std::for_each(mCubicsHolder.begin(), mCubicsHolder.end(), deleter);
 
-			sui::destroyFont(mFont);
 			vg::Path::destroy(point);
 			vg::Path::destroy(path);
 			vg::Paint::destroy(paint);
@@ -418,7 +409,6 @@ class VGSample: public ui::SDLStage
 
 		CubicActor*		mActiveCubic;
 		ui::Group		mCubics;
-		sui::Font		mFont;
 		ui::Label		mZoomLabel;
 		ui::Label		mCubicLabel;
 		ui::CheckBox	mRenderCubicCB;
@@ -564,12 +554,8 @@ class VGSample: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		VGSample app;
-		app.run();
-	}
-	ui::cleanup();
+	VGSample app;
+	app.run();
 
 	return 0;
 }

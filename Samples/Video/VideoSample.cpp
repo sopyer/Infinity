@@ -177,12 +177,8 @@ class VideoSample: public ui::SDLStage
 
 extern "C" int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		VideoSample app;
-		app.run();
-	}
-	ui::cleanup();
+	VideoSample app;
+	app.run();
 
 	return 0;
 }

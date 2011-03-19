@@ -38,7 +38,7 @@ namespace ui
 	class Label: public ui::Actor
 	{
 		public:
-			Label(): mColor(1.0f, 1.0f, 1.0f, 1.0f) {}
+			Label(): mColor(1.0f, 1.0f, 1.0f, 1.0f), mFont(ui::defaultFont) {}
 			
 			Label& setFont(sui::Font font) {mFont = font; queueRelayout(); return *this;}
 			Label& setColor(const glm::vec4& color) {mColor = color; return *this;}
@@ -150,25 +150,17 @@ namespace ui
 		public:
 			HGroup()
 			{
-				mTextFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
-				mTextFont.setSize(16);
-
 				setSize(100, 30);
 
-				m1.setFont(mTextFont)
-					.setText(L"Menu1")
+				m1.setText(L"Menu1")
 					.setSize(100, 20);
-				m2.setFont(mTextFont)
-					.setText(L"Menu2")
+				m2.setText(L"Menu2")
 					.setSize(100, 20);
-				m3.setFont(mTextFont)
-					.setText(L"Menu3")
+				m3.setText(L"Menu3")
 					.setSize(100, 20);
 
 				add(m1).add(m2).add(m3);
 			}
-
-			~HGroup() {sui::destroyFont(mTextFont);}
 
 		protected:
 			void onAllocate()
@@ -187,8 +179,6 @@ namespace ui
 			}
 
 		private:
-			sui::Font	mTextFont;
-
 			Button	m1;
 			Button	m2;
 			Button	m3;
@@ -199,23 +189,18 @@ namespace ui
 		public:
 			Layout()
 			{
-				mTextFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
-				mTextFont.setSize(16);
-
 				setSize(100, 30);
 
 				add
 				(
-					mEdit.setFont(mTextFont)
-						.setText(L"Edit me!!!")
+					mEdit.setText(L"Edit me!!!")
 						.setSize(80, 20)
 						.setPos(0,0)
 				)
 				.
 				add
 				(
-					mButton.setFont(mTextFont)
-						.setText(L"^")
+					mButton.setText(L"^")
 						.setSize(20, 20)
 						.setPos(80,0)
 				)
@@ -230,8 +215,6 @@ namespace ui
 				mButton.onClicked.connect(this, &Layout::expandCollapseList);
 			}
 
-			~Layout() {sui::destroyFont(mTextFont);}
-			
 			void expandCollapseList(Actor*)
 			{
 				if (mListBox.isVisible())
@@ -259,8 +242,6 @@ namespace ui
 			}
 
 		private:
-			sui::Font	mTextFont;
-
 			Button	mButton;
 			Edit	mEdit;
 			HGroup	mListBox;

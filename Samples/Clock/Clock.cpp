@@ -281,12 +281,8 @@ class ClockSample: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		ClockSample app;
-		app.run();
-	}
-	ui::cleanup();
+	ClockSample app;
+	app.run();
 
 	return 0;
 }

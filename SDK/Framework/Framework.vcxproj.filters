@@ -13,6 +13,9 @@
     <Filter Include="SOIL">
       <UniqueIdentifier>{fb02f643-94e2-4580-8679-2aa94e7fcfcc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="UI\Misc">
+      <UniqueIdentifier>{9e8926cb-3d3b-4465-969d-7d8d4f7be82b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SOIL\image_DXT.c">
@@ -45,6 +48,9 @@
     <ClCompile Include="ResourceHelpers.cpp" />
     <ClCompile Include="Controls.cpp">
       <Filter>UI\Controls</Filter>
+    </ClCompile>
+    <ClCompile Include="DefaultFontData.cpp">
+      <Filter>UI\Misc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -95,5 +101,8 @@
     <ClInclude Include="Scheduler.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="ResourceHelpers.h" />
+    <ClInclude Include="DefaultFontData.h">
+      <Filter>UI\Misc</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

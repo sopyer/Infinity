@@ -110,12 +110,8 @@ class Sample3D: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		Sample3D app;
-		app.run();
-	}
-	ui::cleanup();
+	Sample3D app;
+	app.run();
 
 	return 0;
 }

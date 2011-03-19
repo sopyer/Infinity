@@ -116,6 +116,16 @@ namespace sui
 		return newFont;
 	}
 
+	Font createFont(unsigned char* data, size_t size, size_t faceSize)
+	{
+		Font	newFont;
+
+		newFont.mHandle = new FTGLTextureFont(data, size);
+		newFont.setSize(faceSize);
+
+		return newFont;
+	}
+
 	void destroyFont(Font font)
 	{
 		delete font.mHandle;

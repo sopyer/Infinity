@@ -90,12 +90,8 @@ class AOSample: public ui::SDLStage
 
 			mVoxelLookupTextureUniform = glGetUniformLocation(mVoxelizationProgram, "uVoxelLookupTexture");
 
-			mFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
-			mFont.setSize(16);
-
 			add(mRenderAsVoxelsCB.setChecked(false)
 				  .setText(L"Render as voxels")
-				  .setFont(mFont)
 				  .setPos(5, 5)
 				  .setSize(16, 16));
 
@@ -111,7 +107,6 @@ class AOSample: public ui::SDLStage
 		~AOSample()
 		{
 			destroyMRTObjects();
-			sui::destroyFont(mFont);
 			glDeleteProgram(mVoxelizationProgram);
 			glDeleteProgram(mLightProgram);
 			glDeleteProgram(mGBufferProgram);
@@ -365,7 +360,6 @@ class AOSample: public ui::SDLStage
 		}
 
 	private:
-		sui::Font		mFont;
 		ui::CheckBox	mRenderAsVoxelsCB;
 		ui::Image		mPosImage;
 		ui::Image		mNormalImage;
@@ -380,12 +374,8 @@ class AOSample: public ui::SDLStage
 
 extern "C" int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		AOSample app;
-		app.run();
-	}
-	ui::cleanup();
+	AOSample app;
+	app.run();
 
 	return 0;
 }

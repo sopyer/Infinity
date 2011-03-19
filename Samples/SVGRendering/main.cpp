@@ -35,15 +35,10 @@ class SVGSample: public ui::SDLStage
 
 			svgDelete(plist);
 
-			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
-			mFont.setSize(16);
-
 			add(mStatsBox.setPos(10, 10)
 				  .setSize(300, 100));
 
-			mStatsBox.setFont(mFont)
-				.add(mAAChoice.setChecked(false)
-					  .setFont(mFont)
+			mStatsBox.add(mAAChoice.setChecked(false)
 					  .setText(L"Enable AA")
 					  .setWidth(60));
 			
@@ -59,7 +54,6 @@ class SVGSample: public ui::SDLStage
 		mt::Task		mUpdateTask;
 		ui::ProfileStatsBox		mStatsBox;
 		ui::CheckBox			mAAChoice;
-		sui::Font	mFont;
 		
 		~SVGSample()
 		{
@@ -74,8 +68,6 @@ class SVGSample: public ui::SDLStage
 			{void operator ()(vg::Paint paint) {vg::Paint::destroy(paint);}};
 
 			for_each(mPaints.begin(), mPaints.end(), DeletePaint());
-
-			sui::destroyFont(mFont);
 		}
 
 	protected:
@@ -178,12 +170,8 @@ class SVGSample: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		SVGSample app(argc==2?argv[1]:"butterfly.svg");
-		app.run();
-	}
-	ui::cleanup();
+	SVGSample app(argc==2?argv[1]:"butterfly.svg");
+	app.run();
 
 	return 0;
 }

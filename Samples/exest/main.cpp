@@ -237,7 +237,6 @@ class Exest: public ui::SDLStage
 
 		mt::Task		mUpdateTask;
 		ui::ProfileStatsBox		mStatsBox;
-		sui::Font	mFont;
 
 	public:
 		Exest(): fixedMode(false), wireframeMode(false)
@@ -252,9 +251,6 @@ class Exest: public ui::SDLStage
 				{GL_VERTEX_SHADER,   ARRAY_SIZE(gradientVertSrc), gradientVertSrc},
 				{GL_FRAGMENT_SHADER, ARRAY_SIZE(gradientFragSrc), gradientFragSrc}
 			};
-
-			mFont = sui::createFont("K:\\media\\Fonts\\AnonymousPro-1.002.001\\Anonymous Pro B.ttf");
-			mFont.setSize(16);
 
 			gradProgram = createProgram(ARRAY_SIZE(gradProgramDef), gradProgramDef);
 			uniP1 = glGetUniformLocation(gradProgram, "uP1");
@@ -317,9 +313,8 @@ class Exest: public ui::SDLStage
 
 			memset(prevKeystate, 0, SDLK_LAST);
 
-			add(mStatsBox.setFont(mFont)
-				  .add(mSelectTimeLabel.setFont(mFont))
-				  .add(mDrawTimeLabel.setFont(mFont))
+			add(mStatsBox.add(mSelectTimeLabel)
+				  .add(mDrawTimeLabel)
 				  .setPos(10, 10)
 				  .setSize(300, 120)
 			);
@@ -332,7 +327,6 @@ class Exest: public ui::SDLStage
 
 		~Exest()
 		{
-			sui::destroyFont(mFont);
 			terrain.cleanup();
 			glDeleteLists(gradDisplayList, 1);
 			glDeleteProgram(gradProgram);
@@ -576,12 +570,8 @@ class Exest: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		Exest app;
-		app.run();
-	}
-	ui::cleanup();
+	Exest app;
+	app.run();
 
 	return 0;
 }

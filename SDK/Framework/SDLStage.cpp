@@ -52,12 +52,16 @@ namespace ui
 
 		setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
 
+		mt::init();
 		vg::init();
+		ui::init();
 	}
 
 	SDLStage::~SDLStage()
 	{
+		ui::cleanup();
 		vg::cleanup();
+		mt::cleanup();
 		SDL_Quit();
 	}
 

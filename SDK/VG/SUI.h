@@ -44,6 +44,7 @@ namespace sui
 	);
 
 	Font	createFont(const char* name);
+	Font	createFont(unsigned char* data, size_t size, size_t faceSize);
 	void	destroyFont(Font font);
 
 	void drawText(Font font, GLfloat x, GLfloat y, const wchar_t* text);

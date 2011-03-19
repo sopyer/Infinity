@@ -367,13 +367,9 @@ class VGTest: public ui::SDLStage
 			cp.assign(controlPts2, controlPts2+4);
 			addCubic(mRasterCubic, mTri, cp);
 
-			mFont = sui::createFont("C:\\WINDOWS\\Fonts\\times.ttf");
-			mFont.setSize(16);
-
 			wchar_t zoomStr[256];
 			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
 			add(mZoomLabel.setText(zoomStr)
-				  .setFont(mFont)
 				  .setPos(300, 10));
 			glClearStencil(0x80);
 			colorRB = createRenderbuffer(GL_RGBA8, 8, 800, 600);
@@ -388,7 +384,6 @@ class VGTest: public ui::SDLStage
 			glDeleteRenderbuffers(1, &colorRB);
 
 			terminateVGExp();
-			sui::destroyFont(mFont);
 		}
 		
 	protected:
@@ -396,7 +391,6 @@ class VGTest: public ui::SDLStage
 		Geometry<CubicVertex>	mRasterCubic;
 		Geometry<glm::vec2>		mRationalCubic, mTri;
 		
-		sui::Font		mFont;
 		ui::Label		mZoomLabel;
 		
 		bool doMove;
@@ -610,12 +604,8 @@ class VGTest: public ui::SDLStage
 
 int main(int argc, char** argv)
 {
-	ui::init();
-	{
-		VGTest app;
-		app.run();
-	}
-	ui::cleanup();
+	VGTest app;
+	app.run();
 
 	return 0;
 }
