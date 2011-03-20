@@ -9,10 +9,10 @@
 #include "FTCharToGlyphIndexMap.h"
 #include <vector>
 
-class FTTextureGlyph;
-class FTGlyphContainer;
+class FTTextureGlyphNew;
+class FTGlyphContainerNew;
 
-class  FTGL_EXPORT FTGLTextureFont
+class  FTGLTextureFontNew
 {
 	public:
 		bool FaceSize( const unsigned int size, const unsigned int res = 72);
@@ -35,17 +35,17 @@ class  FTGL_EXPORT FTGLTextureFont
 		FT_Error Error() const { return err;}
 
 		// Open and read a font file. Sets Error flag.
-		FTGLTextureFont( const char* fontFilePath);
+		FTGLTextureFontNew( const char* fontFilePath);
 
 		// Open and read a font from a buffer in memory. Sets Error flag.
-		FTGLTextureFont( const unsigned char *pBufferBytes, size_t bufferSizeInBytes);
+		FTGLTextureFontNew( const unsigned char *pBufferBytes, size_t bufferSizeInBytes);
 
-		~FTGLTextureFont();
+		~FTGLTextureFontNew();
 
 		template<typename T>
 		void Render(const T* string);
 
-        typedef std::vector<FTTextureGlyph*> GlyphVector;
+        typedef std::vector<FTTextureGlyphNew*> GlyphVector;
 
 		/**
 		* Gets the kerning vector between two glyphs
@@ -70,7 +70,7 @@ class  FTGL_EXPORT FTGLTextureFont
          * @return              An FTTextureGlyph or <code>null</code> is it hasn't been
          * loaded.
          */
-        const FTTextureGlyph* const Glyph( const unsigned int characterCode);
+        const FTTextureGlyphNew* const Glyph( const unsigned int characterCode);
 
         /**
         * Returns the kerned advance width for a glyph.
@@ -111,7 +111,7 @@ class  FTGL_EXPORT FTGLTextureFont
 		// Construct a glyph of the correct type.
 		// @param g The glyph index NOT the char code.
 		// @return  An FT****Glyph or <code>null</code> on failure.
-		FTTextureGlyph* MakeGlyph( unsigned int g);
+		FTTextureGlyphNew* MakeGlyph( unsigned int g);
 
 		FT_Face ftFace;
 		int charSize;

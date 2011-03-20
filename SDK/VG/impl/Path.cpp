@@ -9,14 +9,6 @@ namespace impl
 {
 	size_t pathDataSize(const VGint segCount, const VGubyte *segs);
 
-	////////////////////////////////////////////////////
-	//			Public methods
-	////////////////////////////////////////////////////
-	Path::Path():mPrims(15)
-	{
-	}
-
-
 	void Path::appendData(const VGint    numSegments,
 						  const VGubyte* pathSegments,
 						  const VGfloat* pathData)

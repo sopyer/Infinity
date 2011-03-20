@@ -5,8 +5,7 @@
 
 namespace impl
 {
-	class Paint;
-	class Path;
+	struct Path;
 }
 
 class FTFont;

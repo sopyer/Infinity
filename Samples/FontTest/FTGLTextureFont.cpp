@@ -21,7 +21,7 @@ inline GLuint NextPowerOf2( GLuint in)
 
 const FT_Long DEFAULT_FACE_INDEX = 0;
 
-FTGLTextureFont::FTGLTextureFont( const char* fontFilePath)
+FTGLTextureFontNew::FTGLTextureFontNew( const char* fontFilePath)
 :	textureWidth(0), textureHeight(0),
 	glyphHeight(0),	glyphWidth(0),
 	xOffset(0),	yOffset(0),
@@ -30,7 +30,7 @@ FTGLTextureFont::FTGLTextureFont( const char* fontFilePath)
     err = FT_New_Face( *FTLibrary::Instance().GetLibrary(), fontFilePath, DEFAULT_FACE_INDEX, &ftFace);
 }
 
-FTGLTextureFont::FTGLTextureFont( const unsigned char *pBufferBytes, size_t bufferSizeInBytes)
+FTGLTextureFontNew::FTGLTextureFontNew( const unsigned char *pBufferBytes, size_t bufferSizeInBytes)
 :	textureWidth(0), textureHeight(0),
 	glyphHeight(0), glyphWidth(0),
 	xOffset(0),	yOffset(0),
@@ -40,7 +40,7 @@ FTGLTextureFont::FTGLTextureFont( const unsigned char *pBufferBytes, size_t buff
 }
 
 
-FTGLTextureFont::~FTGLTextureFont()
+FTGLTextureFontNew::~FTGLTextureFontNew()
 {
     FT_Done_Face(ftFace);
 	glDeleteTextures(textureIDList.size(), (const GLuint*)&textureIDList[0]);
@@ -56,7 +56,7 @@ FTGLTextureFont::~FTGLTextureFont()
 }
 
 
-FTTextureGlyph* FTGLTextureFont::MakeGlyph( unsigned int glyphIndex)
+FTTextureGlyphNew* FTGLTextureFontNew::MakeGlyph( unsigned int glyphIndex)
 {
     err = FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_NO_HINTING);
     if( err)
@@ -86,7 +86,7 @@ FTTextureGlyph* FTGLTextureFont::MakeGlyph( unsigned int glyphIndex)
 			}
 		}
 
-		FTTextureGlyph* tempGlyph = new FTTextureGlyph;
+		FTTextureGlyphNew* tempGlyph = new FTTextureGlyphNew;
 		CreateTexGlyph(*tempGlyph, ftGlyph, textureIDList[textureIDList.size() - 1],	xOffset, yOffset, textureWidth, textureHeight);
 #ifdef _FTGL_NATIVE_
 		xOffset += static_cast<int>( tempGlyph->BBox().upperX - tempGlyph->BBox().lowerX + padding);
@@ -102,7 +102,7 @@ FTTextureGlyph* FTGLTextureFont::MakeGlyph( unsigned int glyphIndex)
 }
 
 
-GLuint FTGLTextureFont::CreateTexture()
+GLuint FTGLTextureFontNew::CreateTexture()
 {   
 	GLuint textID;
 	glGenTextures( 1, (GLuint*)&textID);
@@ -119,7 +119,7 @@ GLuint FTGLTextureFont::CreateTexture()
 }
 
 
-bool FTGLTextureFont::FaceSize( const unsigned int size, const unsigned int res)
+bool FTGLTextureFontNew::FaceSize( const unsigned int size, const unsigned int res)
 {
 	if( err == 0)
 	{
@@ -184,27 +184,27 @@ bool FTGLTextureFont::FaceSize( const unsigned int size, const unsigned int res)
 }
 
 
-unsigned int FTGLTextureFont::FaceSize() const
+unsigned int FTGLTextureFontNew::FaceSize() const
 {
 	return charSize;
 }
 
 
-float FTGLTextureFont::Ascender() const
+float FTGLTextureFontNew::Ascender() const
 {
 	assert(ftSize!=0);
     return  (float)ftSize->metrics.ascender / 64.0f;
 }
 
 
-float FTGLTextureFont::Descender() const
+float FTGLTextureFontNew::Descender() const
 {
 	assert(ftSize!=0);
     return (float)ftSize->metrics.descender / 64.0f;
 }
 
 
-float FTGLTextureFont::LineHeight() const
+float FTGLTextureFontNew::LineHeight() const
 {
 	return glyphHeight;
 }
@@ -215,7 +215,7 @@ unsigned int unsignedExpand(const wchar_t c) {return c;}
 
 
 template<typename T>
-void FTGLTextureFont::BBox( const T* string,
+void FTGLTextureFontNew::BBox( const T* string,
 	float& llx, float& lly, float& urx, float& ury)
 {
 	FTBBox totalBBox;
@@ -260,16 +260,16 @@ void FTGLTextureFont::BBox( const T* string,
 	ury = totalBBox.upper.y;
 }
 
-template void FTGLTextureFont::BBox<char>( const char* string, float& llx, float& lly, float& urx, float& ury);
-template void FTGLTextureFont::BBox<wchar_t>( const wchar_t* string, float& llx, float& lly, float& urx, float& ury);
+template void FTGLTextureFontNew::BBox<char>( const char* string, float& llx, float& lly, float& urx, float& ury);
+template void FTGLTextureFontNew::BBox<wchar_t>( const wchar_t* string, float& llx, float& lly, float& urx, float& ury);
 
 
-bool FTGLTextureFont::CheckGlyph( const unsigned int characterCode)
+bool FTGLTextureFontNew::CheckGlyph( const unsigned int characterCode)
 {
 	if( NULL == Glyph( characterCode))
 	{
 		unsigned int glyphIndex = FontIndex( characterCode);
-		FTTextureGlyph* tempGlyph = MakeGlyph( glyphIndex);
+		FTTextureGlyphNew* tempGlyph = MakeGlyph( glyphIndex);
 		if( NULL == tempGlyph)
 		{
 			if( 0 == err)
@@ -288,20 +288,20 @@ bool FTGLTextureFont::CheckGlyph( const unsigned int characterCode)
 }
 
 
-unsigned int FTGLTextureFont::FontIndex( const unsigned int characterCode)
+unsigned int FTGLTextureFontNew::FontIndex( const unsigned int characterCode)
 {
     return FT_Get_Char_Index( ftFace, characterCode);
 }
 
 
-const FTTextureGlyph* const FTGLTextureFont::Glyph( const unsigned int characterCode)
+const FTTextureGlyphNew* const FTGLTextureFontNew::Glyph( const unsigned int characterCode)
 {
     signed int index = charMap.find(characterCode);
     return glyphs[index];
 }
 
 
-float FTGLTextureFont::Advance( const unsigned int characterCode, const unsigned int nextCharacterCode)
+float FTGLTextureFontNew::Advance( const unsigned int characterCode, const unsigned int nextCharacterCode)
 {
     unsigned int left = FontIndex(characterCode);
     unsigned int right = FontIndex(nextCharacterCode);
@@ -312,7 +312,7 @@ float FTGLTextureFont::Advance( const unsigned int characterCode, const unsigned
     return width;
 }
 
-FTPoint FTGLTextureFont::KernAdvance( unsigned int index1, unsigned int index2)
+FTPoint FTGLTextureFontNew::KernAdvance( unsigned int index1, unsigned int index2)
 {
     float x=0.0f, y=0.0f;
 
@@ -333,7 +333,7 @@ FTPoint FTGLTextureFont::KernAdvance( unsigned int index1, unsigned int index2)
 }
 
 template<typename T>
-void FTGLTextureFont::Render(const T* string)
+void FTGLTextureFontNew::Render(const T* string)
 {   
 	glPushAttrib( GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
 
@@ -359,10 +359,10 @@ void FTGLTextureFont::Render(const T* string)
 	glPopAttrib();
 }
 
-template void FTGLTextureFont::Render<char>(const char* string);
-template void FTGLTextureFont::Render<wchar_t>(const wchar_t* string);
+template void FTGLTextureFontNew::Render<char>(const char* string);
+template void FTGLTextureFontNew::Render<wchar_t>(const wchar_t* string);
 
-FTPoint FTGLTextureFont::Render( const unsigned int characterCode, const unsigned int nextCharacterCode, FTPoint penPosition)
+FTPoint FTGLTextureFontNew::Render( const unsigned int characterCode, const unsigned int nextCharacterCode, FTPoint penPosition)
 {
     FTPoint kernAdvance, advance;
     
@@ -372,7 +372,7 @@ FTPoint FTGLTextureFont::Render( const unsigned int characterCode, const unsigne
     kernAdvance = KernAdvance( left, right);
         
     {
-		const FTTextureGlyph* glyph = Glyph(characterCode);
+		const FTTextureGlyphNew* glyph = Glyph(characterCode);
 		if( activeTextureID != glyph->glTextureID)
 		{
 			glBindTexture( GL_TEXTURE_2D, (GLuint)glyph->glTextureID);

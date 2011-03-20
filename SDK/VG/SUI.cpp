@@ -258,7 +258,7 @@ namespace sui
 
  	void drawFrame(
 		float x0, float y0, float x1, float y1, float cx, float cy,
-		bool isHover, bool isOn, bool isFocus
+		bool isHover, bool isOn, bool /*isFocus*/
 	)
 	{
 		int lColorNb = cBase + (isHover) + (isOn << 1);// + (isFocus << 2);
@@ -271,7 +271,7 @@ namespace sui
 
 	void drawBoolFrame(
 		float x0, float y0, float x1, float y1, float cx, float cy,
-		bool isHover, bool isOn, bool isFocus
+		bool isHover, bool isOn, bool /*isFocus*/
 	)
 	{
 		int lColorNb = cBool + (isHover) + (isOn << 1);// + (isFocus << 2);

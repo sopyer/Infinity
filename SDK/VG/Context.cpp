@@ -9,25 +9,6 @@ namespace vg
 {
 	void Font::setFaceSize(VGuint size) {mHandle->FaceSize(size);}
 
-
-	Context::Context()
-	{
-		impl::acquire();
-	}
-
-	Context::~Context()
-	{
-		impl::release();
-	}
-
-	Path createPath()
-	{
-		Path	newPath;
-		
-		newPath.mHandle = new impl::Path();
-		return newPath;
-	}
-
 	void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)
 	{
 		glBegin(GL_QUADS);
@@ -53,15 +34,15 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		impl::RasterizeEvenOdd(path.mHandle->mFillGeom);
+		clearStencil(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		impl::RasterizeEvenOdd(path->mFillGeom);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glUseProgram(0);
 		glColor4ub(red, green, blue, alpha);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 		glPopAttrib();
 	}
 
@@ -69,14 +50,14 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		impl::RasterizeEvenOdd(path.mHandle->mFillGeom);
+		clearStencil(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		impl::RasterizeEvenOdd(path->mFillGeom);
 
-		glCallList(paint.mHandle);
+		glCallList(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 		glPopAttrib();
 	}
 
@@ -84,14 +65,14 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		impl::rasterizeEvenOddA2C(path.mHandle->mFillGeom);
+		clearStencil(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		impl::rasterizeEvenOddA2C(path->mFillGeom);
 
-		glCallList(paint.mHandle);
+		glCallList(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 		glPopAttrib();
 	}
 
@@ -99,14 +80,14 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		rasterizeNonZeroA2C(path.mHandle->mFillGeom);
+		clearStencil(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		rasterizeNonZeroA2C(path->mFillGeom);
 
-		glCallList(paint.mHandle);
+		glCallList(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 		glPopAttrib();
 	}
 
@@ -114,26 +95,16 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		impl::RasterizeNonZero(path.mHandle->mFillGeom);
+		clearStencil(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		impl::RasterizeNonZero(path->mFillGeom);
 
-		glCallList(paint.mHandle);
+		glCallList(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 		glPopAttrib();
 	}
-
-	void destroyPath(Path path)
-	{
-		delete path.mHandle;
-	}
-
-	void drawPath()
-	{
-	}
-
 
 	Font createFont(const char* name)
 	{
@@ -198,15 +169,15 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
 		glEnable(GL_STENCIL_TEST);
-		clearAlpha(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
-		impl::RasterizeEvenOddAA(path.mHandle->mFillGeom);
+		clearAlpha(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
+		impl::RasterizeEvenOddAA(path->mFillGeom);
 
-		glCallList(paint.mHandle);
+		glCallList(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glEnable(GL_BLEND);
 		glBlendEquation(GL_FUNC_ADD);
 		glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-		drawQuad(path.mHandle->mFillGeom.mMin, path.mHandle->mFillGeom.mMax, 0);
+		drawQuad(path->mFillGeom.mMin, path->mFillGeom.mMax, 0);
 
 		glPopAttrib();
 	}

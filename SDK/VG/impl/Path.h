@@ -7,36 +7,29 @@
 
 namespace impl
 {
-	class Path
+	struct Path
 	{
-		public:
-			Path();
+		void appendData(const VGint    numSegments,
+						const VGubyte* pathSegments,
+						const VGfloat* pathData);
 
-			void appendData(const VGint    numSegments,
-							const VGubyte* pathSegments,
-							const VGfloat* pathData);
-
-			void bounds(VGfloat* minX,
-						VGfloat* minY,
-						VGfloat* maxX,
-						VGfloat* maxY);
+		void bounds(VGfloat* minX,
+					VGfloat* minY,
+					VGfloat* maxX,
+					VGfloat* maxY);
 		
-		//private:
-			void prepareGeom();
+		void prepareGeom();
 
-		//private:
-			//User path data
-			Array<VGubyte>	mSegments;
-			Array<float>	mData;
+		//User path data
+		Array<VGubyte>	mSegments;
+		Array<float>	mData;
 			
-			//Private path data
-			FillGeometry	mFillGeom;
-			StrokeGeometry	mStrokeGeom;
+		//Private path data
+		FillGeometry	mFillGeom;
+		StrokeGeometry	mStrokeGeom;
 			
-			VGuint	mPrims;
-			bool	mRebuildGeometry;
+		bool	mRebuildGeometry;
 	};
-
 }
 
 #endif

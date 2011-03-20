@@ -23,11 +23,11 @@ class SVGSample: public ui::SDLStage
 			
 			while (cur && cur->hasFill)
 			{
-				vg::Path path = vg::Path::create(cur->count, cur->commands, cur->data);
+				vg::Path path = vg::createPath(cur->count, cur->commands, cur->data);
 				mPaths.push_back(path);
 
 				unsigned int col = 0xFFFFFFFF;
-				vg::Paint paint = vg::Paint::createSolid(cur->fillColor);
+				vg::Paint paint = vg::createSolidPaint(cur->fillColor);
 				mPaints.push_back(paint);
 
 				cur = cur->next;
@@ -60,12 +60,12 @@ class SVGSample: public ui::SDLStage
 			glDeleteQueries(1, &mTimeQuery);
 
 			struct DeletePath
-			{void operator ()(vg::Path path) {vg::Path::destroy(path);}};
+			{void operator ()(vg::Path path) {vg::destroyPath(path);}};
 
 			for_each(mPaths.begin(), mPaths.end(), DeletePath());
 
 			struct DeletePaint
-			{void operator ()(vg::Paint paint) {vg::Paint::destroy(paint);}};
+			{void operator ()(vg::Paint paint) {vg::destroyPaint(paint);}};
 
 			for_each(mPaints.begin(), mPaints.end(), DeletePaint());
 		}
@@ -146,7 +146,7 @@ class SVGSample: public ui::SDLStage
 
 			glEndQuery(GL_TIME_ELAPSED_EXT);
 
-			mDrawTimeCPU = 0.8f*drawTimer.elapsed()+0.2f*mDrawTimeCPU;
+			mDrawTimeCPU = (float)(0.8f*drawTimer.elapsed()+0.2f*mDrawTimeCPU);
 
 			GLuint64EXT result;
 			glGetQueryObjectui64vEXT(mTimeQuery, GL_QUERY_RESULT, &result);

@@ -26,13 +26,13 @@ public:
 	{
 		memcpy(&mControlPoints, cp, sizeof(VGfloat)*2*4);
 		VGubyte segments[3] = {VG_MOVE_TO, VG_CUBIC_TO, VG_CLOSE_PATH};
-		mCubic = vg::Path::create(3, segments, cp);
+		mCubic = vg::createPath(3, segments, cp);
 		//hide();
 	}
 
 	~CubicActor()
 	{
-		vg::Path::destroy(mCubic);
+		vg::destroyPath(mCubic);
 	}
 
 	CubicActor& setPaint(vg::Paint paint)
@@ -156,8 +156,7 @@ class VGSample: public ui::SDLStage
 			offsetX(mWidth/2),
 			offsetY(mHeight/2),
 			zoom(10),
-			mActiveCubic(0),
-			mVisPrims(vg::PRIM_TYPE_ALL)
+			mActiveCubic(0)
 		{
 			VGubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float data[] = {150, 100, 150, 0, 50, 100, 0, 0, 0, 50, 50, 0};
@@ -237,13 +236,13 @@ class VGSample: public ui::SDLStage
 			//path.appendData(ARRAY_SIZE(segs), segs, data);
 
 			//path  = vg::Path::create(ARRAY_SIZE(segs), segs, data);
-			point = vg::Path::createUnitQuad();
-			path  = vg::Path::create(ARRAY_SIZE(hourHandSegs), hourHandSegs, hourHandData);
+			point = vg::createUnitQuad();
+			path  = vg::createPath(ARRAY_SIZE(hourHandSegs), hourHandSegs, hourHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(minuteHandSegs), minuteHandSegs, minuteHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(secondHandSegs), secondHandSegs, secondHandData);
 			//path  = vg::Path::create(ARRAY_SIZE(arcTest), arcTest, arcData);
-			paint = vg::Paint::createSolid(glm::vec4(0.0f, 0.8f, 0.65f, 1.0f));
-			white = vg::Paint::createSolid(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			paint = vg::createSolidPaint(glm::vec4(0.0f, 0.8f, 0.65f, 1.0f));
+			white = vg::createSolidPaint(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 			float* d = hourHandData;
 			for (int i = 0; i< ARRAY_SIZE(hourHandSegs); ++i)
@@ -361,30 +360,6 @@ class VGSample: public ui::SDLStage
 
 			//strokeBuilder.copyDataTo(stroke);
 
-			add(mRenderCubicCB.setChecked(true)
-				  .setText(L"Render Cubic")
-				  .setPos(0, 0)
-				  .setSize(16, 16));
-			mRenderCubicCB.onClicked.connect(this, &VGSample::changePrimVisibility);
-
-			add(mRenderTriCB.setChecked(true)
-				  .setText(L"Render Tri")
-				  .setPos(0, 20)
-				  .setSize(16, 16));
-			mRenderTriCB.onClicked.connect(this, &VGSample::changePrimVisibility);
-
-			add(mRenderQuadCB.setChecked(true)
-				  .setText(L"Render Quad")
-				  .setPos(0, 40)
-				  .setSize(16, 16));
-			mRenderQuadCB.onClicked.connect(this, &VGSample::changePrimVisibility);
-
-			add(mRenderArcCB.setChecked(true)
-				  .setText(L"Render Arc")
-				  .setPos(0, 60)
-				  .setSize(16, 16));
-			mRenderArcCB.onClicked.connect(this, &VGSample::changePrimVisibility);
-
 			wchar_t zoomStr[256];
 			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
 			add(mZoomLabel.setText(zoomStr)
@@ -398,10 +373,10 @@ class VGSample: public ui::SDLStage
 			
 			std::for_each(mCubicsHolder.begin(), mCubicsHolder.end(), deleter);
 
-			vg::Path::destroy(point);
-			vg::Path::destroy(path);
-			vg::Paint::destroy(paint);
-			vg::Paint::destroy(white);
+			vg::destroyPath(point);
+			vg::destroyPath(path);
+			vg::destroyPaint(paint);
+			vg::destroyPaint(white);
 		}
 		
 	protected:
@@ -447,27 +422,6 @@ class VGSample: public ui::SDLStage
 		void updateCubics()
 		{
 			mCubics.setScale(zoom, zoom).setPos(offsetX, offsetY);
-		}
-
-		void changePrimVisibility(ui::Actor* actor)
-		{
-			if (ui::isSame(actor, &mRenderCubicCB))
-			{
-				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_CUBIC:mVisPrims&~vg::PRIM_TYPE_CUBIC;
-			}
-			else if (ui::isSame(actor, &mRenderTriCB))
-			{
-				mVisPrims = mRenderTriCB.isChecked()?mVisPrims|vg::PRIM_TYPE_TRI:mVisPrims&~vg::PRIM_TYPE_TRI;
-			}
-			else if (ui::isSame(actor, &mRenderQuadCB))
-			{
-				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_QUAD:mVisPrims&~vg::PRIM_TYPE_QUAD;
-			}
-			else if (ui::isSame(actor, &mRenderArcCB))
-			{
-				mVisPrims = mRenderCubicCB.isChecked()?mVisPrims|vg::PRIM_TYPE_ARC:mVisPrims&~vg::PRIM_TYPE_ARC;
-			}
-			path.setRastPrims(mVisPrims);
 		}
 
 		void onTouch(const ButtonEvent& event)
@@ -548,8 +502,6 @@ class VGSample: public ui::SDLStage
 		vg::Paint					paint;
 		impl::FillGeometry			fill;
 		impl::StrokeGeometry		stroke;
-
-		vg::Context	mContext;
 };
 
 int main(int argc, char** argv)

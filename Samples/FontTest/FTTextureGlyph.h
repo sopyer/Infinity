@@ -16,7 +16,7 @@
  * @see FTGlyphContainer
  *
  */
-class FTGL_EXPORT FTTextureGlyph //: public FTTextureGlyph
+class FTTextureGlyphNew //: public FTTextureGlyph
 {
     public:
         /**
@@ -75,6 +75,6 @@ class FTGL_EXPORT FTTextureGlyph //: public FTTextureGlyph
         int glTextureID;
 };
 
-FT_Error CreateTexGlyph(FTTextureGlyph& texglyph, FT_GlyphSlot glyph, int id, int xOffset, int yOffset, GLsizei width, GLsizei height);
+FT_Error CreateTexGlyph(FTTextureGlyphNew& texglyph, FT_GlyphSlot glyph, int id, int xOffset, int yOffset, GLsizei width, GLsizei height);
 
 #endif  //  __FTTextureGlyph__

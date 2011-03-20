@@ -290,7 +290,7 @@ class PhysisDemo: public ui::SDLStage
 
 		void onUpdateStats()
 		{
-			mStatsBox.setStats(mCPUTime, mGPUTime);
+			mStatsBox.setStats((float)mCPUTime, (float)mGPUTime);
 		}
 
 		~PhysisDemo()

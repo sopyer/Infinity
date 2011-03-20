@@ -119,9 +119,9 @@ class ClockSample: public ui::SDLStage
 				);
 			}
 #else			
-			mRed = vg::Paint::createSolid(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-			mBlack = vg::Paint::createSolid(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
-			mWhite = vg::Paint::createSolid(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+			mRed = vg::createSolidPaint(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+			mBlack = vg::createSolidPaint(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
+			mWhite = vg::createSolidPaint(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 			
 			loadClockFacePaths();
 			loadClockHands();
@@ -139,11 +139,11 @@ class ClockSample: public ui::SDLStage
 			glDeleteTextures(IMG_COUNT, mTextures);
 #else
 			for (size_t i=0; i<PATH_COUNT; ++i)
-				vg::Path::destroy(mClockPaths[i]);
+				vg::destroyPath(mClockPaths[i]);
 
-			vg::Paint::destroy(mWhite);
-			vg::Paint::destroy(mBlack);
-			vg::Paint::destroy(mRed);
+			vg::destroyPaint(mWhite);
+			vg::destroyPaint(mBlack);
+			vg::destroyPaint(mRed);
 #endif
 		}
 
@@ -156,10 +156,10 @@ class ClockSample: public ui::SDLStage
 
 			for (size_t i=PATH_CLOCK_BKG; i<PATH_HOUR_HAND; ++i)
 			{
-				mClockPaths[i]  = vg::Path::create(clockVectorImages[i].segCount,
+				mClockPaths[i]  = vg::createPath(clockVectorImages[i].segCount,
 					clockVectorImages[i].segs, clockVectorImages[i].data);
 
-				mClockPaths[i].getBounds(x1, y1, x2, y2);
+				vg::getPathBounds(mClockPaths[i], x1, y1, x2, y2);
 				
 				w = x2-x1; h = y2-y1;
 				x = (-w/2.0f-x1); y = (-h/2.0f-y1);
@@ -175,7 +175,7 @@ class ClockSample: public ui::SDLStage
 		{
 			for (size_t i=PATH_HOUR_HAND; i<PATH_COUNT; ++i)
 			{
-				mClockPaths[i]  = vg::Path::create(clockVectorImages[i].segCount,
+				mClockPaths[i]  = vg::createPath(clockVectorImages[i].segCount,
 					clockVectorImages[i].segs, clockVectorImages[i].data);
 
 				mGroup.add(mClockActors[i].setPath(mClockPaths[i]).

@@ -1,5 +1,4 @@
 #include <vector>
-#include <glm/glm.h>
 #include <gl/glee.h>
 
 #include "Paint.h"
@@ -7,13 +6,27 @@
 
 namespace vg
 {
+	Paint createSolidPaint(float* color4f)
+	{
+		Paint	newPaint;
+
+		newPaint = glGenLists(1);
+
+		glNewList(newPaint, GL_COMPILE);
+		glUseProgram(0);
+		glColor4fv(color4f);
+		glEndList();
+
+		return newPaint;
+	}
+
 	Paint createSolidPaint(unsigned int color)
 	{
 		Paint	newPaint;
 
-		newPaint.mHandle = glGenLists(1);
+		newPaint = glGenLists(1);
 
-		glNewList(newPaint.mHandle, GL_COMPILE);
+		glNewList(newPaint, GL_COMPILE);
 		glUseProgram(0);
 		glColor4ubv((GLubyte*)&color);
 		glEndList();
@@ -23,67 +36,12 @@ namespace vg
 
 	void applyPaintAsGLProgram(Paint paint)
 	{
-		glCallList(paint.mHandle);
+		glCallList(paint);
 	}
 
 	void destroyPaint(Paint paint)
 	{
-		glDeleteLists(paint.mHandle, 1);
-		paint.mHandle = 0;
-	}
-
-	Paint Paint::createSolid(unsigned int color)
-	{
-		//GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
-		//mObject->fillProgram.begin();
-		//	glUseProgram(impl::shared::prgFillColor);
-		//	glUniform4fv(uLocColor, 1, color);
-		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//mObject->fillProgram.end();
-
-		//mObject->color = color;
-		//mObject->texture = 0;
-	
-		Paint	newPaint;
-
-		newPaint.mHandle = glGenLists(1);
-
-		glNewList(newPaint.mHandle, GL_COMPILE);
-		glUseProgram(0);
-		glColor4ubv((GLubyte*)&color);
-		glEndList();
-
-		return newPaint;
-	}
-
-	Paint Paint::createSolid(float* color4f)
-	{
-		//GLint uLocColor = glGetUniformLocation(impl::shared::prgFillColor, "uFillColor");
-		//mObject->fillProgram.begin();
-		//	glUseProgram(impl::shared::prgFillColor);
-		//	glUniform4fv(uLocColor, 1, color);
-		//	glBindTexture(GL_TEXTURE_2D, 0);
-		//mObject->fillProgram.end();
-
-		//mObject->color = color;
-		//mObject->texture = 0;
-	
-		Paint	newPaint;
-
-		newPaint.mHandle = glGenLists(1);
-
-		glNewList(newPaint.mHandle, GL_COMPILE);
-		glUseProgram(0);
-		glColor4fv(color4f);
-		glEndList();
-
-		return newPaint;
-	}
-
-	void Paint::destroy(Paint paint)
-	{
-		glDeleteLists(paint.mHandle, 1);
-		paint.mHandle = 0;
+		glDeleteLists(paint, 1);
 	}
 
 	//void Paint::setColorPaint(const glm::vec4& color)

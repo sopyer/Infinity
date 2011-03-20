@@ -8,40 +8,13 @@
 
 namespace vg
 {
-	enum
-	{
-		PRIM_TYPE_TRI = 1,
-		PRIM_TYPE_ARC = 2,
-		PRIM_TYPE_QUAD = 4,
-		PRIM_TYPE_CUBIC = 8,
-		PRIM_TYPE_ALL = 15,
-	};
+	typedef impl::Path* Path;
 
-	struct Path: public Handle<impl::Path*>
-	{
-		void appendData(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
-		void getBounds(float& x1, float& y1, float& x2, float& y2);
+	Path createPath(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
+	Path createUnitQuad();
+	void destroyPath(Path path);
 
-		void setRastPrims(VGuint prims);
-
-		static Path create(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
-		static Path createUnitQuad();
-		static void destroy(Path path);
-
-		//void appendPath(Path srcPath);
-		//void modifyCoords(int startIndex, int numSegments, const void* pathData);
-		//void clear();
-		//void bounds(float* minX,  float* minY, float* width, float* height);
-		//void vgPointAlongPath(VGint startSegment, VGint numSegments, VGfloat distance,
-		//					  VGfloat * x, VGfloat * y, VGfloat * tangentX, VGfloat * tangentY);
-		//VGfloat vgPathLength(VGint startSegment, VGint numSegments);
-	};
-
-	//Path createPath(float scale, float bias);
-	//void destroyPath(Path path);
-
-	////void transformPath(Path dstPath, Path srcPath);
-	////bool interpolatePath(Path dstPath, Path startPath, Path endPath, float amount);
+	void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2);
 }
 
 #endif

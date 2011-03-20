@@ -170,7 +170,7 @@ namespace impl
 	void RasterizeEvenOdd(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 	void RasterizeEvenOddAA(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 
-	//Safetly supports up to 127 self intersections
+	//Safely supports up to 127 self intersections
 	void RasterizeNonZero(Geometry<FillVertex, FILL_PRIM_TYPE_COUNT>& geom);
 
 	//Strokes for quads and cubics essentially are approximations and not a good ones - they would not work in some cases

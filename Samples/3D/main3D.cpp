@@ -20,8 +20,8 @@ class Rectangle1: public ui::Actor
 
 const int numRows = 4;
 const int numCols = 20;
-const float hMargin = 0.15f;
-const float vMargin = 0.15f;
+const float hMargin = 10;
+const float vMargin = 10;
 
 class Sample3D: public ui::SDLStage
 {
@@ -35,9 +35,9 @@ class Sample3D: public ui::SDLStage
 				for(int j=0; j<numCols; ++j)
 				{
 					mGroup.add(
-						mRect[i*numCols+j].setPos((4+hMargin*2.0f)*(j-numCols/2.0f)+hMargin, (3+vMargin*2.0f)*(i-numRows/2.0f)+vMargin)
+						mRect[i*numCols+j].setPos(360+(200+hMargin*2.0f)*(j-numCols/2.0f)+hMargin, 640+(150+vMargin*2.0f)*(i-numRows/2.0f)+vMargin)
 						.setZ(15)
-						.setSize(4, 3)
+						.setSize(200, 150)
 					);
 				}
 			}

@@ -23,8 +23,6 @@ namespace impl
 		return res;
 	}
 
-
-
 	void meshAddBezier3(FillGeometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 	{
 		glm::vec2	ctrlPt[4*2] = {cp0, cp1, cp2, cp3};

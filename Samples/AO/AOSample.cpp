@@ -80,7 +80,9 @@ class AOSample: public ui::SDLStage
 	public:
 		AOSample()
 		{
-			VFS::mount("..\\AppData");
+			VFS::mount("AppData");
+			VFS::mount("../AppData");
+			VFS::mount("../../AppData");
 			vg::init();
 			genVoxelLookupTexture();
 

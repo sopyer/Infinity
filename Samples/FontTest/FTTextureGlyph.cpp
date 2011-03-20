@@ -1,6 +1,6 @@
 #include    "FTTextureGlyph.h"
 
-FT_Error CreateTexGlyph(FTTextureGlyph& texglyph, FT_GlyphSlot glyph, int id, int xOffset, int yOffset, GLsizei width, GLsizei height)
+FT_Error CreateTexGlyph(FTTextureGlyphNew& texglyph, FT_GlyphSlot glyph, int id, int xOffset, int yOffset, GLsizei width, GLsizei height)
 {
 	texglyph.glTextureID = id;
 	if( glyph)

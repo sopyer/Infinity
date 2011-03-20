@@ -58,12 +58,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VFS++", "SDK\VFS++\VFS++.vc
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VFSSample", "Samples\VFSSample\VFSSample.vcxproj", "{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}"
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VG", "SDK\VG\VG.vcxproj", "{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}"
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
@@ -162,12 +156,6 @@ Global
 		{34F2CB23-8132-4955-B77D-32CF9D1300A3}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
 		{34F2CB23-8132-4955-B77D-32CF9D1300A3}.Release|Win32.ActiveCfg = Release|Win32
 		{34F2CB23-8132-4955-B77D-32CF9D1300A3}.Release|Win32.Build.0 = Release|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Debug|Win32.Build.0 = Debug|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Release_NoSTDIO|Win32.Build.0 = Release|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Release|Win32.ActiveCfg = Release|Win32
-		{DC49E3E2-82B1-4F84-9451-D22EB0DA105F}.Release|Win32.Build.0 = Release|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Debug|Win32.ActiveCfg = Debug|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Debug|Win32.Build.0 = Debug|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release_NoSTDIO|Win32.ActiveCfg = Release|Win32
