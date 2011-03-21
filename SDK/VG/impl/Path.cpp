@@ -5,11 +5,11 @@
 #include <glm/glm.h>
 #include <vector>
 
-namespace impl
+namespace vg
 {
 	size_t pathDataSize(const VGint segCount, const VGubyte *segs);
 
-	void Path::appendData(const VGint    numSegments,
+	void PathOpaque::appendData(const VGint    numSegments,
 						  const VGubyte* pathSegments,
 						  const VGfloat* pathData)
 	{
@@ -20,7 +20,7 @@ namespace impl
 		prepareGeom();
 	}
 
-	void Path::bounds(VGfloat* minX,
+	void PathOpaque::bounds(VGfloat* minX,
 					  VGfloat* minY,
 					  VGfloat* maxX,
 					  VGfloat* maxY)
@@ -31,7 +31,7 @@ namespace impl
 		*maxY = mFillGeom.mMax.y;
 	}
 
-	void Path::prepareGeom()
+	void PathOpaque::prepareGeom()
 	{	
 		if (mRebuildGeometry)
 		{

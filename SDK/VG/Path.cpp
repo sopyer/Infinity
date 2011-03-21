@@ -3,21 +3,24 @@
 #include <utils.h>
 
 #include "Path.h"
-#include "impl/Path.h"
+#include "impl/Rasterizer.h"
 
 namespace vg
 {
 	void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2)
 	{
-		path->bounds(&x1, &y1, &x2, &y2);
+		//path->bounds(&x1, &y1, &x2, &y2);
+		x1 = path->xmin; y1 = path->ymin;
+		x2 = path->xmax; y2 = path->ymax;
 	}
 
 	Path createPath(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData)
 	{
 		Path	newPath;
 		
-		newPath = new impl::Path();
-		newPath->appendData(numSegments, pathSegments, pathData);
+		newPath = new impl::Geometry();
+		impl::buildFillGeometry(*newPath, numSegments, pathSegments, pathData);
+	//	newPath->appendData(numSegments, pathSegments, pathData);
 		return newPath;
 	}
 

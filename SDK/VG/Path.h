@@ -6,9 +6,14 @@
 #include <VG/DataTypes.h>
 #include <VG/VGCommon.h>
 
+namespace impl
+{
+	struct Geometry;
+}
+
 namespace vg
 {
-	typedef impl::Path* Path;
+	typedef impl::Geometry* Path;
 
 	Path createPath(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
 	Path createUnitQuad();

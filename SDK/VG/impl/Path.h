@@ -5,9 +5,9 @@
 #include <DataTypes.h>
 #include "Rasterizer.h"
 
-namespace impl
+namespace vg
 {
-	struct Path
+	struct PathOpaque
 	{
 		void appendData(const VGint    numSegments,
 						const VGubyte* pathSegments,
@@ -25,8 +25,8 @@ namespace impl
 		Array<float>	mData;
 			
 		//Private path data
-		FillGeometry	mFillGeom;
-		StrokeGeometry	mStrokeGeom;
+		impl::FillGeometry	mFillGeom;
+		impl::StrokeGeometry	mStrokeGeom;
 			
 		bool	mRebuildGeometry;
 	};
