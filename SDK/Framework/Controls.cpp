@@ -5,7 +5,7 @@
 #include <UI.h>
 #include <cstdlib>
 #include <scheduler.h>
-#include <VG/Context.h>
+#include <VG/VG.h>
 
 namespace ui
 {

@@ -11,7 +11,7 @@ struct PathGeometry
 //	float*	data;
 //};
 
-#include <vg/Context.h>
+#include <vg/vg.h>
 #include <cassert>
 
 VGfloat hourHandData[] = {

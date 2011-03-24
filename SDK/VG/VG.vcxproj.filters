@@ -14,9 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Context.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Paint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -32,12 +29,6 @@
     <ClCompile Include="impl\Math.cpp">
       <Filter>Impl</Filter>
     </ClCompile>
-    <ClCompile Include="impl\Paint.cpp">
-      <Filter>Impl</Filter>
-    </ClCompile>
-    <ClCompile Include="impl\Path.cpp">
-      <Filter>Impl</Filter>
-    </ClCompile>
     <ClCompile Include="impl\Rasterizer.cpp">
       <Filter>Impl</Filter>
     </ClCompile>
@@ -49,25 +40,10 @@
     <ClInclude Include="SUI.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="VGCommon.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="DataTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\GeometryBuilders.h">
-      <Filter>Impl</Filter>
-    </ClInclude>
     <ClInclude Include="impl\Math.h">
-      <Filter>Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\Paint.h">
-      <Filter>Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\Path.h">
       <Filter>Impl</Filter>
     </ClInclude>
     <ClInclude Include="impl\Rasterizer.h">
@@ -78,9 +54,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuildStep Include="Context.h">
-      <Filter>Source Files</Filter>
-    </CustomBuildStep>
     <CustomBuildStep Include="Paint.h">
       <Filter>Source Files</Filter>
     </CustomBuildStep>

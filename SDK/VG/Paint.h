@@ -2,9 +2,6 @@
 #	define __PAINT_H_INCLUDED__
 
 #include <VG/OpenVG.h>
-#include <VG/DataTypes.h>
-
-#include <VG/VGCommon.h>
 
 namespace vg
 {

@@ -1,7 +1,9 @@
 #ifndef __SUI_H_INCLUDED__
 #	define __SUI_H_INCLUDED__
 
-#	include <VG/VGCommon.h>
+#include <vg/openvg.h>
+
+class FTFont;
 
 namespace sui
 {

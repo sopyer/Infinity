@@ -1,11 +1,8 @@
 #include <framework.h>
 
-#include <VG\path.h>
-#include <VG\Context.h>
+#include <VG\VG.h>
 #include <VG\impl\Rasterizer.h>
-#include <VG\impl\GeometryBuilders.h>
 #include <VG\impl\SharedResources.h>
-#include <VG\impl\Path.h>
 
 #include "HourHandData.h"
 #include "MinuteHandData.h"
@@ -230,7 +227,7 @@ class VGSample: public ui::SDLStage
 			glClearDepth(1.0);
 			glClearStencil(0);
 
-			impl::buildFillGeometry(fill, ARRAY_SIZE(segs), segs, data);
+			//impl::buildFillGeometry(fill, ARRAY_SIZE(segs), segs, data);
 			//path = vg::createPath();
 
 			//path.appendData(ARRAY_SIZE(segs), segs, data);
@@ -309,14 +306,14 @@ class VGSample: public ui::SDLStage
 
 			//fillBuilder.copyDataTo(fill);
 
-			impl::StrokeGeometryBuilder	strokeBuilder;
+			//impl::StrokeGeometryBuilder	strokeBuilder;
 
 			//VGubyte	ss[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS,
 			//				VG_QUAD_TO_ABS, VG_SQUAD_TO_ABS, VG_CLOSE_PATH};
 			//float	ssd[] = {150, 100, 150, 0, 50, 100, 0, 50, 50, 0, 50, -100};
 			VGubyte	ss[] = {VG_QUAD_TO_ABS/*, VG_CLOSE_PATH*/};
 			float	ssd[] = {50, 139, 70, 30};
-			impl::buildStrokeGeometry(ARRAY_SIZE(ss), ss, ssd, stroke);
+			//impl::buildStrokeGeometry(ARRAY_SIZE(ss), ss, ssd, stroke);
 
 			//strokeBuilder.begin(50,100);
 			////strokeBuilder.begin(0,0);
@@ -500,8 +497,8 @@ class VGSample: public ui::SDLStage
 	private:
 		vg::Path					path;
 		vg::Paint					paint;
-		impl::FillGeometry			fill;
-		impl::StrokeGeometry		stroke;
+		//impl::FillGeometry			fill;
+		//impl::StrokeGeometry		stroke;
 };
 
 int main(int argc, char** argv)

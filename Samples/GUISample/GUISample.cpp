@@ -2,7 +2,7 @@
 #include <FTGLTextureFont.h>
 #include "Controls.h"
 #include "Animations.h"
-#include <VG\Context.h>
+#include <vg\vg.h>
 
 //class LabelTest: public ui::Actor
 //{

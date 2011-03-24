@@ -3,9 +3,6 @@
 
 #include <VG/OpenVG.h>
 
-#include <VG/DataTypes.h>
-#include <VG/VGCommon.h>
-
 namespace impl
 {
 	struct Geometry;

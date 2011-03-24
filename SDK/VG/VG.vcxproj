@@ -77,24 +77,11 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Context.cpp" />
     <ClCompile Include="Paint.cpp" />
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="SUI.cpp" />
     <ClCompile Include="VG.cpp" />
     <ClCompile Include="impl\Math.cpp" />
-    <ClCompile Include="impl\Paint.cpp">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
-      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
-      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
-    </ClCompile>
-    <ClCompile Include="impl\Path.cpp">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
-      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
-      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
-    </ClCompile>
     <ClCompile Include="impl\Rasterizer.cpp" />
     <ClCompile Include="impl\SharedResources.cpp" />
   </ItemGroup>
@@ -104,13 +91,8 @@
     <CustomBuildStep Include="Path.h" />
     <ClInclude Include="SUI.h" />
     <CustomBuildStep Include="VG.h" />
-    <ClInclude Include="VGCommon.h" />
     <ClInclude Include="DataTypes.h" />
-    <ClInclude Include="VertexTypes.h" />
-    <ClInclude Include="impl\GeometryBuilders.h" />
     <ClInclude Include="impl\Math.h" />
-    <ClInclude Include="impl\Paint.h" />
-    <ClInclude Include="impl\Path.h" />
     <ClInclude Include="impl\Rasterizer.h" />
     <ClInclude Include="impl\SharedResources.h" />
   </ItemGroup>

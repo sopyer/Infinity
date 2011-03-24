@@ -28,8 +28,6 @@ class Sample3D: public ui::SDLStage
 	public:
 		Sample3D():doMove(false), offsetX(0), offsetY(0)
 		{
-			impl::acquire();
-
 			for(int i=0; i<numRows; ++i)
 			{
 				for(int j=0; j<numCols; ++j)
@@ -47,7 +45,6 @@ class Sample3D: public ui::SDLStage
 
 		~Sample3D()
 		{
-			impl::release();
 		}
 
 	protected:

@@ -1,8 +1,5 @@
 #pragma once
 
-//Temporary - do we need to export internal stuff????
-#define VG_EXPORT extern
-
 namespace impl
 {
 	enum
