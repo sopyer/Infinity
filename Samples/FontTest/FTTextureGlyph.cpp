@@ -5,8 +5,16 @@ FT_Error CreateTexGlyph(FTTextureGlyphNew& texglyph, FT_GlyphSlot glyph, int id,
 	texglyph.glTextureID = id;
 	if( glyph)
 	{
-		texglyph.bBox = FTBBox( glyph);
-		texglyph.advance = FTPoint( glyph->advance.x / 64.0f, glyph->advance.y / 64.0f, 0.0f);
+        FT_BBox bbox;
+        FT_Outline_Get_CBox( &(glyph->outline), &bbox);
+
+		texglyph.xmin = static_cast<float>( bbox.xMin) / 64.0f;
+        texglyph.ymin = static_cast<float>( bbox.yMin) / 64.0f;
+        texglyph.xmax = static_cast<float>( bbox.xMax) / 64.0f;
+        texglyph.ymax = static_cast<float>( bbox.yMax) / 64.0f;
+
+		texglyph.xadvance = glyph->advance.x / 64.0f;
+		texglyph.yadvance = glyph->advance.y / 64.0f;
 	}
 
 	FT_Error err = FT_Render_Glyph( glyph, FT_RENDER_MODE_NORMAL);
@@ -17,10 +25,10 @@ FT_Error CreateTexGlyph(FTTextureGlyphNew& texglyph, FT_GlyphSlot glyph, int id,
 
 	FT_Bitmap      bitmap = glyph->bitmap;
 
-	texglyph.destWidth  = bitmap.width;
-	texglyph.destHeight = bitmap.rows;
+	texglyph.width  = bitmap.width;
+	texglyph.height = bitmap.rows;
 
-	if( texglyph.destWidth && texglyph.destHeight)
+	if( texglyph.width && texglyph.height)
 	{
 		glPushClientAttrib( GL_CLIENT_PIXEL_STORE_BIT);
 		glPixelStorei( GL_UNPACK_LSB_FIRST, GL_FALSE);
@@ -28,37 +36,18 @@ FT_Error CreateTexGlyph(FTTextureGlyphNew& texglyph, FT_GlyphSlot glyph, int id,
 		glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
 
 		glBindTexture( GL_TEXTURE_2D, texglyph.glTextureID);
-		glTexSubImage2D( GL_TEXTURE_2D, 0, xOffset, yOffset, texglyph.destWidth, texglyph.destHeight, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap.buffer);
+		glTexSubImage2D( GL_TEXTURE_2D, 0, xOffset, yOffset, texglyph.width, texglyph.height, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap.buffer);
 
 		glPopClientAttrib();
 	}
 
+	texglyph.u0 = static_cast<float>(xOffset) / static_cast<float>(width);
+	texglyph.v0 = static_cast<float>(yOffset) / static_cast<float>(height);
+	texglyph.u1 = static_cast<float>( xOffset + texglyph.width) / static_cast<float>(width);
+	texglyph.v1 = static_cast<float>( yOffset + texglyph.height) / static_cast<float>(height);
 
-	//      0    
-	//      +----+
-	//      |    |
-	//      |    |
-	//      |    |
-	//      +----+
-	//           1
-
-#ifdef _FTGL_NATIVE_
-	uv[0].X( static_cast<float>(xOffset) / static_cast<float>(width));
-	uv[0].Y( static_cast<float>(yOffset) / static_cast<float>(height));
-	uv[1].X( static_cast<float>( xOffset + destWidth) / static_cast<float>(width));
-	uv[1].Y( static_cast<float>( yOffset + destHeight) / static_cast<float>(height));
-
-	pos.X( glyph->bitmap_left);
-	pos.Y( glyph->bitmap_top);
-#else
-	texglyph.uv[0].x = static_cast<float>(xOffset) / static_cast<float>(width);
-	texglyph.uv[0].y = static_cast<float>(yOffset) / static_cast<float>(height);
-	texglyph.uv[1].x = static_cast<float>( xOffset + texglyph.destWidth) / static_cast<float>(width);
-	texglyph.uv[1].y = static_cast<float>( yOffset + texglyph.destHeight) / static_cast<float>(height);
-
-	texglyph.pos.x = (float)glyph->bitmap_left;
-	texglyph.pos.y = (float)glyph->bitmap_top;
-#endif
+	texglyph.xoffset = (float)glyph->bitmap_left;
+	texglyph.yoffset = (float)glyph->bitmap_top;
 
 	return err;
 }

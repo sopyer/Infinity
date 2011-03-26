@@ -5,11 +5,11 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-#include "FTPoint.h"
+//#include "FTPoint.h"
 #include "FTCharToGlyphIndexMap.h"
 #include <vector>
 
-class FTTextureGlyphNew;
+struct FTTextureGlyphNew;
 class FTGlyphContainerNew;
 
 class  FTGLTextureFontNew
@@ -29,8 +29,7 @@ class  FTGLTextureFontNew
 		float LineHeight() const;
 
 		// Get the bounding box for a string.
-		template<typename T>
-		void BBox( const T* string, float& llx, float& lly, float& urx, float& ury);
+		template<typename T> void getBounds(const T* string, float& xmin, float& ymin, float& xmax, float& ymax);
 
 		FT_Error Error() const { return err;}
 
@@ -50,7 +49,7 @@ class  FTGLTextureFontNew
 		/**
 		* Gets the kerning vector between two glyphs
 		*/
-		FTPoint KernAdvance( unsigned int index1, unsigned int index2);
+		void KernAdvance(unsigned int index1, unsigned int index2, float& x, float& y);
 
 		/**
          * Get the font index of the input character.
@@ -88,7 +87,7 @@ class  FTGLTextureFontNew
          * @param penPosition        the position to Render the glyph
          * @return                   The distance to advance the pen position after Rendering
          */
-        FTPoint Render( const unsigned int characterCode, const unsigned int nextCharacterCode, FTPoint penPosition);
+        //FTPoint Render( const unsigned int characterCode, const unsigned int nextCharacterCode, FTPoint penPosition);
         
     private:
         typedef FTCharToGlyphIndexMap CharacterMap;
@@ -107,7 +106,6 @@ class  FTGLTextureFontNew
          */
         GLint activeTextureID;
 
-	private:        
 		// Construct a glyph of the correct type.
 		// @param g The glyph index NOT the char code.
 		// @return  An FT****Glyph or <code>null</code> on failure.

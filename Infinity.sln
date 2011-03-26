@@ -88,6 +88,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGTest", "Samples\VGTest\VG
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FontTest", "Samples\FontTest\FontTest.vcxproj", "{CE7F30C9-AF70-46B7-8879-6DD1F78E8BD5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ScriptUI", "Samples\ScriptUI\ScriptUI.vcxproj", "{F59FE6BE-ABE5-48AE-9FCC-D2F5C6A61411}"
 EndProject
@@ -102,6 +105,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SVGRendering", "Samples\SVG
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "physis", "Samples\physis\physis.vcxproj", "{BEAEDA76-1FD1-4504-A268-A992EF51DED5}"
+	ProjectSection(ProjectDependencies) = postProject
+		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

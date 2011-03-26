@@ -84,16 +84,11 @@
     <ClCompile Include="FontTest.cpp" />
     <ClCompile Include="FTGLTextureFont.cpp" />
     <ClCompile Include="FTLibrary.cpp" />
-    <ClCompile Include="FTPoint.cpp" />
-    <ClCompile Include="FTTextureGlyph.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FTBBox.h" />
     <ClInclude Include="FTCharToGlyphIndexMap.h" />
-    <ClInclude Include="FTGL.h" />
     <ClInclude Include="FTGLTextureFont.h" />
     <ClInclude Include="FTLibrary.h" />
-    <ClInclude Include="FTPoint.h" />
     <ClInclude Include="FTTextureGlyph.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

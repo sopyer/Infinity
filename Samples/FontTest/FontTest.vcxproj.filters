@@ -24,30 +24,15 @@
     <ClCompile Include="FTLibrary.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FTPoint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FTTextureGlyph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FTBBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FTCharToGlyphIndexMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FTGL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FTGLTextureFont.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FTLibrary.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FTPoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FTTextureGlyph.h">
