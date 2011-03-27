@@ -86,10 +86,8 @@
     <ClCompile Include="FTLibrary.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FTCharToGlyphIndexMap.h" />
     <ClInclude Include="FTGLTextureFont.h" />
     <ClInclude Include="FTLibrary.h" />
-    <ClInclude Include="FTTextureGlyph.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

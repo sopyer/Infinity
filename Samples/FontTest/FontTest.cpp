@@ -4,12 +4,11 @@
 
 class FontTest: public ui::SDLStage
 {
-	FTGLTextureFontNew* font;
+	GLFont* font;
 	public:
 		FontTest()
 		{
-			font = new FTGLTextureFontNew("C:\\Windows\\Fonts\\times.ttf");
-			font->FaceSize(20);
+			font = new GLFont("C:\\Windows\\Fonts\\times.ttf", 20);
 		}
 		
 		~FontTest()

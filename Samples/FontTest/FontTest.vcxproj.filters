@@ -26,16 +26,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FTCharToGlyphIndexMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FTGLTextureFont.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FTLibrary.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FTTextureGlyph.h">
+    <ClInclude Include="FTGLTextureFont.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
