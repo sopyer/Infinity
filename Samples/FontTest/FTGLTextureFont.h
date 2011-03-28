@@ -49,14 +49,11 @@ class  GLFont
 	private:
 		typedef std::hash_map<unsigned int, GlyphData> GlyphMap;
 
-		bool FaceSize( const unsigned int size, const unsigned int res = 72);
-
-		GlyphData* Glyph( const unsigned int characterCode);
+		bool FaceSize(const unsigned int size, const unsigned int res = 72);
 
 		void KernAdvance(unsigned int index1, unsigned int index2, float& x, float& y);
 
-		//Check that the glyph at <code>chr</code> exist. If not load it.
-		inline bool CheckGlyph( const unsigned int chr);
+		GlyphData* getGlyphData(const unsigned int glyphIndex);
 
 		inline GLuint CreateTexture();
 

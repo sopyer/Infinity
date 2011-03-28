@@ -99,26 +99,20 @@ float GLFont::LineHeight() const
 	return glyphHeight;
 }
 
-GLFont::GlyphData* GLFont::Glyph( const unsigned int characterCode)
+GLFont::GlyphData* GLFont::getGlyphData(const unsigned int glyphIndex)
 {
-	GlyphMap::iterator it = mGlyphs.find(characterCode);
-	return (it != mGlyphs.end())?&it->second:0;
-}
+	GlyphMap::iterator	it = mGlyphs.find(glyphIndex);
+	GlyphData*			tempGlyph = (it!= mGlyphs.end())?&it->second:0;
 
-bool GLFont::CheckGlyph( const unsigned int characterCode)
-{
-	GlyphData* tempGlyph = Glyph(characterCode);
-	if(NULL == tempGlyph)
+	if (NULL==tempGlyph)
 	{
-		unsigned int glyphIndex = FT_Get_Char_Index(ftFace, characterCode);
+		FT_Error		err = FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_NO_HINTING);
+		FT_GlyphSlot	ftGlyph = ftFace->glyph;
 
-		FT_Error err = FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_NO_HINTING);
-		FT_GlyphSlot ftGlyph = ftFace->glyph;
-
-		if (err==0 && ftGlyph)
+		if (!err && ftGlyph)
 		{
 			err = FT_Render_Glyph(ftGlyph, FT_RENDER_MODE_NORMAL);
-			if( err==0 && ftGlyph->format == FT_GLYPH_FORMAT_BITMAP)
+			if (!err && ftGlyph->format == FT_GLYPH_FORMAT_BITMAP)
 			{
 				if (textureIDList.empty())
 				{
@@ -138,7 +132,7 @@ bool GLFont::CheckGlyph( const unsigned int characterCode)
 					}
 				}
 
-				tempGlyph = &mGlyphs[characterCode];
+				tempGlyph = &mGlyphs[glyphIndex];
 
 				tempGlyph->glTextureID = textureIDList.back();
 
@@ -184,7 +178,7 @@ bool GLFont::CheckGlyph( const unsigned int characterCode)
 		}
 	}
 
-	return tempGlyph!=NULL;
+	return tempGlyph;
 }
 
 //Optimize: advance > 0, x always increases
@@ -198,40 +192,45 @@ void GLFont::getBounds(const T* string, float& xmin, float& ymin, float& xmax, f
 		const T*	c = string;
 		bool		applyAdvance = false;
 		float		advance = 0;
+		GlyphData*	glyph;
 
-		if(CheckGlyph( *c))
+		unsigned int left =FT_Get_Char_Index(ftFace, *c);
+		unsigned int right = FT_Get_Char_Index(ftFace, *++c));
+
+		if (glyph = getGlyphData(left))
 		{
-			xmin = Glyph(*c)->xmin;
-			ymin = Glyph(*c)->ymin;
-			xmax = Glyph(*c)->xmax;
-			ymax = Glyph(*c)->ymax;
-
-			unsigned int left =FT_Get_Char_Index(ftFace, *c);
-			unsigned int right = FT_Get_Char_Index(ftFace, *(c+1));
+			xmin = glyph->xmin;
+			ymin = glyph->ymin;
+			xmax = glyph->xmax;
+			ymax = glyph->ymax;
 
 			float xadvance, yadvance;
 			KernAdvance(left, right, xadvance, yadvance);
-			advance = xadvance+Glyph(*c)->xadvance;
+			advance = xadvance+glyph->xadvance;
 		}
 
-		while( *++c)
+		left = right;
+
+		while (*c++)
 		{
-			if(CheckGlyph( *c))
+			right = FT_Get_Char_Index(ftFace, *c);
+
+			if (glyph = getGlyphData(left))
 			{
-				xmin = std::min(xmin, Glyph(*c)->xmin+advance);
-				ymin = std::min(ymin, Glyph(*c)->ymin);
-				xmax = std::max(xmax, Glyph(*c)->xmax+advance);
-				ymax = std::max(ymax, Glyph(*c)->ymax);
-
-				unsigned int left =FT_Get_Char_Index(ftFace, *c);
-				unsigned int right = FT_Get_Char_Index(ftFace, *(c+1));
-
+				xmin = std::min(xmin, glyph->xmin+advance);
+				ymin = std::min(ymin, glyph->ymin);
+				xmax = std::max(xmax, glyph->xmax+advance);
+				ymax = std::max(ymax, glyph->ymax);
+				
 				float xadvance, yadvance;
+				
 				KernAdvance(left, right, xadvance, yadvance);
-				advance += xadvance+Glyph(*c)->xadvance;
+				advance += xadvance+glyph->xadvance;
 
-				applyAdvance = Glyph(*c)->xmin==Glyph(*c)->xmax;//tempBBox.IsEmpty();
+				applyAdvance = glyph->xmin==glyph->xmax;//tempBBox.IsEmpty();
 			}
+
+			left = right;
 		}
 
 		//Deal with spaces at the end of string, for spaces BBox.IsEmpty()==true and advance is not apply
@@ -255,13 +254,14 @@ void GLFont::KernAdvance(unsigned int index1, unsigned int index2, float& x, flo
 	if (FT_HAS_KERNING(ftFace) && index1 && index2)
 	{
 		FT_Vector kernAdvance;
+
 		kernAdvance.x = kernAdvance.y = 0;
 
 		FT_Error err = FT_Get_Kerning(ftFace, index1, index2, ft_kerning_unfitted, &kernAdvance);
 		if (!err)
 		{   
-			x = static_cast<float>( kernAdvance.x) / 64.0f;
-			y = static_cast<float>( kernAdvance.y) / 64.0f;
+			x = static_cast<float>(kernAdvance.x) / 64.0f;
+			y = static_cast<float>(kernAdvance.y) / 64.0f;
 		}
 	}
 }
@@ -277,21 +277,22 @@ void GLFont::Render(const T* string)
 
 	activeTextureID = 0;
 
-	const T* c = string;
+	GlyphData*	glyph;
+	const T*	c = string;
+	float		xpos=0, ypos=0;
 
-	float xpos=0, ypos=0;
+	unsigned int left = FT_Get_Char_Index(ftFace, *c);
+	unsigned int right;
 
-	while (*c)
+	while (*c++)
 	{
-		if (CheckGlyph(*c))
+		right = FT_Get_Char_Index(ftFace, *c);
+		
+		if (glyph = getGlyphData(left))
 		{
-			unsigned int left = FT_Get_Char_Index(ftFace, *c);
-			unsigned int right = FT_Get_Char_Index(ftFace, *(c+1));
-
 			float xkern, ykern;
 			KernAdvance(left, right, xkern, ykern);
 
-			const GlyphData* glyph = Glyph(*c);
 			if (activeTextureID != glyph->glTextureID)
 			{
 				glBindTexture( GL_TEXTURE_2D, (GLuint)glyph->glTextureID);
@@ -325,7 +326,8 @@ void GLFont::Render(const T* string)
 			xpos += xkern+glyph->xadvance;
 			ypos += ykern+glyph->yadvance;
 		}
-		++c;
+
+		left = right;
 	}
 
 	glPopAttrib();
