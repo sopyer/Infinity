@@ -4,16 +4,16 @@
 
 class FontTest: public ui::SDLStage
 {
-	GLFont* font;
+	Font font;
 	public:
 		FontTest()
 		{
-			font = new GLFont("C:\\Windows\\Fonts\\times.ttf", 20);
+			font = createFont("C:\\Windows\\Fonts\\times.ttf", 20);
 		}
 		
 		~FontTest()
 		{
-			delete font;
+			destroyFont(font);
 		}
 
 	protected:
@@ -23,7 +23,7 @@ class FontTest: public ui::SDLStage
 			glTranslatef(100, 100, 0);
 			glScalef(1, -1, 1);
 			glColor3f(1, 1, 1);
-			font->Render("Hello World!!!");
+			drawString(font, "Hello World!!!");
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0, 0, -10);

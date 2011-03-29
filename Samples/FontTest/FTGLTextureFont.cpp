@@ -1,40 +1,82 @@
 #include <cassert>
+#include <gl/glee.h>
+#include <vector>
+#include <hash_map>
 
 #include "FTGLTextureFont.h"
 #include "FTLibrary.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_GLYPH_H
+#include FT_OUTLINE_H
+
 const FT_Long DEFAULT_FACE_INDEX = 0;
 
-#undef min
-#undef max
-
-GLFont::GLFont(const char* fontFilePath, unsigned int size)
-	:	glyphHeight(0),	glyphWidth(0),
-	xOffset(0),	yOffset(0),
-	padding(3)
+struct GlyphData
 {
-	FT_New_Face(*FTLibrary::Instance().GetLibrary(), fontFilePath, DEFAULT_FACE_INDEX, &ftFace);
-	FaceSize(size);
+	float			xadvance, yadvance; // The advance distance for this glyph
+	float			xmin, ymin, xmax, ymax; // The bounding box of this glyph.
+	unsigned int	width, height;
+	float			xoffset, yoffset;
+	float			u0, v0, u1, v1;
+	int				glTextureID;
+};
+
+typedef std::hash_map<unsigned int, GlyphData> GlyphMap;
+
+struct  GLFont
+{
+	unsigned int FaceSize() const;
+
+	float Ascender() const;
+	float Descender() const;
+	float LineHeight() const;
+
+	GLint activeTextureID;
+
+	FT_Face ftFace;
+	FT_Size ftSize;
+
+	static const GLsizei textureWidth = 512;
+	static const GLsizei textureHeight = 512;
+
+	std::vector<GLuint> textureIDList;
+	GlyphMap			mGlyphs;
+
+	int glyphHeight, glyphWidth;
+	int xOffset, yOffset;
+
+	unsigned int padding; //A value to be added to the height and width to ensure that glyphs don't overlap in the texture
+	unsigned int charSize;
+};
+
+bool initFaceSize(Font font, const unsigned int size, const unsigned int res = 72)
+{
+	FT_Face fontFace = font->ftFace;
+	FT_Size fontSize;
+
+	if (FT_Select_Charmap(fontFace, FT_ENCODING_UNICODE) || FT_Set_Char_Size(fontFace, 0L, size * 64, res, res))
+		return false;
+
+	font->charSize = size;
+	fontSize = font->ftSize = fontFace->size;
+	
+	if(FT_IS_SCALABLE((fontFace)))
+	{
+		font->glyphWidth = (fontFace->bbox.xMax-fontFace->bbox.xMin) * ((float)(fontSize->metrics.x_ppem)/(float)(fontFace->units_per_EM));
+		font->glyphHeight = (fontFace->bbox.yMax-fontFace->bbox.yMin) * ((float)fontSize->metrics.y_ppem/(float)fontFace->units_per_EM);
+	}
+	else
+	{
+		font->glyphWidth = static_cast<float>(fontSize->metrics.max_advance)/64.0f;
+		font->glyphHeight = static_cast<float>(fontSize->metrics.height)/64.0f;
+	}
+
+	return true;
 }
 
-GLFont::GLFont(const unsigned char *pBufferBytes, size_t bufferSizeInBytes, unsigned int size)
-	:	glyphHeight(0), glyphWidth(0),
-	xOffset(0),	yOffset(0),
-	padding(3)
-{
-	FT_New_Memory_Face(*FTLibrary::Instance().GetLibrary(), (FT_Byte *)pBufferBytes, bufferSizeInBytes, DEFAULT_FACE_INDEX, &ftFace);
-	FaceSize(size);
-}
-
-
-GLFont::~GLFont()
-{
-	FT_Done_Face(ftFace);
-	if (!textureIDList.empty())
-		glDeleteTextures(textureIDList.size(), (const GLuint*)&textureIDList[0]);
-}
-
-GLuint GLFont::CreateTexture()
+GLuint createTexture(Font font)
 {   
 	GLuint textID;
 	glGenTextures(1, (GLuint*)&textID);
@@ -45,107 +87,58 @@ GLuint GLFont::CreateTexture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, textureWidth, textureHeight, 0, GL_ALPHA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, font->textureWidth, font->textureHeight, 0, GL_ALPHA, GL_UNSIGNED_BYTE, 0);
 
 	return textID;
 }
 
-
-bool GLFont::FaceSize( const unsigned int size, const unsigned int res)
+GlyphData* getGlyphData(Font font, const unsigned int glyphIndex)
 {
-	if (FT_Select_Charmap(ftFace, FT_ENCODING_UNICODE) || FT_Set_Char_Size(ftFace, 0L, size * 64, res, res))
-		return false;
-
-	charSize = size;
-	ftSize = ftFace->size;
-
-	if(FT_IS_SCALABLE((ftFace)))
-	{
-		glyphWidth = (ftFace->bbox.xMax-ftFace->bbox.xMin) * ((float)(ftSize->metrics.x_ppem)/(float)(ftFace->units_per_EM));
-		glyphHeight = (ftFace->bbox.yMax-ftFace->bbox.yMin) * ((float)ftSize->metrics.y_ppem/(float)ftFace->units_per_EM);
-	}
-	else
-	{
-		glyphWidth = static_cast<float>(ftSize->metrics.max_advance)/64.0f;
-		glyphHeight = static_cast<float>(ftSize->metrics.height)/64.0f;
-	}
-
-	return true;
-}
-
-
-unsigned int GLFont::FaceSize() const
-{
-	return charSize;
-}
-
-
-float GLFont::Ascender() const
-{
-	assert(ftSize!=0);
-	return  (float)ftSize->metrics.ascender/64.0f;
-}
-
-
-float GLFont::Descender() const
-{
-	assert(ftSize!=0);
-	return (float)ftSize->metrics.descender/64.0f;
-}
-
-
-float GLFont::LineHeight() const
-{
-	return glyphHeight;
-}
-
-GLFont::GlyphData* GLFont::getGlyphData(const unsigned int glyphIndex)
-{
-	GlyphMap::iterator	it = mGlyphs.find(glyphIndex);
-	GlyphData*			tempGlyph = (it!= mGlyphs.end())?&it->second:0;
+	GlyphMap::iterator	it = font->mGlyphs.find(glyphIndex);
+	GlyphData*			tempGlyph = (it!= font->mGlyphs.end())?&it->second:0;
 
 	if (NULL==tempGlyph)
 	{
-		FT_Error		err = FT_Load_Glyph(ftFace, glyphIndex, FT_LOAD_NO_HINTING);
-		FT_GlyphSlot	ftGlyph = ftFace->glyph;
+		FT_Error		err = FT_Load_Glyph(font->ftFace, glyphIndex, FT_LOAD_NO_HINTING);
+		FT_GlyphSlot	ftGlyph = font->ftFace->glyph;
 
 		if (!err && ftGlyph)
 		{
 			err = FT_Render_Glyph(ftGlyph, FT_RENDER_MODE_NORMAL);
 			if (!err && ftGlyph->format == FT_GLYPH_FORMAT_BITMAP)
 			{
-				if (textureIDList.empty())
+				if (font->textureIDList.empty())
 				{
-					textureIDList.push_back(CreateTexture());
-					xOffset = yOffset = padding;
+					font->textureIDList.push_back(createTexture(font));
+					font->xOffset = font->yOffset = font->padding;
 				}
 
-				if (xOffset > (textureWidth-glyphWidth))
+				if (font->xOffset > (font->textureWidth-font->glyphWidth))
 				{
-					xOffset = padding;
-					yOffset += glyphHeight;
+					font->xOffset = font->padding;
+					font->yOffset += font->glyphHeight;
 
-					if (yOffset > ( textureHeight - glyphHeight))
+					if (font->yOffset > (font->textureHeight - font->glyphHeight))
 					{
-						textureIDList.push_back(CreateTexture());
-						yOffset = padding;
+						font->textureIDList.push_back(createTexture(font));
+						font->yOffset = font->padding;
 					}
 				}
 
-				tempGlyph = &mGlyphs[glyphIndex];
+				tempGlyph = &font->mGlyphs[glyphIndex];
 
-				tempGlyph->glTextureID = textureIDList.back();
+				tempGlyph->glTextureID = font->textureIDList.back();
 
 				FT_BBox bbox;
 				FT_Outline_Get_CBox(&(ftGlyph->outline), &bbox);
 
-				tempGlyph->xmin = static_cast<float>(bbox.xMin) / 64.0f;
-				tempGlyph->ymin = static_cast<float>(bbox.yMin) / 64.0f;
-				tempGlyph->xmax = static_cast<float>(bbox.xMax) / 64.0f;
-				tempGlyph->ymax = static_cast<float>(bbox.yMax) / 64.0f;
+				tempGlyph->xmin = (float)(bbox.xMin)/64.0f;
+				tempGlyph->ymin = (float)(bbox.yMin)/64.0f;
+				tempGlyph->xmax = (float)(bbox.xMax)/64.0f;
+				tempGlyph->ymax = (float)(bbox.yMax)/64.0f;
 
-				tempGlyph->xadvance = ftGlyph->advance.x / 64.0f;
-				tempGlyph->yadvance = ftGlyph->advance.y / 64.0f;
+				tempGlyph->xadvance = ftGlyph->advance.x/64.0f;
+				tempGlyph->yadvance = ftGlyph->advance.y/64.0f;
 
 				FT_Bitmap	bitmap = ftGlyph->bitmap;
 
@@ -154,26 +147,32 @@ GLFont::GlyphData* GLFont::getGlyphData(const unsigned int glyphIndex)
 
 				if( tempGlyph->width && tempGlyph->height)
 				{
-					glPushClientAttrib( GL_CLIENT_PIXEL_STORE_BIT);
-					glPixelStorei( GL_UNPACK_LSB_FIRST, GL_FALSE);
-					glPixelStorei( GL_UNPACK_ROW_LENGTH, 0);
-					glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
+					glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+					glPixelStorei(GL_UNPACK_LSB_FIRST, GL_FALSE);
+					glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-					glBindTexture( GL_TEXTURE_2D, tempGlyph->glTextureID);
-					glTexSubImage2D( GL_TEXTURE_2D, 0, xOffset, yOffset, tempGlyph->width, tempGlyph->height, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap.buffer);
+					glBindTexture(GL_TEXTURE_2D, tempGlyph->glTextureID);
+					glTexSubImage2D(
+						GL_TEXTURE_2D, 0,
+						font->xOffset, font->yOffset,
+						tempGlyph->width, tempGlyph->height,
+						GL_ALPHA, GL_UNSIGNED_BYTE,
+						bitmap.buffer
+					);
 
 					glPopClientAttrib();
 				}
 
-				tempGlyph->u0 = static_cast<float>(xOffset) / static_cast<float>(textureWidth);
-				tempGlyph->v0 = static_cast<float>(yOffset) / static_cast<float>(textureHeight);
-				tempGlyph->u1 = static_cast<float>(xOffset + tempGlyph->width) / static_cast<float>(textureWidth);
-				tempGlyph->v1 = static_cast<float>(yOffset + tempGlyph->height) / static_cast<float>(textureHeight);
+				tempGlyph->u0 = (float)(font->xOffset)/(float)(font->textureWidth);
+				tempGlyph->v0 = (float)(font->yOffset)/(float)(font->textureHeight);
+				tempGlyph->u1 = (float)(font->xOffset+tempGlyph->width) / (float)(font->textureWidth);
+				tempGlyph->v1 = (float)(font->yOffset+tempGlyph->height) / (float)(font->textureHeight);
 
 				tempGlyph->xoffset = (float)ftGlyph->bitmap_left;
 				tempGlyph->yoffset = (float)ftGlyph->bitmap_top;
 
-				xOffset += tempGlyph->xmax - tempGlyph->xmin + padding;
+				font->xOffset += tempGlyph->xmax - tempGlyph->xmin + font->padding;
 			}
 		}
 	}
@@ -181,122 +180,94 @@ GLFont::GlyphData* GLFont::getGlyphData(const unsigned int glyphIndex)
 	return tempGlyph;
 }
 
-//Optimize: advance > 0, x always increases
-template<typename T>
-void GLFont::getBounds(const T* string, float& xmin, float& ymin, float& xmax, float& ymax)
-{
-	xmin=ymin=xmax=ymax=0;
-
-	if ((NULL!=string) && ('\0'!=*string))
-	{
-		const T*	c = string;
-		bool		applyAdvance = false;
-		float		advance = 0;
-		GlyphData*	glyph;
-
-		unsigned int left =FT_Get_Char_Index(ftFace, *c);
-		unsigned int right = FT_Get_Char_Index(ftFace, *++c));
-
-		if (glyph = getGlyphData(left))
-		{
-			xmin = glyph->xmin;
-			ymin = glyph->ymin;
-			xmax = glyph->xmax;
-			ymax = glyph->ymax;
-
-			float xadvance, yadvance;
-			KernAdvance(left, right, xadvance, yadvance);
-			advance = xadvance+glyph->xadvance;
-		}
-
-		left = right;
-
-		while (*c++)
-		{
-			right = FT_Get_Char_Index(ftFace, *c);
-
-			if (glyph = getGlyphData(left))
-			{
-				xmin = std::min(xmin, glyph->xmin+advance);
-				ymin = std::min(ymin, glyph->ymin);
-				xmax = std::max(xmax, glyph->xmax+advance);
-				ymax = std::max(ymax, glyph->ymax);
-				
-				float xadvance, yadvance;
-				
-				KernAdvance(left, right, xadvance, yadvance);
-				advance += xadvance+glyph->xadvance;
-
-				applyAdvance = glyph->xmin==glyph->xmax;//tempBBox.IsEmpty();
-			}
-
-			left = right;
-		}
-
-		//Deal with spaces at the end of string, for spaces BBox.IsEmpty()==true and advance is not apply
-		//That's why we manually do this:
-		if (applyAdvance)
-		{
-			xmin = std::min(xmin, advance);
-			xmax = std::max(xmax, advance);
-		}
-	}
-}
-
-template void GLFont::getBounds<char>(const char* string, float& xmin, float& ymin, float& xmax, float& ymax);
-template void GLFont::getBounds<wchar_t>(const wchar_t* string, float& xmin, float& ymin, float& xmax, float& ymax);
-
-void GLFont::KernAdvance(unsigned int index1, unsigned int index2, float& x, float& y)
+void kernAdvance(Font font, unsigned int index1, unsigned int index2, float& x, float& y)
 {
 	x=0.0f;
 	y=0.0f;
 
-	if (FT_HAS_KERNING(ftFace) && index1 && index2)
+	if (FT_HAS_KERNING(font->ftFace) && index1 && index2)
 	{
 		FT_Vector kernAdvance;
 
 		kernAdvance.x = kernAdvance.y = 0;
 
-		FT_Error err = FT_Get_Kerning(ftFace, index1, index2, ft_kerning_unfitted, &kernAdvance);
+		FT_Error err = FT_Get_Kerning(font->ftFace, index1, index2, ft_kerning_unfitted, &kernAdvance);
 		if (!err)
 		{   
-			x = static_cast<float>(kernAdvance.x) / 64.0f;
-			y = static_cast<float>(kernAdvance.y) / 64.0f;
+			x = static_cast<float>(kernAdvance.x)/64.0f;
+			y = static_cast<float>(kernAdvance.y)/64.0f;
 		}
 	}
 }
 
+Font createFont(const char* fontPath, size_t faceSize)
+{
+	Font font =  new GLFont;
+	font->glyphHeight = 0;
+	font->glyphWidth = 0;
+	font->xOffset = 0;
+	font->yOffset = 0;
+	font->padding = 3;
+	FT_New_Face(*FTLibrary::Instance().GetLibrary(), fontPath, DEFAULT_FACE_INDEX, &font->ftFace);
+	initFaceSize(font, faceSize);
+
+	return font;
+}
+
+Font createFont(const unsigned char* fontData, size_t dataSize, size_t faceSize)
+{
+	Font font =  new GLFont;
+	font->glyphHeight = 0;
+	font->glyphWidth = 0;
+	font->xOffset = 0;
+	font->yOffset = 0;
+	font->padding = 3;
+	FT_New_Memory_Face(*FTLibrary::Instance().GetLibrary(), (FT_Byte*)fontData, dataSize, DEFAULT_FACE_INDEX, &font->ftFace);
+	initFaceSize(font, faceSize);
+
+	return font;
+}
+
+void destroyFont(Font font)
+{
+	FT_Done_Face(font->ftFace);
+	
+	if (!font->textureIDList.empty())
+		glDeleteTextures(font->textureIDList.size(), (const GLuint*)&font->textureIDList[0]);
+	
+	delete font;
+}
+
 template<typename T>
-void GLFont::Render(const T* string)
+void drawString(Font font, const T* str)
 {   
-	glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
+	glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT);
 
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // GL_ONE
 
-	activeTextureID = 0;
+	font->activeTextureID = 0;
 
 	GlyphData*	glyph;
-	const T*	c = string;
 	float		xpos=0, ypos=0;
 
-	unsigned int left = FT_Get_Char_Index(ftFace, *c);
+	unsigned int left = FT_Get_Char_Index(font->ftFace, *str);
 	unsigned int right;
 
-	while (*c++)
+	while (*str++)
 	{
-		right = FT_Get_Char_Index(ftFace, *c);
+		right = FT_Get_Char_Index(font->ftFace, *str);
 		
-		if (glyph = getGlyphData(left))
+		if (glyph = getGlyphData(font, left))
 		{
 			float xkern, ykern;
-			KernAdvance(left, right, xkern, ykern);
+			kernAdvance(font, left, right, xkern, ykern);
 
-			if (activeTextureID != glyph->glTextureID)
+			if (font->activeTextureID != glyph->glTextureID)
 			{
 				glBindTexture( GL_TEXTURE_2D, (GLuint)glyph->glTextureID);
-				activeTextureID = glyph->glTextureID;
+				font->activeTextureID = glyph->glTextureID;
 			}
 
 			float	u0 = glyph->u0,
@@ -333,5 +304,98 @@ void GLFont::Render(const T* string)
 	glPopAttrib();
 }
 
-template void GLFont::Render<char>(const char* string);
-template void GLFont::Render<wchar_t>(const wchar_t* string);
+template<> void drawString<char>(Font font, const char* str)
+{
+	drawString<unsigned char>(font, (const unsigned char*)str);
+}
+
+template void drawString<wchar_t>(Font font, const wchar_t* str);
+
+unsigned int GLFont::FaceSize() const
+{
+	return charSize;
+}
+
+float GLFont::Ascender() const
+{
+	assert(ftSize!=0);
+	return  (float)ftSize->metrics.ascender/64.0f;
+}
+
+float GLFont::Descender() const
+{
+	assert(ftSize!=0);
+	return (float)ftSize->metrics.descender/64.0f;
+}
+
+float GLFont::LineHeight() const
+{
+	return glyphHeight;
+}
+
+#undef min
+#undef max
+
+//Optimize: advance>0, x always increases
+template<typename T>
+void getBounds(Font font, const T* str, float& xmin, float& ymin, float& xmax, float& ymax)
+{
+	xmin=ymin=xmax=ymax=0;
+
+	if ((NULL!=str) && ('\0'!=*str))
+	{
+		bool		applyAdvance = false;
+		float		advance = 0;
+		GlyphData*	glyph;
+
+		unsigned int left =FT_Get_Char_Index(font->ftFace, *str);
+		unsigned int right = FT_Get_Char_Index(font->ftFace, *++str);
+
+		if (glyph = getGlyphData(font, left))
+		{
+			xmin = glyph->xmin;
+			ymin = glyph->ymin;
+			xmax = glyph->xmax;
+			ymax = glyph->ymax;
+
+			float xadvance, yadvance;
+			kernAdvance(font, left, right, xadvance, yadvance);
+			advance = xadvance+glyph->xadvance;
+		}
+
+		left = right;
+
+		while (*str++)
+		{
+			right = FT_Get_Char_Index(font->ftFace, *str);
+
+			if (glyph = getGlyphData(font, left))
+			{
+				xmin = std::min(xmin, glyph->xmin+advance);
+				ymin = std::min(ymin, glyph->ymin);
+				xmax = std::max(xmax, glyph->xmax+advance);
+				ymax = std::max(ymax, glyph->ymax);
+				
+				float xadvance, yadvance;
+				
+				kernAdvance(font, left, right, xadvance, yadvance);
+				advance += xadvance+glyph->xadvance;
+
+				applyAdvance = glyph->xmin==glyph->xmax; //is bbox empty?
+			}
+
+			left = right;
+		}
+
+		//Deal with spaces at the end of string, for spaces bbox is empty and advance is not applied
+		//That's why we manually do this:
+		if (applyAdvance)
+		{
+			xmin = std::min(xmin, advance);
+			xmax = std::max(xmax, advance);
+		}
+	}
+}
+
+template void getBounds<char>(Font font, const char* string, float& xmin, float& ymin, float& xmax, float& ymax);
+template void getBounds<wchar_t>(Font font, const wchar_t* string, float& xmin, float& ymin, float& xmax, float& ymax);
