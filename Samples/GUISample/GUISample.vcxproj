@@ -95,10 +95,6 @@
     <ClInclude Include="Controls.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SDK\External\glFont\glFont.vcxproj">
-      <Project>{fafb97f9-712c-47f3-8be2-f259fed45c5a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\SDK\Framework\Framework.vcxproj">
       <Project>{61f6a3d7-f203-40ca-95b6-fde1adef0163}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

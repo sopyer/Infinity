@@ -5,15 +5,15 @@
 
 namespace ui
 {
-	sui::Font defaultFont;
+	vg::Font defaultFont;
 
 	void init()
 	{
-		defaultFont = sui::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
+		defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
 	}
 
 	void cleanup()
 	{
-		sui::destroyFont(defaultFont);
+		vg::destroyFont(defaultFont);
 	}
 }

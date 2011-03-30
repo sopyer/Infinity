@@ -26,7 +26,7 @@ namespace ui
 	class Container;
 	class Stage;
 
-	extern sui::Font defaultFont;
+	extern vg::Font defaultFont;
 }
 
 #	include <Actor.h>

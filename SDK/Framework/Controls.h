@@ -40,7 +40,7 @@ namespace ui
 		public:
 			Label(): mColor(1.0f, 1.0f, 1.0f, 1.0f), mFont(ui::defaultFont) {}
 			
-			Label& setFont(sui::Font font) {mFont = font; queueRelayout(); return *this;}
+			Label& setFont(vg::Font font) {mFont = font; queueRelayout(); return *this;}
 			Label& setColor(const glm::vec4& color) {mColor = color; return *this;}
 			Label& setText(const wchar_t* text) {mText = text; queueRelayout(); return *this;}
 
@@ -50,7 +50,7 @@ namespace ui
 
 		protected:
 			glm::vec4		mColor;
-			sui::Font		mFont;
+			vg::Font		mFont;
 			std::wstring	mText;
 	};
 
@@ -275,7 +275,7 @@ namespace ui
 		public:
 			ProfileStatsBox();
 
-			ProfileStatsBox& setFont(sui::Font font);
+			ProfileStatsBox& setFont(vg::Font font);
 			ProfileStatsBox& setStats(float cpuTime, float gpuTime);
 
 		private:

@@ -40,14 +40,14 @@ namespace ui
 	void Label::onPaint()
 	{
 		glColor4fv(mColor);
-		float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
-		sui::drawText(mFont, 0, y/*(mHeight+y)/2*/, mText.c_str());
+		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
+		vg::drawString(mFont, 0, y/*(mHeight+y)/2*/, mText.c_str());
 	}
 
 	void Label::onAllocate()
 	{
-		mHeight = sui::getTextVExtent(mFont);
-		mWidth = sui::getTextHExtent(mFont, mText.c_str());
+		mHeight = vg::getTextVExtent(mFont);
+		mWidth  = vg::getTextHExtent(mFont, mText.c_str());
 	}
 
 	void Edit::onKeyDown(const KeyEvent& event/*u32 key*/)
@@ -133,13 +133,13 @@ namespace ui
 		sui::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 3);
 				
 		glColor4fv(mColor);
-		float y = (mHeight+sui::getTextAscender(mFont)+sui::getTextDescender(mFont))/2;
-		sui::drawText(mFont, 7, y, mText.c_str());
+		float y = (mHeight+vg::getTextAscender(mFont)+vg::getTextDescender(mFont))/2;
+		vg::drawString(mFont, 7, y, mText.c_str());
 
 		if (mShowCursor)
 		{
-			float tw = 7+sui::getTextHExtent(mFont, mText.substr(0, mCaretPos).c_str());
-			sui::drawRect(tw, y-sui::getTextDescender(mFont), tw+1, y-sui::getTextAscender(mFont), 4, 4);
+			float tw = 7+vg::getTextHExtent(mFont, mText.substr(0, mCaretPos).c_str());
+			sui::drawRect(tw, y-vg::getTextDescender(mFont), tw+1, y-vg::getTextAscender(mFont), 4, 4);
 		}
 	}
 			
@@ -168,9 +168,9 @@ namespace ui
 	{
 		sui::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
 		glColor4fv(mColor);
-		float x = sui::getTextHExtent(mFont, mText.c_str());
-		float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
-		sui::drawText(mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str());
+		float x = vg::getTextHExtent(mFont, mText.c_str());
+		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
+		vg::drawString(mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str());
 	}
 
 	void CheckBox::onTouch(const ButtonEvent& event)
@@ -184,9 +184,9 @@ namespace ui
 		sui::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
 		glColor4fv(mColor);
 		float x = 20;
-		float y = sui::getTextAscender(mFont)+sui::getTextDescender(mFont);
+		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
 		y = (16+y)/2;
-		sui::drawText(mFont, x, y, mText.c_str());
+		vg::drawString(mFont, x, y, mText.c_str());
 	}
 
 	void VBox::onAllocate()
@@ -243,7 +243,7 @@ namespace ui
 		setStats(0, 0);
 	}
 
-	ProfileStatsBox& ProfileStatsBox::setFont(sui::Font font)
+	ProfileStatsBox& ProfileStatsBox::setFont(vg::Font font)
 	{
 		mVCNameLabel.setFont(font);
 		mCPUTimeLabel.setFont(font);

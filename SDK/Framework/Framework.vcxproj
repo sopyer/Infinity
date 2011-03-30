@@ -119,10 +119,6 @@
     <ClInclude Include="DefaultFontData.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\External\glFont\glFont.vcxproj">
-      <Project>{fafb97f9-712c-47f3-8be2-f259fed45c5a}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\glClasses\glClasses.vcxproj">
       <Project>{1189bb67-679f-4fbc-aca1-25651ddd26ba}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

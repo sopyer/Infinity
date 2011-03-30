@@ -27,11 +27,9 @@ typedef std::hash_map<unsigned int, GlyphData> GlyphMap;
 
 struct  GLFont
 {
-	unsigned int FaceSize() const;
-
-	float Ascender() const;
-	float Descender() const;
-	float LineHeight() const;
+	//float Ascender() const;
+	//float Descender() const;
+	//float LineHeight() const;
 
 	GLint activeTextureID;
 
@@ -239,7 +237,7 @@ void destroyFont(Font font)
 }
 
 template<typename T>
-void drawString(Font font, const T* str)
+void drawString(Font font, float x, float y, const T* str)
 {   
 	glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT);
 
@@ -250,7 +248,6 @@ void drawString(Font font, const T* str)
 	font->activeTextureID = 0;
 
 	GlyphData*	glyph;
-	float		xpos=0, ypos=0;
 
 	unsigned int left = FT_Get_Char_Index(font->ftFace, *str);
 	unsigned int right;
@@ -275,8 +272,8 @@ void drawString(Font font, const T* str)
 					u1 = glyph->u1,
 					v1 = glyph->v1;
 
-			float	px = xpos+glyph->xoffset,
-					py = ypos+glyph->yoffset,
+			float	px = x+glyph->xoffset,
+					py = y+glyph->yoffset,
 					w  = (float)glyph->width,
 					h  = (float)glyph->height;
 
@@ -294,8 +291,8 @@ void drawString(Font font, const T* str)
 			glVertex2f(w + px, py);
 			glEnd();
 
-			xpos += xkern+glyph->xadvance;
-			ypos += ykern+glyph->yadvance;
+			x += xkern+glyph->xadvance;
+			y += ykern+glyph->yadvance;
 		}
 
 		left = right;
@@ -304,42 +301,20 @@ void drawString(Font font, const T* str)
 	glPopAttrib();
 }
 
-template<> void drawString<char>(Font font, const char* str)
+template<> void drawString<char>(Font font, float x, float y, const char* str)
 {
-	drawString<unsigned char>(font, (const unsigned char*)str);
+	drawString<unsigned char>(font, x, y, (const unsigned char*)str);
 }
 
-template void drawString<wchar_t>(Font font, const wchar_t* str);
-
-unsigned int GLFont::FaceSize() const
-{
-	return charSize;
-}
-
-float GLFont::Ascender() const
-{
-	assert(ftSize!=0);
-	return  (float)ftSize->metrics.ascender/64.0f;
-}
-
-float GLFont::Descender() const
-{
-	assert(ftSize!=0);
-	return (float)ftSize->metrics.descender/64.0f;
-}
-
-float GLFont::LineHeight() const
-{
-	return glyphHeight;
-}
-
-#undef min
-#undef max
+template void drawString<wchar_t>(Font font, float x, float y, const wchar_t* str);
 
 //Optimize: advance>0, x always increases
 template<typename T>
 void getBounds(Font font, const T* str, float& xmin, float& ymin, float& xmax, float& ymax)
 {
+#	undef min
+#	undef max
+
 	xmin=ymin=xmax=ymax=0;
 
 	if ((NULL!=str) && ('\0'!=*str))
@@ -399,3 +374,76 @@ void getBounds(Font font, const T* str, float& xmin, float& ymin, float& xmax, f
 
 template void getBounds<char>(Font font, const char* string, float& xmin, float& ymin, float& xmax, float& ymax);
 template void getBounds<wchar_t>(Font font, const wchar_t* string, float& xmin, float& ymin, float& xmax, float& ymax);
+
+float getTextAscender(Font font)
+{
+	assert(font->ftSize!=0);
+	return  (float)font->ftSize->metrics.ascender/64.0f;
+}
+
+float getTextDescender(Font font)
+{
+	assert(font->ftSize!=0);
+	return (float)font->ftSize->metrics.descender/64.0f;
+}
+
+float getTextVExtent(Font font)
+{
+	return getTextAscender(font)-getTextDescender(font);
+}
+
+template<typename T>
+float getTextHExtent(Font font, const T* str)
+{
+	float xmin, ymin, xmax, ymax;
+
+	getBounds(font, str, xmin, ymin, xmax, ymax);
+
+	return xmax-xmin;
+}
+
+template<> float getTextHExtent<char>(Font font, const char* str)
+{
+	return getTextHExtent<unsigned char>(font, (const unsigned char*)str);
+}
+
+template float getTextHExtent<wchar_t>(Font font, const wchar_t* str);
+
+template<typename T>
+void calcTextBasePt(Font font, float w, float h, size_t flags, const T* str, float& bx, float& by)
+{
+	switch (flags&3)
+	{
+		case TALIGN_RIGHT:
+			bx = w-getTextHExtent(font, str);
+			break;
+		case TALIGN_HCENTER:
+			bx = (w-getTextHExtent(font, str))/2;
+			break;
+		case TALIGN_LEFT:
+		default:
+			bx = 0;
+			break;
+	};
+
+	switch (flags&12)
+	{
+		case TALIGN_BOTTOM:
+			by = getTextDescender(font);
+			break;
+		case TALIGN_VCENTER:
+			by = (h+getTextAscender(font)+getTextDescender(font))/2 ;
+			break;
+		case TALIGN_TOP:
+		default:
+			by = getTextAscender(font);
+			break;
+	};
+}
+
+template<> void calcTextBasePt<char>(Font font, float w, float h, size_t flags, const char* str, float& bx, float& by)
+{
+	return calcTextBasePt<unsigned char>(font, w, h, flags, (const unsigned char*)str, bx, by);
+}
+
+template void calcTextBasePt<wchar_t>(Font font, float w, float h, size_t flags, const wchar_t* str, float& bx, float& by);

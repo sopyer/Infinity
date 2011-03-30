@@ -35,6 +35,9 @@
     <ClCompile Include="impl\SharedResources.cpp">
       <Filter>Impl</Filter>
     </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SUI.h">

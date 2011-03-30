@@ -5,13 +5,18 @@
 
 namespace vg
 {
+	void initFontSubsystem();
+	void shutdownFontSubsystem();
+
 	void init()
 	{
 		impl::acquire();
+		initFontSubsystem();
 	}
 
 	void cleanup()
 	{
+		shutdownFontSubsystem();
 		impl::release();
 	}
 

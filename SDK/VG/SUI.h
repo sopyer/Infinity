@@ -18,39 +18,6 @@ namespace sui
 		cNbColors = 24,
 	};
 	
-	enum TextAlign
-	{
-		TALIGN_LEFT = 0,
-		TALIGN_RIGHT = 1,
-		TALIGN_HCENTER = 2,
-		TALIGN_TOP = 0,
-		TALIGN_BOTTOM = 4,
-		TALIGN_VCENTER = 8,
-	};
-
-	struct Font
-	{
-		void setSize(VGuint size);
-
-		FTFont*	mHandle;
-	};
-
-	GLfloat	getTextAscender(Font font);
-	GLfloat	getTextDescender(Font font);
-	GLfloat	getTextVExtent(Font font);
-	GLfloat	getTextHExtent(Font font, const wchar_t* text);
-	
-	void	calcTextBasePt(
-		Font font, float w, float h, VGuint flags,
-		const wchar_t* text, float& bx, float& by
-	);
-
-	Font	createFont(const char* name);
-	Font	createFont(unsigned char* data, size_t size, size_t faceSize);
-	void	destroyFont(Font font);
-
-	void drawText(Font font, GLfloat x, GLfloat y, const wchar_t* text);
-
 	void drawRect(
 		float x0, float y0, float x1, float y1,
 		int fillColor, int borderColor

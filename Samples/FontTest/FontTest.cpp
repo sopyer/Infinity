@@ -23,7 +23,20 @@ class FontTest: public ui::SDLStage
 			glTranslatef(100, 100, 0);
 			glScalef(1, -1, 1);
 			glColor3f(1, 1, 1);
-			drawString(font, "Hello World!!!");
+			drawString(font, 0, 0, "Hello World!!!");
+
+			float xmin, ymin, xmax, ymax;
+			getBounds(font, "Hello World!!!", xmin, ymin, xmax, ymax);
+			glColor3f(1, 0, 0);
+			glBegin(GL_LINE_STRIP);
+				glVertex2f(xmin,  ymin);
+				glVertex2f(xmin,  ymax);
+				glVertex2f(xmax,  ymax);
+				glVertex2f(xmax,  ymin);
+				glVertex2f(xmin,  ymin);
+			glEnd();
+
+
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
 			glTranslatef(0, 0, -10);
