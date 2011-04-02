@@ -90,7 +90,6 @@
     <CustomBuildStep Include="Context.h" />
     <CustomBuildStep Include="Paint.h" />
     <CustomBuildStep Include="Path.h" />
-    <ClInclude Include="SUI.h" />
     <CustomBuildStep Include="VG.h" />
     <ClInclude Include="DataTypes.h" />
     <ClInclude Include="impl\Math.h" />

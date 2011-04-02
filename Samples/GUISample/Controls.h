@@ -186,7 +186,7 @@
 //
 //		virtual void onPaint()
 //		{
-//			sui::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 3);
+//			sui::drawRoundedRectOutlineCOLORID(0, 0, mWidth, mHeight, 5, 5, 3);
 //			
 //			glColor4fv(mColor);
 //			float y = (mHeight+sui::getTextAscender(*mFont)+sui::getTextDescender(*mFont))/2;
@@ -195,7 +195,7 @@
 //			if (mShowCursor)
 //			{
 //				float tw = 7+sui::getTextHExtent(*mFont, mText.substr(0, mCaretPos).c_str());
-//				sui::drawRect(tw, y-sui::getTextDescender(*mFont), tw+1, y-sui::getTextAscender(*mFont), 4, 4);
+//				sui::drawRectCOLORID(tw, y-sui::getTextDescender(*mFont), tw+1, y-sui::getTextAscender(*mFont), 4, 4);
 //			}
 //		}
 //		

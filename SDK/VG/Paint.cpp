@@ -1,7 +1,7 @@
 #include <vector>
 #include <gl/glee.h>
 
-#include "Paint.h"
+#include "VG.h"
 #include "impl/SharedResources.h"
 
 namespace vg

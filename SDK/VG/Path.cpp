@@ -2,14 +2,13 @@
 #include <glm/glm.h>
 #include <utils.h>
 
-#include "Path.h"
+#include "VG.h"
 #include "impl/Rasterizer.h"
 
 namespace vg
 {
 	void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2)
 	{
-		//path->bounds(&x1, &y1, &x2, &y2);
 		x1 = path->xmin; y1 = path->ymin;
 		x2 = path->xmax; y2 = path->ymax;
 	}
@@ -20,7 +19,7 @@ namespace vg
 		
 		newPath = new impl::Geometry();
 		impl::buildFillGeometry(*newPath, numSegments, pathSegments, pathData);
-	//	newPath->appendData(numSegments, pathSegments, pathData);
+
 		return newPath;
 	}
 

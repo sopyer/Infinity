@@ -34,7 +34,7 @@ namespace ui
 	{
 		float w = getWidth(), h = getHeight(),
 			x = 0, y = 0;
-		sui::drawFrame(x, y, w, h, 5, 5, false, false, false);
+		vg::drawFrame(x, y, w, h, 5, 5, false, false, false);
 	}
 
 	void Label::onPaint()
@@ -130,7 +130,7 @@ namespace ui
 
 	void Edit::onPaint()
 	{
-		sui::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 3);
+		vg::drawRoundedRectOutlineCOLORID(0, 0, mWidth, mHeight, 5, 5, 3);
 				
 		glColor4fv(mColor);
 		float y = (mHeight+vg::getTextAscender(mFont)+vg::getTextDescender(mFont))/2;
@@ -139,7 +139,7 @@ namespace ui
 		if (mShowCursor)
 		{
 			float tw = 7+vg::getTextHExtent(mFont, mText.substr(0, mCaretPos).c_str());
-			sui::drawRect(tw, y-vg::getTextDescender(mFont), tw+1, y-vg::getTextAscender(mFont), 4, 4);
+			vg::drawRectCOLORID(tw, y-vg::getTextDescender(mFont), tw+1, y-vg::getTextAscender(mFont), 4, 4);
 		}
 	}
 			
@@ -166,7 +166,7 @@ namespace ui
 
 	void Button::onPaint()
 	{
-		sui::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
+		vg::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
 		glColor4fv(mColor);
 		float x = vg::getTextHExtent(mFont, mText.c_str());
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
@@ -181,7 +181,7 @@ namespace ui
 
 	void CheckBox::onPaint()
 	{
-		sui::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
+		vg::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
 		glColor4fv(mColor);
 		float x = 20;
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
@@ -223,7 +223,7 @@ namespace ui
 	void VBox::onPaint()
 	{
 		float w = getWidth(), h = getHeight(), x = 0, y = 0;
-		sui::drawFrame(x, y, w, h, 5, 5, false, false, false);
+		vg::drawFrame(x, y, w, h, 5, 5, false, false, false);
 	}
 
 	ProfileStatsBox::ProfileStatsBox()

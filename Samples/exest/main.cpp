@@ -498,7 +498,7 @@ class Exest: public ui::SDLStage
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();
 
-			//sui::drawRect(100, 100, 700, 500, sui::cBase+1, sui::cOutline);
+			//sui::drawRectCOLORID(100, 100, 700, 500, sui::cBase+1, sui::cOutline);
 			//sui::drawBoolFrame(0, 0, 100, 100, 16, 16, false, false, false );
 
 			glDisable(GL_BLEND);

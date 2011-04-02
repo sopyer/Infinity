@@ -5,12 +5,15 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 
+#include <stdint.h>
+
 typedef __m128	vec4;
 typedef __m128i	vec4i;
 typedef __m128d	vec4d;
 
 extern __m128 _vi_c_one;
 extern __m128 _vi_c_zero;
+extern __m128 _vi_c_255;
 
 #define VI_X	0x00
 #define VI_Y	0x01
@@ -94,5 +97,9 @@ inline vec4 vi_andnot(vec4 a, vec4 b);
 //logical result functions
 inline bool vi_all(vec4 a);
 inline bool vi_any(vec4 a);
+
+//color operations
+inline vec4 vi_cvt_ubyte4_to_vec4(uint32_t ub4);
+inline vec4 vi_cvt_vec4_to_ubyte4(uint32_t ub4);
 
 #include "vi.inl"

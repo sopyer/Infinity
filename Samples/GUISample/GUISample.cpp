@@ -1,5 +1,4 @@
 #include <framework.h>
-#include <FTGLTextureFont.h>
 #include "Controls.h"
 #include "Animations.h"
 #include <vg\vg.h>

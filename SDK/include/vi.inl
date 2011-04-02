@@ -234,3 +234,24 @@ inline bool vi_any(vec4 a)
 {
 	return _mm_movemask_ps(a) != 0x00;
 }
+
+inline vec4 vi_cvt_ubyte4_to_vec4(uint32_t ub4)
+{
+	__m128i tmp, zero;
+
+	//tmp.m128i_u32[0] = ub4;
+	tmp  = _mm_cvtsi32_si128(ub4);
+	zero = _mm_setzero_si128();
+	tmp  = _mm_unpacklo_epi8(tmp, zero);
+	tmp  = _mm_unpacklo_epi16(tmp, zero);
+
+	vec4 res = _mm_cvtepi32_ps(tmp);
+	
+	res = _mm_div_ps(res, _vi_c_255);
+
+	return res;
+}
+
+//inline vec4 vi_cvt_vec4_to_ubyte4(uint32_t ub4)
+//{
+//}
