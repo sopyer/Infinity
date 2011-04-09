@@ -27,12 +27,4 @@ class Array: public std::vector<T>
 		}
 };
 
-template<typename T>
-struct Handle
-{
-	public:
-		T	mHandle;
-};
-
-
 #endif

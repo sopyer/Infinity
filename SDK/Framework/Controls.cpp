@@ -32,16 +32,15 @@ namespace ui
 
 	void Rectangle::onPaint()
 	{
-		float w = getWidth(), h = getHeight(),
-			x = 0, y = 0;
-		vg::drawFrame(x, y, w, h, 5, 5, false, false, false);
+		float w = getWidth(), h = getHeight(), x = 0, y = 0;
+		vg::drawRoundedRect(x, y, x+w, x+h, 5, 5, 0xFFAAAAAA, 0xFFFFFFFF);
 	}
 
 	void Label::onPaint()
 	{
 		glColor4fv(mColor);
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
-		vg::drawString(mFont, 0, y/*(mHeight+y)/2*/, mText.c_str());
+		vg::drawString(mFont, 0, y, mText.c_str());
 	}
 
 	void Label::onAllocate()
@@ -130,7 +129,7 @@ namespace ui
 
 	void Edit::onPaint()
 	{
-		vg::drawRoundedRectOutlineCOLORID(0, 0, mWidth, mHeight, 5, 5, 3);
+		vg::drawRoundedRectOutline(0, 0, mWidth, mHeight, 5, 5, 0x7F7FEDE3);
 				
 		glColor4fv(mColor);
 		float y = (mHeight+vg::getTextAscender(mFont)+vg::getTextDescender(mFont))/2;
@@ -139,7 +138,7 @@ namespace ui
 		if (mShowCursor)
 		{
 			float tw = 7+vg::getTextHExtent(mFont, mText.substr(0, mCaretPos).c_str());
-			vg::drawRectCOLORID(tw, y-vg::getTextDescender(mFont), tw+1, y-vg::getTextAscender(mFont), 4, 4);
+			vg::drawRect(tw, y-vg::getTextDescender(mFont), tw+1, y-vg::getTextAscender(mFont), 0xFF232563, 0xFF232563);
 		}
 	}
 			
@@ -166,7 +165,13 @@ namespace ui
 
 	void Button::onPaint()
 	{
-		vg::drawFrame(0, 0, mWidth, mHeight, 5, 5, mIsHover, mIsPressed, false);
+		static const uint32_t colors[] = {
+			0xB2595959,
+			0xCCA6A6A6,
+			0x7F3CE4D4,
+			0x7F7FEDE3,
+		};
+		vg::drawRoundedRect(0, 0, mWidth, mHeight, 5, 5, colors[(mIsPressed<<1)+mIsHover], 0xFFFFFFFF);
 		glColor4fv(mColor);
 		float x = vg::getTextHExtent(mFont, mText.c_str());
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
@@ -181,7 +186,13 @@ namespace ui
 
 	void CheckBox::onPaint()
 	{
-		vg::drawBoolFrame(0, 0, 16, 16, 16/6, 16/6, mIsHover, mIsChecked, false );
+		static const uint32_t colors[] = {
+			0xFF232563,
+			0xFF353795,
+			0xFF3CE4D4,
+			0xFF7FEDE3,
+		};
+		vg::drawRoundedRect(0, 0, 16, 16, 2.5f, 2.5f, colors[(mIsChecked<<1)+mIsHover], 0xFFFFFFFF);
 		glColor4fv(mColor);
 		float x = 20;
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
@@ -223,7 +234,7 @@ namespace ui
 	void VBox::onPaint()
 	{
 		float w = getWidth(), h = getHeight(), x = 0, y = 0;
-		vg::drawFrame(x, y, w, h, 5, 5, false, false, false);
+		vg::drawRoundedRect(x, y, w, h, 5, 5, 0xB2595959, 0xFFFFFFFF);
 	}
 
 	ProfileStatsBox::ProfileStatsBox()
