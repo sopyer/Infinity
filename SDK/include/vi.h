@@ -5,7 +5,7 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 
-#include <stdint.h>
+//#include <stdint.h>
 
 typedef __m128	vec4;
 typedef __m128i	vec4i;
@@ -99,7 +99,7 @@ inline bool vi_all(vec4 a);
 inline bool vi_any(vec4 a);
 
 //color operations
-inline vec4 vi_cvt_ubyte4_to_vec4(uint32_t ub4);
-inline vec4 vi_cvt_vec4_to_ubyte4(uint32_t ub4);
+inline vec4 vi_cvt_ubyte4_to_vec4(__int32 ub4);
+inline vec4 vi_cvt_vec4_to_ubyte4(__int32 ub4);
 
 #include "vi.inl"

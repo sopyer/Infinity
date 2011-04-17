@@ -188,11 +188,11 @@ namespace ui
 	{
 		static const uint32_t colors[] = {
 			0xFF232563,
-			0xFF353795,
-			0xFF3CE4D4,
-			0xFF7FEDE3,
+			0xFF4547A5,
+			0xFF3CE484,
+			0xFF7FFDA3,
 		};
-		vg::drawRoundedRect(0, 0, 16, 16, 2.5f, 2.5f, colors[(mIsChecked<<1)+mIsHover], 0xFFFFFFFF);
+		vg::drawRoundedRect(0, 0, 16, 16, 2.5f, 2.5f, colors[(mIsChecked<<1)+mIsHover], 0xFF00FF32);
 		glColor4fv(mColor);
 		float x = 20;
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
@@ -234,7 +234,7 @@ namespace ui
 	void VBox::onPaint()
 	{
 		float w = getWidth(), h = getHeight(), x = 0, y = 0;
-		vg::drawRoundedRect(x, y, w, h, 5, 5, 0xB2595959, 0xFFFFFFFF);
+		vg::drawRoundedRect(x, y, w, h, 5, 5, 0xC0000000/*0xB2595959*/, /*0xFFC0E0E0*/0xFF00FF32);
 	}
 
 	ProfileStatsBox::ProfileStatsBox()

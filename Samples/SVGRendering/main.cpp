@@ -125,7 +125,7 @@ class SVGSample: public ui::SDLStage
 
 			glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);
 			
-			glClearColor(1, 1, 1, 1);
+			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
 			glMatrixMode(GL_MODELVIEW);
 			glTranslatef(mOffsetX, mOffsetY, 0);

@@ -70,12 +70,14 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ml.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="vi.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vi.h" />
     <ClInclude Include="DataPtr.h" />
+    <ClInclude Include="ml.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

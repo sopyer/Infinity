@@ -59,7 +59,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>framework.lib;vg.lib;glclasses.lib;physfs_d.lib;sdl_d.lib;sdlmain_d.lib;freetype_d.lib;opengl32.lib;glFont.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>utils.lib;framework.lib;vg.lib;glclasses.lib;physfs_d.lib;sdl_d.lib;sdlmain_d.lib;freetype_d.lib;opengl32.lib;glFont.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

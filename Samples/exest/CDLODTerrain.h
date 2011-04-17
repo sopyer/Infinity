@@ -27,8 +27,10 @@ class CDLODTerrain
 		
 		GLuint		terrainProgram;
 		GLint		uniOffset, uniScale, uniViewPos, uniMorphParams,
-					uniPatchBase, uniHMDim, uniLevel, uniColors;
+					uniPatchBase, uniHMDim, uniLevel, uniColors,
+					uniStops, uniScales, uniInvStopCount;
 		GLuint		mHeightmapTex;
+		GLuint		mColorRampTex;
 		GLuint		vao;
 
 		PatchData*	instData;

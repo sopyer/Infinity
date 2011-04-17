@@ -17,6 +17,9 @@
     <ClCompile Include="vi.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataPtr.h">
@@ -29,6 +32,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\vi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

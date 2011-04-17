@@ -9,6 +9,11 @@ namespace vg
 
 	void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		glUseProgram(programs[PRG_SIMPLE_UI]);
 
 		vec4 fillColorF = vi_cvt_ubyte4_to_vec4(fillColor), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
@@ -28,10 +33,15 @@ namespace vg
 		glEnd();
 
 		glUseProgram(0);
+		glPopAttrib();
 	}
 
 	void drawRoundedRect(float x0, float y0, float x1, float y1, float cx, float cy, VGuint fillColor, VGuint borderColor)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		vec4 fillColorF = vi_cvt_ubyte4_to_vec4(fillColor), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
 
 		glUseProgram(programs[PRG_SIMPLE_UI]);
@@ -117,10 +127,15 @@ namespace vg
 		glEnd();
 
 		glUseProgram(0);
+		glPopAttrib();
 	}
 
 	void drawRoundedRectOutline(float x0, float y0, float x1, float y1, float cx, float cy, VGuint borderColor)
 	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		vec4 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
 
 		glUseProgram(programs[PRG_SIMPLE_UI]);
@@ -207,6 +222,7 @@ namespace vg
 		glEnd();
 
 		glUseProgram(0);
+		glPopAttrib();
 	}
 
 	//   void drawCircle( const Rect& rect, int fillColorId, int borderColorId );

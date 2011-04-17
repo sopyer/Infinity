@@ -14,18 +14,23 @@ void CDLODTerrain::initialize()
 {
 	drawWireframe = false;
 
-	terrainProgram = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");
-	uniColors      = glGetUniformLocation(terrainProgram, "uColors");
-	uniOffset      = glGetUniformLocation(terrainProgram, "uOffset");
-	uniScale       = glGetUniformLocation(terrainProgram, "uScale");
-	uniViewPos     = glGetUniformLocation(terrainProgram, "uViewPos");
-	uniHMDim       = glGetUniformLocation(terrainProgram, "uHMDim");
-	uniMorphParams = glGetUniformLocation(terrainProgram, "uMorphParams");
+	terrainProgram  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");
+	uniColors       = glGetUniformLocation(terrainProgram, "uColors");
+	uniOffset       = glGetUniformLocation(terrainProgram, "uOffset");
+	uniScale        = glGetUniformLocation(terrainProgram, "uScale");
+	uniViewPos      = glGetUniformLocation(terrainProgram, "uViewPos");
+	uniHMDim        = glGetUniformLocation(terrainProgram, "uHMDim");
+	uniMorphParams  = glGetUniformLocation(terrainProgram, "uMorphParams");
+	uniStops        = glGetUniformLocation(terrainProgram, "uStops");
+	uniScales       = glGetUniformLocation(terrainProgram, "uScales");
+	uniInvStopCount = glGetUniformLocation(terrainProgram, "uInvStopCount");
 
 	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
+	GLint uniColorRamp = glGetUniformLocation(terrainProgram, "samColorRamp");
 
 	glUseProgram(terrainProgram);
 	glUniform1i(uniHeightmap, 0);
+	glUniform1i(uniColorRamp, 1);
 
 	glGenTextures(1, &mHeightmapTex);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -35,6 +40,11 @@ void CDLODTerrain::initialize()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glGenTextures(1, &mColorRampTex);
+	glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glGenBuffers(1, &vbo);
 	glGenBuffers(1, &instVBO);
@@ -54,6 +64,9 @@ void CDLODTerrain::initialize()
 	glEnableVertexAttribArray(ATTR_LEVEL);
 	glEnableVertexAttribArray(ATTR_PATCH_BASE);
 	glBindVertexArray(0);
+	
+	GLenum err = glGetError();
+	assert(err==GL_NO_ERROR);
 }
 
 void CDLODTerrain::cleanup()
@@ -65,6 +78,7 @@ void CDLODTerrain::cleanup()
 	if (minmaxData) free(minmaxData);
 	glDeleteProgram(terrainProgram);
 	glDeleteTextures(1, &mHeightmapTex);
+	glDeleteTextures(1, &mColorRampTex);
 }
 
 void CDLODTerrain::calculateLODRanges(float* ranges)
@@ -103,6 +117,7 @@ void CDLODTerrain::calculateLODParams()
 	size_t	patchCount = patchCountX*patchCountY;
 	float	width2=size*size*minPatchDimX*minPatchDimX,
 			height2=size*size*minPatchDimY*minPatchDimY,
+			deltaZ2=heightScale*heightScale,
 			curRange=0.0f;
 			
 	minmaxDataSize = 0;
@@ -111,7 +126,10 @@ void CDLODTerrain::calculateLODParams()
 
 	for (size_t i=0; i<LODCount; ++i)
 	{
-		float minRange = 2.0f*sqrt(width2+height2);
+		//To avoid cracks when height is greater then minRange,
+		//minRange should take height into account too
+		//minRange = 2.0f*sqrt(width^2+height^2+heightScale^2)
+		float minRange = 2.0f*sqrt(width2+height2+deltaZ2);
 		float range = std::max(ranges[i], minRange);
 
 		LODs[i].rangeStart = curRange;
@@ -360,6 +378,8 @@ void CDLODTerrain::drawTerrain()
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_1D, mColorRampTex);
 
 		//TODO: Enable triangle culling and fix mesh(Partially done)
 		glEnable(GL_CULL_FACE);
@@ -392,20 +412,20 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	gridDimX = width;
 	gridDimY = height;
 
-	size = 1;
+	size = 0.1f;
 	startX = -0.5f*size*(gridDimX-1);
 	startY = -0.5f*size*(gridDimY-1);
 
 	minPatchDimX = 8;
 	minPatchDimY = 8;
 
-	visibilityDistance = size*600;
+	visibilityDistance = 600;
 	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
 	LODCount = 5;
 	detailBalance = 2.0f;
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;
-	heightScale = 64;
+	heightScale = 6.4f;
 
 	calculateLODParams();
 	generateGeometry();
@@ -421,7 +441,47 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	glUniform3f(uniScale, size, heightScale, size);
 	glUniform2fv(uniMorphParams, LODCount, morphParams);
 	glUniform3fv(uniColors, 8, colors[0]);
+
+	// Terrain Gradient
+	const int stopCount = 5;
+	float stops[stopCount] = {0.0000f, 0.1250f, 0.2500f, 0.500f, 1.000f};
+
+	float stopsData[8*4], scalesData[8*4];
+
+	for (int i=0; i<8*4; ++i)
+	{
+		stopsData[i]  = 1.0f;
+		scalesData[i] = 0.0f;
+	}
+
+	memcpy(stopsData, stops, stopCount*4);
+
+	for (int i=0; i<stopCount-1; ++i)
+	{
+		float delta = stops[i+1]-stops[i];
+		assert(delta>=0);
+		scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
+	}
+
+	glUniform4fv(uniStops,  1, stopsData);
+	glUniform4fv(uniScales, 1, scalesData);
+	glUniform1f(uniInvStopCount, 1.0f/stopCount);
+
+	unsigned char c[] = {
+		240, 240,  64, 255,
+		32, 160,   0, 255,
+		224, 224,   0, 255,
+		128, 128, 128, 255,
+		255, 255, 255, 255,
+	};
+
+	glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+
 	glUseProgram(0);
+
+	GLenum err = glGetError();
+	assert(err==GL_NO_ERROR);
 }
 
 void downsample(size_t w, size_t h, const float* inData,

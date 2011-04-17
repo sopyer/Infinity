@@ -277,24 +277,6 @@ namespace impl
 				}
 			}
 
-			//prgFillColor = glCreateProgram();
-			//fsColor = glCreateShader(GL_FRAGMENT_SHADER);
-			//CompileShader(fsColor, sourceColorFillFragSh);
-			//glAttachShader(prgFillColor, fsColor);
-			//glLinkProgram(prgFillColor);
-			//glDeleteShader(fsColor);
-
-			//prgFillPattern = glCreateProgram();
-			//vsFill = glCreateShader(GL_VERTEX_SHADER);
-			//fsPattern = glCreateShader(GL_FRAGMENT_SHADER);
-			//CompileShader(vsFill, sourceFillVertSh);
-			//CompileShader(fsPattern, sourcePatternFillFragSh);
-			//glAttachShader(prgFillPattern, fsPattern);
-			//glAttachShader(prgFillPattern, vsFill);
-			//glLinkProgram(prgFillPattern);
-			//glDeleteShader(fsPattern);
-			//glDeleteShader(vsFill);
-
 			for (size_t i=0; i<shCount; ++i)
 			{
 				glDeleteShader(shaders[i]);
@@ -309,9 +291,6 @@ namespace impl
 		refCount--;
 		if (refCount==0)
 		{
-			//glDeleteProgram(prgFillColor);
-			//glDeleteProgram(prgFillPattern);
-
 			for (size_t i=0; i<PRG_COUNT; ++i)
 			{
 				glDeleteProgram(programs[i]);

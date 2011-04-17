@@ -43,16 +43,24 @@ namespace resources
 
 	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath)
 	{
-		GLuint vertShader = createShaderFromFile(GL_VERTEX_SHADER, vertShaderPath);
-		GLuint fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragShaderPath);
 		GLuint program = glCreateProgram();
 		
-		glAttachShader(program, vertShader);
-		glAttachShader(program, fragShader);
-		glLinkProgram(program);
+		if (vertShaderPath)
+		{
+			GLuint vertShader = createShaderFromFile(GL_VERTEX_SHADER, vertShaderPath);
+			glAttachShader(program, vertShader);
+			glDeleteShader(vertShader);
+		}
+
+		if (fragShaderPath)
+		{
+			GLuint fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragShaderPath);
+			glAttachShader(program, fragShader);
+			glDeleteShader(fragShader);
+		}
 		
-		glDeleteShader(vertShader);
-		glDeleteShader(fragShader);
+		glLinkProgram(program);
+		//TODO: add check for successful linkage
 
 		return program;
 	}

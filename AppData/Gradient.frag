@@ -1,6 +1,4 @@
-#version 330
-
-in float vHeight;
+#version 120
 
 uniform vec4		uStops[8];
 uniform vec4		uScales[8];
@@ -29,5 +27,10 @@ vec4 evalGrad(float t)
 
 void main()
 {
-	gl_FragColor = vec4(evalGrad(vHeight).xyz, 1);
+	const vec2 p1 = vec2(440, 0);
+	const vec2 p2 = vec2(840, 0);
+
+	vec2 d = p2-p1;
+	float t = dot(d, gl_FragCoord.xy-vec2(440, 0))/dot(d, d);
+	gl_FragColor = evalGrad(t);
 }

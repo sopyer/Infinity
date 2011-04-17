@@ -14,6 +14,8 @@ typedef signed int		s16;
 typedef unsigned char	u8;
 typedef signed char		s8;
 
+#include <utils/ml.h>
+
 void parseTag(u32 tagType)
 {
 	switch (tagType)
@@ -205,6 +207,25 @@ struct MemReader
 
 int main()
 {
+	//Transpose
+	vec4 mat[4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+
+	__m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(mat[0]), _mm_castps_si128(mat[1]));
+	__m128i xmm1 = _mm_unpackhi_epi32(_mm_castps_si128(mat[0]), _mm_castps_si128(mat[1]));
+	__m128i xmm2 = _mm_unpacklo_epi32(_mm_castps_si128(mat[2]), _mm_castps_si128(mat[3]));
+	__m128i xmm3 = _mm_unpackhi_epi32(_mm_castps_si128(mat[2]), _mm_castps_si128(mat[3]));
+
+	vec4 trans[4];
+
+	trans[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
+	trans[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
+	trans[2] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm1, xmm3));
+	trans[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
+
+	vec4 trans2[4];
+
+	ml::transpose(trans2, mat);
+
 	FILE* file = fopen("..\\..\\AppData\\VT.swf", "rb");
 	fseek(file, 0, SEEK_END);
 	size_t size = ftell(file);
