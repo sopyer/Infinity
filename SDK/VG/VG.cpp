@@ -64,7 +64,7 @@ namespace vg
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		impl::rasterizeEvenOdd(*path);
 
-		glCallList(paint);
+		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -79,7 +79,7 @@ namespace vg
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		impl::rasterizeEvenOddA2C(*path);
 
-		glCallList(paint);
+		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -94,7 +94,7 @@ namespace vg
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		rasterizeNonZeroA2C(*path);
 
-		glCallList(paint);
+		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -109,7 +109,7 @@ namespace vg
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		impl::rasterizeNonZero(*path);
 
-		glCallList(paint);
+		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
@@ -138,7 +138,7 @@ namespace vg
 		clearAlpha(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		impl::rasterizeEvenOddAA(*path);
 
-		glCallList(paint);
+		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glEnable(GL_BLEND);
 		glBlendEquation(GL_FUNC_ADD);

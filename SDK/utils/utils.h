@@ -105,13 +105,13 @@ struct CArray5
 template<size_t val0, size_t val1, size_t val2, size_t val3, size_t val4>
 const size_t CArray5<val0, val1, val2, val3, val4>::ptr[] = {val0, val1, val2, val3, val4};
 
-template<size_t val0, size_t val1, size_t val2, size_t val3, size_t val4, size_t val5>
+template<typename T, T val0, T val1, T val2, T val3, T val4, T val5>
 struct CArray6
 {
-	static const size_t	ptr[];
+	static T	ptr[];
 };
-template<size_t val0, size_t val1, size_t val2, size_t val3, size_t val4, size_t val5>
-const size_t CArray6<val0, val1, val2, val3, val4, val5>::ptr[] = {val0, val1, val2, val3, val4, val5};
+template<typename T, T val0, T val1, T val2, T val3, T val4, T val5>
+T CArray6<T, val0, val1, val2, val3, val4, val5>::ptr[] = {val0, val1, val2, val3, val4, val5};
 
 template<size_t val0, size_t val1, size_t val2, size_t val3, size_t val4, size_t val5, size_t val6>
 struct CArray7

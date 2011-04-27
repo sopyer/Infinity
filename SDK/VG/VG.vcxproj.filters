@@ -52,6 +52,9 @@
     <ClInclude Include="impl\SharedResources.h">
       <Filter>Impl</Filter>
     </ClInclude>
+    <ClInclude Include="Paint.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="VG.h">

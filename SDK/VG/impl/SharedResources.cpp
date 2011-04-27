@@ -11,10 +11,16 @@ namespace impl
 	namespace
 	{
 		//MSVC8 is unhappy without extern:)
-		extern const char UNI_NAME_HALF_WIDTH[] = "uHalfWidth";
-		extern const char UNI_NAME_FILL_COLOR[] = "uFillColor";
-		extern const char UNI_NAME_BORDER_COLOR[] = "uBorderColor";
-		extern const char UNI_NAME_ZONES[] = "uZones";
+		extern const char UNI_NAME_HALF_WIDTH[]     = "uHalfWidth";
+		extern const char UNI_NAME_FILL_COLOR[]     = "uFillColor";
+		extern const char UNI_NAME_BORDER_COLOR[]   = "uBorderColor";
+		extern const char UNI_NAME_ZONES[]          = "uZones";
+		extern const char UNI_NAME_STOPS[]          = "uStops";
+		extern const char UNI_NAME_SCALES[]         = "uScales";
+		extern const char UNI_NAME_INV_STOP_COUNT[] = "uInvStopCount";
+		extern const char UNI_NAME_SAM_COLOR_RAMP[] = "samColorRamp";
+		extern const char UNI_NAME_START_POINT[]    = "uStartPt";
+		extern const char UNI_NAME_DIRECTION[]      = "uDirection";
 
 		size_t refCount = 0;
 		
@@ -28,6 +34,9 @@ namespace impl
 			
 			vsSimpleUI,
 			fsSimpleUI,
+
+			fsGradientCommon,
+			fsLinearGradient,
 
 			shCount
 		};
@@ -106,6 +115,19 @@ namespace impl
 				CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
 				CArray1<size_t, UNI_RAST_STROKE_TRI_HALFWIDTH>::ptr
 			},
+			//PRG_FILL_LINEAR_GRADIENT,
+			{
+				2, CArray2<size_t, fsGradientCommon, fsLinearGradient>::ptr,
+				6,
+				CArray6<const char*,
+					UNI_NAME_STOPS, UNI_NAME_SCALES, UNI_NAME_INV_STOP_COUNT,
+					UNI_NAME_SAM_COLOR_RAMP, UNI_NAME_START_POINT, UNI_NAME_DIRECTION
+				>::ptr,     
+				CArray6<size_t,
+					UNI_LIN_GRAD_STOPS, UNI_LIN_GRAD_SCALES, UNI_LIN_GRAD_INV_STOP_COUNT,
+					UNI_LIN_GRAD_SAM_COLOR_RAMP, UNI_LIN_GRAD_START_POINT, UNI_LIN_GRAD_DIRECTION
+				>::ptr
+			}
 		};
 		
 		ShaderDef shaderDefs[shCount] =
@@ -209,6 +231,58 @@ namespace impl
 				"	gl_FragColor.a *= exp2(-2.0*a*a);											\n"
 				"}																				\n"
 			},
+
+			{
+				GL_FRAGMENT_SHADER,																			
+				"#version 120																					\n"
+				"																								\n"
+				"uniform vec4		uStops[8];																	\n"
+				"uniform vec4		uScales[8];																	\n"
+				"uniform float		uInvStopCount;																\n"
+				"uniform sampler1D	samColorRamp;																\n"
+				"																								\n"
+				"vec4 evalGrad(float t)																			\n"
+				"{																								\n"
+				"	vec4 accum = vec4(0);																		\n"
+				"																								\n"
+				"	for (int i=0; i<8; ++i)																		\n"
+				"	{																							\n"
+				"		vec4 deltas;																			\n"
+				"																								\n"
+				"		// can not use multiply-add, because {0, 0.5, 0.5, 1} case would not work 				\n"
+				"		// also this case requires support of IEEE 754 floats as well							\n"
+				"		// because uScales[1] is infinity in this case											\n"
+				"		deltas = (t.xxxx-uStops[i])*uScales[i];													\n"
+				"		deltas = clamp(deltas, vec4(0), vec4(1));												\n"
+				"		accum += deltas;																		\n"
+				"	}																							\n"
+				"																								\n"
+				"	float offset =(dot(accum, vec4(1))+0.5)*uInvStopCount;										\n"
+				"																								\n"
+				"	return texture(samColorRamp, offset);														\n"
+				"}																								\n"
+			},
+
+			{
+				GL_FRAGMENT_SHADER,																			
+				"#version 120																					\n"
+				"																								\n"
+				"vec4 evalGrad(float t);																		\n"
+				"																								\n"
+				"//Mapping distance between uStartPt and uEndPt in range [0..1]									\n"
+				"//uDirection  = (uEndPt-uStartPt);																\n"
+				"//uScale      = 1.0/dot(uDirection, uDirection);												\n"
+				"//uDirection *= uScale;																		\n"
+				"uniform vec2 uStartPt;																			\n"
+				"uniform vec2 uDirection;																		\n"
+				"																								\n"
+				"void main()																					\n"
+				"{																								\n"
+				"	//fragcoord is not correct, vs should pass untransformed coo!!!!!!							\n"
+				"	float t = dot(uDirection, gl_FragCoord.xy-uStartPt);										\n"
+				"	gl_FragColor = evalGrad(t);																	\n"
+				"}																								\n"
+			},
 		};
 
 		//const char* const sourceColorFillFragSh =
@@ -247,6 +321,9 @@ namespace impl
 
 	void acquire()
 	{
+#ifdef _DEBUG
+		char output[8096];
+#endif
 		assert(refCount>=0);
 		if (refCount==0)
 		{
@@ -257,7 +334,15 @@ namespace impl
 				shaders[i] = glCreateShader(shaderDefs[i].mType);
 				GLint len = (GLint)strlen(shaderDefs[i].mSource);
 				glShaderSource(shaders[i], 1, (const GLchar **)&shaderDefs[i].mSource, &len);
-				glCompileShader(shaders[i]); 
+				glCompileShader(shaders[i]);
+#ifdef _DEBUG
+				GLint	status;
+				glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &status);
+				if (!status)
+				{
+					glGetShaderInfoLog(shaders[i], 8096, &status, output);
+				}
+#endif
 			}
 
 			for (size_t i=0; i<PRG_COUNT; ++i)
@@ -271,9 +356,19 @@ namespace impl
 				
 				glLinkProgram(programs[i]);
 
+#ifdef _DEBUG
+				GLint	status;
+				glGetProgramiv(programs[i], GL_LINK_STATUS, &status);
+				if (!status)
+				{
+					glGetProgramInfoLog(programs[i], 8096, &status, output);
+				}
+#endif
+
 				for (size_t u=0; u<programDefs[i].mUniformCount; ++u)
 				{
 					uniforms[programDefs[i].mUniformID[u]] = glGetUniformLocation(programs[i], programDefs[i].mUniformList[u]);
+					assert(uniforms[programDefs[i].mUniformID[u]]!=-1);
 				}
 			}
 

@@ -10,9 +10,10 @@ namespace impl
 namespace vg
 {
 	struct FontOpaque;
+	struct PaintOpaque;
 
 	typedef FontOpaque*		Font;
-	typedef VGuint			Paint;
+	typedef PaintOpaque*	Paint;
 	typedef impl::Geometry* Path;
 
 	enum TextAlign
@@ -56,6 +57,9 @@ namespace vg
 	//Paint API
 	Paint	createSolidPaint(float* color4f);
 	Paint	createSolidPaint(unsigned int color);
+	Paint	createLinearGradientPaint(float x0, float y0, float x1, float y1,
+									  size_t stopCount, float stops[],
+									  unsigned int colorRamp[]);
 	void	destroyPaint(Paint paint);
 	void	applyPaintAsGLProgram(Paint paint);
 

@@ -62,10 +62,25 @@ class FontTest: public ui::SDLStage
 			};
 
 			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+
+			const int stopCount1 = 4;
+			float stops1[stopCount1] = {0.0000f, 0.5f, 0.5f, 1.000f};
+			unsigned char c1[] = {
+				0, 0,   255, 255,
+				224, 0,   0, 255,
+				0, 128, 0, 255,
+				255, 255, 255, 255,
+			};
+
+			paint = vg::createLinearGradientPaint(500, 0, 500, 0, stopCount1, stops1, (unsigned int*)c1);
+			//paint = vg::createSolidPaint(0xFF00FF00);
+			path = vg::createUnitQuad();
 		}
 
 		~FontTest()
 		{
+			vg::destroyPaint(paint);
+			vg::destroyPath(path);
 			glDeleteProgram(prgGradient);
 			destroyFont(font);
 		}
@@ -94,19 +109,22 @@ class FontTest: public ui::SDLStage
 
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-			glTranslatef(0, 0, -10);
+			glTranslatef(0, 0, -1);
 
-			glUseProgram(prgGradient);
-			glColor3f(1, 1, 0);
-			glBegin(GL_QUADS);
-			glVertex2f(-10,  10);
-			glVertex2f( 10,  10);
-			glVertex2f( 10, -10);
-			glVertex2f(-10, -10);
-			glEnd();
+			vg::drawPath(path, paint);
+			//glUseProgram(prgGradient);
+			//glColor3f(1, 1, 0);
+			//glBegin(GL_QUADS);
+			//glVertex2f(-10,  10);
+			//glVertex2f( 10,  10);
+			//glVertex2f( 10, -10);
+			//glVertex2f(-10, -10);
+			//glEnd();
 		}
 
 	private:
+		vg::Paint		paint;
+		vg::Path		path;
 		Font			font;
 		GLuint			prgGradient;
 		VFS				mVFS;

@@ -1,18 +1,20 @@
-#include <vector>
-#include <gl/glee.h>
-
 #include "VG.h"
+#include "Paint.h"
 #include "impl/SharedResources.h"
+
+#include <float.h>
+#include <assert.h>
 
 namespace vg
 {
 	Paint createSolidPaint(float* color4f)
 	{
-		Paint	newPaint;
+		Paint	newPaint = new PaintOpaque;
 
-		newPaint = glGenLists(1);
+		newPaint->displayList	= glGenLists(1);
+		newPaint->texture		= 0;
 
-		glNewList(newPaint, GL_COMPILE);
+		glNewList(newPaint->displayList, GL_COMPILE);
 		glUseProgram(0);
 		glColor4fv(color4f);
 		glEndList();
@@ -22,11 +24,12 @@ namespace vg
 
 	Paint createSolidPaint(unsigned int color)
 	{
-		Paint	newPaint;
+		Paint	newPaint = new PaintOpaque;
 
-		newPaint = glGenLists(1);
+		newPaint->displayList	= glGenLists(1);
+		newPaint->texture		= 0;
 
-		glNewList(newPaint, GL_COMPILE);
+		glNewList(newPaint->displayList, GL_COMPILE);
 		glUseProgram(0);
 		glColor4ubv((GLubyte*)&color);
 		glEndList();
@@ -34,14 +37,68 @@ namespace vg
 		return newPaint;
 	}
 
+	Paint createLinearGradientPaint(float x0, float y0, float x1, float y1, size_t stopCount, float stops[], unsigned int colorRamp[])
+	{
+		Paint	newPaint = new PaintOpaque;
+
+		newPaint->displayList	= glGenLists(1);
+		glGenTextures(1, &newPaint->texture);
+		glBindTexture(GL_TEXTURE_1D, newPaint->texture);
+		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorRamp);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glNewList(newPaint->displayList, GL_COMPILE);
+		glUseProgram(impl::programs[impl::PRG_FILL_LINEAR_GRADIENT]);
+
+		float stopsData[8*4], scalesData[8*4];
+
+		for (int i=0; i<8*4; ++i)
+		{
+			stopsData[i]  = 1.0f;
+			scalesData[i] = 0.0f;
+		}
+
+		memcpy(stopsData, stops, stopCount*4);
+
+		for (size_t i=0; i<stopCount-1; ++i)
+		{
+			float delta = stops[i+1]-stops[i];
+			assert(delta>=0);
+			scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
+		}
+
+		glUniform4fv(impl::uniforms[impl::UNI_LIN_GRAD_STOPS],  1, stopsData);
+		glUniform4fv(impl::uniforms[impl::UNI_LIN_GRAD_SCALES], 1, scalesData);
+		glUniform1f(impl::uniforms[impl::UNI_LIN_GRAD_INV_STOP_COUNT], 1.0f/stopCount);
+		glUniform1i(impl::uniforms[impl::UNI_LIN_GRAD_SAM_COLOR_RAMP], 0);
+
+		float dx=x1-x0, dy=y1-y0;
+		float scale = dx*dx+dy*dy;
+
+		glUniform2f(impl::uniforms[impl::UNI_LIN_GRAD_START_POINT], x0, y0);
+		glUniform2f(impl::uniforms[impl::UNI_LIN_GRAD_DIRECTION], scale?dx/scale:FLT_MAX, scale?dy/scale:FLT_MAX);
+		glEndList();
+
+		return newPaint;
+	}
+
 	void applyPaintAsGLProgram(Paint paint)
 	{
-		glCallList(paint);
+		glCallList(paint->displayList);
+		if (paint->texture)
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_1D, paint->texture);
+		}
 	}
 
 	void destroyPaint(Paint paint)
 	{
-		glDeleteLists(paint, 1);
+		glDeleteLists(paint->displayList, 1);
+		if (paint->texture) glDeleteTextures(1, &paint->texture);
+
+		delete paint;
 	}
 
 	//void Paint::setColorPaint(const glm::vec4& color)
