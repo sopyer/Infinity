@@ -35,6 +35,7 @@ namespace impl
 			vsSimpleUI,
 			fsSimpleUI,
 
+			vsFill,
 			fsGradientCommon,
 			fsLinearGradient,
 
@@ -117,7 +118,7 @@ namespace impl
 			},
 			//PRG_FILL_LINEAR_GRADIENT,
 			{
-				2, CArray2<size_t, fsGradientCommon, fsLinearGradient>::ptr,
+				3, CArray3<size_t, vsFill, fsGradientCommon, fsLinearGradient>::ptr,
 				6,
 				CArray6<const char*,
 					UNI_NAME_STOPS, UNI_NAME_SCALES, UNI_NAME_INV_STOP_COUNT,
@@ -233,6 +234,17 @@ namespace impl
 			},
 
 			{
+				GL_VERTEX_SHADER,
+				"varying vec2 vFragPos;															\n"
+				"																				\n"
+				"void main()																	\n"
+				"{																				\n"
+				"	gl_Position = gl_ModelViewProjectionMatrix * vec4(gl_Vertex.xy, 0, 1);		\n"
+				"	vFragPos    = gl_Vertex.xy;													\n"
+				"}																				\n"
+			},
+
+			{
 				GL_FRAGMENT_SHADER,																			
 				"#version 120																					\n"
 				"																								\n"
@@ -276,10 +288,11 @@ namespace impl
 				"uniform vec2 uStartPt;																			\n"
 				"uniform vec2 uDirection;																		\n"
 				"																								\n"
+				"varying vec2 vFragPos;																			\n"
+				"																								\n"
 				"void main()																					\n"
 				"{																								\n"
-				"	//fragcoord is not correct, vs should pass untransformed coo!!!!!!							\n"
-				"	float t = dot(uDirection, gl_FragCoord.xy-uStartPt);										\n"
+				"	float t = dot(uDirection, vFragPos-uStartPt);												\n"
 				"	gl_FragColor = evalGrad(t);																	\n"
 				"}																								\n"
 			},

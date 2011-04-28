@@ -72,7 +72,7 @@ class FontTest: public ui::SDLStage
 				255, 255, 255, 255,
 			};
 
-			paint = vg::createLinearGradientPaint(500, 0, 500, 0, stopCount1, stops1, (unsigned int*)c1);
+			paint = vg::createLinearGradientPaint(-0.1f, -0.1f, 0.1f, 0.1f, stopCount1, stops1, (unsigned int*)c1);
 			//paint = vg::createSolidPaint(0xFF00FF00);
 			path = vg::createUnitQuad();
 		}
