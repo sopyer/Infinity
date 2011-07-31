@@ -412,7 +412,7 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	gridDimX = width;
 	gridDimY = height;
 
-	size = 0.1f;
+	size = 1.0f;
 	startX = -0.5f*size*(gridDimX-1);
 	startY = -0.5f*size*(gridDimY-1);
 
@@ -425,7 +425,7 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	detailBalance = 2.0f;
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;
-	heightScale = 6.4f;
+	heightScale = 32.0f;
 
 	calculateLODParams();
 	generateGeometry();
@@ -437,14 +437,14 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 
 	glUseProgram(terrainProgram);
 	glUniform4f(uniHMDim, (GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
-	glUniform3f(uniOffset, startX, 0, startY);
+	glUniform3f(uniOffset, startX, 0.0f, startY);
 	glUniform3f(uniScale, size, heightScale, size);
 	glUniform2fv(uniMorphParams, LODCount, morphParams);
 	glUniform3fv(uniColors, 8, colors[0]);
 
 	// Terrain Gradient
-	const int stopCount = 5;
-	float stops[stopCount] = {0.0000f, 0.1250f, 0.2500f, 0.500f, 1.000f};
+	const int stopCount = 3;
+	float stops[stopCount] = {0.0000f, 0.500f, 1.000f};
 
 	float stopsData[8*4], scalesData[8*4];
 
@@ -468,11 +468,9 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	glUniform1f(uniInvStopCount, 1.0f/stopCount);
 
 	unsigned char c[] = {
-		240, 240,  64, 255,
-		32, 160,   0, 255,
-		224, 224,   0, 255,
-		128, 128, 128, 255,
-		255, 255, 255, 255,
+		  0,   0, 255, 255,
+		  0, 255,   0, 255,
+		255,   0,   0, 255,
 	};
 
 	glBindTexture(GL_TEXTURE_1D, mColorRampTex);

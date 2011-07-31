@@ -60,7 +60,17 @@ namespace resources
 		}
 		
 		glLinkProgram(program);
-		//TODO: add check for successful linkage
+
+		const size_t	LOG_STR_LEN = 1024;
+		char			infoLog[LOG_STR_LEN] = {0};
+		GLsizei			length;
+		glGetProgramInfoLog(program, LOG_STR_LEN-1, &length, infoLog);
+		infoLog[length] = 0;
+			
+		if (infoLog[0])
+		{
+			logging::message("%s\n", infoLog);
+		}
 
 		return program;
 	}
