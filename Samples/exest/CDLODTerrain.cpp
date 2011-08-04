@@ -19,6 +19,7 @@ void CDLODTerrain::initialize()
 	uniOffset       = glGetUniformLocation(terrainProgram, "uOffset");
 	uniScale        = glGetUniformLocation(terrainProgram, "uScale");
 	uniViewPos      = glGetUniformLocation(terrainProgram, "uViewPos");
+	uniMVP          = glGetUniformLocation(terrainProgram, "uMVP");
 	uniHMDim        = glGetUniformLocation(terrainProgram, "uHMDim");
 	uniMorphParams  = glGetUniformLocation(terrainProgram, "uMorphParams");
 	uniStops        = glGetUniformLocation(terrainProgram, "uStops");
@@ -53,14 +54,15 @@ void CDLODTerrain::initialize()
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glVertexPointer(2, GL_FLOAT, 0, 0);
+	glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribDivisor(ATTR_POSITION, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
 	glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
 	glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
 	glVertexAttribPointer(ATTR_LEVEL, 1, GL_INT, GL_FALSE, sizeof(PatchData), (void*)8);
 	glVertexAttribDivisor(ATTR_LEVEL, 1);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableVertexAttribArray(ATTR_POSITION);
 	glEnableVertexAttribArray(ATTR_LEVEL);
 	glEnableVertexAttribArray(ATTR_PATCH_BASE);
 	glBindVertexArray(0);
@@ -160,12 +162,20 @@ void CDLODTerrain::calculateLODParams()
 	assert(morphParamsIt-morphParams==LODCount*2);
 }
 
-void CDLODTerrain::setViewProj(glm::mat4& mat)
+void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 {
 	sseVP.r0 = vi_loadu(mat[0]);
 	sseVP.r1 = vi_loadu(mat[1]);
 	sseVP.r2 = vi_loadu(mat[2]);
 	sseVP.r3 = vi_loadu(mat[3]);
+}
+
+void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
+{
+	sseMVP.r0 = vi_loadu(mat[0]);
+	sseMVP.r1 = vi_loadu(mat[1]);
+	sseMVP.r2 = vi_loadu(mat[2]);
+	sseMVP.r3 = vi_loadu(mat[3]);
 }
 
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
@@ -375,6 +385,8 @@ void CDLODTerrain::drawTerrain()
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glUseProgram(terrainProgram);
 		glUniform3fv(uniViewPos, 1, viewPoint);
+
+		glUniformMatrix4fv(uniMVP, 1, false, (float*)&sseMVP);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mHeightmapTex);

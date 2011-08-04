@@ -63,7 +63,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>physfs_d.lib;opengl32.lib;framework.lib;sdl_d.lib;sdlmain_d.lib;vg.lib;glFont.lib;glClasses.lib;freetype_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>physfs_d.lib;opengl32.lib;framework.lib;sdl_d.lib;sdlmain_d.lib;vg.lib;glClasses.lib;freetype_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -78,6 +78,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -85,6 +86,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalLibraryDirectories>$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;glClasses.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -92,12 +95,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClockData.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\SDK\Framework\Framework.vcxproj">
-      <Project>{61f6a3d7-f203-40ca-95b6-fde1adef0163}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

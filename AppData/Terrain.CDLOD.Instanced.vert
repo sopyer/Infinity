@@ -4,6 +4,7 @@
 #define ATTR_PATCH_BASE	1
 #define ATTR_LEVEL		2
 
+layout(location = ATTR_POSITION)		in vec2		aVertex;
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
 layout(location = ATTR_LEVEL)			in float		aLevel;
 
@@ -13,6 +14,7 @@ uniform vec3		uOffset;
 uniform vec3		uScale;
 
 uniform vec3		uViewPos;
+uniform mat4		uMVP;
 
 uniform sampler2D	uHeightmap;
 uniform vec4		uHMDim;
@@ -46,7 +48,7 @@ void main()
 	vec3	worldPos;
 	vec2	patchScale = vec2(1<<int(aLevel));
 	
-	patchPos = gl_Vertex.xy;
+	patchPos = aVertex;
 	gridPos = aPatchBase+patchScale*patchPos;
 	worldPos = getWorldPos(gridPos);
 	
@@ -61,9 +63,9 @@ void main()
 	morphK = clamp(distance*uMorphParams[int(aLevel)].x+uMorphParams[int(aLevel)].y, 0.0, 1.0);
 	worldPos = mix(worldPos, worldMorphDest, morphK);
 	
-	vHeight = worldPos.y/uScale.y+0.33;
+	vHeight = worldPos.y/uScale.y-uOffset.y;
 
 	vColor = vec4(uColors[int(aLevel)], 1);
-	gl_Position = gl_ModelViewProjectionMatrix*vec4(worldPos, 1);
+	gl_Position = uMVP*vec4(worldPos, 1);
 }
 

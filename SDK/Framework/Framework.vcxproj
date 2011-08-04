@@ -118,24 +118,6 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="DefaultFontData.h" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\glClasses\glClasses.vcxproj">
-      <Project>{1189bb67-679f-4fbc-aca1-25651ddd26ba}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\utils\Utils.vcxproj">
-      <Project>{176b584f-06b8-4986-a800-7b02cf813062}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\VFS++\VFS++.vcxproj">
-      <Project>{34f2cb23-8132-4955-b77d-32cf9d1300a3}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\VG\VG.vcxproj">
-      <Project>{0f3ea0c9-4231-432f-9fd9-92c54dc3f3c4}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

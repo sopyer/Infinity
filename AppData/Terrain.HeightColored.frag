@@ -17,7 +17,7 @@ vec4 evalGrad(float t)
 		// can not use multiply-add, because {0, 0.5, 0.5, 1} case would not work 
 		// also this case requires support of IEEE 754 floats support for this as well
 		// because uScales[1] is infinity in this case
-		deltas = (t.xxxx-uStops[i])*uScales[i];
+		deltas = (vec4(t)-uStops[i])*uScales[i];
 		deltas = clamp(deltas, vec4(0), vec4(1));
 		accum += deltas;
 	}
@@ -27,7 +27,9 @@ vec4 evalGrad(float t)
 	return texture(samColorRamp, offset);
 }
 
+layout(location = 0, index = 0) out vec4 outColor;
+
 void main()
 {
-	gl_FragColor = vec4(evalGrad(vHeight).xyz, 1);
+	outColor = vec4(evalGrad(vHeight).xyz, 1);
 }

@@ -26,7 +26,7 @@ class CDLODTerrain
 		float morphZoneRatio;
 		
 		GLuint		terrainProgram;
-		GLint		uniOffset, uniScale, uniViewPos, uniMorphParams,
+		GLint		uniOffset, uniScale, uniViewPos, uniMVP, uniMorphParams,
 					uniPatchBase, uniHMDim, uniLevel, uniColors,
 					uniStops, uniScales, uniInvStopCount;
 		GLuint		mHeightmapTex;
@@ -38,7 +38,7 @@ class CDLODTerrain
 		GLuint		vbo, instVBO, ibo;
 
 		glm::vec3	viewPoint;
-		ml::mat4x4	sseVP;
+		ml::mat4x4	sseVP, sseMVP;
 
 		float*	minmaxData;
 		size_t	minmaxDataSize;
@@ -57,7 +57,9 @@ class CDLODTerrain
 		void generateBBoxData(uint8_t* data);
 
 		void setHeightmap(uint8_t* data, size_t width, size_t height);
-		void setViewProj(glm::mat4& mat);
+		void setSelectMatrix(glm::mat4& mat);
+		void setMVPMatrix(glm::mat4& mat);
+
 		void calculateLODParams();
 		void calculateLODRanges(float* ranges);
 

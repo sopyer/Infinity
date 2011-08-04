@@ -63,7 +63,7 @@
       <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>physfs_d.lib;opengl32.lib;framework.lib;sdl_d.lib;sdlmain_d.lib;vg.lib;glFont.lib;glClasses.lib;freetype_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>physfs_d.lib;opengl32.lib;framework.lib;sdl_d.lib;sdlmain_d.lib;vg.lib;glClasses.lib;freetype_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
@@ -87,28 +87,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>$(OutDir);</AdditionalLibraryDirectories>
+      <AdditionalDependencies>utils.lib;physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;glClasses.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AOSample.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\SDK\Framework\Framework.vcxproj">
-      <Project>{61f6a3d7-f203-40ca-95b6-fde1adef0163}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\glClasses\glClasses.vcxproj">
-      <Project>{1189bb67-679f-4fbc-aca1-25651ddd26ba}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\utils\Utils.vcxproj">
-      <Project>{176b584f-06b8-4986-a800-7b02cf813062}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\SDK\VFS++\VFS++.vcxproj">
-      <Project>{34f2cb23-8132-4955-b77d-32cf9d1300a3}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
