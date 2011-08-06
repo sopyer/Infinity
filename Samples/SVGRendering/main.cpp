@@ -44,8 +44,6 @@ class SVGSample: public ui::SDLStage
 			
 			mt::addTimedTask<SVGSample, &SVGSample::onUpdateStats>(this, 100);
 
-			assert(GLEE_EXT_timer_query);
-
 			glGenQueries(1, &mTimeQuery);
 
 			SDL_WM_SetCaption("GPU accelerated SVG rendering", NULL);
@@ -123,7 +121,7 @@ class SVGSample: public ui::SDLStage
 			CPUTimer drawTimer;
 			drawTimer.start();
 
-			glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);
+			glBeginQuery(GL_TIME_ELAPSED, mTimeQuery);
 			
 			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT);
@@ -144,12 +142,12 @@ class SVGSample: public ui::SDLStage
 				glEnable(GL_MULTISAMPLE);
 			}
 
-			glEndQuery(GL_TIME_ELAPSED_EXT);
+			glEndQuery(GL_TIME_ELAPSED);
 
 			mDrawTimeCPU = (float)(0.8f*drawTimer.elapsed()+0.2f*mDrawTimeCPU);
 
 			GLuint64EXT result;
-			glGetQueryObjectui64vEXT(mTimeQuery, GL_QUERY_RESULT, &result);
+			glGetQueryObjectui64v(mTimeQuery, GL_QUERY_RESULT, &result);
 			mDrawTimeGPU = 0.8f*result/1000.0f/1000.0f+0.2f*mDrawTimeGPU;
 		}
 

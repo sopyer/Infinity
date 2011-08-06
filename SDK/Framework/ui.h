@@ -2,10 +2,9 @@
 #	define __UI_H_INCLUDED__
 
 #include <sigslot.h>
-#include <gl\glee.h>
+#include <opengl.h>
 
 #include <..\vfs++\vfs++.h>
-#include <glClasses.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
 #include <VG\VG.h>

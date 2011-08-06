@@ -1,4 +1,4 @@
-#include <gl/glee.h>
+#include <opengl.h>
 #include "UI.h"
 #include "Framework.h"
 #include "SDLStage.h"
@@ -51,6 +51,8 @@ namespace ui
 		SDL_EnableKeyRepeat(40, 40);
 
 		setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
+
+		importOpenGL();
 
 		mt::init();
 		vg::init();

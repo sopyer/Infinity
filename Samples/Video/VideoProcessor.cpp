@@ -1,5 +1,5 @@
 #include "VideoPlaybackEngine.h"
-#include <gl/glee.h>
+#include <opengl.h>
 #include <al/al.h>
 
 VideoPlaybackEngine engine;

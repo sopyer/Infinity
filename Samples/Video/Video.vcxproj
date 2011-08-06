@@ -62,7 +62,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>opengl32.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;sdl_d.lib;sdlmain_d.lib;freetype_d.lib;physfs_d.lib;framework.lib;vg.lib;glClasses.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;sdl_d.lib;sdlmain_d.lib;freetype_d.lib;physfs_d.lib;framework.lib;vg.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -80,7 +80,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;glClasses.lib;freetype.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;freetype.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>

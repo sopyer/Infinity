@@ -1,7 +1,7 @@
 #define GLEW_STATIC
 #include <windows.h>
 #include <cstdlib>
-#include <gl\glee.h>
+#include <opengl.h>
 #include "UI.h"
 #include "Framework.h"
 #include <SOIL.h> // remove later

@@ -1,4 +1,4 @@
-#include <gl\glee.h>
+#include <opengl.h>
 #include "UI.h"
 #include "Actor.h"
 #include "Container.h"

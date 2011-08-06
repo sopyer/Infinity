@@ -2,9 +2,13 @@
 
 in float vHeight;
 
-uniform vec4		uStops[8];
-uniform vec4		uScales[8];
-uniform float		uInvStopCount;
+uniform uniGradient
+{
+	uniform vec4		uStops[8];
+	uniform vec4		uScales[8];
+	uniform float		uInvStopCount;
+};
+
 uniform sampler1D	samColorRamp;
 
 vec4 evalGrad(float t)

@@ -1,4 +1,4 @@
-#include <gl/glee.h>
+#include <opengl.h>
 #include <vi.h>
 #include "vg.h"
 #include "impl/SharedResources.h"

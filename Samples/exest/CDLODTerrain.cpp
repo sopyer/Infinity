@@ -12,24 +12,49 @@ struct PatchData
 
 void CDLODTerrain::initialize()
 {
+	useInstancing = true;
 	drawWireframe = false;
 
+	GLint		uniTerrain, uniInst, uniView, uniGradient;
+
 	terrainProgram  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");
-	uniColors       = glGetUniformLocation(terrainProgram, "uColors");
-	uniOffset       = glGetUniformLocation(terrainProgram, "uOffset");
-	uniScale        = glGetUniformLocation(terrainProgram, "uScale");
-	uniViewPos      = glGetUniformLocation(terrainProgram, "uViewPos");
-	uniMVP          = glGetUniformLocation(terrainProgram, "uMVP");
-	uniHMDim        = glGetUniformLocation(terrainProgram, "uHMDim");
-	uniMorphParams  = glGetUniformLocation(terrainProgram, "uMorphParams");
-	uniStops        = glGetUniformLocation(terrainProgram, "uStops");
-	uniScales       = glGetUniformLocation(terrainProgram, "uScales");
-	uniInvStopCount = glGetUniformLocation(terrainProgram, "uInvStopCount");
+
+	uniTerrain  = glGetUniformBlockIndex(terrainProgram, "uniTerrain");
+	uniView     = glGetUniformBlockIndex(terrainProgram, "uniView");
+	uniGradient = glGetUniformBlockIndex(terrainProgram, "uniGradient");
+
+#ifdef _DEBUG
+	GLint structSize;
+
+	glGetActiveUniformBlockiv(terrainProgram, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+	assert(structSize==sizeof(terrainData));
+	glGetActiveUniformBlockiv(terrainProgram, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+	assert(structSize==sizeof(viewData));
+	glGetActiveUniformBlockiv(terrainProgram, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+	assert(structSize==sizeof(gradientData));
+
+#endif
+
+	GLint totalSize=0;
+	GLint align;
+
+	// Assumption - align is power of 2
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
+	--align;
+
+	uniTerrainOffset = totalSize;	totalSize+=sizeof(terrainData);		totalSize += align; totalSize &=~align;
+	uniViewOffset    = totalSize;	totalSize+=sizeof(viewData);		totalSize += align; totalSize &=~align;
+	uniGradientOffset = totalSize;	totalSize+=sizeof(gradientData);	totalSize += align; totalSize &=~align;
 
 	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
 	GLint uniColorRamp = glGetUniformLocation(terrainProgram, "samColorRamp");
 
+	glUniformBlockBinding(terrainProgram, uniTerrain,  0);
+	glUniformBlockBinding(terrainProgram, uniView,     1);
+	glUniformBlockBinding(terrainProgram, uniGradient, 2);
+
 	glUseProgram(terrainProgram);
+	
 	glUniform1i(uniHeightmap, 0);
 	glUniform1i(uniColorRamp, 1);
 
@@ -67,12 +92,18 @@ void CDLODTerrain::initialize()
 	glEnableVertexAttribArray(ATTR_PATCH_BASE);
 	glBindVertexArray(0);
 	
+	glGenBuffers(1, &ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	GLenum err = glGetError();
 	assert(err==GL_NO_ERROR);
 }
 
 void CDLODTerrain::cleanup()
 {
+	glDeleteBuffers(1, &ubo);
 	glDeleteVertexArrays(1, &vao);
 	glDeleteBuffers(1, &vbo);
 	glDeleteBuffers(1, &instVBO);
@@ -124,7 +155,6 @@ void CDLODTerrain::calculateLODParams()
 			
 	minmaxDataSize = 0;
 	curRange=0.0f;
-	float*	morphParamsIt = morphParams;
 
 	for (size_t i=0; i<LODCount; ++i)
 	{
@@ -141,8 +171,7 @@ void CDLODTerrain::calculateLODParams()
 		float morphRange = range*morphZoneRatio;
 		float morphStart = rangeEnd-morphRange;
 		
-		*morphParamsIt++ = 1.0f/morphRange; //morphInvRange
-		*morphParamsIt++ = -morphStart/morphRange; //morphStartRatio
+		terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0, 0);
 
 		LODs[i].width = dimX;
 		LODs[i].height = dimY;
@@ -158,8 +187,6 @@ void CDLODTerrain::calculateLODParams()
 		dimX *= 2;
 		dimY *= 2;
 	}
-
-	assert(morphParamsIt-morphParams==LODCount*2);
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
@@ -172,10 +199,10 @@ void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 
 void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 {
-	sseMVP.r0 = vi_loadu(mat[0]);
-	sseMVP.r1 = vi_loadu(mat[1]);
-	sseMVP.r2 = vi_loadu(mat[2]);
-	sseMVP.r3 = vi_loadu(mat[3]);
+	viewData.uMVP.r0 = vi_loadu(mat[0]);
+	viewData.uMVP.r1 = vi_loadu(mat[1]);
+	viewData.uMVP.r2 = vi_loadu(mat[2]);
+	viewData.uMVP.r3 = vi_loadu(mat[3]);
 }
 
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
@@ -242,7 +269,7 @@ bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
 
 	ml::aabb bb;
 	getAABB(level, i, j, &bb);
-	bool b1 = ml::sphereAABBTest(&bb, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0), r); 
+	bool b1 = ml::sphereAABBTest(&bb, viewData.uViewPoint/*vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0)*/, r); 
 
 	//TODO: remove scalar version
 	//find the square of the distance
@@ -255,14 +282,14 @@ bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
 
 	for (size_t i=0 ; i<3 ; i++) 
 	{
-		if (viewPoint[i] < bmin[i])
+		if (viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ < bmin[i])
 		{
-			s = viewPoint[i] - bmin[i];
+			s = viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ - bmin[i];
 			d += s*s;
 		}
-		else if (viewPoint[i] > bmax[i])
+		else if (viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ > bmax[i])
 		{
-			s = viewPoint[i] - bmax[i];
+			s = viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ - bmax[i];
 			d += s*s;
 		}
 	}
@@ -304,16 +331,16 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
 	}
 }
 
-glm::vec3 colors[] = 
+glm::vec4 colors[] = 
 {
-	glm::vec3(0.5f, 0.0f, 1.0f),
-	glm::vec3(1.0f, 1.0f, 0.0f),
-	glm::vec3(1.0f, 0.6f, 0.6f),
-	glm::vec3(1.0f, 0.0f, 1.0f),
-	glm::vec3(0.0f, 0.0f, 1.0f),
-	glm::vec3(1.0f, 0.2f, 0.2f),
-	glm::vec3(0.0f, 1.0f, 0.0f),
-	glm::vec3(0.0f, 1.0f, 1.0f)
+	glm::vec4(0.5f, 0.0f, 1.0f, 1.0f),
+	glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
+	glm::vec4(1.0f, 0.6f, 0.6f, 1.0f),
+	glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+	glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+	glm::vec4(1.0f, 0.2f, 0.2f, 1.0f),
+	glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
+	glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
 };
 
 void CDLODTerrain::generateGeometry()
@@ -382,11 +409,16 @@ void CDLODTerrain::drawTerrain()
 
 	if (instCount)
 	{
+		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+		glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(viewData), &viewData);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glUseProgram(terrainProgram);
-		glUniform3fv(uniViewPos, 1, viewPoint);
 
-		glUniformMatrix4fv(uniMVP, 1, false, (float*)&sseMVP);
+		glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, uniTerrainOffset, sizeof(terrainData));
+		glBindBufferRange(GL_UNIFORM_BUFFER, 1, ubo, uniViewOffset, sizeof(viewData));
+		glBindBufferRange(GL_UNIFORM_BUFFER, 2, ubo, uniGradientOffset, sizeof(gradientData));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -401,7 +433,7 @@ void CDLODTerrain::drawTerrain()
 		glEnable(GL_DEPTH_TEST);
 
 		glBindVertexArray(vao);
-		glDrawElementsInstancedARB(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
+		glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
 		glBindVertexArray(0);
 
 		glUseProgram(0);
@@ -447,12 +479,13 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
 
-	glUseProgram(terrainProgram);
-	glUniform4f(uniHMDim, (GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
-	glUniform3f(uniOffset, startX, 0.0f, startY);
-	glUniform3f(uniScale, size, heightScale, size);
-	glUniform2fv(uniMorphParams, LODCount, morphParams);
-	glUniform3fv(uniColors, 8, colors[0]);
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+
+	terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
+	terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
+	terrainData.uScale  = vi_set(size, heightScale, size, 0.0f);
+	memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
+	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(terrainData), &terrainData);
 
 	// Terrain Gradient
 	const int stopCount = 3;
@@ -475,9 +508,12 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 		scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
 	}
 
-	glUniform4fv(uniStops,  1, stopsData);
-	glUniform4fv(uniScales, 1, scalesData);
-	glUniform1f(uniInvStopCount, 1.0f/stopCount);
+	memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
+	memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
+	gradientData.uInvStopCount = 1.0f/stopCount;
+	glBufferSubData(GL_UNIFORM_BUFFER, uniGradientOffset, sizeof(gradientData), &gradientData);
+	
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	unsigned char c[] = {
 		  0,   0, 255, 255,
@@ -487,8 +523,6 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 
 	glBindTexture(GL_TEXTURE_1D, mColorRampTex);
 	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
-
-	glUseProgram(0);
 
 	GLenum err = glGetError();
 	assert(err==GL_NO_ERROR);

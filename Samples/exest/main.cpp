@@ -88,8 +88,8 @@ class Exest: public ui::SDLStage
 			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 1000.0f);
 			camera.rotateLR(180);
 
-			terrain.viewPoint = glm::vec3(0, 0, 0);
-			glm::mat4 lookAt = glm::lookAtGTX<float>(terrain.viewPoint, glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
+			terrain.viewData.uViewPoint = vi_load_zero();
+			glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
 			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
 			VP = proj*lookAt;
@@ -207,12 +207,12 @@ class Exest: public ui::SDLStage
 
 			if (!fixedMode)
 			{
-				terrain.viewPoint = camera.pos;
+				terrain.viewData.uViewPoint = vi_set(camera.pos.x, camera.pos.y, camera.pos.z, 0.0f);
 				terrain.setSelectMatrix(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
 			}
 			else
 			{
-				terrain.viewPoint = VPpp;
+				terrain.viewData.uViewPoint = vi_set(VPpp.x, VPpp.y, VPpp.z, 0.0f);
 				terrain.setSelectMatrix(VP);
 				drawFrustum(VP);
 			}

@@ -1,5 +1,7 @@
 #version 330
 
+layout(std140, column_major) uniform;
+
 #define ATTR_POSITION	0
 #define ATTR_PATCH_BASE	1
 #define ATTR_LEVEL		2
@@ -10,20 +12,27 @@ layout(location = ATTR_LEVEL)			in float		aLevel;
 
 #define MAX_LOD_COUNT 8
 
-uniform vec3		uOffset;
-uniform vec3		uScale;
+uniform uniTerrain
+{
+	vec4		uHMDim;
+	vec3		uOffset;
+	vec3		uScale;
 
-uniform vec3		uViewPos;
-uniform mat4		uMVP;
+	// Morph parameter are evaluated as follows:
+	// uMorphParam[...].x = 1.0/(morphEnd-morphStart)
+	// uMorphParam[...].y = -morphStart/(morphEnd-morphStart)
+	vec2		uMorphParams[MAX_LOD_COUNT];
+
+	vec3		uColors[MAX_LOD_COUNT];
+};
+
+uniform uniView
+{
+	mat4		uMVP;
+	vec4		uViewPos;
+};
 
 uniform sampler2D	uHeightmap;
-uniform vec4		uHMDim;
-
-// Morph parameter are evaluated as follows:
-// uMorphParam[...].x = 1.0/(morphEnd-morphStart)
-// uMorphParam[...].y = -morphStart/(morphEnd-morphStart)
-uniform vec2		uMorphParams[MAX_LOD_COUNT];
-uniform vec3		uColors[MAX_LOD_COUNT];
 
 float fetchHeight(vec2 gridPos)
 {
@@ -59,7 +68,7 @@ void main()
 	
 	float	distance, morphK;
 
-	distance = length(worldPos-uViewPos);
+	distance = length(worldPos-uViewPos.xyz);
 	morphK = clamp(distance*uMorphParams[int(aLevel)].x+uMorphParams[int(aLevel)].y, 0.0, 1.0);
 	worldPos = mix(worldPos, worldMorphDest, morphK);
 	

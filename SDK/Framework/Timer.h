@@ -2,7 +2,7 @@
 #	define _TIMER_H_INCLUDED_
 
 #include <windows.h>
-#include <gl/glee.h>
+#include <opengl.h>
 
 //#include <stdint.h>
 
@@ -68,18 +68,18 @@ struct GPUTimer
 
 	void start()
 	{
-		glBeginQuery(GL_TIME_ELAPSED_EXT, mTimeQuery);
+		glBeginQuery(GL_TIME_ELAPSED, mTimeQuery);
 	}
 
 	void stop()
 	{
-		glEndQuery(GL_TIME_ELAPSED_EXT);
+		glEndQuery(GL_TIME_ELAPSED);
 	}
 
 	double getResult()
 	{
 		GLuint64EXT result;
-		glGetQueryObjectui64vEXT(mTimeQuery, GL_QUERY_RESULT, &result);
+		glGetQueryObjectui64v(mTimeQuery, GL_QUERY_RESULT, &result);
 		return result/1000.0f/1000.0f;
 	}
 

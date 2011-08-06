@@ -1,5 +1,5 @@
 #include <cassert>
-#include <gl/glee.h>
+#include <opengl.h>
 #include <utils.h>
 
 #include "Math.h"

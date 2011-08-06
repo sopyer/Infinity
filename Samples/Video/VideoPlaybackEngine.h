@@ -5,7 +5,7 @@
 
 #include <string>
 #include <cstdio>
-#include <gl/glee.h>
+#include <opengl.h>
 #include <al/al.h>
 #include <al/alc.h>
 #include <vector>

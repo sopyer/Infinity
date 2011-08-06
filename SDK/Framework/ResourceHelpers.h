@@ -1,7 +1,7 @@
 #ifndef __FRAMEWORK_RESOURCEHELPERS_H_INCLUDED__
 #	define __FRAMEWORK_RESOURCEHELPERS_H_INCLUDED__
 
-#include <gl/glee.h>
+#include <opengl.h>
 
 namespace resources
 {

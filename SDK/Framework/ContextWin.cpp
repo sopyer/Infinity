@@ -1,4 +1,4 @@
-#include <gl/glee.h>
+#include <opengl.h>
 #include "Context.h"
 
 HDC hDC;

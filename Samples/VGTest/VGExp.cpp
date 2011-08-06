@@ -1,7 +1,7 @@
 #include "VGExp.h"
 
 #include <cassert>
-#include <gl/glee.h>
+#include <opengl.h>
 
 GLuint	cubicProgram, cubicProgramAA, rcubicProgram, rcubicProgramAA, rcubicDTProgramAA;
 

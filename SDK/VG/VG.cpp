@@ -1,4 +1,4 @@
-#include <gl/glee.h>
+#include <opengl.h>
 #include "VG.h"
 #include "impl/SharedResources.h"
 #include "impl/Rasterizer.h"

@@ -52,6 +52,7 @@
     <ClCompile Include="DefaultFontData.cpp">
       <Filter>UI\Misc</Filter>
     </ClCompile>
+    <ClCompile Include="opengl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">

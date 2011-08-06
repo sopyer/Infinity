@@ -25,20 +25,43 @@ class CDLODTerrain
 		float detailBalance;
 		float morphZoneRatio;
 		
+		bool		useInstancing;
+
 		GLuint		terrainProgram;
-		GLint		uniOffset, uniScale, uniViewPos, uniMVP, uniMorphParams,
-					uniPatchBase, uniHMDim, uniLevel, uniColors,
-					uniStops, uniScales, uniInvStopCount;
 		GLuint		mHeightmapTex;
 		GLuint		mColorRampTex;
-		GLuint		vao;
+		GLuint		vaoInst, vao;
+
+		GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset;
+
+		struct TerrainData
+		{
+			vec4		uHMDim;
+			vec4		uOffset;
+			vec4		uScale;
+			vec4		uMorphParams[MAX_LOD_COUNT];
+			vec4		uColors[MAX_LOD_COUNT];
+
+		} terrainData;
+
+		struct ViewData
+		{
+			ml::mat4x4	uMVP;
+			vec4		uViewPoint;
+		} viewData;
+
+		struct GradientData
+		{
+			vec4		uStops[8];
+			vec4		uScales[8];
+			float		uInvStopCount;
+		} gradientData;
 
 		PatchData*	instData;
 		size_t		instCount;
-		GLuint		vbo, instVBO, ibo;
+		GLuint		vbo, instVBO, ibo, ubo;
 
-		glm::vec3	viewPoint;
-		ml::mat4x4	sseVP, sseMVP;
+		ml::mat4x4	sseVP;
 
 		float*	minmaxData;
 		size_t	minmaxDataSize;
@@ -50,7 +73,6 @@ class CDLODTerrain
 			size_t	minmaxOffset, minmaxPitch;	
 		};
 
-		float		morphParams[MAX_LOD_COUNT*2];
 		LODDesc		LODs[MAX_LOD_COUNT];
 
 		void generateGeometry();

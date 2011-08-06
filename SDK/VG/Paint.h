@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gl/glee.h>
+#include <opengl.h>
 
 namespace vg
 {
