@@ -49,7 +49,7 @@ namespace vg
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		glNewList(newPaint->displayList, GL_COMPILE);
-		glUseProgram(impl::programs[impl::PRG_FILL_LINEAR_GRADIENT]);
+		glUseProgram(impl::linGradProgram);
 
 		float stopsData[8*4], scalesData[8*4];
 
@@ -68,16 +68,16 @@ namespace vg
 			scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
 		}
 
-		glUniform4fv(impl::uniforms[impl::UNI_LIN_GRAD_STOPS],  1, stopsData);
-		glUniform4fv(impl::uniforms[impl::UNI_LIN_GRAD_SCALES], 1, scalesData);
-		glUniform1f(impl::uniforms[impl::UNI_LIN_GRAD_INV_STOP_COUNT], 1.0f/stopCount);
-		glUniform1i(impl::uniforms[impl::UNI_LIN_GRAD_SAM_COLOR_RAMP], 0);
+		glUniform4fv(impl::linGradUniforms[impl::UNI_LIN_GRAD_STOPS],  1, stopsData);
+		glUniform4fv(impl::linGradUniforms[impl::UNI_LIN_GRAD_SCALES], 1, scalesData);
+		glUniform1f (impl::linGradUniforms[impl::UNI_LIN_GRAD_INV_STOP_COUNT], 1.0f/stopCount);
+		glUniform1i (impl::linGradUniforms[impl::UNI_LIN_GRAD_SAM_COLOR_RAMP], 0);
 
 		float dx=x1-x0, dy=y1-y0;
 		float scale = dx*dx+dy*dy;
 
-		glUniform2f(impl::uniforms[impl::UNI_LIN_GRAD_START_POINT], x0, y0);
-		glUniform2f(impl::uniforms[impl::UNI_LIN_GRAD_DIRECTION], scale?dx/scale:FLT_MAX, scale?dy/scale:FLT_MAX);
+		glUniform2f(impl::linGradUniforms[impl::UNI_LIN_GRAD_START_POINT], x0, y0);
+		glUniform2f(impl::linGradUniforms[impl::UNI_LIN_GRAD_DIRECTION], scale?dx/scale:FLT_MAX, scale?dy/scale:FLT_MAX);
 		glEndList();
 
 		return newPaint;

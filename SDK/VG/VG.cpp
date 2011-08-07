@@ -10,14 +10,14 @@ namespace vg
 
 	void init()
 	{
-		impl::acquire();
+		impl::allocResources();
 		initFontSubsystem();
 	}
 
 	void cleanup()
 	{
 		shutdownFontSubsystem();
-		impl::release();
+		impl::freeResources();
 	}
 
 	void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)

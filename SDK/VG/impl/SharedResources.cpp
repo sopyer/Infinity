@@ -1,39 +1,26 @@
-#include <opengl.h>
 #include <cassert>
+#include <stdarg.h>
+
+#include <opengl.h>
+
 #include "SharedResources.h"
-#include <utils.h>
 
 namespace impl
 {
-	GLuint	programs[PRG_COUNT];
-	GLint	uniforms[UNI_COUNT];
-
-	//MSVC8 is unhappy without extern:)
-	extern const char UNI_NAME_HALF_WIDTH[]     = "uHalfWidth";
-	extern const char UNI_NAME_FILL_COLOR[]     = "uFillColor";
-	extern const char UNI_NAME_BORDER_COLOR[]   = "uBorderColor";
-	extern const char UNI_NAME_ZONES[]          = "uZones";
-	extern const char UNI_NAME_STOPS[]          = "uStops";
-	extern const char UNI_NAME_SCALES[]         = "uScales";
-	extern const char UNI_NAME_INV_STOP_COUNT[] = "uInvStopCount";
-	extern const char UNI_NAME_SAM_COLOR_RAMP[] = "samColorRamp";
-	extern const char UNI_NAME_START_POINT[]    = "uStartPt";
-	extern const char UNI_NAME_DIRECTION[]      = "uDirection";
-
-	size_t refCount = 0;
+	int initialized;
 	
 	enum
 	{
-		fsRastArc,
-		fsRastQuad,
-		fsRastCubic,
-		fsRastCubicAA,
-		vsRastStroke,
+		fsStencilArc,
+		fsStencilQuad,
+		fsStencilCubic,
+		fsStencilCubicAA,
+		vsStencilStroke,
 		
 		vsSimpleUI,
 		fsSimpleUI,
 
-		vsFill,
+		vsCover,
 		fsGradientCommon,
 		fsLinearGradient,
 
@@ -42,94 +29,9 @@ namespace impl
 
 	struct ShaderDef
 	{
-		GLenum		mType;
-		const char*	mSource;
-	};
-
-	struct ProgramDef
-	{
-		size_t			mShaderCount;
-		const size_t*	mShaderList;
-		size_t			mUniformCount;
-		const char**	mUniformList;
-		size_t*			mUniformID;
-	};
-	
-	ProgramDef	programDefs[PRG_COUNT] = 
-	{
-		//PRG_SIMPLE_UI,
-		{
-			2, CArray2<size_t, vsSimpleUI, fsSimpleUI>::ptr,
-			3,
-			CArray3<const char*, UNI_NAME_FILL_COLOR, UNI_NAME_BORDER_COLOR, UNI_NAME_ZONES>::ptr,
-			CArray3<size_t, UNI_SIMPLE_UI_FILL_COLOR, UNI_SIMPLE_UI_BORDER_COLOR, UNI_SIMPLE_UI_ZONES>::ptr
-		},
-		
-		//PRG_RAST_FILL_CUBIC_AA,
-		{
-			1, CArray1<size_t, fsRastCubicAA>::ptr,
-			0, 0, 0
-		},
-
-		//PRG_RAST_FILL_CUBIC,
-		{
-			1, CArray1<size_t, fsRastCubic>::ptr,
-			0, 0, 0
-		},
-		//PRG_RAST_FILL_QUAD,
-		{
-			1, CArray1<size_t, fsRastQuad>::ptr,
-			0, 0, 0
-		},
-		//PRG_RAST_FILL_ARC,
-		{
-			1, CArray1<size_t, fsRastArc>::ptr,
-			0, 0, 0
-		},
-		//PRG_RAST_STROKE_CUBIC,
-		{
-			2, CArray2<size_t, vsRastStroke, fsRastCubic>::ptr,
-			1,
-			CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
-			CArray1<size_t, UNI_RAST_STROKE_CUBIC_HALFWIDTH>::ptr
-		},
-		//PRG_RAST_STROKE_QUAD,
-		{
-			2, CArray2<size_t, vsRastStroke, fsRastQuad>::ptr,
-			1,
-			CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
-			CArray1<size_t, UNI_RAST_STROKE_QUAD_HALFWIDTH>::ptr
-		},
-		//PRG_RAST_STROKE_ARC,
-		{
-			2, CArray2<size_t, vsRastStroke, fsRastArc>::ptr,
-			1,
-			CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
-			CArray1<size_t, UNI_RAST_STROKE_ARC_HALFWIDTH>::ptr
-		},
-		//PRG_RAST_STROKE_TRI,
-		{
-			1, CArray1<size_t, vsRastStroke>::ptr,
-			1,
-			CArray1<const char*, UNI_NAME_HALF_WIDTH>::ptr,
-			CArray1<size_t, UNI_RAST_STROKE_TRI_HALFWIDTH>::ptr
-		},
-		//PRG_FILL_LINEAR_GRADIENT,
-		{
-			3, CArray3<size_t, vsFill, fsGradientCommon, fsLinearGradient>::ptr,
-			6,
-			CArray6<const char*,
-				UNI_NAME_STOPS, UNI_NAME_SCALES, UNI_NAME_INV_STOP_COUNT,
-				UNI_NAME_SAM_COLOR_RAMP, UNI_NAME_START_POINT, UNI_NAME_DIRECTION
-			>::ptr,     
-			CArray6<size_t,
-				UNI_LIN_GRAD_STOPS, UNI_LIN_GRAD_SCALES, UNI_LIN_GRAD_INV_STOP_COUNT,
-				UNI_LIN_GRAD_SAM_COLOR_RAMP, UNI_LIN_GRAD_START_POINT, UNI_LIN_GRAD_DIRECTION
-			>::ptr
-		}
-	};
-	
-	ShaderDef shaderDefs[shCount] =
+		GLenum		type;
+		const char*	source;
+	} shaderDefs[shCount] =
 	{
 		{
 			GL_FRAGMENT_SHADER,
@@ -244,7 +146,7 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,																			
-		"#version 130																					\n"
+			"#version 130																					\n"
 			"																								\n"
 			"uniform vec4		uStops[8];																	\n"
 			"uniform vec4		uScales[8];																	\n"
@@ -262,7 +164,7 @@ namespace impl
 			"		// can not use multiply-add, because {0, 0.5, 0.5, 1} case would not work 				\n"
 			"		// also this case requires support of IEEE 754 floats as well							\n"
 			"		// because uScales[1] is infinity in this case											\n"
-		"		deltas = (vec4(t)-uStops[i])*uScales[i];													\n"
+			"		deltas = (vec4(t)-uStops[i])*uScales[i];												\n"
 			"		deltas = clamp(deltas, vec4(0), vec4(1));												\n"
 			"		accum += deltas;																		\n"
 			"	}																							\n"
@@ -275,7 +177,7 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,																			
-		"#version 130																					\n"
+			"#version 130																					\n"
 			"																								\n"
 			"vec4 evalGrad(float t);																		\n"
 			"																								\n"
@@ -296,109 +198,147 @@ namespace impl
 		},
 	};
 
-	//const char* const sourceColorFillFragSh =
-	//	"uniform vec4 uFillColor;									\n"
-	//	"															\n"
-	//	"void main()												\n"
-	//	"{															\n"
-	//	"	gl_FragColor = uFillColor;								\n"
-	//	"}															\n";
+	const char* UNI_NAME_HALF_WIDTH       = "uHalfWidth";
+	const char* UNI_NAME_FILL_COLOR       = "uFillColor";
+	const char* UNI_NAME_BORDER_COLOR     = "uBorderColor";
+	const char* UNI_NAME_ZONES            = "uZones";
+	const char* UNI_NAME_STOPS            = "uStops";
+	const char* UNI_NAME_SCALES           = "uScales";
+	const char* UNI_NAME_INV_STOP_COUNT   = "uInvStopCount";
+	const char* UNI_NAME_SAM_COLOR_RAMP   = "samColorRamp";
+	const char* UNI_NAME_START_POINT      = "uStartPt";
+	const char* UNI_NAME_DIRECTION        = "uDirection";
 
-	//const char* const sourceFillVertSh =
-	//	"uniform vec2 uImageDim;									\n"
-	//	"															\n"
-	//	"void main()												\n"
-	//	"{															\n"
-	//	"	gl_Position = gl_ModelViewProjectionMatrix*gl_Vertex;	\n"
-	//	"	gl_TexCoord[0] = vec4(gl_Vertex.xy/uImageDim, 0, 0);	\n"
-	//	"}															\n";
-
-	//const char* const sourcePatternFillFragSh =
-	//	"uniform sampler2D uPattern;								\n"
-	//	"															\n"
-	//	"void main()												\n"
-	//	"{															\n"
-	//	"	gl_FragColor = tex2D(uPattern, gl_TexCoord[0].st);		\n"
-	//	"}															\n";
-
-	void CompileShader(GLuint shader, const char* source)
+	const char* simpleUIUniformNames[UNI_SIMPLE_UI_COUNT] = 
 	{
-		GLint len = (GLint)strlen(source);
-		glShaderSource(shader, 1, (const GLchar **)&source, &len);
-		glCompileShader(shader); 
-	}
+		UNI_NAME_FILL_COLOR,
+		UNI_NAME_BORDER_COLOR,
+		UNI_NAME_ZONES,
+	};
 
-	void acquire()
+	GLuint	simpleUIProgram;
+	GLint	simpleUIUniforms[UNI_SIMPLE_UI_COUNT];
+
+	GLuint	stencilCubicAreaProgram;
+	GLuint	stencilCubicAreaAAProgram;
+	GLuint	stencilQuadAreaProgram;
+	GLuint	stencilArcAreaProgram;
+
+	const char* linGradUniformNames[UNI_LIN_GRAD_COUNT] = 
 	{
-#ifdef _DEBUG
-		char output[8096];
-#endif
-		assert(refCount>=0);
-		if (refCount==0)
+		UNI_NAME_STOPS,
+		UNI_NAME_SCALES,
+		UNI_NAME_INV_STOP_COUNT,
+		UNI_NAME_SAM_COLOR_RAMP,
+		UNI_NAME_START_POINT,
+		UNI_NAME_DIRECTION,
+	};
+
+	GLuint	linGradProgram;
+	GLint	linGradUniforms[UNI_LIN_GRAD_COUNT];
+
+	void	compileShader(GLuint shader, const char* source);
+	GLuint	linkProgram(GLsizei shaderCount, ...);
+	void	getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms);
+
+	void allocResources()
+	{
+		if (!initialized)
 		{
 			GLuint	shaders[shCount];
 
 			for (size_t i=0; i<shCount; ++i)
 			{
-				shaders[i] = glCreateShader(shaderDefs[i].mType);
-				GLint len = (GLint)strlen(shaderDefs[i].mSource);
-				glShaderSource(shaders[i], 1, (const GLchar **)&shaderDefs[i].mSource, &len);
+				shaders[i] = glCreateShader(shaderDefs[i].type);
+				GLint len = (GLint)strlen(shaderDefs[i].source);
+				glShaderSource(shaders[i], 1, (const GLchar **)&shaderDefs[i].source, &len);
 				glCompileShader(shaders[i]);
-#ifdef _DEBUG
-				GLint	status;
-				glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &status);
-				if (!status)
-				{
-					glGetShaderInfoLog(shaders[i], 8096, &status, output);
-				}
-#endif
 			}
 
-			for (size_t i=0; i<PRG_COUNT; ++i)
-			{
-				programs[i] = glCreateProgram();
-				
-				for (size_t sh=0; sh<programDefs[i].mShaderCount; ++sh)
-				{
-					glAttachShader(programs[i], shaders[programDefs[i].mShaderList[sh]]);
-				}
-				
-				glLinkProgram(programs[i]);
+			simpleUIProgram = linkProgram(2, shaders[vsSimpleUI], shaders[fsSimpleUI]);
+			getUniforms(simpleUIProgram, UNI_SIMPLE_UI_COUNT, simpleUIUniformNames, simpleUIUniforms);
 
-#ifdef _DEBUG
-				GLint	status;
-				glGetProgramiv(programs[i], GL_LINK_STATUS, &status);
-				if (!status)
-				{
-					glGetProgramInfoLog(programs[i], 8096, &status, output);
-				}
-#endif
-
-				for (size_t u=0; u<programDefs[i].mUniformCount; ++u)
-				{
-					uniforms[programDefs[i].mUniformID[u]] = glGetUniformLocation(programs[i], programDefs[i].mUniformList[u]);
-					assert(uniforms[programDefs[i].mUniformID[u]]!=-1);
-				}
-			}
+			stencilCubicAreaProgram   = linkProgram(1, shaders[fsStencilCubic]);
+			stencilCubicAreaAAProgram = linkProgram(1, shaders[fsStencilCubicAA]);
+			stencilQuadAreaProgram    = linkProgram(1, shaders[fsStencilQuad]);
+			stencilArcAreaProgram     = linkProgram(1, shaders[fsStencilArc]);
+			
+			linGradProgram = linkProgram(3, shaders[vsCover], shaders[fsGradientCommon], shaders[fsLinearGradient]);
+			getUniforms(linGradProgram, UNI_LIN_GRAD_COUNT, linGradUniformNames, linGradUniforms);
 
 			for (size_t i=0; i<shCount; ++i)
 			{
 				glDeleteShader(shaders[i]);
 			}
 		}
-		refCount++;
+		initialized = true;
 	}
 
-	void release()
+	void freeResources()
 	{
-		assert(refCount>0);
-		refCount--;
-		if (refCount==0)
+		if (initialized)
 		{
-			for (size_t i=0; i<PRG_COUNT; ++i)
-			{
-				glDeleteProgram(programs[i]);
-			}
+			glDeleteProgram(simpleUIProgram);
+			glDeleteProgram(stencilCubicAreaProgram);
+			glDeleteProgram(stencilCubicAreaAAProgram);
+			glDeleteProgram(stencilQuadAreaProgram);
+			glDeleteProgram(stencilArcAreaProgram);
+			glDeleteProgram(linGradProgram);
+		}
+
+		initialized = false;
+	}
+
+	void compileShader(GLuint shader, const char* source)
+	{
+		GLint len = (GLint)strlen(source);
+		glShaderSource(shader, 1, (const GLchar **)&source, &len);
+		glCompileShader(shader); 
+
+#ifdef _DEBUG
+		GLint	status;
+		char output[8096];
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+		glGetShaderInfoLog(shader, 8096, &status, output);
+		assert(status);
+#endif
+	}
+
+	GLuint linkProgram(GLsizei shaderCount, ...)
+	{
+		GLuint program;
+		va_list arg;
+
+		va_start(arg, shaderCount);
+		program = glCreateProgram();
+
+		while (shaderCount--)
+		{
+			GLuint shader = va_arg(arg, GLuint);
+			glAttachShader(program, shader);
+		}
+
+		glLinkProgram(program);
+
+#ifdef _DEBUG
+		GLint	status;
+		char output[8096];
+		glGetProgramiv(program, GL_LINK_STATUS, &status);
+		glGetProgramInfoLog(program, 8096, &status, output);
+		assert(status);
+#endif
+		va_end(arg);
+
+		return program;
+	}
+
+	void getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms)
+	{
+		for (GLsizei u=0; u<uniformCount; ++u)
+		{
+			uniforms[u] = glGetUniformLocation(program, uniformNames[u]);
+			assert(uniforms[u]!=-1);
 		}
 	}
+
 }

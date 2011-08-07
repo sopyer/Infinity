@@ -4,49 +4,35 @@ namespace impl
 {
 	enum
 	{
-		PRG_SIMPLE_UI,
-		PRG_RAST_FILL_CUBIC_AA,
-		PRG_RAST_FILL_CUBIC,
-		PRG_RAST_FILL_QUAD,
-		PRG_RAST_FILL_ARC,
-		PRG_RAST_STROKE_CUBIC,
-		PRG_RAST_STROKE_QUAD,
-		PRG_RAST_STROKE_ARC,
-		PRG_RAST_STROKE_TRI,
-		PRG_FILL_LINEAR_GRADIENT,
-		PRG_COUNT
-	};
-
-	enum
-	{
 		//PRG_SIMPLE_UI uniforms
 		UNI_SIMPLE_UI_FILL_COLOR,
 		UNI_SIMPLE_UI_BORDER_COLOR,
 		UNI_SIMPLE_UI_ZONES,
-		//PRG_RAST_FILL_CUBIC uniforms
-		//PRG_RAST_FILL_QUAD uniforms
-		//PRG_RAST_FILL_ARC uniforms
-		//PRG_RAST_STROKE_CUBIC uniforms
-		UNI_RAST_STROKE_CUBIC_HALFWIDTH,
-		//PRG_RAST_STROKE_QUAD uniforms
-		UNI_RAST_STROKE_QUAD_HALFWIDTH,
-		//PRG_RAST_STROKE_ARC uniforms
-		UNI_RAST_STROKE_ARC_HALFWIDTH,
-		//PRG_RAST_STROKE_TRI uniforms
-		UNI_RAST_STROKE_TRI_HALFWIDTH,
-		//PRG_FILL_LINEAR_GRADIENT uniforms
+		UNI_SIMPLE_UI_COUNT
+	};
+
+	extern GLuint	simpleUIProgram;
+	extern GLint	simpleUIUniforms[UNI_SIMPLE_UI_COUNT];
+
+	extern GLuint	stencilCubicAreaProgram;
+	extern GLuint	stencilCubicAreaAAProgram;
+	extern GLuint	stencilQuadAreaProgram;
+	extern GLuint	stencilArcAreaProgram;
+
+	enum
+	{
 		UNI_LIN_GRAD_STOPS,
 		UNI_LIN_GRAD_SCALES,
 		UNI_LIN_GRAD_INV_STOP_COUNT,
 		UNI_LIN_GRAD_SAM_COLOR_RAMP,
 		UNI_LIN_GRAD_START_POINT,
 		UNI_LIN_GRAD_DIRECTION,
-		UNI_COUNT
+		UNI_LIN_GRAD_COUNT
 	};
 
-	extern GLuint	programs[];
-	extern GLint	uniforms[];
+	extern GLuint	linGradProgram;
+	extern GLint	linGradUniforms[UNI_LIN_GRAD_COUNT];
 
-	void acquire();
-	void release();
+	void allocResources();
+	void freeResources();
 }

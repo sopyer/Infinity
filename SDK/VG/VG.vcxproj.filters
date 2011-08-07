@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Impl">
-      <UniqueIdentifier>{31a48c2a-56d8-4ba8-ba32-e52b82213c65}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Paint.cpp">
@@ -26,16 +23,16 @@
     <ClCompile Include="VG.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="impl\Math.cpp">
-      <Filter>Impl</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="impl\Rasterizer.cpp">
-      <Filter>Impl</Filter>
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="impl\SharedResources.cpp">
-      <Filter>Impl</Filter>
-    </ClCompile>
-    <ClCompile Include="Font.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,21 +41,21 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="impl\Math.h">
-      <Filter>Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\Rasterizer.h">
-      <Filter>Impl</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\SharedResources.h">
-      <Filter>Impl</Filter>
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Paint.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="impl\Rasterizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="impl\SharedResources.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuildStep Include="VG.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
     </CustomBuildStep>
   </ItemGroup>
 </Project>

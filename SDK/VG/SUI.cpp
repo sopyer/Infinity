@@ -14,13 +14,12 @@ namespace vg
 		glBlendEquation(GL_FUNC_ADD);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glUseProgram(programs[PRG_SIMPLE_UI]);
-
 		vec4 fillColorF = vi_cvt_ubyte4_to_vec4(fillColor), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
 
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&fillColorF);
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
-		glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], 0, 0);
+		glUseProgram(simpleUIProgram);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&fillColorF);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
+		glUniform2f (simpleUIUniforms[UNI_SIMPLE_UI_ZONES], 0, 0);
 
 		glBegin(GL_TRIANGLE_STRIP);
 			glTexCoord2f(0, 0);
@@ -44,10 +43,10 @@ namespace vg
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		vec4 fillColorF = vi_cvt_ubyte4_to_vec4(fillColor), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
 
-		glUseProgram(programs[PRG_SIMPLE_UI]);
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&fillColorF);
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
-		glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], cx - 1, cx - 2);
+		glUseProgram(simpleUIProgram);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&fillColorF);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
+		glUniform2f (simpleUIUniforms[UNI_SIMPLE_UI_ZONES], cx - 1, cx - 2);
 
 		float xb = cx;
 		float yb = cy;
@@ -138,10 +137,10 @@ namespace vg
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		vec4 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000), borderColorF=vi_cvt_ubyte4_to_vec4(borderColor);
 
-		glUseProgram(programs[PRG_SIMPLE_UI]);
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&translucentF);
-		glUniform4fv(uniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
-		glUniform2f(uniforms[UNI_SIMPLE_UI_ZONES], cx - 1, cx - 2);
+		glUseProgram(simpleUIProgram);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_FILL_COLOR], 1, (float*)&translucentF);
+		glUniform4fv(simpleUIUniforms[UNI_SIMPLE_UI_BORDER_COLOR], 1, (float*)&borderColorF);
+		glUniform2f (simpleUIUniforms[UNI_SIMPLE_UI_ZONES], cx - 1, cx - 2);
 
 		float xb = cx;
 		float yb = cy;

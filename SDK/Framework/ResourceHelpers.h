@@ -10,6 +10,8 @@ namespace resources
 	
 	bool	compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source);
 	GLuint	createProgram(GLenum type, const char* source);
+	GLuint	linkProgram(GLsizei shaderCount, ...);
+	void	getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms);
 
 	GLuint createTexture2D(const char* name,
 		GLint minFilter=GL_LINEAR_MIPMAP_LINEAR,

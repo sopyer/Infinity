@@ -2,6 +2,7 @@
 #	define __CONTAINER_H_INCLUDED__
 
 #include <algorithm>
+#include <vector>
 
 namespace ui
 {

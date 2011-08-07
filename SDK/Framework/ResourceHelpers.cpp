@@ -133,6 +133,43 @@ namespace resources
 		return program;
 	}
 
+	GLuint linkProgram(GLsizei shaderCount, ...)
+	{
+		GLuint program;
+		va_list arg;
+
+		va_start(arg, shaderCount);
+		program = glCreateProgram();
+
+		while (shaderCount--)
+		{
+			GLuint shader = va_arg(arg, GLuint);
+			glAttachShader(program, shader);
+		}
+
+		glLinkProgram(program);
+
+#ifdef _DEBUG
+		GLint	status;
+		char output[8096];
+		glGetProgramiv(program, GL_LINK_STATUS, &status);
+		glGetProgramInfoLog(program, 8096, &status, output);
+		assert(status);
+#endif
+		va_end(arg);
+
+		return program;
+	}
+
+	void getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms)
+	{
+		for (GLsizei u=0; u<uniformCount; ++u)
+		{
+			uniforms[u] = glGetUniformLocation(program, uniformNames[u]);
+			assert(uniforms[u]!=-1);
+		}
+	}
+	
 	GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap)
 	{
 		File	src = VFS::openRead(name);

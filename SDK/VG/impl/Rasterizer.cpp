@@ -241,7 +241,7 @@ namespace impl
 		{
 			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
 			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC_AA]);
+			glUseProgram(stencilCubicAreaAAProgram);
 			glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
 		}
 
@@ -295,7 +295,7 @@ namespace impl
 		{
 			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
 			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC_AA]);
+			glUseProgram(stencilCubicAreaAAProgram);
 
 			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 			glCullFace(GL_FRONT);
@@ -346,7 +346,7 @@ namespace impl
 		{
 			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
 			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
+			glUseProgram(stencilCubicAreaProgram);
 			glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
 		}
 
@@ -392,7 +392,7 @@ namespace impl
 		{
 			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
 			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC_AA]);
+			glUseProgram(stencilCubicAreaAAProgram);
 			glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
 		}
 
@@ -443,7 +443,7 @@ namespace impl
 		{
 			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].x);
 			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom.bezier3Vertices[0].k);
-			glUseProgram(programs[PRG_RAST_FILL_CUBIC]);
+			glUseProgram(stencilCubicAreaProgram);
 
 			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
 			glCullFace(GL_FRONT);
