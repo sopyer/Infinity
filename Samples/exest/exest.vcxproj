@@ -99,6 +99,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\AppData\Terrain.CDLOD.Instanced.vert" />
+    <None Include="..\..\AppData\Terrain.HeightColored.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

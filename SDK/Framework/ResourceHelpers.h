@@ -5,8 +5,11 @@
 
 namespace resources
 {
-	GLuint createShaderFromFile(GLenum shaderType, const char* filePath);
-	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath);
+	//Up to 15 defines, others are ignored
+	GLuint createShaderFromFile(GLenum shaderType, const char* filePath,
+								size_t definesCount=0, const char** defines=0);
+	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath,
+								  size_t definesCount=0, const char** defines=0);
 	
 	bool	compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source);
 	GLuint	createProgram(GLenum type, const char* source);

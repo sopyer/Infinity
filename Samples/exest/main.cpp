@@ -79,7 +79,7 @@ class Exest: public ui::SDLStage
 		ui::ProfileStatsBox		mStatsBox;
 
 	public:
-		Exest(): fixedMode(false), wireframeMode(false)
+		Exest(): fixedMode(false)
 		{
 			VFS::mount("..\\..\\AppData");
 
@@ -242,7 +242,7 @@ class Exest: public ui::SDLStage
 			mDrawTimeLabel.setText(str);
 		}
 
-		bool fixedMode, wireframeMode;
+		bool fixedMode;
 		glm::vec3 VPpp;
 		uint8_t prevKeystate[SDLK_LAST];
 
@@ -277,8 +277,12 @@ class Exest: public ui::SDLStage
 
 			if (keystate[SDLK_f]&&!prevKeystate[SDLK_f])
 			{
-				wireframeMode = !wireframeMode;
-				terrain.drawWireframe = wireframeMode;
+				terrain.drawWireframe = !terrain.drawWireframe;
+			}
+
+			if (keystate[SDLK_i]&&!prevKeystate[SDLK_i])
+			{
+				terrain.useInstancing = !terrain.useInstancing;
 			}
 
 			if (lockView)

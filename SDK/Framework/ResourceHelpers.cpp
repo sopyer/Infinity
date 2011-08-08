@@ -1,22 +1,37 @@
+#include <algorithm>
+
 #include "ResourceHelpers.h"
 #include "Framework.h"
 #include "SOIL.h"
 
+#define MAX_DEFINES_TO_PROCESS 15
+
 namespace resources
 {
-	GLuint createShaderFromFile(GLenum shaderType, const char* filePath)
+	GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t definesCount, const char** defines)
 	{
 		File file = VFS::openRead(filePath);
 		if (file)
 		{
+			GLint lens[MAX_DEFINES_TO_PROCESS+1];
 			GLint len = (GLint)file.size();
-			
-			char* source = new char[len+1];
-			file.read(source, len, 1);
-			source[len]=0;
+
+			char* srcShader = new char[len+1];
+			file.read(srcShader, len, 1);
+			srcShader[len]=0;
+
+			char* sources[MAX_DEFINES_TO_PROCESS+1];
+			size_t sourceCount = std::min<size_t>(definesCount, MAX_DEFINES_TO_PROCESS);
+			memcpy(sources, defines, sizeof(char*)*sourceCount);
+			for (size_t i=0; i<sourceCount; ++i)
+				lens[i] = strlen(sources[i]);
+			sources[sourceCount] = srcShader;
+			lens[sourceCount] = len;
+			sourceCount++;
 
 			GLuint shader = glCreateShader(shaderType);
-			glShaderSource(shader, 1, (const GLchar **)&source, &len);
+			glShaderSource(shader, sourceCount, (const GLchar**)sources, lens);
+			//glShaderSource(shader, 1, (const GLchar **)&source, &len);
 			glCompileShader(shader);
 			
 			//Add log output
@@ -31,7 +46,7 @@ namespace resources
 				logging::message("%s: %s\n", filePath, infoLog);
 			}
 
-			delete [] source;
+			delete [] srcShader;
 
 			return shader;
 		}
@@ -41,20 +56,20 @@ namespace resources
 		return 0;
 	}
 
-	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath)
+	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath, size_t definesCount, const char** defines)
 	{
 		GLuint program = glCreateProgram();
 		
 		if (vertShaderPath)
 		{
-			GLuint vertShader = createShaderFromFile(GL_VERTEX_SHADER, vertShaderPath);
+			GLuint vertShader = createShaderFromFile(GL_VERTEX_SHADER, vertShaderPath, definesCount, defines);
 			glAttachShader(program, vertShader);
 			glDeleteShader(vertShader);
 		}
 
 		if (fragShaderPath)
 		{
-			GLuint fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragShaderPath);
+			GLuint fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragShaderPath, definesCount, defines);
 			glAttachShader(program, fragShader);
 			glDeleteShader(fragShader);
 		}

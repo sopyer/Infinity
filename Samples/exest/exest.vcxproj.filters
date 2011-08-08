@@ -31,6 +31,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\AppData\Terrain.CDLOD.Instanced.vert" />
+    <None Include="..\..\AppData\Terrain.CDLOD.Instanced.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\AppData\Terrain.HeightColored.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

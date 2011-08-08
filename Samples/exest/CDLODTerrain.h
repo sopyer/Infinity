@@ -27,12 +27,12 @@ class CDLODTerrain
 		
 		bool		useInstancing;
 
-		GLuint		terrainProgram;
+		GLuint		prgInstancedTerrain, prgTerrain;
 		GLuint		mHeightmapTex;
 		GLuint		mColorRampTex;
 		GLuint		vaoInst, vao;
 
-		GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset;
+		GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
 
 		struct TerrainData
 		{
@@ -57,9 +57,11 @@ class CDLODTerrain
 			float		uInvStopCount;
 		} gradientData;
 
+		GLuint		geomVBO, instVBO, ibo, ubo;
+
 		PatchData*	instData;
+		PatchData*	patchDataMem;
 		size_t		instCount;
-		GLuint		vbo, instVBO, ibo, ubo;
 
 		ml::mat4x4	sseVP;
 

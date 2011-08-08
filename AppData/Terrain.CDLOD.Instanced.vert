@@ -1,5 +1,3 @@
-#version 330
-
 layout(std140, column_major) uniform;
 
 #define ATTR_POSITION	0
@@ -7,8 +5,17 @@ layout(std140, column_major) uniform;
 #define ATTR_LEVEL		2
 
 layout(location = ATTR_POSITION)		in vec2		aVertex;
+
+#ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
-layout(location = ATTR_LEVEL)			in float		aLevel;
+layout(location = ATTR_LEVEL)			in vec2		aLevel;
+#else
+uniform uniPatch
+{
+	vec2 aPatchBase;
+	vec2 aLevel;  //Just in case, AMD seems to use actual size and does not pad uniform blocks :(
+};
+#endif
 
 #define MAX_LOD_COUNT 8
 
@@ -55,7 +62,7 @@ void main()
 {
 	vec2	patchPos, gridPos;
 	vec3	worldPos;
-	vec2	patchScale = vec2(1<<int(aLevel));
+	vec2	patchScale = vec2(1<<int(aLevel.x));
 	
 	patchPos = aVertex;
 	gridPos = aPatchBase+patchScale*patchPos;
@@ -69,12 +76,12 @@ void main()
 	float	distance, morphK;
 
 	distance = length(worldPos-uViewPos.xyz);
-	morphK = clamp(distance*uMorphParams[int(aLevel)].x+uMorphParams[int(aLevel)].y, 0.0, 1.0);
+	morphK = clamp(distance*uMorphParams[int(aLevel.x)].x+uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
 	worldPos = mix(worldPos, worldMorphDest, morphK);
 	
 	vHeight = worldPos.y/uScale.y-uOffset.y;
 
-	vColor = vec4(uColors[int(aLevel)], 1);
+	vColor = vec4(uColors[int(aLevel.x)], 1);
 	gl_Position = uMVP*vec4(worldPos, 1);
 }
 

@@ -3,60 +3,101 @@
 struct PatchData
 {
 	float baseX, baseY;
-	GLint level;
+	float level;
+	float padding;
 };
 
 #define ATTR_POSITION	0
 #define ATTR_PATCH_BASE	1
 #define ATTR_LEVEL		2
 
+#define UNI_TERRAIN_BINDING  0
+#define UNI_VIEW_BINDING     1
+#define UNI_GRADIENT_BINDING 2
+#define UNI_PATCH_BINDING    3
+
 void CDLODTerrain::initialize()
 {
 	useInstancing = true;
 	drawWireframe = false;
 
-	GLint		uniTerrain, uniInst, uniView, uniGradient;
+	GLint uniTerrain, uniPatch, uniView, uniGradient;
+	GLint uniHeightmap, uniColorRamp;
+	
+	char* define;
 
-	terrainProgram  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");
+	// Create non-instanced terrain program
+	define = "#version 330\n";
+	prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");//, 1, (const char**)&define);
 
-	uniTerrain  = glGetUniformBlockIndex(terrainProgram, "uniTerrain");
-	uniView     = glGetUniformBlockIndex(terrainProgram, "uniView");
-	uniGradient = glGetUniformBlockIndex(terrainProgram, "uniGradient");
+	uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+	uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
+	uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
+	uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
+
+	glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+	glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
+	glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
+	glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
 
 #ifdef _DEBUG
-	GLint structSize;
+	{
+		GLint structSize;
 
-	glGetActiveUniformBlockiv(terrainProgram, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-	assert(structSize==sizeof(terrainData));
-	glGetActiveUniformBlockiv(terrainProgram, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-	assert(structSize==sizeof(viewData));
-	glGetActiveUniformBlockiv(terrainProgram, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-	assert(structSize==sizeof(gradientData));
-
+		glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(TerrainData));
+		glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(ViewData));
+		glGetActiveUniformBlockiv(prgTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(GradientData));
+		glGetActiveUniformBlockiv(prgTerrain, uniPatch, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(PatchData));
+	}
 #endif
+
+	uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
+	uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
+
+	glUseProgram(prgTerrain);
+	glUniform1i(uniHeightmap, 0);
+	glUniform1i(uniColorRamp, 1);
+	glUseProgram(0);
+
+	// Create instanced terrain program
+	define = "#version 330\n#define ENABLE_INSTANCING\n";
+	prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
+
+	uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
+	uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
+	uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
+
+	glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+	glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
+	glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
+
+#ifdef _DEBUG
+	{
+		GLint structSize;
+
+		glGetActiveUniformBlockiv(prgInstancedTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(TerrainData));
+		glGetActiveUniformBlockiv(prgInstancedTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(ViewData));
+		glGetActiveUniformBlockiv(prgInstancedTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+		assert(structSize==sizeof(GradientData));
+	}
+#endif
+
+	uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
+	uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+
+	glUseProgram(prgInstancedTerrain);
+	glUniform1i(uniHeightmap, 0);
+	glUniform1i(uniColorRamp, 1);
+	glUseProgram(0);
 
 	GLint totalSize=0;
 	GLint align;
-
-	// Assumption - align is power of 2
-	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-	--align;
-
-	uniTerrainOffset = totalSize;	totalSize+=sizeof(terrainData);		totalSize += align; totalSize &=~align;
-	uniViewOffset    = totalSize;	totalSize+=sizeof(viewData);		totalSize += align; totalSize &=~align;
-	uniGradientOffset = totalSize;	totalSize+=sizeof(gradientData);	totalSize += align; totalSize &=~align;
-
-	GLint uniHeightmap = glGetUniformLocation(terrainProgram, "uHeightmap");
-	GLint uniColorRamp = glGetUniformLocation(terrainProgram, "samColorRamp");
-
-	glUniformBlockBinding(terrainProgram, uniTerrain,  0);
-	glUniformBlockBinding(terrainProgram, uniView,     1);
-	glUniformBlockBinding(terrainProgram, uniGradient, 2);
-
-	glUseProgram(terrainProgram);
-	
-	glUniform1i(uniHeightmap, 0);
-	glUniform1i(uniColorRamp, 1);
 
 	glGenTextures(1, &mHeightmapTex);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -72,19 +113,19 @@ void CDLODTerrain::initialize()
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glGenBuffers(1, &vbo);
+	glGenBuffers(1, &geomVBO);
 	glGenBuffers(1, &instVBO);
 	glGenBuffers(1, &ibo);
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glGenVertexArrays(1, &vaoInst);
+	glBindVertexArray(vaoInst);
+	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
 	glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	glVertexAttribDivisor(ATTR_POSITION, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
 	glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
 	glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
-	glVertexAttribPointer(ATTR_LEVEL, 1, GL_INT, GL_FALSE, sizeof(PatchData), (void*)8);
+	glVertexAttribPointer(ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)8);
 	glVertexAttribDivisor(ATTR_LEVEL, 1);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glEnableVertexAttribArray(ATTR_POSITION);
@@ -92,10 +133,30 @@ void CDLODTerrain::initialize()
 	glEnableVertexAttribArray(ATTR_PATCH_BASE);
 	glBindVertexArray(0);
 	
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
+	glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribDivisor(ATTR_POSITION, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glEnableVertexAttribArray(ATTR_POSITION);
+	glBindVertexArray(0);
+
+	// Assumption - align is power of 2
+	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
+	--align;
+
+	uniTerrainOffset  = totalSize;	totalSize+=sizeof(TerrainData);		totalSize += align; totalSize &=~align;
+	uniViewOffset     = totalSize;	totalSize+=sizeof(ViewData);		totalSize += align; totalSize &=~align;
+	uniGradientOffset = totalSize;	totalSize+=sizeof(GradientData);	totalSize += align; totalSize &=~align;
+	uniPatchOffset    = totalSize;	totalSize+=sizeof(PatchData);		totalSize += align; totalSize &=~align;
+
 	glGenBuffers(1, &ubo);
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 	glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
 
 	GLenum err = glGetError();
 	assert(err==GL_NO_ERROR);
@@ -103,13 +164,15 @@ void CDLODTerrain::initialize()
 
 void CDLODTerrain::cleanup()
 {
+	free(patchDataMem);
 	glDeleteBuffers(1, &ubo);
 	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
+	glDeleteBuffers(1, &geomVBO);
 	glDeleteBuffers(1, &instVBO);
 	glDeleteBuffers(1, &ibo);
 	if (minmaxData) free(minmaxData);
-	glDeleteProgram(terrainProgram);
+	glDeleteProgram(prgTerrain);
+	glDeleteProgram(prgInstancedTerrain);
 	glDeleteTextures(1, &mHeightmapTex);
 	glDeleteTextures(1, &mColorRampTex);
 }
@@ -210,7 +273,7 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 	assert(instCount<MAX_PATCH_COUNT);
 	instData->baseX = (float)i;
 	instData->baseY = (float)j;
-	instData->level = level;
+	instData->level = (float)level;
 
 	++instData;
 	++instCount;
@@ -345,7 +408,7 @@ glm::vec4 colors[] =
 
 void CDLODTerrain::generateGeometry()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(minPatchDimY+1)*(minPatchDimX+1), 0, GL_STATIC_DRAW);
 	glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	for (size_t y=0; y<=minPatchDimY; ++y)
@@ -387,12 +450,19 @@ void CDLODTerrain::drawTerrain()
 {
 	cpuTimer.start();
 
-	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-	//Discard data from previous frame
-	glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-	instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	instCount = 0;
+	if (useInstancing)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+		//Discard data from previous frame
+		glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+		instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	}
+	else
+	{
+		instData = patchDataMem;
+	}
 
+	instCount = 0;
 	cpuSelectTimer.start();
 	size_t level = LODCount-1;
 	for (size_t j=0; j<gridDimY; j+=LODs[level].height)
@@ -401,24 +471,22 @@ void CDLODTerrain::drawTerrain()
 	cpuSelectTime = cpuSelectTimer.elapsed();
 	cpuSelectTimer.stop();
 
-	glUnmapBuffer(GL_ARRAY_BUFFER);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	if (useInstancing)
+	{
+		glUnmapBuffer(GL_ARRAY_BUFFER);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 
 	cpuDrawTimer.start();
 	gpuTimer.start();
 
 	if (instCount)
 	{
-		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-		glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(viewData), &viewData);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
-		glUseProgram(terrainProgram);
 
-		glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, uniTerrainOffset, sizeof(terrainData));
-		glBindBufferRange(GL_UNIFORM_BUFFER, 1, ubo, uniViewOffset, sizeof(viewData));
-		glBindBufferRange(GL_UNIFORM_BUFFER, 2, ubo, uniGradientOffset, sizeof(gradientData));
+		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
+		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
+		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GRADIENT_BINDING, ubo, uniGradientOffset, sizeof(GradientData));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
@@ -432,10 +500,29 @@ void CDLODTerrain::drawTerrain()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glEnable(GL_DEPTH_TEST);
 
-		glBindVertexArray(vao);
-		glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
-		glBindVertexArray(0);
+		glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
 
+		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+		glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
+
+		if (useInstancing)
+		{
+			glBindVertexArray(vaoInst);
+			glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
+		}
+		else
+		{
+			glBindBufferRange(GL_UNIFORM_BUFFER, UNI_PATCH_BINDING, ubo, uniPatchOffset, sizeof(PatchData));
+			glBindVertexArray(vao);
+			for (size_t i=0; i<instCount; ++i)
+			{
+				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
+				glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
+			}
+		}
+
+		glBindVertexArray(0);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 		glUseProgram(0);
 		glDisableClientState(GL_VERTEX_ARRAY);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -485,7 +572,7 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
 	terrainData.uScale  = vi_set(size, heightScale, size, 0.0f);
 	memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
-	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(terrainData), &terrainData);
+	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(TerrainData), &terrainData);
 
 	// Terrain Gradient
 	const int stopCount = 3;
@@ -511,7 +598,7 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 	memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
 	memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
 	gradientData.uInvStopCount = 1.0f/stopCount;
-	glBufferSubData(GL_UNIFORM_BUFFER, uniGradientOffset, sizeof(gradientData), &gradientData);
+	glBufferSubData(GL_UNIFORM_BUFFER, uniGradientOffset, sizeof(GradientData), &gradientData);
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
