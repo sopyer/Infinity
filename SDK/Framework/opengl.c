@@ -961,22 +961,22 @@ static HMODULE libgl;
 
 static void open_libgl(void)
 {
-	libgl = LoadLibraryA("opengl32.dll");
+    libgl = LoadLibraryA("opengl32.dll");
 }
 
 static void close_libgl(void)
 {
-	FreeLibrary(libgl);
+    FreeLibrary(libgl);
 }
 
 static void *get_proc(const char *proc)
 {
-	void *res;
+    void *res;
 
-	res = wglGetProcAddress(proc);
-	if (!res)
-		res = GetProcAddress(libgl, proc);
-	return res;
+    res = wglGetProcAddress(proc);
+    if (!res)
+        res = GetProcAddress(libgl, proc);
+    return res;
 }
 #elif defined(__APPLE__) || defined(__APPLE_CC__)
 #include <Carbon/Carbon.h>
@@ -986,29 +986,29 @@ CFURLRef bundleURL;
 
 static void open_libgl(void)
 {
-	bundleURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
-		CFSTR("/System/Library/Frameworks/OpenGL.framework"),
-		kCFURLPOSIXPathStyle, true);
+    bundleURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
+                CFSTR("/System/Library/Frameworks/OpenGL.framework"),
+                kCFURLPOSIXPathStyle, true);
 
-	bundle = CFBundleCreate(kCFAllocatorDefault, bundleURL);
-	assert(bundle != NULL);
+    bundle = CFBundleCreate(kCFAllocatorDefault, bundleURL);
+    assert(bundle != NULL);
 }
 
 static void close_libgl(void)
 {
-	CFRelease(bundle);
-	CFRelease(bundleURL);
+    CFRelease(bundle);
+    CFRelease(bundleURL);
 }
 
 static void *get_proc(const char *proc)
 {
-	void *res;
+    void *res;
 
-	CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, proc,
-		kCFStringEncodingASCII);
-	res = CFBundleGetFunctionPointerForName(bundle, procname);
-	CFRelease(procname);
-	return res;
+    CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, proc,
+                kCFStringEncodingASCII);
+    res = CFBundleGetFunctionPointerForName(bundle, procname);
+    CFRelease(procname);
+    return res;
 }
 #else
 #include <dlfcn.h>
@@ -1018,22 +1018,22 @@ static void *libgl;
 
 static void open_libgl(void)
 {
-	libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
+    libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
 }
 
 static void close_libgl(void)
 {
-	dlclose(libgl);
+    dlclose(libgl);
 }
 
 static void *get_proc(const char *proc)
 {
-	void *res;
+    void *res;
 
-	res = glXGetProcAddress((const GLubyte *) proc);
-	if (!res)
-		res = dlsym(libgl, proc);
-	return res;
+    res = glXGetProcAddress((const GLubyte *) proc);
+    if (!res)
+        res = dlsym(libgl, proc);
+    return res;
 }
 #endif
 
