@@ -463,4 +463,53 @@ namespace impl
 		glPopClientAttrib();
 		glPopAttrib();
 	}
+
+	void stencilPath(Geometry* geom, int useAA, int useNonZero)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
+
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_CULL_FACE);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 0, 1);
+		glStencilMask(0xFF); //TODO: make mask configurable
+		glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, useNonZero?GL_INCR_WRAP:GL_INVERT);
+		glStencilOpSeparate(GL_BACK,  GL_KEEP, GL_KEEP, useNonZero?GL_DECR_WRAP:GL_INVERT);
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+
+		if (!geom->shapeIndices.empty())
+		{
+			glUseProgram(0);
+			glVertexPointer(2, GL_FLOAT, sizeof(glm::vec2), geom->shapeVertices.begin());
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom->shapeIndices.size(), GL_UNSIGNED_SHORT, geom->shapeIndices.begin());
+		}
+
+		if (useAA) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+		glClientActiveTexture(GL_TEXTURE0);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		if (!geom->bezier3Indices.empty())
+		{
+			glVertexPointer(2, GL_FLOAT, sizeof(Bezier3Vertex), &geom->bezier3Vertices[0].x);
+			glTexCoordPointer(3, GL_FLOAT, sizeof(Bezier3Vertex), &geom->bezier3Vertices[0].k);
+			glUseProgram(useAA?stencilCubicAreaAAProgram:stencilCubicAreaProgram);
+			glDrawElements(GL_TRIANGLES, (GLsizei)geom->bezier3Indices.size(), GL_UNSIGNED_SHORT, geom->bezier3Indices.begin());
+		}
+
+		//TODO: implement second order bezier
+		//glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+		//drawElements(geom, FILL_PRIM_TYPE_QUAD);
+
+		//TODO: implement elliptic arcs
+		//glUseProgram(programs[PRG_RAST_FILL_QUAD]);
+		//drawElements(geom, FILL_PRIM_TYPE_ARC);
+		if (useAA) glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+
+		glPopClientAttrib();
+		glPopAttrib();
+	}
 }

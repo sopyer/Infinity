@@ -87,4 +87,6 @@ namespace impl
 	void rasterizeEvenOdd(Geometry& geom);
 	void rasterizeEvenOddAA(Geometry& geom);
 	void rasterizeNonZero(Geometry& geom);
+
+	void stencilPath(Geometry* geom, int useAA, int useNonZero);
 }

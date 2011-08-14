@@ -3,6 +3,11 @@
 #include "impl/SharedResources.h"
 #include "impl/Rasterizer.h"
 
+//TODO: API change: vgBeginDraw vgEndDraw for common state setting
+//TODO: use zero as base refence value instead of 0x80 - it should work fine with GL_*_WRAP stencil operations
+//TODO: make stencil configurable - make it possible to allocate bits using mask
+//TODO: avoid explicit stencil clear - let cover/paint operation reset stencil
+
 namespace vg
 {
 	void initFontSubsystem();
@@ -46,7 +51,8 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		impl::rasterizeEvenOdd(*path);
+		//impl::rasterizeEvenOdd(*path);
+		impl::stencilPath(path, 0, 0);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glUseProgram(0);
@@ -62,7 +68,8 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		impl::rasterizeEvenOdd(*path);
+		//impl::rasterizeEvenOdd(*path);
+		impl::stencilPath(path, 0, 0);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -77,7 +84,8 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		impl::rasterizeEvenOddA2C(*path);
+		//impl::rasterizeEvenOddA2C(*path);
+		impl::stencilPath(path, 1, 0);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -92,7 +100,8 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		rasterizeNonZeroA2C(*path);
+		//rasterizeNonZeroA2C(*path);
+		impl::stencilPath(path, 1, 1);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -107,7 +116,8 @@ namespace vg
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
 		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		impl::rasterizeNonZero(*path);
+		//impl::rasterizeNonZero(*path);
+		impl::stencilPath(path, 0, 1);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
