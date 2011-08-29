@@ -4,9 +4,10 @@
 #include "impl/Rasterizer.h"
 
 //TODO: API change: vgBeginDraw vgEndDraw for common state setting
-//TODO: use zero as base refence value instead of 0x80 - it should work fine with GL_*_WRAP stencil operations
 //TODO: make stencil configurable - make it possible to allocate bits using mask
-//TODO: avoid explicit stencil clear - let cover/paint operation reset stencil
+
+//Path rendering use 0 as base refence value - it should work fine with GL_*_WRAP stencil operations
+//Path rendering avoids explicit stencil clear - cover/paint operation resets stencil
 
 namespace vg
 {
@@ -38,7 +39,7 @@ namespace vg
 	void clearStencil(const glm::vec2& min, const glm::vec2& max, float offset)
 	{
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glStencilFunc(GL_ALWAYS, 0x80, 0xFF);
+		glStencilFunc(GL_ALWAYS, 0x00, 0xFF);
 		glStencilMask(0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glUseProgram(0);
@@ -50,15 +51,13 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		//impl::rasterizeEvenOdd(*path);
 		impl::stencilPath(path, 0, 0);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glUseProgram(0);
 		glColor4ub(red, green, blue, alpha);
-		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		glPopAttrib();
 	}
@@ -67,14 +66,12 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		//impl::rasterizeEvenOdd(*path);
 		impl::stencilPath(path, 0, 0);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		glPopAttrib();
 	}
@@ -83,14 +80,12 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		//impl::rasterizeEvenOddA2C(*path);
 		impl::stencilPath(path, 1, 0);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		glPopAttrib();
 	}
@@ -99,14 +94,12 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		//rasterizeNonZeroA2C(*path);
 		impl::stencilPath(path, 1, 1);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		glPopAttrib();
 	}
@@ -115,14 +108,12 @@ namespace vg
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 		glEnable(GL_STENCIL_TEST);
-		clearStencil(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
-		//impl::rasterizeNonZero(*path);
 		impl::stencilPath(path, 0, 1);
 
 		applyPaintAsGLProgram(paint);
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glStencilFunc(GL_NOTEQUAL, 0x80, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
 		glPopAttrib();
 	}
