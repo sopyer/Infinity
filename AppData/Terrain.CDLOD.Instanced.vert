@@ -6,6 +6,10 @@ layout(std140, column_major) uniform;
 
 layout(location = ATTR_POSITION)		in vec2		aVertex;
 
+//TODO: check whether some scales can be merged?
+
+//TODO: remove aLevel and replace it with aMorphParams and aPatchScale params
+//      and temporary aColor - make it work on SM 3.0
 #ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
 layout(location = ATTR_LEVEL)			in vec2		aLevel;
@@ -50,7 +54,7 @@ float fetchHeight(vec2 gridPos)
 
 vec3 getWorldPos(vec2 gridPos)
 {
-	//clamping to match terrain dimentions
+	//clamping to match terrain dimensions
 	gridPos = clamp(gridPos, vec2(0), uHMDim.xy-vec2(1.0));
 	return uOffset+uScale*vec3(gridPos.x, fetchHeight(gridPos), gridPos.y);
 }

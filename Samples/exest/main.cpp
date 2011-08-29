@@ -85,11 +85,11 @@ class Exest: public ui::SDLStage
 
 			terrain.initialize();
 
-			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 1000.0f);
+			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 			camera.rotateLR(180);
 
 			terrain.viewData.uViewPoint = vi_load_zero();
-			glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 0, 10), glm::vec3(0, 1, 0));
+			glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
 			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
 			VP = proj*lookAt;
@@ -98,21 +98,27 @@ class Exest: public ui::SDLStage
 
 			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 
-			File	src = VFS::openRead("heightmap_small.tga");
+			File	src = VFS::openRead("bridge_demo.pmp");
 			//explicit conversion to avoid warning on 32-bit system
-			assert(src.size()<SIZE_MAX);
-			size_t fileSize = (size_t)src.size();
+			//assert(src.size()<SIZE_MAX);
+			///size_t fileSize = (size_t)src.size();
 
-			unsigned char* data = new unsigned char[fileSize+1];
-			src.read(data, fileSize, 1);
+			//src.read(data, fileSize, 1);
 
-			int	imgWidth, imgHeight, imgChannels;
-			unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
-				&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
-			assert(imgChannels==1);
-			terrain.setHeightmap(pixelsPtr, imgWidth, imgHeight);
+			//int	imgWidth, imgHeight, imgChannels;
+			//unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
+			//	&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
+			//assert(imgChannels==1);
 
-			SOIL_free_image_data(pixelsPtr);
+			uint32_t blockCount, vertCount;
+			src.seek(4+4+4);
+			src.read(&blockCount, sizeof(blockCount), 1);
+			vertCount = blockCount*16+1;
+			uint16_t* data = new uint16_t[vertCount*vertCount];
+			src.read(data, vertCount*vertCount*sizeof(uint16_t), 1);
+			terrain.setHeightmap(data, vertCount, vertCount);
+
+			//SOIL_free_image_data(pixelsPtr);
 			delete [] data;
 
 			memset(prevKeystate, 0, SDLK_LAST);

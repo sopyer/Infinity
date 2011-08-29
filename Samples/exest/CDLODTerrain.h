@@ -78,9 +78,9 @@ class CDLODTerrain
 		LODDesc		LODs[MAX_LOD_COUNT];
 
 		void generateGeometry();
-		void generateBBoxData(uint8_t* data);
+		void generateBBoxData(uint16_t* data);
 
-		void setHeightmap(uint8_t* data, size_t width, size_t height);
+		void setHeightmap(uint16_t* data, size_t width, size_t height);
 		void setSelectMatrix(glm::mat4& mat);
 		void setMVPMatrix(glm::mat4& mat);
 
@@ -89,11 +89,8 @@ class CDLODTerrain
 
 		void addPatchToQueue(size_t level, size_t i, size_t j);
 
-		int  intersectViewFrustum(size_t level, size_t i, size_t j);
-		bool intersectSphere(size_t level, size_t i, size_t j);
 		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
 
-		void getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ);
 		void getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB);
 
 		void initialize();

@@ -16,6 +16,10 @@ struct PatchData
 #define UNI_GRADIENT_BINDING 2
 #define UNI_PATCH_BINDING    3
 
+//TODO: Make logic based on actual size instead of i,j patch indexing - should simlify shader code and general logic
+
+//TODO: Make proper scale logic - to easilier accomodate to left/right -handed coordinate systems
+
 void CDLODTerrain::initialize()
 {
 	useInstancing = true;
@@ -208,8 +212,8 @@ void CDLODTerrain::calculateLODParams()
 	calculateLODRanges(ranges);
 
 	size_t	dimX = minPatchDimX, dimY = minPatchDimY;
-	size_t	patchCountX = (gridDimX+dimX-1)/dimX;
-	size_t	patchCountY = (gridDimY+dimY-1)/dimY;
+	size_t	patchCountX = (gridDimX-1+dimX-1)/dimX;
+	size_t	patchCountY = (gridDimY-1+dimY-1)/dimY;
 	size_t	patchCount = patchCountX*patchCountY;
 	float	width2=size*size*minPatchDimX*minPatchDimX,
 			height2=size*size*minPatchDimY*minPatchDimY,
@@ -279,17 +283,6 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 	++instCount;
 }
 
-void CDLODTerrain::getMinMaxZ(size_t level, size_t i, size_t j, float* minZ, float* maxZ)
-{
-	float* minmax = minmaxData+LODs[level].minmaxOffset;
-
-	*minZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+0];
-	*maxZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+1];
-
-	assert(0<=*minZ && *minZ<=*maxZ);
-	assert(*minZ<=*maxZ && *maxZ<=64.0f);
-}
-
 void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
 {
 	float* minmax = minmaxData+LODs[level].minmaxOffset;
@@ -300,75 +293,28 @@ void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB
 	assert(0<=minZ && minZ<=maxZ);
 	assert(minZ<=maxZ && maxZ<=heightScale);
 
-	float sizeX = LODs[level].width*size;
-	float sizeY = LODs[level].height*size;
+	float sizeX = std::min(LODs[level].width,  gridDimX-i)*size;
+	float sizeY = std::min(LODs[level].height, gridDimY-j)*size;
 
-	float baseX = startX+i*size;
+	float baseX = startX+i*(-size);
 	float baseY = startY+j*size;
 
-	patchAABB->min = vi_set(baseX, minZ, baseY, 1);
-	patchAABB->max = vi_set(baseX+sizeX, maxZ, baseY+sizeY, 1);
-}
-
-
-int CDLODTerrain::intersectViewFrustum(size_t level, size_t i, size_t j)
-{
-	ml::aabb AABB;
-
-	getAABB(level, i, j, &AABB);
-
-	return ml::intersectionTest(&AABB, &sseVP);
-}
-
-bool CDLODTerrain::intersectSphere(size_t level, size_t i, size_t j)
-{
-	float baseX = startX+i*size;
-	float baseY = startY+j*size;
-
-	float sizeX = LODs[level].width*size;
-	float sizeY = LODs[level].height*size;
-
-	float r = LODs[level].rangeStart;
-
-	ml::aabb bb;
-	getAABB(level, i, j, &bb);
-	bool b1 = ml::sphereAABBTest(&bb, viewData.uViewPoint/*vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0)*/, r); 
-
-	//TODO: remove scalar version
-	//find the square of the distance
-	//from the sphere to the box
-	float minZ, maxZ;
-	getMinMaxZ(level, i, j, &minZ, &maxZ);
-	glm::vec3 bmin = glm::vec3(baseX, minZ, baseY);
-	glm::vec3 bmax = glm::vec3(baseX+sizeX, maxZ, baseY+sizeY);
-	float s, d = 0;
-
-	for (size_t i=0 ; i<3 ; i++) 
-	{
-		if (viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ < bmin[i])
-		{
-			s = viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ - bmin[i];
-			d += s*s;
-		}
-		else if (viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ > bmax[i])
-		{
-			s = viewData.uViewPoint.m128_f32[i]/*viewPoint[i]*/ - bmax[i];
-			d += s*s;
-		}
-	}
-
-	bool b2 = d <= r*r;
-
-	assert(b1==b2);
-
-	return b1;
+	patchAABB->min = vi_set(baseX-sizeX, minZ, baseY,       1);
+	patchAABB->max = vi_set(baseX,       maxZ, baseY+sizeY, 1);
 }
 
 void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
 {
+	if (i>=gridDimX-1 || j>=gridDimY-1) return;
+
+	ml::aabb AABB;
+
+	getAABB(level, i, j, &AABB);
+
 	if (!skipFrustumTest)
 	{
-		int result = intersectViewFrustum(level, i, j);
+		//Check whether AABB intersects frustum
+		int result = ml::intersectionTest(&AABB, &sseVP);
 
 		if (result==ml::IT_OUTSIDE) return;
 		skipFrustumTest = result==ml::IT_INSIDE;
@@ -380,16 +326,19 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
 		return;
 	}
 
-	if (!intersectSphere(level, i, j))
+	//Check whether patch intersects it's LOD sphere and thus require subdivision
+	if (!ml::sphereAABBTest(&AABB, viewData.uViewPoint, LODs[level].rangeStart))
+	{
 		addPatchToQueue(level, i, j);
+	}
 	else
 	{
 		//TODO: add front to back sorting to minimize overdraw(optimization)
 		size_t offsetX = LODs[level].width/2;
 		size_t offsetY = LODs[level].height/2;
-		selectQuadsForDrawing(level-1, i, j, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i,         j, skipFrustumTest);
 		selectQuadsForDrawing(level-1, i+offsetX, j, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i, j+offsetY, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i,         j+offsetY, skipFrustumTest);
 		selectQuadsForDrawing(level-1, i+offsetX, j+offsetY, skipFrustumTest);
 	}
 }
@@ -432,11 +381,11 @@ void CDLODTerrain::generateGeometry()
 		for (size_t x=0; x<minPatchDimX; ++x)
 		{
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
-			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 			*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 		}
 	}
 
@@ -465,8 +414,8 @@ void CDLODTerrain::drawTerrain()
 	instCount = 0;
 	cpuSelectTimer.start();
 	size_t level = LODCount-1;
-	for (size_t j=0; j<gridDimY; j+=LODs[level].height)
-		for (size_t i=0; i<gridDimX; i+=LODs[level].width)
+	for (size_t j=0; j<gridDimY-1; j+=LODs[level].height)
+		for (size_t i=0; i<gridDimX-1; i+=LODs[level].width)
 			selectQuadsForDrawing(level, i, j);
 	cpuSelectTime = cpuSelectTimer.elapsed();
 	cpuSelectTimer.stop();
@@ -538,25 +487,25 @@ void CDLODTerrain::drawTerrain()
 	cpuTimer.stop();
 }
 
-void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
+void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 {
 	gridDimX = width;
 	gridDimY = height;
 
-	size = 1.0f;
-	startX = -0.5f*size*(gridDimX-1);
+	size = 4.0f;
+	startX =  0.5f*size*(gridDimX-1);
 	startY = -0.5f*size*(gridDimY-1);
 
-	minPatchDimX = 8;
-	minPatchDimY = 8;
+	minPatchDimX = std::min<size_t>(8, gridDimX);
+	minPatchDimY = std::min<size_t>(8, gridDimY);
 
 	visibilityDistance = 600;
 	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
-	LODCount = 5;
+	LODCount = 1;
 	detailBalance = 2.0f;
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;
-	heightScale = 32.0f;
+	heightScale = 65535.0f/732.0f;
 
 	calculateLODParams();
 	generateGeometry();
@@ -564,13 +513,13 @@ void CDLODTerrain::setHeightmap(uint8_t* data, size_t width, size_t height)
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
 
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 
 	terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
 	terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
-	terrainData.uScale  = vi_set(size, heightScale, size, 0.0f);
+	terrainData.uScale  = vi_set(-size, heightScale, size, 0.0f);
 	memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(TerrainData), &terrainData);
 
@@ -650,7 +599,7 @@ void downsample(size_t w, size_t h, const float* inData,
 	assert(cur-base==w2*h2*2);
 }
 
-void downsamplep1(size_t w, size_t h, const unsigned char* inData,
+void downsamplep1(size_t w, size_t h, const uint16_t* inData,
 				size_t kx, size_t ky, float heightScale,
 				size_t& w2, size_t& h2, float* outData)
 {
@@ -672,7 +621,7 @@ void downsamplep1(size_t w, size_t h, const unsigned char* inData,
 			{
 				for (size_t u=baseX; u<endX; ++u)
 				{
-					float value = inData[v*w+u]/255.0f;
+					float value = inData[v*w+u]/65535.0f;
 					mn = std::min(mn, value);
 					mx = std::max(mx, value);
 				}
@@ -686,7 +635,7 @@ void downsamplep1(size_t w, size_t h, const unsigned char* inData,
 	assert(cur-base==w2*h2*2);
 }
 
-void CDLODTerrain::generateBBoxData(uint8_t* data)
+void CDLODTerrain::generateBBoxData(uint16_t* data)
 {
 	minmaxData = (float*)malloc(minmaxDataSize*sizeof(float));
 

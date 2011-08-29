@@ -33,5 +33,7 @@ layout(location = 0, index = 0) out vec4 outColor;
 
 void main()
 {
-	outColor = vec4(evalGrad(vHeight).xyz, 1);
+	//TODO: implement correct gamma aware rendering
+	//imitate gamma
+	outColor = sqrt(vec4(evalGrad(vHeight).xyz, 1));
 }
