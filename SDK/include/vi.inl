@@ -66,7 +66,7 @@ __forceinline vec4 vi_load_zero()
 
 __forceinline vec4 vi_load_one()
 {
-	return _vi_c_zero;
+	return _mm_set_ps1(1.0f);
 }
 
 #ifdef USE_SSE4
@@ -247,7 +247,7 @@ __forceinline vec4 vi_cvt_ubyte4_to_vec4(__int32 ub4)
 
 	vec4 res = _mm_cvtepi32_ps(tmp);
 	
-	res = _mm_div_ps(res, _vi_c_255);
+	res = _mm_div_ps(res, _mm_set_ps1(255.0f));
 
 	return res;
 }

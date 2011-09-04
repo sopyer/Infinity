@@ -14,9 +14,6 @@
     <ClCompile Include="utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vi.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
