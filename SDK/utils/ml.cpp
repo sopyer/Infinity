@@ -15,17 +15,17 @@ namespace ml
 		transposed[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
 	}
 
-#		define MUL_M4_V4(r, m, v)                        \
-		{                                                \
-			vec4 xxxx = vi_swizzle<VI_SWIZZLE_XXXX>(v);  \
-			vec4 yyyy = vi_swizzle<VI_SWIZZLE_YYYY>(v);  \
-			vec4 zzzz = vi_swizzle<VI_SWIZZLE_ZZZZ>(v);  \
-			vec4 wwww = vi_swizzle<VI_SWIZZLE_WWWW>(v);  \
-			r = vi_mul(xxxx, m[0]);                      \
-			r = vi_mad(yyyy, m[1], r);                   \
-			r = vi_mad(zzzz, m[2], r);                   \
-			r = vi_mad(wwww, m[3], r);                   \
-		}
+#		define MUL_M4_V4(r, m, v)                            \
+			{                                                \
+				vec4 xxxx = vi_swizzle<VI_SWIZZLE_XXXX>(v);  \
+				vec4 yyyy = vi_swizzle<VI_SWIZZLE_YYYY>(v);  \
+				vec4 zzzz = vi_swizzle<VI_SWIZZLE_ZZZZ>(v);  \
+				vec4 wwww = vi_swizzle<VI_SWIZZLE_WWWW>(v);  \
+				r = vi_mul(xxxx, m[0]);                      \
+				r = vi_mad(yyyy, m[1], r);                   \
+				r = vi_mad(zzzz, m[2], r);                   \
+				r = vi_mad(wwww, m[3], r);                   \
+			}
 
 		void mul(vec4* r, vec4* m, vec4 v)
 		{

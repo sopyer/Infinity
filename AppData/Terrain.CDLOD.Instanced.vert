@@ -45,47 +45,41 @@ uniform uniView
 
 uniform sampler2D	uHeightmap;
 
-float fetchHeight(vec2 gridPos)
-{
-//Add support for proper mipmapping
-	vec2 tc = (gridPos+vec2(0.5))*uHMDim.zw;
-	return textureLod(uHeightmap, tc, 0).r;
-}
-
-vec3 getWorldPos(vec2 gridPos)
-{
-	//clamping to match terrain dimensions
-	gridPos = clamp(gridPos, vec2(0), uHMDim.xy-vec2(1.0));
-	return uOffset+uScale*vec3(gridPos.x, fetchHeight(gridPos), gridPos.y);
-}
-
 out float vHeight;
 out vec4  vColor;
 
+vec3 getVertexPos(vec2 gridPos)
+{
+	vec3 vertexPos;
+	vec2 tc = (gridPos+vec2(0.5))*uHMDim.zw; //TODO: optimize!!!
+
+	vertexPos.xz = clamp(gridPos, vec2(0.0), uHMDim.xy-vec2(1.0)); //TODO: optimize!!!
+	vertexPos.y = textureLod(uHeightmap, tc, 0).r;
+
+	return vertexPos;
+}
+
 void main()
 {
-	vec2	patchPos, gridPos;
-	vec3	worldPos;
-	vec2	patchScale = vec2(1<<int(aLevel.x));
+	vec2  patchScale = vec2(1<<int(aLevel.x));
+	vec2  morphDir   = fract(aVertex*0.5)*2.0;
+
+	vec3  vertexPos, morphDestPos;
+	float distance, morphK;
 	
-	patchPos = aVertex;
-	gridPos = aPatchBase+patchScale*patchPos;
-	worldPos = getWorldPos(gridPos);
-	
+	vertexPos    = getVertexPos(aPatchBase + patchScale*aVertex);
+	morphDestPos = getVertexPos(vertexPos.xz + morphDir*patchScale);
+
 	//Applying morphing for seamless connectivity
-	vec2 morphDir = fract(patchPos*vec2(0.5))*vec2(2.0);
-	vec2 gridMorphDest = gridPos + patchScale*morphDir;
-	vec3 worldMorphDest = getWorldPos(gridMorphDest);
-	
-	float	distance, morphK;
 
-	distance = length(worldPos-uViewPos.xyz);
-	morphK = clamp(distance*uMorphParams[int(aLevel.x)].x+uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
-	worldPos = mix(worldPos, worldMorphDest, morphK);
-	
-	vHeight = worldPos.y/uScale.y-uOffset.y;
+	distance  = length(vertexPos*uScale + (uOffset-uViewPos.xyz)); //TODO: optimize!!!
+	morphK    = clamp(distance*uMorphParams[int(aLevel.x)].x + uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
+	vertexPos = mix(vertexPos, morphDestPos, morphK);
 
-	vColor = vec4(uColors[int(aLevel.x)], 1);
-	gl_Position = uMVP*vec4(worldPos, 1);
+	//Varyings
+
+	vHeight     = vertexPos.y;
+	vColor      = vec4(uColors[int(aLevel.x)], 1);
+	gl_Position = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
 }
 
