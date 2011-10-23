@@ -53,6 +53,12 @@
       <Filter>UI\Misc</Filter>
     </ClCompile>
     <ClCompile Include="opengl.c" />
+    <ClCompile Include="ScPlatform.cpp">
+      <Filter>UI\Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderEditOverlay.cpp">
+      <Filter>UI\Misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">
@@ -103,6 +109,9 @@
     <ClInclude Include="Timer.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="DefaultFontData.h">
+      <Filter>UI\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderEditOverlay.h">
       <Filter>UI\Misc</Filter>
     </ClInclude>
   </ItemGroup>

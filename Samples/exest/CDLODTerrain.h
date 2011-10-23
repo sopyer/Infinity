@@ -62,6 +62,7 @@ class CDLODTerrain
 		PatchData*	instData;
 		PatchData*	patchDataMem;
 		size_t		instCount;
+		GLsizei		idxCount;
 
 		ml::mat4x4	sseVP;
 
@@ -97,6 +98,8 @@ class CDLODTerrain
 		void cleanup();
 
 		void drawTerrain();
+
+		void reset();
 
 		bool drawWireframe;
 

@@ -34,8 +34,7 @@ class FirstPersonCamera1
 		}
 		glm::mat4 getViewMatrix()
 		{
-			return /*glm::inverseGTX(glm::translate3DGTX(viewMatrix, -1.0f*pos));//*/glm::inverseGTX(viewMatrix);
-			//return viewMatrix;
+			return glm::inverseGTX(viewMatrix);
 		}
 		void moveFB(float dist)
 		{
@@ -49,10 +48,6 @@ class FirstPersonCamera1
 		{
 			pos+=glm::vec3(viewMatrix[1])*(-dist);
 		}
-
-		//void move(glm::vec3 vec)
-		//{
-		//}
 
 		void rotate(float psi, float phi)
 		{
@@ -81,20 +76,25 @@ class Exest: public ui::SDLStage
 	public:
 		Exest(): fixedMode(false)
 		{
-			VFS::mount("..\\..\\AppData");
+			VFS::mount("AppData");
+			VFS::mount("../AppData");
+			VFS::mount("../../AppData");
 
 			terrain.initialize();
 
 			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
-			camera.rotateLR(180);
+
+			camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
+										   0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
+										  -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,
+										   0.0f,          0.0f,              0.0f,          1.0f);
+			camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
 
 			terrain.viewData.uViewPoint = vi_load_zero();
 			glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
 			glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
 			VP = proj*lookAt;
-
-			terrain.setSelectMatrix(VP);
 
 			mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 
@@ -130,6 +130,9 @@ class Exest: public ui::SDLStage
 			);
 			
 			mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
+
+			GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
+			addPrograms(2, prgs);
 		}
 		
 		ui::Label	mDrawTimeLabel;

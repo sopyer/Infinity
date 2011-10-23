@@ -35,4 +35,7 @@ namespace impl
 
 	void allocResources();
 	void freeResources();
+
+	//debug functions
+	void readyProgramsForUse();
 }

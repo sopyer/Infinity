@@ -40,7 +40,7 @@ namespace ui
 	{
 		glColor4fv(mColor);
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
-		vg::drawString(mFont, 0, y, mText.c_str());
+		vg::drawString(mFont, 0, y, mText.c_str(), mText.length());
 	}
 
 	void Label::onAllocate()
@@ -133,7 +133,7 @@ namespace ui
 				
 		glColor4fv(mColor);
 		float y = (mHeight+vg::getTextAscender(mFont)+vg::getTextDescender(mFont))/2;
-		vg::drawString(mFont, 7, y, mText.c_str());
+		vg::drawString(mFont, 7, y, mText.c_str(), mText.length());
 
 		if (mShowCursor)
 		{
@@ -175,7 +175,7 @@ namespace ui
 		glColor4fv(mColor);
 		float x = vg::getTextHExtent(mFont, mText.c_str());
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
-		vg::drawString(mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str());
+		vg::drawString(mFont, (mWidth-x)/2, (mHeight+y)/2, mText.c_str(), mText.length());
 	}
 
 	void CheckBox::onTouch(const ButtonEvent& event)
@@ -197,7 +197,7 @@ namespace ui
 		float x = 20;
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
 		y = (16+y)/2;
-		vg::drawString(mFont, x, y, mText.c_str());
+		vg::drawString(mFont, x, y, mText.c_str(), mText.length());
 	}
 
 	void VBox::onAllocate()

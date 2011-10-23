@@ -166,6 +166,47 @@ void CDLODTerrain::initialize()
 	assert(err==GL_NO_ERROR);
 }
 
+void CDLODTerrain::reset()
+{
+	GLint uniTerrain, uniPatch, uniView, uniGradient;
+	GLint uniHeightmap, uniColorRamp;
+
+	uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+	uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
+	uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
+	uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
+
+	glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+	glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
+	glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
+	glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
+
+	uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
+	uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
+
+	glUseProgram(prgTerrain);
+	glUniform1i(uniHeightmap, 0);
+	glUniform1i(uniColorRamp, 1);
+	glUseProgram(0);
+
+	uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
+	uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
+	uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
+
+	glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+	glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
+	glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
+
+	uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
+	uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+
+	glUseProgram(prgInstancedTerrain);
+	glUniform1i(uniHeightmap, 0);
+	glUniform1i(uniColorRamp, 1);
+	glUseProgram(0);
+}
+
+
 void CDLODTerrain::cleanup()
 {
 	free(patchDataMem);
@@ -254,6 +295,8 @@ void CDLODTerrain::calculateLODParams()
 		dimX *= 2;
 		dimY *= 2;
 	}
+	//Fix unnecessary morph in last LOD level
+	terrainData.uMorphParams[LODCount-1] = vi_load_zero();
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
@@ -373,8 +416,9 @@ void CDLODTerrain::generateGeometry()
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*(minPatchDimY+1)+(x))
 
+	idxCount = minPatchDimY*minPatchDimX*6;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*(minPatchDimY)*(minPatchDimX)*6, 0, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
 	uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
 	for (size_t y=0; y<minPatchDimY; ++y)
 	{
@@ -457,7 +501,7 @@ void CDLODTerrain::drawTerrain()
 		if (useInstancing)
 		{
 			glBindVertexArray(vaoInst);
-			glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0, instCount);
+			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, instCount);
 		}
 		else
 		{
@@ -466,14 +510,13 @@ void CDLODTerrain::drawTerrain()
 			for (size_t i=0; i<instCount; ++i)
 			{
 				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
-				glDrawElements(GL_TRIANGLES, (GLsizei)(minPatchDimY)*(minPatchDimX)*6, GL_UNSIGNED_SHORT, 0);
+				glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
 			}
 		}
 
+		glUseProgram(0);
 		glBindVertexArray(0);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		glUseProgram(0);
-		glDisableClientState(GL_VERTEX_ARRAY);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glPopAttrib();
 	}
@@ -499,9 +542,9 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 	minPatchDimX = std::min<size_t>(8, gridDimX);
 	minPatchDimY = std::min<size_t>(8, gridDimY);
 
-	visibilityDistance = 600;
+	visibilityDistance = 300;
 	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
-	LODCount = 1;
+	LODCount = 5;
 	detailBalance = 2.0f;
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;

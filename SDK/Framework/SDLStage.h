@@ -6,6 +6,7 @@
 #include <Stage.h>
 
 struct SDL_Surface;
+class  ShaderEditOverlay;
 
 namespace ui
 {
@@ -19,6 +20,9 @@ namespace ui
 			void run();
 			void close();
 			
+			bool requireReset() {return mRequireReset;}
+			void addPrograms(size_t count, GLuint* programs);
+
 		protected:
 			bool	mFullscreen;
 
@@ -27,7 +31,10 @@ namespace ui
 			void handleRender();
 		
 		private:
-			SDL_Surface *mScreen;
+			ShaderEditOverlay*	mShaderEditOverlay;
+			SDL_Surface			*mScreen;
+			bool				mShaderEditOverlayVisible;
+			bool				mRequireReset;
 	};
 }
 

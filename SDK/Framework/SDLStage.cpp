@@ -6,7 +6,13 @@
 #include <cstdlib>
 #include <SOIL.h> // remove later
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <vg/vg.h>
+#include <vg/impl/SharedResources.h>
+#include <ShaderEditOverlay.h>
+
+void Platform_Initialise(HWND hWnd);
+void Platform_Finalise();
 
 namespace ui
 {
@@ -57,10 +63,33 @@ namespace ui
 		mt::init();
 		vg::init();
 		ui::init();
+
+		SDL_SysWMinfo info = {{0, 0}, 0, 0};
+		SDL_GetWMInfo(&info);
+		Platform_Initialise(info.window);
+
+		mShaderEditOverlay = new ShaderEditOverlay;
+		mShaderEditOverlay->initialise(mWidth, mHeight);
+		mShaderEditOverlayVisible = false;
+		mRequireReset = false;
+
+		GLuint programs[] = {
+			impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
+			impl::stencilCubicAreaAAProgram, impl::stencilCubicAreaProgram, impl::linGradProgram
+		};
+
+		mShaderEditOverlay->addPrograms(ARRAY_SIZE(programs), programs);
+	}
+
+	void SDLStage::addPrograms(size_t count, GLuint* programs)
+	{
+		mShaderEditOverlay->addPrograms(count, programs);
 	}
 
 	SDLStage::~SDLStage()
 	{
+		delete mShaderEditOverlay;
+		Platform_Finalise();
 		ui::cleanup();
 		vg::cleanup();
 		mt::cleanup();
@@ -81,19 +110,31 @@ namespace ui
 					break;
 
 				case SDL_KEYDOWN:
-					processKeyDown(E.key);
+					if (mShaderEditOverlayVisible)
+						mShaderEditOverlay->handleKeyDown(E.key);
+					else
+						processKeyDown(E.key);
 					break;
 				case SDL_KEYUP:		
-					processKeyUp(E.key);
+					if (E.key.keysym.sym==SDLK_F5)
+					{
+						mShaderEditOverlayVisible = !mShaderEditOverlayVisible;
+						if (mShaderEditOverlayVisible) mShaderEditOverlay->reset();
+					}
+					if (!mShaderEditOverlayVisible)
+						processKeyUp(E.key);
 					break;
 				case SDL_MOUSEMOTION:
-					processMotion(E.motion);
+					if (!mShaderEditOverlayVisible)
+						processMotion(E.motion);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					processTouch(E.button);
+					if (!mShaderEditOverlayVisible)
+						processTouch(E.button);
 					break;
 				case SDL_MOUSEBUTTONUP:
-					processUntouch(E.button);
+					if (!mShaderEditOverlayVisible)
+						processUntouch(E.button);
 					break;
 			}
 			++i;
@@ -102,6 +143,10 @@ namespace ui
 
 	void SDLStage::handleRender()
 	{
+		mRequireReset = mShaderEditOverlay->requireReset();
+
+		if (mRequireReset) impl::readyProgramsForUse();
+
 		CPUTimer t, alloc, rend, def;
 		t.start();
 		double talloc, trend, tdef;
@@ -114,11 +159,10 @@ namespace ui
 		def.start();
 		enterPhase(PHASE_DEFAULT);
 		tdef = def.elapsed();
-		SDL_GL_SwapBuffers();										// And Swap The Buffers (We're Double-Buffering, Remember?)
-		//printf("Render:%f\n", t.elapsed());
-		//printf("--->Allocate:%f\n", talloc);
-		//printf("--->Render:%f\n", trend);
-		//printf("--->Defaault:%f\n", tdef);
+		if (mShaderEditOverlayVisible)
+			mShaderEditOverlay->renderFullscreen();
+		SDL_GL_SwapBuffers();
+		mRequireReset = false;
 	}
 
 	void SDLStage::close()

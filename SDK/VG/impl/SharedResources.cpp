@@ -256,7 +256,6 @@ namespace impl
 			}
 
 			simpleUIProgram = linkProgram(2, shaders[vsSimpleUI], shaders[fsSimpleUI]);
-			getUniforms(simpleUIProgram, UNI_SIMPLE_UI_COUNT, simpleUIUniformNames, simpleUIUniforms);
 
 			stencilCubicAreaProgram   = linkProgram(1, shaders[fsStencilCubic]);
 			stencilCubicAreaAAProgram = linkProgram(1, shaders[fsStencilCubicAA]);
@@ -264,15 +263,23 @@ namespace impl
 			stencilArcAreaProgram     = linkProgram(1, shaders[fsStencilArc]);
 			
 			linGradProgram = linkProgram(3, shaders[vsCover], shaders[fsGradientCommon], shaders[fsLinearGradient]);
-			getUniforms(linGradProgram, UNI_LIN_GRAD_COUNT, linGradUniformNames, linGradUniforms);
 
 			for (size_t i=0; i<shCount; ++i)
 			{
 				glDeleteShader(shaders[i]);
 			}
+
+			readyProgramsForUse();
 		}
 		initialized = true;
 	}
+
+	void readyProgramsForUse()
+	{
+		getUniforms(simpleUIProgram, UNI_SIMPLE_UI_COUNT, simpleUIUniformNames, simpleUIUniforms);
+		getUniforms(linGradProgram,  UNI_LIN_GRAD_COUNT,  linGradUniformNames,  linGradUniforms);
+	}
+
 
 	void freeResources()
 	{

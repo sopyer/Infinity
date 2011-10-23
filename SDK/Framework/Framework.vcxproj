@@ -83,8 +83,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Controls.cpp" />
+    <ClCompile Include="ShaderEditOverlay.cpp" />
     <ClCompile Include="opengl.c" />
     <ClCompile Include="ResourceHelpers.cpp" />
+    <ClCompile Include="ScPlatform.cpp" />
     <ClCompile Include="SOIL\image_DXT.c" />
     <ClCompile Include="SOIL\image_helper.c" />
     <ClCompile Include="SOIL\SOIL.c" />
@@ -100,6 +102,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h" />
+    <ClInclude Include="ShaderEditOverlay.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />
     <ClInclude Include="SOIL\image_helper.h" />

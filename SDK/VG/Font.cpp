@@ -265,7 +265,7 @@ namespace vg
 	}
 
 	template<typename T>
-	void drawString(Font font, float x, float y, const T* str)
+	void drawString(Font font, float x, float y, const T* str, size_t len)
 	{
 		if (!font) return;
 
@@ -280,8 +280,9 @@ namespace vg
 		unsigned int left = FT_Get_Char_Index(font->ftFace, *str);
 		unsigned int right;
 
-		while (*str++)
+		while (len--)
 		{
+			++str;
 			right = FT_Get_Char_Index(font->ftFace, *str);
 		
 			if (GlyphData* glyph = getGlyphData(font, left))
@@ -329,12 +330,12 @@ namespace vg
 		glPopAttrib();
 	}
 
-	template<> void drawString<char>(Font font, float x, float y, const char* str)
+	template<> void drawString<char>(Font font, float x, float y, const char* str, size_t len)
 	{
-		drawString<unsigned char>(font, x, y, (const unsigned char*)str);
+		drawString<unsigned char>(font, x, y, (const unsigned char*)str, len);
 	}
 
-	template void drawString<wchar_t>(Font font, float x, float y, const wchar_t* str);
+	template void drawString<wchar_t>(Font font, float x, float y, const wchar_t* str, size_t len);
 
 	//Optimize: advance>0, x always increases
 	template<typename T>
@@ -349,7 +350,6 @@ namespace vg
 
 		if ((NULL!=str) && ('\0'!=*str))
 		{
-			bool		applyAdvance = false;
 			float		advance = 0;
 
 			unsigned int left =FT_Get_Char_Index(font->ftFace, *str);
@@ -384,20 +384,12 @@ namespace vg
 				
 					kernAdvance(font, left, right, xadvance, yadvance);
 					advance += xadvance+glyph->xadvance;
-
-					applyAdvance = glyph->xmin==glyph->xmax; //is bbox empty?
 				}
 
 				left = right;
 			}
 
-			//Deal with spaces at the end of string, for spaces bbox is empty and advance is not applied
-			//That's why we manually do this:
-			if (applyAdvance)
-			{
-				xmin = std::min(xmin, advance);
-				xmax = std::max(xmax, advance);
-			}
+			xmax = std::max(xmax, advance);
 		}
 	}
 
@@ -427,10 +419,29 @@ namespace vg
 	{
 		if (!font) return 0;
 
-		float xmin, ymin, xmax, ymax;
-		getBounds(font, str, xmin, ymin, xmax, ymax);
+		float	advance = 0;
 
-		return xmax-xmin;
+		if ((NULL!=str) && ('\0'!=*str))
+		{
+			unsigned int left =FT_Get_Char_Index(font->ftFace, *str);
+
+			while (*str++)
+			{
+				unsigned int right = FT_Get_Char_Index(font->ftFace, *str);
+
+				if (GlyphData* glyph = getGlyphData(font, left))
+				{
+					float xadvance, yadvance;
+				
+					kernAdvance(font, left, right, xadvance, yadvance);
+					advance += xadvance+glyph->xadvance;
+				}
+
+				left = right;
+			}
+		}
+
+		return advance;
 	}
 
 	template<> float getTextHExtent<char>(Font font, const char* str)

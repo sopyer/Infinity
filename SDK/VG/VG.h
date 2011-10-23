@@ -52,7 +52,7 @@ namespace vg
 	template<typename T> float	getTextHExtent(Font font, const T* str);
 	template<typename T> void	calcTextBasePt(Font font, float w, float h, size_t flags, const T* str, float& bx, float& by);
 	template<typename T> void	getBounds(Font font, const T* str, float& xmin, float& ymin, float& xmax, float& ymax);
-	template<typename T> void	drawString(Font font, float x, float y, const T* str);
+	template<typename T> void	drawString(Font font, float x, float y, const T* str, size_t len);
 
 	//Paint API
 	Paint	createSolidPaint(float* color4f);
