@@ -20,8 +20,10 @@ namespace ui
 			void run();
 			void close();
 			
-			bool requireReset() {return mRequireReset;}
+		protected:
+			//Debug functions and callbacks
 			void addPrograms(size_t count, GLuint* programs);
+			virtual void onShaderRecompile() {}
 
 		protected:
 			bool	mFullscreen;
@@ -34,7 +36,6 @@ namespace ui
 			ShaderEditOverlay*	mShaderEditOverlay;
 			SDL_Surface			*mScreen;
 			bool				mShaderEditOverlayVisible;
-			bool				mRequireReset;
 	};
 }
 

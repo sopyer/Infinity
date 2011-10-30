@@ -328,6 +328,8 @@ void ShaderEditOverlay::reset()
 	mDebugOutputView.Command(SCI_SETFOCUS, false);
 
 	mSelectionList.Command(SCI_SETFOCUS, true);
+
+	mActiveEditor = &mSelectionList;
 }
 
 void ShaderEditOverlay::saveShaderSource()
@@ -340,10 +342,11 @@ void ShaderEditOverlay::saveShaderSource()
 		lengthDoc = mShaderEditor.Command(SCI_GETLENGTH);
 		tr.chrg.cpMin = 0;
 		tr.chrg.cpMax = lengthDoc;
-		tr.lpstrText  = (char*)alloca(lengthDoc+1);
+		tr.lpstrText  = (char*)malloc(lengthDoc+1);
 		mShaderEditor.Command(SCI_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&tr));
 
 		glShaderSource(mSelectedShader, 1, (const char**)&tr.lpstrText, &lengthDoc);
+		free(tr.lpstrText);
 	}
 }
 
@@ -355,7 +358,7 @@ void ShaderEditOverlay::compileProgram()
 	lengthDoc = mShaderEditor.Command(SCI_GETLENGTH);
 	tr.chrg.cpMin = 0;
 	tr.chrg.cpMax = lengthDoc;
-	tr.lpstrText  = (char*)alloca(lengthDoc+1);
+	tr.lpstrText  = (char*)malloc(lengthDoc+1);
 	mShaderEditor.Command(SCI_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&tr));
 
 	glShaderSource(mSelectedShader, 1, (const char**)&tr.lpstrText, &lengthDoc);
@@ -399,6 +402,7 @@ void ShaderEditOverlay::compileProgram()
 	glDeleteProgram(prg);
 
 error:
+	free(tr.lpstrText);
 	glDeleteShader(sh);
 	//update result window
 	mDebugOutputView.Command(SCI_CANCEL);
@@ -458,7 +462,7 @@ void ShaderEditOverlay::loadShaderSource()
 
 	mSelectedShader = mAttachedShaders[line];
 	glGetShaderiv(mSelectedShader, GL_SHADER_SOURCE_LENGTH, &len);
-	buf = (char*)alloca(len);
+	buf = (char*)malloc(len);
 	glGetShaderSource(mSelectedShader, len, &len, buf);
 
 	mShaderEditor.Command(SCI_CANCEL);
@@ -469,6 +473,8 @@ void ShaderEditOverlay::loadShaderSource()
 	mShaderEditor.Command(SCI_EMPTYUNDOBUFFER);
 	mShaderEditor.Command(SCI_SETSAVEPOINT);
 	mShaderEditor.Command(SCI_GOTOPOS, 0);
+
+	free(buf);
 }
 
 void BraceMatch(Editor& ed) 

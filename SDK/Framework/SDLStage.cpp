@@ -71,7 +71,6 @@ namespace ui
 		mShaderEditOverlay = new ShaderEditOverlay;
 		mShaderEditOverlay->initialise(mWidth, mHeight);
 		mShaderEditOverlayVisible = false;
-		mRequireReset = false;
 
 		GLuint programs[] = {
 			impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
@@ -143,9 +142,11 @@ namespace ui
 
 	void SDLStage::handleRender()
 	{
-		mRequireReset = mShaderEditOverlay->requireReset();
-
-		if (mRequireReset) impl::readyProgramsForUse();
+		if (mShaderEditOverlay->requireReset())
+		{
+			impl::readyProgramsForUse();
+			onShaderRecompile();
+		}
 
 		CPUTimer t, alloc, rend, def;
 		t.start();
@@ -162,7 +163,6 @@ namespace ui
 		if (mShaderEditOverlayVisible)
 			mShaderEditOverlay->renderFullscreen();
 		SDL_GL_SwapBuffers();
-		mRequireReset = false;
 	}
 
 	void SDLStage::close()

@@ -84,7 +84,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>winmm.lib;scintilla.lib;utils.lib;physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;freetype.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;scintilla.lib;utils.lib;physfs.lib;opengl32.lib;framework.lib;sdl.lib;sdlmain.lib;vg.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

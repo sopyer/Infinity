@@ -184,6 +184,11 @@ class Exest: public ui::SDLStage
 		}
 
 	protected:
+		void onShaderRecompile()
+		{
+			terrain.reset();
+		}
+
 		void onPaint()
 		{
 			glClearDepth(1.0);
