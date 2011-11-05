@@ -352,42 +352,52 @@ void ShaderEditOverlay::saveShaderSource()
 
 void ShaderEditOverlay::compileProgram()
 {
-	GLint lengthDoc;
-	TextRange tr;
+	char	errbuf[65536];
+	GLint	type;
+	GLint	size;
+	GLint	res;
+	GLuint	sh;
+	GLuint	prg;
 
-	lengthDoc = mShaderEditor.Command(SCI_GETLENGTH);
-	tr.chrg.cpMin = 0;
-	tr.chrg.cpMax = lengthDoc;
-	tr.lpstrText  = (char*)malloc(lengthDoc+1);
-	mShaderEditor.Command(SCI_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&tr));
-
-	glShaderSource(mSelectedShader, 1, (const char**)&tr.lpstrText, &lengthDoc);
-
-	char   errbuf[65536];
-	GLint  type;
-	GLint  size;
-	GLint  res;
-	GLuint sh;
-	GLuint prg;
-
-	glGetShaderiv(mSelectedShader, GL_SHADER_TYPE, &type);
-	sh = glCreateShader(type);
-	glShaderSource(sh, 1, (const char**)&tr.lpstrText, &lengthDoc);
-	glCompileShader(sh);
-	glGetShaderInfoLog(sh, sizeof(errbuf), &size, errbuf);
-	glGetShaderiv(sh, GL_COMPILE_STATUS, &res);
-
-	if (!res) goto error;
-
-	glCompileShader(mSelectedShader);
-	glGetShaderiv(mSelectedShader, GL_COMPILE_STATUS, &res);
-	assert(res);
+	saveShaderSource();
 
 	prg = glCreateProgram();
 
+	//Some string manipulation black magic to avoid ATI GL errors.
+	//It seems ATI GL runtime, when destroys programs, deletes shaders,
+	//which are marked for deletion, anyway without checking whether
+	//they are attached to other programs.
+	//If this bug is fixed, probably this code should be rewritten...
 	for (size_t i=0; i<mAttachedShaders.size(); ++i)
 	{
-		glAttachShader(prg, mAttachedShaders[i]==mSelectedShader?sh:mAttachedShaders[i]);
+		GLint len;
+		char* buf;
+
+		glGetShaderiv(mAttachedShaders[i], GL_SHADER_TYPE, &type);
+		sh = glCreateShader(type);
+
+		glGetShaderiv(mAttachedShaders[i], GL_SHADER_SOURCE_LENGTH, &len);
+		buf = (char*)malloc(len);
+		glGetShaderSource(mAttachedShaders[i], len, &len, buf);
+		glShaderSource(sh, 1, (const char**)&buf, &len);
+		free(buf);
+
+		glCompileShader(sh);
+
+		if (mAttachedShaders[i]==mSelectedShader)
+			glGetShaderInfoLog(sh, sizeof(errbuf), &size, errbuf);
+
+		glGetShaderiv(sh, GL_COMPILE_STATUS, &res);
+
+		if (!res)
+		{
+			glDeleteShader(sh);
+			goto error;
+		}
+
+		glAttachShader(prg, sh);
+
+		glDeleteShader(sh);
 	}
 
 	glLinkProgram(prg);
@@ -395,6 +405,10 @@ void ShaderEditOverlay::compileProgram()
 	glGetProgramiv(prg, GL_LINK_STATUS, &res);
 	if (res)
 	{
+		glCompileShader(mSelectedShader);
+		glGetShaderiv(mSelectedShader, GL_COMPILE_STATUS, &res);
+		assert(res);
+
 		glLinkProgram(mSelectedProgram);
 		glGetProgramiv(mSelectedProgram, GL_LINK_STATUS, &res);
 		assert(res);
@@ -402,8 +416,6 @@ void ShaderEditOverlay::compileProgram()
 	glDeleteProgram(prg);
 
 error:
-	free(tr.lpstrText);
-	glDeleteShader(sh);
 	//update result window
 	mDebugOutputView.Command(SCI_CANCEL);
 	mDebugOutputView.Command(SCI_SETREADONLY, false);
