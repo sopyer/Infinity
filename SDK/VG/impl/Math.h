@@ -143,6 +143,7 @@ void changeOrient(glm::vec4& tc);
 void correctOrient(glm::vec4 tc[4]);
 void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4], int& specialPointsCount, float specialPoints[3]);
 void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& count, float* subdPts);
+void bezier3SpecialPts(glm::vec2 pos[4], int& specialPtCount, float* specialPts);
 
 template< typename T >
 void orderAscend(T& value1, T& value2)

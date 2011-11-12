@@ -3,6 +3,8 @@
 #include "VGExp.h"
 #include <SOIL.h> // remove later
 #include <VG/impl/Math.h>
+#include <VG/impl/Rasterizer.h>
+#include <VG/VG.h>
 //float w1 = -0.35f;
 //float w2 = -0.35f;
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
@@ -338,6 +340,68 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 
 #include "Path.h"
 
+	void meshAddBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	{
+		glm::vec2	ctrlPt[4*2] = {cp0, cp1, cp2, cp3};
+		glm::vec3	klm[4*2];
+		int			count;
+		float		subdPts[2];
+
+		bezier3MakeImplicit(ctrlPt, klm, count, subdPts);
+
+		if (count>1)
+		{
+			orderAscend(subdPts[0], subdPts[1]);
+		}
+
+		for(int i=0; i<count; ++i)
+		{
+			float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
+
+			cubic::subdivide(ctrlPt, t, ctrlPt+4, ctrlPt);
+			cubic::subdivide(klm, t, klm+4, klm);
+
+			cubic::correctOrient(klm+4);
+			geom.bezier3AddVertices(ctrlPt+4, klm+4);
+
+			//Carefully, we changed places of subdivided curves,
+			//that's why suitable points are 0 and 7
+			u16 idx = geom.shapeAddVertex(ctrlPt[0]);
+			geom.shapeAddTri(prevIdx, idx, curIdx);
+			prevIdx = idx;
+		}
+
+		cubic::correctOrient(klm);
+		geom.bezier3AddVertices(ctrlPt, klm);
+	}
+
+	void meshStrokeBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	{
+		float hw = 0.1f;
+		glm::vec2 cps[8] = {cp0, cp1, cp2, cp3};
+		float l0 = glm::length(cp3-cp0), l1=glm::length(cp1-cp0), l2=glm::length(cp2-cp1), l3=glm::length(cp3-cp2), l=l1+l2+l3;
+		int maxCount = 4;
+		float k = glm::clamp(1.0f-l0/l, 0.0f, 1.0f);
+		int count = (int)floor(4*k+0.5);//add dependency on half width!!!!
+		for(int i=0; i<count-1; ++i)
+		{
+			float t = 1.0f/(count-(float)i);//add dependency on l1, l2, l3
+
+			cubic::subdivide(cps, t, cps+4, cps);
+			glm::vec2 n0 = calcOffset(cps[4], cps[5]);
+			glm::vec2 n1 = calcOffset(cps[4], cps[5], cps[6]);
+			glm::vec2 n2 = calcOffset(cps[5], cps[6], cps[7]);
+			glm::vec2 n3 = calcOffset(cps[6], cps[7]);
+			meshAddBezier3(geom, prevIdx, curIdx, cps[4]+n0*hw, cps[5]+n1*hw, cps[6]+n2*hw, cps[7]+n3*hw);
+			prevIdx = curIdx;
+		}
+		glm::vec2 n0 = calcOffset(cps[0], cps[1]);
+		glm::vec2 n1 = calcOffset(cps[0], cps[1], cps[2]);
+		glm::vec2 n2 = calcOffset(cps[1], cps[2], cps[3]);
+		glm::vec2 n3 = calcOffset(cps[2], cps[3]);
+		meshAddBezier3(geom, prevIdx, curIdx, cps[0]+n0*hw, cps[1]+n1*hw, cps[2]+n2*hw, cps[3]+n3*hw);
+	}
+
 class VGTest: public ui::SDLStage
 {
 	public:
@@ -375,6 +439,59 @@ class VGTest: public ui::SDLStage
 			colorRB = createRenderbuffer(GL_RGBA8, 8, 800, 600);
 			depthRB = createRenderbuffer(GL_DEPTH24_STENCIL8, 8, 800, 600);
 			fbo = createFramebuffer(colorRB, depthRB);
+
+			glm::vec2 cps[8] = {
+				glm::vec2(-20.0f,  0.0f),
+				glm::vec2( 30.0f, 40.0f),
+				glm::vec2(-30.0f, 40.0f),
+				glm::vec2( 20.0f,  0.0f),
+			};
+
+			u16 prevIdx, curIdx;
+			prevIdx = 0;
+			curIdx = testPath.shapeAddVertex(cps[0]);
+
+			u16 prevIdx2, curIdx2;
+			prevIdx2 = 0;
+			curIdx2 = testPath.shapeAddVertex(cps[0]);
+
+			glm::vec3	klmT[4*2];
+			int			count, countT;
+			float		subdPts[2], subdPtsT[2];
+
+			meshAddBezier3   (testPath,    prevIdx,  curIdx,  cps[0], cps[1], cps[2], cps[3]);
+
+			bezier3MakeImplicit(cps, klmT, countT, subdPtsT);
+			bezier3SpecialPts(cps, count, subdPts);
+			assert(count==countT);
+			if (count>0) assert(ml::equalE(subdPts[0], subdPtsT[0]));
+			if (count>1) assert(ml::equalE(subdPts[1], subdPtsT[1]));
+
+			if (count>1)
+			{
+				orderAscend(subdPts[0], subdPts[1]);
+			}
+			
+			for(int i=0; i<count; ++i)
+			{
+				float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
+
+				cubic::subdivide(cps, t, cps+4, cps);
+				meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[4], cps[5], cps[6], cps[7]);
+				prevIdx2 = curIdx2;
+			}
+
+			meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[0], cps[1], cps[2], cps[3]);
+			testPath.xmin = -30.0f;
+			testPath.xmax =  30.0f;
+			testPath.ymin =   0.0f;
+			testPath.ymax =  40.0f;
+			testPathOff.xmin = -40.0f;
+			testPathOff.xmax =  40.0f;
+			testPathOff.ymin = -20.0f;
+			testPathOff.ymax =  60.0f;
+			testPath.bezier3GenIndices();
+			testPathOff.bezier3GenIndices();
 		}
 
 		~VGTest()
@@ -390,7 +507,7 @@ class VGTest: public ui::SDLStage
 		GLuint colorRB, depthRB, fbo;
 		Geometry<CubicVertex>	mRasterCubic;
 		Geometry<glm::vec2>		mRationalCubic, mTri;
-		
+		impl::Geometry			testPath, testPathOff;
 		ui::Label		mZoomLabel;
 		
 		bool doMove;
@@ -422,6 +539,24 @@ class VGTest: public ui::SDLStage
 
 		void onPaint()
 		{
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glTranslatef(offsetX, offsetY, 0);
+			glScalef(zoom, zoom, 1);
+
+			vg::drawPath(&testPath,    0xFF, 0xFF, 0xFF, 0xFF);
+			vg::drawPath(&testPathOff, 0xFF, 0x00, 0x00, 0xFF);
+			glColor3f(1, 0, 0);
+			glBegin(GL_LINE_STRIP);
+			glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
+			glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
+			glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
+			glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
+			glEnd();
+
+			glPopMatrix();
+			return;
+
 			float vp[4];
 			glGetFloatv(GL_VIEWPORT, vp);
 			

@@ -791,13 +791,29 @@ void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, f
 			 -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],
 	};
 
-	glm::vec4	d = glm::vec4(
+	glm::vec4	d2 = glm::vec4(
 		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[1])),
 		-glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[0])),
 		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[1], powerBasisCP[0])),
 		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
 	);
 
+	glm::vec3 cross0 = glm::cross(powerBasisCP[2], powerBasisCP[1]);
+	glm::vec3 cross1 = glm::cross(powerBasisCP[2], powerBasisCP[3]);
+	glm::vec3 cross2 = glm::cross(powerBasisCP[3], powerBasisCP[1]);
+	glm::vec3 cross3 = glm::cross(powerBasisCP[1], powerBasisCP[2]);
+
+	glm::vec4	d = glm::vec4(
+		 glm::dot(powerBasisCP[3], cross0),
+		 glm::dot(powerBasisCP[0], cross1),
+		 glm::dot(powerBasisCP[0], cross2),
+		 glm::dot(powerBasisCP[0], cross3)
+	);
+
+	assert(ml::equalE(d[0], d2[0]));
+	assert(ml::equalE(d[1], d2[1]));
+	assert(ml::equalE(d[2], d2[2]));
+	assert(ml::equalE(d[3], d2[3]));
 	//Mitigates precision issues
 	d = glm::normalize(d);
 	assert(ml::equalE(d[0], 0.0f));
@@ -909,5 +925,137 @@ void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, f
 			continue;
 	
 		subdPts[subdPtCount++] = r[i].x/r[i].y;
+	}
+}
+
+void bezier3SpecialPts(glm::vec2 pos[4], int& specialPtCount, float* specialPts)
+{
+	//TODO: to many fp safeguards???? Requires cleanup?
+	//TODO: what about rational curves???
+
+	//Some black magic to alleviate precision loss
+	glm::vec2 midPt = (pos[0]+pos[1]+pos[2]+pos[3])*0.25f;
+
+	glm::vec3 bezierBasisCP[4] = {
+		glm::vec3(pos[0]-midPt, 1.0f),
+		glm::vec3(pos[1]-midPt, 1.0f),
+		glm::vec3(pos[2]-midPt, 1.0f),
+		glm::vec3(pos[3]-midPt, 1.0f),
+	};
+
+	//Transform from Bezier to power basis
+	glm::vec3 powerBasisCP[4] = {
+			  bezierBasisCP[0],
+		-3.0f*bezierBasisCP[0] +  3.0f*bezierBasisCP[1],
+		 3.0f*bezierBasisCP[0] + -6.0f*bezierBasisCP[1] +  3.0f*bezierBasisCP[2],
+			 -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],
+	};
+
+	glm::vec4	d2 = glm::vec4(
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[1])),
+		-glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[2], powerBasisCP[0])),
+		 glm::dot(powerBasisCP[3], glm::cross(powerBasisCP[1], powerBasisCP[0])),
+		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
+	);
+
+	glm::vec3 cross0 = glm::cross(powerBasisCP[2], powerBasisCP[1]);
+	glm::vec3 cross1 = glm::cross(powerBasisCP[2], powerBasisCP[3]);
+	glm::vec3 cross2 = glm::cross(powerBasisCP[3], powerBasisCP[1]);
+	glm::vec3 cross3 = glm::cross(powerBasisCP[1], powerBasisCP[2]);
+
+	glm::vec4	d = glm::vec4(
+		 glm::dot(powerBasisCP[3], cross0),
+		 glm::dot(powerBasisCP[0], cross1),
+		 glm::dot(powerBasisCP[0], cross2),
+		 glm::dot(powerBasisCP[0], cross3)
+	);
+
+	assert(ml::equalE(d[0], d2[0]));
+	assert(ml::equalE(d[1], d2[1]));
+	assert(ml::equalE(d[2], d2[2]));
+	assert(ml::equalE(d[3], d2[3]));
+
+	//Mitigates precision issues
+	d = glm::normalize(d);
+	assert(ml::equalE(d[0], 0.0f));
+
+	//Hessian coefficients
+	glm::vec3	dt = glm::vec3(
+		d[0]*d[2]-d[1]*d[1],
+		d[1]*d[2]-d[0]*d[3],
+		d[1]*d[3]-d[2]*d[2]
+	);
+
+	//Evaluate cubic determinant
+	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
+
+	//Final adjustments to make inflection point polynomial
+	d[1] *= -3.0f;
+	d[2] *=  3.0f;
+	d[3]  = -d[3];
+	
+	glm::vec2	r[2];/* = 
+	{
+		glm::vec2(1, 0),
+		glm::vec2(1, 0),
+	};*/
+
+	int			count;
+
+	//det>0 - sepentine, det==0 - cusp, det<0 - loop
+	int subCubicType = !!(det>=0);
+	int cubicType = d[0]!=0?subCubicType:
+					d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
+					d[2]!=0?CUSP_AT_INFINITY_CUBIC:
+					d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+
+	assert(cubicType!=RATIONAL_LOOP_CUBIC && cubicType!=RATIONAL_SERPENTINE_CUSP_CUBIC);
+	switch (cubicType)
+	{
+		case INTEGRAL_LOOP_CUBIC:
+			solveQuadratic(dt, count, ml::as<float>(r));
+			assert(count==2);
+		
+			//Mitigate precision issues
+			//r[0] = glm::normalize(r[0]);
+			//r[1] = glm::normalize(r[1]);
+
+			break;
+
+		case INTEGRAL_SERPENTINE_CUSP_CUBIC:
+			solveQuadratic((float*)d+1, count, ml::as<float>(r));
+			assert(count==2);
+
+			//Mitigate precision issues
+			//r[0] = glm::normalize(r[0]);
+			//r[1] = glm::normalize(r[1]);
+
+			break;
+
+		case CUSP_AT_INFINITY_CUBIC:
+			r[0] = glm::vec2(-d[3], d[2]);
+			count = 1;
+
+			//r[0] = glm::normalize(r[0]);
+
+			break;
+
+		case RATIONAL_QUADRATIC_CUBIC:
+			count = 0;
+
+		case DEGENERATE_CUBIC:
+		default:
+			assert(false && "Algorithm failed to determine correct cubic curve");
+	}
+
+	specialPtCount = 0;
+	for (int i=0; i<count; i++)
+	{
+		r[i] = (r[i].x<0)?-r[i]:r[i];
+
+		if (!(0<r[i].x && r[i].x<r[i].y))
+			continue;
+	
+		specialPts[specialPtCount++] = r[i].x/r[i].y;
 	}
 }
