@@ -62,6 +62,21 @@ namespace vg
 		glPopAttrib();
 	}
 
+	void drawPathNZ(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha)
+	{
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		glEnable(GL_STENCIL_TEST);
+		impl::stencilPath(path, 0, 1);
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glUseProgram(0);
+		glColor4ub(red, green, blue, alpha);
+		glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+		glPopAttrib();
+	}
+
 	void drawPath(Path path, Paint paint)
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);

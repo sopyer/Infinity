@@ -76,6 +76,7 @@ namespace vg
 	void drawPathNZ(Path path, Paint paint);
 	void drawPathNZA2C(Path path, Paint paint);
 	void drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
+	void drawPathNZ(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
 
 	//SUI API
 	void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor);

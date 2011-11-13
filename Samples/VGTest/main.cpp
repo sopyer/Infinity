@@ -375,9 +375,11 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 		geom.bezier3AddVertices(ctrlPt, klm);
 	}
 
-	void meshStrokeBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	static const float hw = 0.1f;
+
+	//TODOD: Move subdivision logic into main func, and stroke creation logic for single curve retain here 
+	void meshStrokeSubdivideBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 	{
-		float hw = 0.1f;
 		glm::vec2 cps[8] = {cp0, cp1, cp2, cp3};
 		float l0 = glm::length(cp3-cp0), l1=glm::length(cp1-cp0), l2=glm::length(cp2-cp1), l3=glm::length(cp3-cp2), l=l1+l2+l3;
 		int maxCount = 4;
@@ -392,14 +394,73 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 			glm::vec2 n1 = calcOffset(cps[4], cps[5], cps[6]);
 			glm::vec2 n2 = calcOffset(cps[5], cps[6], cps[7]);
 			glm::vec2 n3 = calcOffset(cps[6], cps[7]);
-			meshAddBezier3(geom, prevIdx, curIdx, cps[4]+n0*hw, cps[5]+n1*hw, cps[6]+n2*hw, cps[7]+n3*hw);
-			prevIdx = curIdx;
+			glm::vec2 p0pos = cps[4]+n0*hw;
+			glm::vec2 p1pos = cps[5]+n1*hw;
+			glm::vec2 p2pos = cps[6]+n2*hw;
+			glm::vec2 p3pos = cps[7]+n3*hw;
+			glm::vec2 p0neg = cps[4]-n0*hw;
+			glm::vec2 p1neg = cps[5]-n1*hw;
+			glm::vec2 p2neg = cps[6]-n2*hw;
+			glm::vec2 p3neg = cps[7]-n3*hw;
+			u16 i0 = geom.shapeAddVertex(p0pos);
+			u16 i1 = geom.shapeAddVertex(p0neg);
+			u16 i2 = geom.shapeAddVertex(p3pos);
+			u16 i3 = geom.shapeAddVertex(p3neg);
+			meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
+			meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
+			geom.shapeAddTri(i0, i2, i1);
+			geom.shapeAddTri(i1, i2, i3);
 		}
 		glm::vec2 n0 = calcOffset(cps[0], cps[1]);
 		glm::vec2 n1 = calcOffset(cps[0], cps[1], cps[2]);
 		glm::vec2 n2 = calcOffset(cps[1], cps[2], cps[3]);
 		glm::vec2 n3 = calcOffset(cps[2], cps[3]);
-		meshAddBezier3(geom, prevIdx, curIdx, cps[0]+n0*hw, cps[1]+n1*hw, cps[2]+n2*hw, cps[3]+n3*hw);
+		glm::vec2 p0pos = cps[0]+n0*hw;
+		glm::vec2 p1pos = cps[1]+n1*hw;
+		glm::vec2 p2pos = cps[2]+n2*hw;
+		glm::vec2 p3pos = cps[3]+n3*hw;
+		glm::vec2 p0neg = cps[0]-n0*hw;
+		glm::vec2 p1neg = cps[1]-n1*hw;
+		glm::vec2 p2neg = cps[2]-n2*hw;
+		glm::vec2 p3neg = cps[3]-n3*hw;
+		u16 i0 = geom.shapeAddVertex(p0pos);
+		u16 i1 = geom.shapeAddVertex(p0neg);
+		u16 i2 = geom.shapeAddVertex(p3pos);
+		u16 i3 = geom.shapeAddVertex(p3neg);
+		meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
+		meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
+		geom.shapeAddTri(i0, i2, i1);
+		geom.shapeAddTri(i1, i2, i3);
+	}
+
+	void meshStrokeBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	{
+		glm::vec3	klmT[4*2];
+		int			count, countT;
+		float		subdPts[2], subdPtsT[2];
+
+		glm::vec2 cps[8] = {cp0, cp1, cp2, cp3};
+		bezier3MakeImplicit(cps, klmT, countT, subdPtsT);
+		bezier3SpecialPts(cps, count, subdPts);
+		assert(count==countT);
+		if (count>0) assert(ml::equalE(subdPts[0], subdPtsT[0]));
+		if (count>1) assert(ml::equalE(subdPts[1], subdPtsT[1]));
+
+		if (count>1)
+		{
+			orderAscend(subdPts[0], subdPts[1]);
+		}
+			
+		for(int i=0; i<count; ++i)
+		{
+			float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
+
+			cubic::subdivide(cps, t, cps+4, cps);
+			meshStrokeSubdivideBezier3(geom, prevIdx, curIdx, cps[4], cps[5], cps[6], cps[7]);
+			glm::vec2 n = calcOffset(cps[4], cps[5]);
+		}
+
+		meshStrokeSubdivideBezier3(geom, prevIdx, curIdx, cps[0], cps[1], cps[2], cps[3]);
 	}
 
 class VGTest: public ui::SDLStage
@@ -452,34 +513,34 @@ class VGTest: public ui::SDLStage
 			curIdx = testPath.shapeAddVertex(cps[0]);
 
 			u16 prevIdx2, curIdx2;
-			prevIdx2 = 0;
-			curIdx2 = testPath.shapeAddVertex(cps[0]);
+			prevIdx2 = testPathOff.shapeAddVertex(cps[0]);
+			curIdx2 = testPathOff.shapeAddVertex(cps[3]);
 
-			glm::vec3	klmT[4*2];
-			int			count, countT;
-			float		subdPts[2], subdPtsT[2];
+			//glm::vec3	klmT[4*2];
+			//int			count, countT;
+			//float		subdPts[2], subdPtsT[2];
 
 			meshAddBezier3   (testPath,    prevIdx,  curIdx,  cps[0], cps[1], cps[2], cps[3]);
 
-			bezier3MakeImplicit(cps, klmT, countT, subdPtsT);
-			bezier3SpecialPts(cps, count, subdPts);
-			assert(count==countT);
-			if (count>0) assert(ml::equalE(subdPts[0], subdPtsT[0]));
-			if (count>1) assert(ml::equalE(subdPts[1], subdPtsT[1]));
+			//bezier3MakeImplicit(cps, klmT, countT, subdPtsT);
+			//bezier3SpecialPts(cps, count, subdPts);
+			//assert(count==countT);
+			//if (count>0) assert(ml::equalE(subdPts[0], subdPtsT[0]));
+			//if (count>1) assert(ml::equalE(subdPts[1], subdPtsT[1]));
 
-			if (count>1)
-			{
-				orderAscend(subdPts[0], subdPts[1]);
-			}
-			
-			for(int i=0; i<count; ++i)
-			{
-				float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
+			//if (count>1)
+			//{
+			//	orderAscend(subdPts[0], subdPts[1]);
+			//}
+			//
+			//for(int i=0; i<count; ++i)
+			//{
+			//	float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
 
-				cubic::subdivide(cps, t, cps+4, cps);
-				meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[4], cps[5], cps[6], cps[7]);
-				prevIdx2 = curIdx2;
-			}
+			//	cubic::subdivide(cps, t, cps+4, cps);
+			//	meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[4], cps[5], cps[6], cps[7]);
+			//	glm::vec2 n = calcOffset(cps[4], cps[5]);
+			//}
 
 			meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[0], cps[1], cps[2], cps[3]);
 			testPath.xmin = -30.0f;
@@ -545,7 +606,7 @@ class VGTest: public ui::SDLStage
 			glScalef(zoom, zoom, 1);
 
 			vg::drawPath(&testPath,    0xFF, 0xFF, 0xFF, 0xFF);
-			vg::drawPath(&testPathOff, 0xFF, 0x00, 0x00, 0xFF);
+			vg::drawPathNZ(&testPathOff, 0xFF, 0x00, 0x00, 0xFF);
 			glColor3f(1, 0, 0);
 			glBegin(GL_LINE_STRIP);
 			glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);

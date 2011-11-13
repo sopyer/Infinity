@@ -442,8 +442,8 @@ void calcLinearFunctionals(float r0[2], float r1[2], float r2[2], float koef[4])
 			t3=r2[0], s3 = r2[1];
 
 	koef[0] =  t1*t2*t3;
-	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;
-	koef[2] =  s1*s2*t3+s1*t2*s3+t1*s2*s3;
+	koef[1] = -t1*t2*s3-t1*s2*t3-s1*t2*t3;	//possible loss of precision!!!!
+	koef[2] =  s1*s2*t3+s1*t2*s3+t1*s2*s3;	//possible loss of precision!!!!
 	koef[3] = -s1*s2*s3;
 }
 
@@ -768,6 +768,80 @@ void implicitizeRationalBezierCubic(glm::vec3 bezierBasisCP[4], glm::vec4 klmn[4
 	}
 }
 
+void bezier3Classify(glm::vec2 pos[4], glm::vec4& d, glm::vec3& hessian, float& det, int& cubicType)
+{
+	//TODO: to many fp safeguards???? Requires cleanup?
+	//TODO: what about rational curves???
+
+	//Some black magic to alleviate precision loss
+	glm::vec2 mn = pos[0];
+	glm::vec2 mx = pos[0];
+
+	mn = glm::min(mn, pos[1]);
+	mn = glm::min(mn, pos[2]);
+	mn = glm::min(mn, pos[3]);
+
+	mx = glm::max(mx, pos[1]);
+	mx = glm::max(mx, pos[2]);
+	mx = glm::max(mx, pos[3]);
+
+	glm::vec2 dim = mx-mn;
+
+	float scale = 1.0;//std::max(dim.x, dim.y); // pointless???
+
+	glm::vec2 midPt = (pos[0]+pos[1]+pos[2]+pos[3])*0.25f;
+
+	//It's real black magic!!!!
+	glm::vec2 bezierBasisCP[4] = {
+		glm::vec2(pos[0]-midPt)*scale,
+		glm::vec2(pos[1]-midPt)*scale,
+		glm::vec2(pos[2]-midPt)*scale,
+		glm::vec2(pos[3]-midPt)*scale,
+	};
+
+	//Transform from Bezier to power basis
+	//We can improve precision using advanced sumation algorithm
+	//and improve speed reusing results from previous power basis
+	//control point
+	glm::vec2 powerBasisCP[4] = {
+			  bezierBasisCP[0],
+		-3.0f*bezierBasisCP[0] +  3.0f*bezierBasisCP[1],
+		 3.0f*bezierBasisCP[0] + -6.0f*bezierBasisCP[1] +  3.0f*bezierBasisCP[2],						//possible loss of precision!!!!
+			 -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],	//possible loss of precision!!!!
+	};
+
+	/*glm::vec3*/float cross0 =  0.0f;//glm::cross(powerBasisCP[2], powerBasisCP[1]);
+	/*glm::vec3*/float cross1 =  powerBasisCP[2].x*powerBasisCP[3].y - powerBasisCP[2].y*powerBasisCP[3].x;//glm::cross(powerBasisCP[2], powerBasisCP[3]);
+	/*glm::vec3*/float cross2 =  powerBasisCP[3].x*powerBasisCP[1].y - powerBasisCP[3].y*powerBasisCP[1].x;//glm::cross(powerBasisCP[3], powerBasisCP[1]);
+	/*glm::vec3*/float cross3 =  powerBasisCP[1].x*powerBasisCP[2].y - powerBasisCP[1].y*powerBasisCP[2].x;//glm::cross(powerBasisCP[1], powerBasisCP[2]);
+
+	d = glm::vec4(
+		 cross0,//glm::dot(powerBasisCP[3], cross0), //==0!!!!!
+		 cross1,//glm::dot(powerBasisCP[0], cross1),
+		 cross2,//glm::dot(powerBasisCP[0], cross2),
+		 cross3 //glm::dot(powerBasisCP[0], cross3)
+	);
+
+	//Mitigates precision issues
+	d = glm::normalize(d);
+
+	//Hessian coefficients
+	hessian = glm::vec3(
+		-d[1]*d[1],
+		 d[1]*d[2],
+		 d[1]*d[3]-d[2]*d[2]
+	);
+
+	//Evaluate cubic determinant
+	det = 4*hessian[0]*hessian[2]-hessian[1]*hessian[1];
+
+	//det>0 - sepentine, det==0 - cusp, det<0 - loop
+	int subCubicType = !!(det>=0);
+	cubicType = d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
+				d[2]!=0?CUSP_AT_INFINITY_CUBIC:
+				d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+}
+
 void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, float* subdPts)
 {
 	//TODO: to many fp safeguards???? Requires cleanup?
@@ -798,35 +872,37 @@ void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, f
 		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
 	);
 
-	glm::vec3 cross0 = glm::cross(powerBasisCP[2], powerBasisCP[1]);
-	glm::vec3 cross1 = glm::cross(powerBasisCP[2], powerBasisCP[3]);
-	glm::vec3 cross2 = glm::cross(powerBasisCP[3], powerBasisCP[1]);
-	glm::vec3 cross3 = glm::cross(powerBasisCP[1], powerBasisCP[2]);
+	glm::vec4	d;
+	glm::vec3	dt;
+	float		det;
+	int			cubicType;
 
-	glm::vec4	d = glm::vec4(
-		 glm::dot(powerBasisCP[3], cross0),
-		 glm::dot(powerBasisCP[0], cross1),
-		 glm::dot(powerBasisCP[0], cross2),
-		 glm::dot(powerBasisCP[0], cross3)
-	);
+	bezier3Classify(pos, d, dt, det, cubicType);
 
+	//Mitigates precision issues
+	d2 = glm::normalize(d2);
+
+	assert(ml::equalE(d[0], 0.0f));
 	assert(ml::equalE(d[0], d2[0]));
 	assert(ml::equalE(d[1], d2[1]));
 	assert(ml::equalE(d[2], d2[2]));
 	assert(ml::equalE(d[3], d2[3]));
-	//Mitigates precision issues
-	d = glm::normalize(d);
-	assert(ml::equalE(d[0], 0.0f));
 
 	//Hessian coefficients
-	glm::vec3	dt = glm::vec3(
+	glm::vec3 dt2 = glm::vec3(
 		d[0]*d[2]-d[1]*d[1],
 		d[1]*d[2]-d[0]*d[3],
 		d[1]*d[3]-d[2]*d[2]
 	);
 
+	assert(ml::equalE(dt[0], dt2[0]));
+	assert(ml::equalE(dt[1], dt2[1]));
+	assert(ml::equalE(dt[2], dt2[2]));
+
 	//Evaluate cubic determinant
-	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
+	float det2 = 4*dt[0]*dt[2]-dt[1]*dt[1];
+
+	assert(ml::equalE(det, det2));
 
 	//Final adjustments to make inflection point polynomial
 	d[1] *= -3.0f;
@@ -844,10 +920,12 @@ void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, f
 
 	//det>0 - sepentine, det==0 - cusp, det<0 - loop
 	int subCubicType = !!(det>=0);
-	int cubicType = d[0]!=0?subCubicType:
+	int cubicType2 = d[0]!=0?subCubicType:
 					d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
 					d[2]!=0?CUSP_AT_INFINITY_CUBIC:
 					d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+
+	assert(cubicType==cubicType2);
 
 	assert(cubicType!=RATIONAL_LOOP_CUBIC && cubicType!=RATIONAL_SERPENTINE_CUSP_CUBIC);
 	switch (cubicType)
@@ -958,36 +1036,37 @@ void bezier3SpecialPts(glm::vec2 pos[4], int& specialPtCount, float* specialPts)
 		-glm::dot(powerBasisCP[2], glm::cross(powerBasisCP[1], powerBasisCP[0]))
 	);
 
-	glm::vec3 cross0 = glm::cross(powerBasisCP[2], powerBasisCP[1]);
-	glm::vec3 cross1 = glm::cross(powerBasisCP[2], powerBasisCP[3]);
-	glm::vec3 cross2 = glm::cross(powerBasisCP[3], powerBasisCP[1]);
-	glm::vec3 cross3 = glm::cross(powerBasisCP[1], powerBasisCP[2]);
+	glm::vec4	d;
+	glm::vec3	dt;
+	float		det;
+	int			cubicType;
 
-	glm::vec4	d = glm::vec4(
-		 glm::dot(powerBasisCP[3], cross0),
-		 glm::dot(powerBasisCP[0], cross1),
-		 glm::dot(powerBasisCP[0], cross2),
-		 glm::dot(powerBasisCP[0], cross3)
-	);
+	bezier3Classify(pos, d, dt, det, cubicType);
 
+	//Mitigates precision issues
+	d2 = glm::normalize(d2);
+
+	assert(ml::equalE(d[0], 0.0f));
 	assert(ml::equalE(d[0], d2[0]));
 	assert(ml::equalE(d[1], d2[1]));
 	assert(ml::equalE(d[2], d2[2]));
 	assert(ml::equalE(d[3], d2[3]));
 
-	//Mitigates precision issues
-	d = glm::normalize(d);
-	assert(ml::equalE(d[0], 0.0f));
-
 	//Hessian coefficients
-	glm::vec3	dt = glm::vec3(
+	glm::vec3	dt2 = glm::vec3(
 		d[0]*d[2]-d[1]*d[1],
 		d[1]*d[2]-d[0]*d[3],
 		d[1]*d[3]-d[2]*d[2]
 	);
 
+	assert(ml::equalE(dt[0], dt2[0]));
+	assert(ml::equalE(dt[1], dt2[1]));
+	assert(ml::equalE(dt[2], dt2[2]));
+
 	//Evaluate cubic determinant
-	float det = 4*dt[0]*dt[2]-dt[1]*dt[1];
+	float det2 = 4*dt[0]*dt[2]-dt[1]*dt[1];
+
+	assert(ml::equalE(det, det2));
 
 	//Final adjustments to make inflection point polynomial
 	d[1] *= -3.0f;
@@ -1004,10 +1083,12 @@ void bezier3SpecialPts(glm::vec2 pos[4], int& specialPtCount, float* specialPts)
 
 	//det>0 - sepentine, det==0 - cusp, det<0 - loop
 	int subCubicType = !!(det>=0);
-	int cubicType = d[0]!=0?subCubicType:
+	int cubicType2 = d[0]!=0?subCubicType:
 					d[1]!=0?INTEGRAL_LOOP_CUBIC+subCubicType:
 					d[2]!=0?CUSP_AT_INFINITY_CUBIC:
 					d[3]!=0?RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+
+	assert(cubicType==cubicType2);
 
 	assert(cubicType!=RATIONAL_LOOP_CUBIC && cubicType!=RATIONAL_SERPENTINE_CUSP_CUBIC);
 	switch (cubicType)
