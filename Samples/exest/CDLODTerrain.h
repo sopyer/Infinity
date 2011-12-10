@@ -15,12 +15,15 @@ class CDLODTerrain
 		static const size_t MAX_LOD_COUNT = 8;
 		static const size_t MAX_PATCH_COUNT = 2048;
 
-		size_t gridDimX, gridDimY;
+		size_t gridDimX;
+		size_t gridDimY;
 		size_t LODCount;
-		size_t minPatchDimX, minPatchDimY; //patchDimX, patchDimY
-		float size;//cellSizeX, cellSizeY
+		size_t patchDim;
+		float  cellSize;
+
 		float heightScale;
-		float startX, startY; //offset
+		float startX;
+		float startY;
 		float visibilityDistance;
 		float detailBalance;
 		float morphZoneRatio;
@@ -61,8 +64,11 @@ class CDLODTerrain
 
 		PatchData*	instData;
 		PatchData*	patchDataMem;
-		size_t		instCount;
+		size_t		patchCount;
+		size_t		maxPatchCount;
 		GLsizei		idxCount;
+
+		glm::vec4	viewDir;
 
 		ml::mat4x4	sseVP;
 
@@ -72,8 +78,9 @@ class CDLODTerrain
 		struct LODDesc
 		{
 			float	rangeStart;
-			size_t	width, height;
-			size_t	minmaxOffset, minmaxPitch;	
+			size_t	patchDim;
+			size_t	minmaxOffset;
+			size_t	minmaxPitch;	
 		};
 
 		LODDesc		LODs[MAX_LOD_COUNT];

@@ -810,16 +810,16 @@ void bezier3Classify(glm::vec2 pos[4], glm::vec4& d, glm::vec3& hessian, float& 
 			 -bezierBasisCP[0] +  3.0f*bezierBasisCP[1] + -3.0f*bezierBasisCP[2] + bezierBasisCP[3],	//possible loss of precision!!!!
 	};
 
-	/*glm::vec3*/float cross0 =  0.0f;//glm::cross(powerBasisCP[2], powerBasisCP[1]);
-	/*glm::vec3*/float cross1 =  powerBasisCP[2].x*powerBasisCP[3].y - powerBasisCP[2].y*powerBasisCP[3].x;//glm::cross(powerBasisCP[2], powerBasisCP[3]);
-	/*glm::vec3*/float cross2 =  powerBasisCP[3].x*powerBasisCP[1].y - powerBasisCP[3].y*powerBasisCP[1].x;//glm::cross(powerBasisCP[3], powerBasisCP[1]);
-	/*glm::vec3*/float cross3 =  powerBasisCP[1].x*powerBasisCP[2].y - powerBasisCP[1].y*powerBasisCP[2].x;//glm::cross(powerBasisCP[1], powerBasisCP[2]);
+	/*glm::vec3*/float crossdot0 =  0.0f;//glm::cross(powerBasisCP[2], powerBasisCP[1]);
+	/*glm::vec3*/float crossdot1 =  powerBasisCP[2].x*powerBasisCP[3].y - powerBasisCP[2].y*powerBasisCP[3].x;//glm::cross(powerBasisCP[2], powerBasisCP[3]);
+	/*glm::vec3*/float crossdot2 =  powerBasisCP[3].x*powerBasisCP[1].y - powerBasisCP[3].y*powerBasisCP[1].x;//glm::cross(powerBasisCP[3], powerBasisCP[1]);
+	/*glm::vec3*/float crossdot3 =  powerBasisCP[1].x*powerBasisCP[2].y - powerBasisCP[1].y*powerBasisCP[2].x;//glm::cross(powerBasisCP[1], powerBasisCP[2]);
 
 	d = glm::vec4(
-		 cross0,//glm::dot(powerBasisCP[3], cross0), //==0!!!!!
-		 cross1,//glm::dot(powerBasisCP[0], cross1),
-		 cross2,//glm::dot(powerBasisCP[0], cross2),
-		 cross3 //glm::dot(powerBasisCP[0], cross3)
+		 crossdot0,//glm::dot(powerBasisCP[3], cross0), //==0!!!!!
+		 crossdot1,//glm::dot(powerBasisCP[0], cross1),
+		 crossdot2,//glm::dot(powerBasisCP[0], cross2),
+		 crossdot3 //glm::dot(powerBasisCP[0], cross3)
 	);
 
 	//Mitigates precision issues

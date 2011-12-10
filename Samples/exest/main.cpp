@@ -189,6 +189,22 @@ class Exest: public ui::SDLStage
 			terrain.reset();
 		}
 
+		void onKeyUp(const KeyEvent& event)
+		{
+			if (event.keysym.sym==SDLK_BACKSLASH)
+			{
+				terrain.maxPatchCount = (terrain.maxPatchCount)?0:CDLODTerrain::MAX_PATCH_COUNT;
+			}
+			if (event.keysym.sym==SDLK_LEFTBRACKET)
+			{
+				terrain.maxPatchCount -= (terrain.maxPatchCount>0)?1:0;
+			}
+			if (event.keysym.sym==SDLK_RIGHTBRACKET)
+			{
+				terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
+			}
+		}
+
 		void onPaint()
 		{
 			glClearDepth(1.0);
@@ -218,6 +234,10 @@ class Exest: public ui::SDLStage
 				glColor3f(0, 0, 1);
 				glVertex3f( 0, 4, -10);
 			glEnd();
+
+			glm::mat4 vm = camera.getViewMatrix();
+
+			terrain.viewDir = glm::vec4(vm[0].z, vm[1].z, -vm[2].z, 1);
 
 			if (!fixedMode)
 			{

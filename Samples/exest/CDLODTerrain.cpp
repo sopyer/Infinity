@@ -252,12 +252,11 @@ void CDLODTerrain::calculateLODParams()
 
 	calculateLODRanges(ranges);
 
-	size_t	dimX = minPatchDimX, dimY = minPatchDimY;
-	size_t	patchCountX = (gridDimX-1+dimX-1)/dimX;
-	size_t	patchCountY = (gridDimY-1+dimY-1)/dimY;
+	size_t	dim = patchDim;
+	size_t	patchCountX = (gridDimX-1+dim-1)/dim;
+	size_t	patchCountY = (gridDimY-1+dim-1)/dim;
 	size_t	patchCount = patchCountX*patchCountY;
-	float	width2=size*size*minPatchDimX*minPatchDimX,
-			height2=size*size*minPatchDimY*minPatchDimY,
+	float	size2=cellSize*cellSize*patchDim*patchDim,
 			deltaZ2=heightScale*heightScale,
 			curRange=0.0f;
 			
@@ -269,31 +268,29 @@ void CDLODTerrain::calculateLODParams()
 		//To avoid cracks when height is greater then minRange,
 		//minRange should take height into account too
 		//minRange = 2.0f*sqrt(width^2+height^2+heightScale^2)
-		float minRange = 2.0f*sqrt(width2+height2+deltaZ2);
-		float range = std::max(ranges[i], minRange);
+		float minRange = 2.0f*sqrt(size2+size2+deltaZ2);
+		float range    = std::max(ranges[i], minRange);
 
-		LODs[i].rangeStart = curRange;
-		curRange += range;
+		LODs[i].rangeStart  = curRange;
+		curRange           += range;
 		
-		float rangeEnd = curRange;
+		float rangeEnd   = curRange;
 		float morphRange = range*morphZoneRatio;
 		float morphStart = rangeEnd-morphRange;
 		
 		terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0, 0);
 
-		LODs[i].width = dimX;
-		LODs[i].height = dimY;
-		LODs[i].minmaxPitch = patchCountX;
+		LODs[i].patchDim     = dim;
+		LODs[i].minmaxPitch  = patchCountX;
 		LODs[i].minmaxOffset = minmaxDataSize;
 
 		minmaxDataSize += patchCount*2;
-		patchCountX = (patchCountX+1)/2;
-		patchCountY = (patchCountY+1)/2;
-		patchCount = patchCountX*patchCountY;
-		width2 *= 4;
-		height2 *= 4;
-		dimX *= 2;
-		dimY *= 2;
+		patchCountX     = (patchCountX+1)/2;
+		patchCountY     = (patchCountY+1)/2;
+		patchCount      = patchCountX*patchCountY;
+
+		size2 *= 4;
+		dim   *= 2;
 	}
 	//Fix unnecessary morph in last LOD level
 	terrainData.uMorphParams[LODCount-1] = vi_load_zero();
@@ -317,30 +314,32 @@ void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 {
-	assert(instCount<MAX_PATCH_COUNT);
-	instData->baseX = (float)i;
-	instData->baseY = (float)j;
-	instData->level = (float)level;
+	if (patchCount<maxPatchCount)
+	{
+		instData->baseX = (float)i;
+		instData->baseY = (float)j;
+		instData->level = (float)level;
 
-	++instData;
-	++instCount;
+		++instData;
+		++patchCount;
+	}
 }
 
 void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
 {
 	float* minmax = minmaxData+LODs[level].minmaxOffset;
 
-	float minZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+0];
-	float maxZ = minmax[2*((j/LODs[level].height)*LODs[level].minmaxPitch+(i/LODs[level].width))+1];
+	float minZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+0];
+	float maxZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+1];
 
 	assert(0<=minZ && minZ<=maxZ);
 	assert(minZ<=maxZ && maxZ<=heightScale);
 
-	float sizeX = std::min(LODs[level].width,  gridDimX-i)*size;
-	float sizeY = std::min(LODs[level].height, gridDimY-j)*size;
+	float sizeX = std::min(LODs[level].patchDim,  gridDimX-i)*cellSize;
+	float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
 
-	float baseX = startX+i*(-size);
-	float baseY = startY+j*size;
+	float baseX = startX-cellSize*i;
+	float baseY = startY+cellSize*j;
 
 	patchAABB->min = vi_set(baseX-sizeX, minZ, baseY,       1);
 	patchAABB->max = vi_set(baseX,       maxZ, baseY+sizeY, 1);
@@ -377,12 +376,11 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
 	else
 	{
 		//TODO: add front to back sorting to minimize overdraw(optimization)
-		size_t offsetX = LODs[level].width/2;
-		size_t offsetY = LODs[level].height/2;
-		selectQuadsForDrawing(level-1, i,         j, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i+offsetX, j, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i,         j+offsetY, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i+offsetX, j+offsetY, skipFrustumTest);
+		size_t offset = LODs[level].patchDim/2;
+		selectQuadsForDrawing(level-1, i,        j, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i+offset, j, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i,        j+offset, skipFrustumTest);
+		selectQuadsForDrawing(level-1, i+offset, j+offset, skipFrustumTest);
 	}
 }
 
@@ -401,11 +399,11 @@ glm::vec4 colors[] =
 void CDLODTerrain::generateGeometry()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(minPatchDimY+1)*(minPatchDimX+1), 0, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(patchDim+1)*(patchDim+1), 0, GL_STATIC_DRAW);
 	glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	for (size_t y=0; y<=minPatchDimY; ++y)
+	for (size_t y=0; y<=patchDim; ++y)
 	{
-		for (size_t x=0; x<=minPatchDimX; ++x)
+		for (size_t x=0; x<=patchDim; ++x)
 		{
 			*ptr++ = glm::vec2(x, y);
 		}
@@ -414,15 +412,15 @@ void CDLODTerrain::generateGeometry()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-#define INDEX_FOR_LOCATION(x, y) ((y)*(minPatchDimY+1)+(x))
+#define INDEX_FOR_LOCATION(x, y) ((y)*(patchDim+1)+(x))
 
-	idxCount = minPatchDimY*minPatchDimX*6;
+	idxCount = patchDim*patchDim*6;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
 	uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-	for (size_t y=0; y<minPatchDimY; ++y)
+	for (size_t y=0; y<patchDim; ++y)
 	{
-		for (size_t x=0; x<minPatchDimX; ++x)
+		for (size_t x=0; x<patchDim; ++x)
 		{
 			*ptr2++ = INDEX_FOR_LOCATION(x,   y);
 			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
@@ -455,11 +453,12 @@ void CDLODTerrain::drawTerrain()
 		instData = patchDataMem;
 	}
 
-	instCount = 0;
+	patchCount = 0;
 	cpuSelectTimer.start();
 	size_t level = LODCount-1;
-	for (size_t j=0; j<gridDimY-1; j+=LODs[level].height)
-		for (size_t i=0; i<gridDimX-1; i+=LODs[level].width)
+	size_t step  = LODs[level].patchDim;
+	for (size_t j=0; j<gridDimY-1; j+=step)
+		for (size_t i=0; i<gridDimX-1; i+=step)
 			selectQuadsForDrawing(level, i, j);
 	cpuSelectTime = cpuSelectTimer.elapsed();
 	cpuSelectTimer.stop();
@@ -473,7 +472,7 @@ void CDLODTerrain::drawTerrain()
 	cpuDrawTimer.start();
 	gpuTimer.start();
 
-	if (instCount)
+	if (patchCount)
 	{
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
@@ -501,13 +500,13 @@ void CDLODTerrain::drawTerrain()
 		if (useInstancing)
 		{
 			glBindVertexArray(vaoInst);
-			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, instCount);
+			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
 		}
 		else
 		{
 			glBindBufferRange(GL_UNIFORM_BUFFER, UNI_PATCH_BINDING, ubo, uniPatchOffset, sizeof(PatchData));
 			glBindVertexArray(vao);
-			for (size_t i=0; i<instCount; ++i)
+			for (size_t i=0; i<patchCount; ++i)
 			{
 				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
 				glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
@@ -535,12 +534,11 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 	gridDimX = width;
 	gridDimY = height;
 
-	size = 4.0f;
-	startX =  0.5f*size*(gridDimX-1);
-	startY = -0.5f*size*(gridDimY-1);
+	cellSize = 4.0f;
+	startX =  0.5f*cellSize*(gridDimX-1);
+	startY = -0.5f*cellSize*(gridDimY-1);
 
-	minPatchDimX = std::min<size_t>(8, gridDimX);
-	minPatchDimY = std::min<size_t>(8, gridDimY);
+	patchDim = 8;
 
 	visibilityDistance = 300;
 	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
@@ -549,6 +547,8 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;
 	heightScale = 65535.0f/732.0f;
+
+	maxPatchCount = MAX_PATCH_COUNT;
 
 	calculateLODParams();
 	generateGeometry();
@@ -562,7 +562,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 
 	terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
 	terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
-	terrainData.uScale  = vi_set(-size, heightScale, size, 0.0f);
+	terrainData.uScale  = vi_set(-cellSize, heightScale, cellSize, 0.0f);
 	memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(TerrainData), &terrainData);
 
@@ -683,7 +683,7 @@ void CDLODTerrain::generateBBoxData(uint16_t* data)
 	minmaxData = (float*)malloc(minmaxDataSize*sizeof(float));
 
 	size_t w, h;
-	downsamplep1(gridDimX, gridDimY, data, minPatchDimX+1, minPatchDimY+1, heightScale, w, h, minmaxData+LODs[0].minmaxOffset);
+	downsamplep1(gridDimX, gridDimY, data, patchDim+1, patchDim+1, heightScale, w, h, minmaxData+LODs[0].minmaxOffset);
 
 	for (size_t i=1; i<LODCount; ++i)
 	{
