@@ -80,6 +80,9 @@ void main()
 
 	vHeight     = vertexPos.y;
 	vColor      = vec4(uColors[int(aLevel.x)], 1);
-	gl_Position = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
+
+	vec4 p = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
+	p.z = (p.z>0 && p.z>p.w)?p.w:p.z;
+	gl_Position = p;
 }
 

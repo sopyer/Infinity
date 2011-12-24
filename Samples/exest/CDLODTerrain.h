@@ -29,6 +29,7 @@ class CDLODTerrain
 		float morphZoneRatio;
 		
 		bool		useInstancing;
+		bool		useOverDrawOptimization;
 
 		GLuint		prgInstancedTerrain, prgTerrain;
 		GLuint		mHeightmapTex;
@@ -64,6 +65,7 @@ class CDLODTerrain
 
 		PatchData*	instData;
 		PatchData*	patchDataMem;
+
 		size_t		patchCount;
 		size_t		maxPatchCount;
 		GLsizei		idxCount;
@@ -95,11 +97,11 @@ class CDLODTerrain
 		void calculateLODParams();
 		void calculateLODRanges(float* ranges);
 
-		void addPatchToQueue(size_t level, size_t i, size_t j);
+		void addPatchToQueue(size_t level, int i, int j);
 
-		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
+		void selectQuadsForDrawing(size_t level, int i, int j, bool skipFrustumTest=false);
 
-		void getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB);
+		void getAABB(size_t level, int i, int j, ml::aabb* patchAABB);
 
 		void initialize();
 		void cleanup();

@@ -65,7 +65,7 @@ class Exest: public ui::SDLStage
 
 		VFS				mVFS;
 
-		glm::mat4	mProj, VP;
+		glm::mat4	mProj, mProj2, VP;
 
 		float vertAngle, horzAngle;
 		CDLODTerrain terrain;
@@ -82,7 +82,8 @@ class Exest: public ui::SDLStage
 
 			terrain.initialize();
 
-			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+			mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 1000.0f);
+			mProj2 = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 100000.0f);
 
 			camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
 										   0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
@@ -203,6 +204,10 @@ class Exest: public ui::SDLStage
 			{
 				terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
 			}
+			if (event.keysym.sym==SDLK_1)
+			{
+				terrain.useOverDrawOptimization = !terrain.useOverDrawOptimization;
+			}
 		}
 
 		void onPaint()
@@ -242,7 +247,7 @@ class Exest: public ui::SDLStage
 			if (!fixedMode)
 			{
 				terrain.viewData.uViewPoint = vi_set(camera.pos.x, camera.pos.y, camera.pos.z, 0.0f);
-				terrain.setSelectMatrix(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
+				terrain.setSelectMatrix(glm::translate3DGTX(mProj2*camera.getViewMatrix(), -camera.pos));
 			}
 			else
 			{
@@ -322,7 +327,7 @@ class Exest: public ui::SDLStage
 			if (lockView)
 			{
 				printf("%d\n", fixedMode);
-				VP = glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos);
+				VP = glm::translate3DGTX(mProj2*camera.getViewMatrix(), -camera.pos);
 				VPpp = camera.pos;
 			}
 

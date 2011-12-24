@@ -24,6 +24,7 @@ void CDLODTerrain::initialize()
 {
 	useInstancing = true;
 	drawWireframe = false;
+	useOverDrawOptimization = true;
 
 	GLint uniTerrain, uniPatch, uniView, uniGradient;
 	GLint uniHeightmap, uniColorRamp;
@@ -161,6 +162,7 @@ void CDLODTerrain::initialize()
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
+	instData     = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
 
 	GLenum err = glGetError();
 	assert(err==GL_NO_ERROR);
@@ -209,6 +211,7 @@ void CDLODTerrain::reset()
 
 void CDLODTerrain::cleanup()
 {
+	free(instData);
 	free(patchDataMem);
 	glDeleteBuffers(1, &ubo);
 	glDeleteVertexArrays(1, &vao);
@@ -312,20 +315,19 @@ void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 	viewData.uMVP.r3 = vi_loadu(mat[3]);
 }
 
-void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
+void CDLODTerrain::addPatchToQueue(size_t level, int i, int j)
 {
-	if (patchCount<maxPatchCount)
+	if (patchCount<MAX_PATCH_COUNT)
 	{
-		instData->baseX = (float)i;
-		instData->baseY = (float)j;
-		instData->level = (float)level;
+		instData[patchCount].baseX = (float)i;
+		instData[patchCount].baseY = (float)j;
+		instData[patchCount].level = (float)level;
 
-		++instData;
 		++patchCount;
 	}
 }
 
-void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
+void CDLODTerrain::getAABB(size_t level, int i, int j, ml::aabb* patchAABB)
 {
 	float* minmax = minmaxData+LODs[level].minmaxOffset;
 
@@ -345,9 +347,9 @@ void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB
 	patchAABB->max = vi_set(baseX,       maxZ, baseY+sizeY, 1);
 }
 
-void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
+void CDLODTerrain::selectQuadsForDrawing(size_t level, int i, int j, bool skipFrustumTest)
 {
-	if (i>=gridDimX-1 || j>=gridDimY-1) return;
+	if (i>=gridDimX-1 || j>=gridDimY-1 || i<0 || j<0) return;
 
 	ml::aabb AABB;
 
@@ -396,6 +398,77 @@ glm::vec4 colors[] =
 	glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
 };
 
+#define INDEX_FOR_LOCATION(x, y) ((y)*stride+(x))
+
+template<bool yoverx>
+void generateQuadIndices(uint16_t** ptr, int xs, int ys, int xe, int ye)
+{
+	int sx     = xe>xs ? 1 : -1;
+	int sy     = ye>ys ? 1 : -1;
+	int stride = abs(ye-ys) + 1;
+
+	uint16_t* ptr2 = *ptr;
+
+	if (yoverx)
+	{
+		for (size_t x=xs; x!=xe; x+=sx)
+		{
+			for (size_t y=ys; y!=ye; y+=sy)
+			{
+				if (sx>0)
+				{
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+				}
+				else
+				{
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+				}
+			}
+		}
+	}
+	else
+	{
+		for (size_t y=ys; y!=ye; y+=sy)
+		{
+			for (size_t x=xs; x!=xe; x+=sx)
+			{
+				if (sy>0)
+				{
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+				}
+				else
+				{
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+				}
+			}
+		}
+	}
+
+	*ptr = ptr2;
+}
+
+#undef INDEX_FOR_LOCATION
+
 void CDLODTerrain::generateGeometry()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
@@ -416,20 +489,28 @@ void CDLODTerrain::generateGeometry()
 
 	idxCount = patchDim*patchDim*6;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount*8, 0, GL_STATIC_DRAW);
 	uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-	for (size_t y=0; y<patchDim; ++y)
-	{
-		for (size_t x=0; x<patchDim; ++x)
-		{
-			*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
-			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
-			*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
-			*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-			*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
-		}
-	}
+	//for (size_t y=0; y<patchDim; ++y)
+	//{
+	//	for (size_t x=0; x<patchDim; ++x)
+	//	{
+	//		*ptr2++ = INDEX_FOR_LOCATION(x,   y);
+	//		*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+	//		*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+	//		*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+	//		*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+	//		*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+	//	}
+	//}
+	generateQuadIndices<false>(&ptr2, patchDim-1, patchDim-1,       -1,       -1);  // 0 0 0 = 0
+	generateQuadIndices<false>(&ptr2,          0, patchDim-1, patchDim,       -1);  // 0 0 1 = 1
+	generateQuadIndices<false>(&ptr2, patchDim-1,          0,       -1, patchDim);  // 0 1 0 = 2
+	generateQuadIndices<false>(&ptr2,          0,          0, patchDim, patchDim);  // 0 1 1 = 3
+	generateQuadIndices<true> (&ptr2, patchDim-1, patchDim-1,       -1,       -1);  // 1 0 0 = 4
+	generateQuadIndices<true> (&ptr2,          0, patchDim-1, patchDim,       -1);  // 1 0 1 = 5
+	generateQuadIndices<true> (&ptr2, patchDim-1,          0,       -1, patchDim);  // 1 1 0 = 6
+	generateQuadIndices<true> (&ptr2,          0,          0, patchDim, patchDim);  // 1 1 1 = 7
 
 #undef INDEX_FOR_LOCATION
 
@@ -441,18 +522,6 @@ void CDLODTerrain::drawTerrain()
 {
 	cpuTimer.start();
 
-	if (useInstancing)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-		//Discard data from previous frame
-		glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-		instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	}
-	else
-	{
-		instData = patchDataMem;
-	}
-
 	patchCount = 0;
 	cpuSelectTimer.start();
 	size_t level = LODCount-1;
@@ -463,6 +532,39 @@ void CDLODTerrain::drawTerrain()
 	cpuSelectTime = cpuSelectTimer.elapsed();
 	cpuSelectTimer.stop();
 
+	int yoverx = abs(viewDir.x)>abs(viewDir.z);
+	int quadIdx = useOverDrawOptimization?(yoverx<<2)|((viewDir.z>0)<<1)|(viewDir.x>0):0;
+
+	PatchData*	sortedData;
+	if (useInstancing)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+		//Discard data from previous frame
+		glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+		sortedData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	}
+	else
+	{
+		sortedData = patchDataMem;
+	}
+
+	struct
+	{
+		float cx, cy;
+		bool operator()(const PatchData& left, const PatchData& right)
+		{
+			size_t a = ((int)left.level<<16)|((int)(abs(left.baseX-cx)+abs(left.baseY-cy))&0xFFFF);
+			size_t b = ((int)right.level<<16)|((int)(abs(right.baseX-cx)+abs(right.baseY-cy))&0xFFFF);
+			return a<b;
+		}
+	} cmp;
+
+	cmp.cx=glm::clamp<float>(-(viewData.uViewPoint.m128_f32[0]-startX)/cellSize, -16000, 16000)-patchDim/2;
+	cmp.cy=glm::clamp<float>((viewData.uViewPoint.m128_f32[2]-startY)/cellSize, -16000, 16000)-patchDim/2;
+
+	if (useOverDrawOptimization) std::sort(instData, instData+patchCount, cmp);
+	memcpy(sortedData, instData, sizeof(PatchData)*patchCount);
+
 	if (useInstancing)
 	{
 		glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -471,6 +573,8 @@ void CDLODTerrain::drawTerrain()
 
 	cpuDrawTimer.start();
 	gpuTimer.start();
+
+	patchCount = std::min(patchCount, maxPatchCount);
 
 	if (patchCount)
 	{
@@ -490,17 +594,31 @@ void CDLODTerrain::drawTerrain()
 		glCullFace(GL_BACK);
 		if (drawWireframe)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 		glEnable(GL_DEPTH_TEST);
+		if (useOverDrawOptimization)
+		{
+			//glDisable(GL_DEPTH_TEST);
+			//Probably can be replaced with depth test, with function GL_LESS
+			//but atm following is not working
+			//glDepthFunc(GL_LESS);
+			//glDepthRange(0.0f, 0.999f);
+			glEnable(GL_STENCIL_TEST);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			glStencilFunc(GL_NOTEQUAL, 0x80, 0x80);
+			glStencilMask(0x80);
+		}
 
 		glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
 
 		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 		glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
 
+		GLsizei idxOffset = idxCount*sizeof(uint16_t)*quadIdx;
 		if (useInstancing)
 		{
 			glBindVertexArray(vaoInst);
-			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset, patchCount);
 		}
 		else
 		{
@@ -508,8 +626,8 @@ void CDLODTerrain::drawTerrain()
 			glBindVertexArray(vao);
 			for (size_t i=0; i<patchCount; ++i)
 			{
-				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
-				glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
+				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), sortedData+i);
+				glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset);
 			}
 		}
 
@@ -534,19 +652,19 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 	gridDimX = width;
 	gridDimY = height;
 
-	cellSize = 4.0f;
+	cellSize = 40.0f;
 	startX =  0.5f*cellSize*(gridDimX-1);
 	startY = -0.5f*cellSize*(gridDimY-1);
 
 	patchDim = 8;
 
-	visibilityDistance = 300;
+	visibilityDistance = 500;
 	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
 	LODCount = 5;
 	detailBalance = 2.0f;
 	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
 	morphZoneRatio = 0.30f;
-	heightScale = 65535.0f/732.0f;
+	heightScale = 65535.0f/732.0f*10;
 
 	maxPatchCount = MAX_PATCH_COUNT;
 
