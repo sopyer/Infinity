@@ -253,7 +253,9 @@ class Exest: public ui::SDLStage
 
 			terrain.setMVPMatrix(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
 
+			profiler_block_id id = profilerStartBlock("Terrain select+render");
 			terrain.drawTerrain();
+			profilerEndBlock(id);
 
 			glMatrixMode(GL_PROJECTION);
 			glPopMatrix();

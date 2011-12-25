@@ -83,6 +83,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Controls.cpp" />
+    <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="ProfilerOverlay.cpp" />
     <ClCompile Include="ShaderEditOverlay.cpp" />
     <ClCompile Include="opengl.c" />
     <ClCompile Include="ResourceHelpers.cpp" />
@@ -102,6 +104,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h" />
+    <ClInclude Include="profiler.h" />
+    <ClInclude Include="ProfilerOverlay.h" />
     <ClInclude Include="ShaderEditOverlay.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />

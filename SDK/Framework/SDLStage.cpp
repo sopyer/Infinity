@@ -10,13 +10,22 @@
 #include <vg/vg.h>
 #include <vg/impl/SharedResources.h>
 #include <ShaderEditOverlay.h>
+#include <ProfilerOverlay.h>
+#include <profiler.h>
 
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
 
+enum
+{
+	STATE_DEFAULT,
+	STATE_SHADER_EDIT,
+	STATE_PROFILER
+};
+
 namespace ui
 {
-	SDLStage::SDLStage()
+	SDLStage::SDLStage(): mState(STATE_DEFAULT)
 	{
 		if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)											// Init The SDL Library, The VIDEO Subsystem
 		{
@@ -70,7 +79,9 @@ namespace ui
 
 		mShaderEditOverlay = new ShaderEditOverlay;
 		mShaderEditOverlay->initialise(mWidth, mHeight);
-		mShaderEditOverlayVisible = false;
+
+		mProfilerOverlay = new ProfilerOverlay;
+		mProfilerOverlay->initialise(mWidth, mHeight);
 
 		GLuint programs[] = {
 			impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
@@ -88,6 +99,7 @@ namespace ui
 	SDLStage::~SDLStage()
 	{
 		delete mShaderEditOverlay;
+		delete mProfilerOverlay;
 		Platform_Finalise();
 		ui::cleanup();
 		vg::cleanup();
@@ -109,30 +121,42 @@ namespace ui
 					break;
 
 				case SDL_KEYDOWN:
-					if (mShaderEditOverlayVisible)
-						mShaderEditOverlay->handleKeyDown(E.key);
-					else
-						processKeyDown(E.key);
+					switch (mState)
+					{
+						case STATE_DEFAULT:
+							processKeyDown(E.key);
+							break;
+						case STATE_SHADER_EDIT:
+							mShaderEditOverlay->handleKeyDown(E.key);
+							break;
+						case STATE_PROFILER:
+							mProfilerOverlay->handleKeyDown(E.key);
+							break;
+					}
 					break;
 				case SDL_KEYUP:		
 					if (E.key.keysym.sym==SDLK_F5)
 					{
-						mShaderEditOverlayVisible = !mShaderEditOverlayVisible;
-						if (mShaderEditOverlayVisible) mShaderEditOverlay->reset();
+						mState = mState==STATE_SHADER_EDIT?STATE_DEFAULT:STATE_SHADER_EDIT;
+						if (mState==STATE_SHADER_EDIT) mShaderEditOverlay->reset();
 					}
-					if (!mShaderEditOverlayVisible)
+					if (E.key.keysym.sym==SDLK_F4)
+					{
+						mState = mState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
+					}
+					if (mState==STATE_DEFAULT)
 						processKeyUp(E.key);
 					break;
 				case SDL_MOUSEMOTION:
-					if (!mShaderEditOverlayVisible)
+					if (mState==STATE_DEFAULT)
 						processMotion(E.motion);
 					break;
 				case SDL_MOUSEBUTTONDOWN:
-					if (!mShaderEditOverlayVisible)
+					if (mState==STATE_DEFAULT)
 						processTouch(E.button);
 					break;
 				case SDL_MOUSEBUTTONUP:
-					if (!mShaderEditOverlayVisible)
+					if (mState==STATE_DEFAULT)
 						processUntouch(E.button);
 					break;
 			}
@@ -148,19 +172,28 @@ namespace ui
 			onShaderRecompile();
 		}
 
-		CPUTimer t, alloc, rend, def;
-		t.start();
-		double talloc, trend, tdef;
-		alloc.start();
+		size_t id;
+
+		profilerBeginFrame();
+		
+		id = profilerStartBlock("STAGE PHASE ALLOCATE");
 		enterPhase(PHASE_ALLOCATE);
-		talloc = alloc.elapsed();
-		rend.start();
+		profilerEndBlock(id);
+		id = profilerStartBlock("STAGE PHASE RENDERING");
 		enterPhase(PHASE_RENDERING);
-		trend = rend.elapsed();
-		def.start();
+		profilerEndBlock(id);
+		id = profilerStartBlock("STAGE PHASE DEFAULT");
 		enterPhase(PHASE_DEFAULT);
-		tdef = def.elapsed();
-		if (mShaderEditOverlayVisible)
+		profilerEndBlock(id);
+
+		profilerEndFrame();
+
+		if (mState==STATE_PROFILER)
+		{
+			mProfilerOverlay->update();
+			mProfilerOverlay->renderFullscreen();
+		}
+		if (mState==STATE_SHADER_EDIT)
 			mShaderEditOverlay->renderFullscreen();
 		SDL_GL_SwapBuffers();
 	}

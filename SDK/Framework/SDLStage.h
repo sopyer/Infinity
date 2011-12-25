@@ -6,7 +6,9 @@
 #include <Stage.h>
 
 struct SDL_Surface;
+
 class  ShaderEditOverlay;
+class  ProfilerOverlay;
 
 namespace ui
 {
@@ -33,9 +35,12 @@ namespace ui
 			void handleRender();
 		
 		private:
+			size_t				mState;
+
 			ShaderEditOverlay*	mShaderEditOverlay;
+			ProfilerOverlay*	mProfilerOverlay;
+
 			SDL_Surface			*mScreen;
-			bool				mShaderEditOverlayVisible;
 	};
 }
 

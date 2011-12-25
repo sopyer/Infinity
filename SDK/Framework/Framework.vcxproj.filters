@@ -59,6 +59,10 @@
     <ClCompile Include="ShaderEditOverlay.cpp">
       <Filter>UI\Misc</Filter>
     </ClCompile>
+    <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="ProfilerOverlay.cpp">
+      <Filter>UI\Misc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">
@@ -112,6 +116,10 @@
       <Filter>UI\Misc</Filter>
     </ClInclude>
     <ClInclude Include="ShaderEditOverlay.h">
+      <Filter>UI\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="profiler.h" />
+    <ClInclude Include="ProfilerOverlay.h">
       <Filter>UI\Misc</Filter>
     </ClInclude>
   </ItemGroup>
