@@ -32,7 +32,7 @@ void CDLODTerrain::initialize()
 
 	// Create non-instanced terrain program
 	define = "#version 330\n";
-	prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");//, 1, (const char**)&define);
+	prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
 
 	uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
 	uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");

@@ -306,8 +306,8 @@ namespace impl
 		GLint	status;
 		char output[8096];
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-		glGetShaderInfoLog(shader, 8096, &status, output);
 		assert(status);
+		glGetShaderInfoLog(shader, 8096, &status, output);
 #endif
 	}
 
@@ -331,8 +331,8 @@ namespace impl
 		GLint	status;
 		char output[8096];
 		glGetProgramiv(program, GL_LINK_STATUS, &status);
-		glGetProgramInfoLog(program, 8096, &status, output);
 		assert(status);
+		glGetProgramInfoLog(program, 8096, &status, output);
 #endif
 		va_end(arg);
 
