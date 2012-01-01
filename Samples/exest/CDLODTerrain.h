@@ -11,119 +11,119 @@ struct PatchData;
 
 class CDLODTerrain
 {
-	public:
-		static const size_t MAX_LOD_COUNT = 8;
-		static const size_t MAX_PATCH_COUNT = 2048;
+public:
+    static const size_t MAX_LOD_COUNT = 8;
+    static const size_t MAX_PATCH_COUNT = 2048;
 
-		size_t gridDimX;
-		size_t gridDimY;
-		size_t LODCount;
-		size_t patchDim;
-		float  cellSize;
+    size_t gridDimX;
+    size_t gridDimY;
+    size_t LODCount;
+    size_t patchDim;
+    float  cellSize;
 
-		float heightScale;
-		float startX;
-		float startY;
-		float visibilityDistance;
-		float detailBalance;
-		float morphZoneRatio;
-		
-		bool		useInstancing;
+    float heightScale;
+    float startX;
+    float startY;
+    float visibilityDistance;
+    float detailBalance;
+    float morphZoneRatio;
 
-		GLuint		prgInstancedTerrain, prgTerrain;
-		GLuint		mHeightmapTex;
-		GLuint		mColorRampTex;
-		GLuint		vaoInst, vao;
+    bool		useInstancing;
 
-		GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
+    GLuint		prgInstancedTerrain, prgTerrain;
+    GLuint		mHeightmapTex;
+    GLuint		mColorRampTex;
+    GLuint		vaoInst, vao;
 
-		struct TerrainData
-		{
-			vec4		uHMDim;
-			vec4		uOffset;
-			vec4		uScale;
-			vec4		uMorphParams[MAX_LOD_COUNT];
-			vec4		uColors[MAX_LOD_COUNT];
+    GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
 
-		} terrainData;
+    struct TerrainData
+    {
+        vec4		uHMDim;
+        vec4		uOffset;
+        vec4		uScale;
+        vec4		uMorphParams[MAX_LOD_COUNT];
+        vec4		uColors[MAX_LOD_COUNT];
 
-		struct ViewData
-		{
-			ml::mat4x4	uMVP;
-			vec4		uViewPoint;
-		} viewData;
+    } terrainData;
 
-		struct GradientData
-		{
-			vec4		uStops[8];
-			vec4		uScales[8];
-			float		uInvStopCount;
-		} gradientData;
+    struct ViewData
+    {
+        ml::mat4x4	uMVP;
+        vec4		uViewPoint;
+    } viewData;
 
-		GLuint		geomVBO, instVBO, ibo, ubo;
+    struct GradientData
+    {
+        vec4		uStops[8];
+        vec4		uScales[8];
+        float		uInvStopCount;
+    } gradientData;
 
-		PatchData*	instData;
-		PatchData*	patchDataMem;
-		size_t		patchCount;
-		size_t		maxPatchCount;
-		GLsizei		idxCount;
+    GLuint		geomVBO, instVBO, ibo, ubo;
 
-		glm::vec4	viewDir;
+    PatchData*	instData;
+    PatchData*	patchDataMem;
+    size_t		patchCount;
+    size_t		maxPatchCount;
+    GLsizei		idxCount;
 
-		ml::mat4x4	sseVP;
+    glm::vec4	viewDir;
 
-		float*	minmaxData;
-		size_t	minmaxDataSize;
+    ml::mat4x4	sseVP;
 
-		struct LODDesc
-		{
-			float	rangeStart;
-			size_t	patchDim;
-			size_t	minmaxOffset;
-			size_t	minmaxPitch;	
-		};
+    float*	minmaxData;
+    size_t	minmaxDataSize;
 
-		LODDesc		LODs[MAX_LOD_COUNT];
+    struct LODDesc
+    {
+        float	rangeStart;
+        size_t	patchDim;
+        size_t	minmaxOffset;
+        size_t	minmaxPitch;	
+    };
 
-		void generateGeometry();
-		void generateBBoxData(uint16_t* data);
+    LODDesc		LODs[MAX_LOD_COUNT];
 
-		void setHeightmap(uint16_t* data, size_t width, size_t height);
-		void setSelectMatrix(glm::mat4& mat);
-		void setMVPMatrix(glm::mat4& mat);
+    void generateGeometry();
+    void generateBBoxData(uint16_t* data);
 
-		void calculateLODParams();
-		void calculateLODRanges(float* ranges);
+    void setHeightmap(uint16_t* data, size_t width, size_t height);
+    void setSelectMatrix(glm::mat4& mat);
+    void setMVPMatrix(glm::mat4& mat);
 
-		void addPatchToQueue(size_t level, size_t i, size_t j);
+    void calculateLODParams();
+    void calculateLODRanges(float* ranges);
 
-		void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
+    void addPatchToQueue(size_t level, size_t i, size_t j);
 
-		void getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB);
+    void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
 
-		void initialize();
-		void cleanup();
+    void getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB);
 
-		void drawTerrain();
+    void initialize();
+    void cleanup();
 
-		void reset();
+    void drawTerrain();
 
-		bool drawWireframe;
+    void reset();
 
-		CPUTimer	cpuTimer;
-		CPUTimer	cpuSelectTimer;
-		CPUTimer	cpuDrawTimer;
-		GPUTimer	gpuTimer;
+    bool drawWireframe;
 
-		double cpuTime;
-		double cpuSelectTime;
-		double cpuDrawTime;
-		double gpuTime;
+    CPUTimer	cpuTimer;
+    CPUTimer	cpuSelectTimer;
+    CPUTimer	cpuDrawTimer;
+    GPUTimer	gpuTimer;
 
-		float getCPUTime() {return (float)cpuTime;}
-		float getCPUSelectTime() {return (float)cpuSelectTime;}
-		float getCPUDrawTime() {return (float)cpuDrawTime;}
-		float getGPUTime() {return (float)gpuTime;}
+    double cpuTime;
+    double cpuSelectTime;
+    double cpuDrawTime;
+    double gpuTime;
+
+    float getCPUTime() {return (float)cpuTime;}
+    float getCPUSelectTime() {return (float)cpuSelectTime;}
+    float getCPUDrawTime() {return (float)cpuDrawTime;}
+    float getGPUTime() {return (float)gpuTime;}
 };
 
 #endif

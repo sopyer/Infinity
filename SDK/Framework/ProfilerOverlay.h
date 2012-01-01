@@ -41,18 +41,18 @@
 class ProfilerOverlay
 {
 public:
-	void initialise(int w, int h);
-	void update();
+    void initialise(int w, int h);
+    void update();
 
-	void handleKeyDown(SDL_KeyboardEvent& event);
-	void renderFullscreen();
-
-private:
-	void initialiseView();
+    void handleKeyDown(SDL_KeyboardEvent& event);
+    void renderFullscreen();
 
 private:
-	Editor  mProfilerView;
+    void initialiseView();
 
-	float mWidth;
-	float mHeight;
+private:
+    Editor  mProfilerView;
+
+    float mWidth;
+    float mHeight;
 };

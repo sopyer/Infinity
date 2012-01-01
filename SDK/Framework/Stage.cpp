@@ -8,353 +8,357 @@
 
 namespace ui
 {
-	Stage::Stage():	mDoAllocate(true),
-		mLastVisited(0), mPhase(PHASE_DEFAULT)
+    Stage::Stage():	mDoAllocate(true),
+        mLastVisited(0), mPhase(PHASE_DEFAULT)
 #if defined(DEBUG) || defined(_DEBUG)
-		,dumpPickImage(0)
+        ,dumpPickImage(0)
 #endif
-	{
-		mFocused = this;
-	}
+    {
+        mFocused = this;
+    }
 
-	Stage& Stage::queueRelayout()
-	{
-		if (mPhase != PHASE_ALLOCATE) {mDoAllocate = true;}	return *this;
-	}
-	
-	Stage& Stage::captureFocus(Actor* focused)
-	{
-		if (mFocused != focused)
-		{
-			if (mFocused) mFocused->onFocusOut();
-			mFocused = focused;
-			if (mFocused) mFocused->onFocusIn();
-		}
-		return *this;
-	}
+    Stage& Stage::queueRelayout()
+    {
+        if (mPhase != PHASE_ALLOCATE) {mDoAllocate = true;}	return *this;
+    }
 
-	Stage& Stage::releaseFocus()
-	{
-		if (mFocused) mFocused->onFocusOut();
-		mFocused = 0; return *this;
-	}
+    Stage& Stage::captureFocus(Actor* focused)
+    {
+        if (mFocused != focused)
+        {
+            if (mFocused) mFocused->onFocusOut();
+            mFocused = focused;
+            if (mFocused) mFocused->onFocusIn();
+        }
+        return *this;
+    }
+
+    Stage& Stage::releaseFocus()
+    {
+        if (mFocused) mFocused->onFocusOut();
+        mFocused = 0; return *this;
+    }
 
 
-	Stage& Stage::setProjection(float* mat4x4)
-	{
-		mProjection = glm::mat4(
-			mat4x4[0],  mat4x4[1],  mat4x4[2],  mat4x4[3], 
-			mat4x4[4],  mat4x4[5],  mat4x4[6],  mat4x4[7], 
-			mat4x4[8],  mat4x4[9],  mat4x4[10], mat4x4[11], 
-			mat4x4[12], mat4x4[13], mat4x4[14], mat4x4[15]
-		);
-		return *this;
-	}
+    Stage& Stage::setProjection(float* mat4x4)
+    {
+        mProjection = glm::mat4(
+            mat4x4[0],  mat4x4[1],  mat4x4[2],  mat4x4[3], 
+            mat4x4[4],  mat4x4[5],  mat4x4[6],  mat4x4[7], 
+            mat4x4[8],  mat4x4[9],  mat4x4[10], mat4x4[11], 
+            mat4x4[12], mat4x4[13], mat4x4[14], mat4x4[15]
+        );
+        return *this;
+    }
 
-	void Stage::processKeyDown(const KeyEvent& event)
-	{
-		//Also here should be and hotkeys handling
+    void Stage::processKeyDown(const KeyEvent& event)
+    {
+        //Also here should be and hotkeys handling
 #if defined(DEBUG) || defined(_DEBUG)
-		if (event.keysym.sym == SDLK_p && event.type==SDL_KEYDOWN &&
-			((event.keysym.mod&KMOD_LALT) || (event.keysym.mod&KMOD_RALT)))
-		{
-			dumpPickImage = TRUE;
-			return;
-		}
+        if (event.keysym.sym == SDLK_p && event.type==SDL_KEYDOWN &&
+            ((event.keysym.mod&KMOD_LALT) || (event.keysym.mod&KMOD_RALT)))
+        {
+            dumpPickImage = TRUE;
+            return;
+        }
 #endif
-		if (mFocused)
-			mFocused->onKeyDown(event);
+        if (mFocused)
+            mFocused->onKeyDown(event);
 
-		//No do not sent any event to childs
-	}
+        //No do not sent any event to childs
+    }
 
-	void Stage::processKeyUp(const KeyEvent& event)
-	{
-		if (mFocused)
-			mFocused->onKeyUp(event);
+    void Stage::processKeyUp(const KeyEvent& event)
+    {
+        if (mFocused)
+            mFocused->onKeyUp(event);
 
-		//No do not sent any event to childs
-	}
+        //No do not sent any event to childs
+    }
 
-	void Stage::processTouch(const ButtonEvent& event)
-	{
-		Actor* actor = doPick((u32)event.x, (u32)event.y);
+    void Stage::processTouch(const ButtonEvent& event)
+    {
+        Actor* actor = doPick((u32)event.x, (u32)event.y);
 
-		if (actor)
-			actor->onTouch(event);
-	}
+        if (actor)
+            actor->onTouch(event);
+    }
 
-	void Stage::processUntouch(const ButtonEvent& event)
-	{
-		Actor* actor = doPick((u32)event.x, (u32)event.y);
+    void Stage::processUntouch(const ButtonEvent& event)
+    {
+        Actor* actor = doPick((u32)event.x, (u32)event.y);
 
-		if (actor)
-			actor->onUntouch(event);
-	}
+        if (actor)
+            actor->onUntouch(event);
+    }
 
-	void Stage::processMotion(const MotionEvent& event)
-	{
-		Actor* actor = doPick(event.x, event.y);
+    void Stage::processMotion(const MotionEvent& event)
+    {
+        Actor* actor = doPick(event.x, event.y);
 
-		if (mLastVisited != actor)
-		{
-			if (mLastVisited)
-				mLastVisited->onLeave();
+        if (mLastVisited != actor)
+        {
+            if (mLastVisited)
+                mLastVisited->onLeave();
 
-			if (actor)
-			{
-				actor->onEnter();
-				//for (int button = 0; button < MouseButtons::Count; ++button)
-				//{
-				//	int	curState = mPrevButtonState[button];
+            if (actor)
+            {
+                actor->onEnter();
+                //for (int button = 0; button < MouseButtons::Count; ++button)
+                //{
+                //	int	curState = mPrevButtonState[button];
 
-				//	ButtonEvent evtTouch = {button, mModifiers, x, y};
+                //	ButtonEvent evtTouch = {button, mModifiers, x, y};
 
-				//	if (curState == InputState::Pressed)
-				//		actor->onTouch(evtTouch);
-				//}
-			}
-		}
+                //	if (curState == InputState::Pressed)
+                //		actor->onTouch(evtTouch);
+                //}
+            }
+        }
 
-		if (actor)
-			actor->onMotion(event);
+        if (actor)
+            actor->onMotion(event);
 
-		mLastVisited = actor;
-	}
+        mLastVisited = actor;
+    }
 
-	static const u32 rMaskUsed = 8;
-	static const u32 gMaskUsed = 8;
-	static const u32 bMaskUsed = 8;
+    static const u32 rMaskUsed = 8;
+    static const u32 gMaskUsed = 8;
+    static const u32 bMaskUsed = 8;
 
-	static const u32 rMask = 5;
-	static const u32 gMask = 5;
-	static const u32 bMask = 5;
+    static const u32 rMask = 5;
+    static const u32 gMask = 5;
+    static const u32 bMask = 5;
 
-	//code from clutter!!!!!!!!!!!!!!!!!!!!LGPL????????????????????????
-	Color idToColor(u32 id)
-	{
-		Color color;
-		u32 red, green, blue;
+    //code from clutter!!!!!!!!!!!!!!!!!!!!LGPL????????????????????????
+    Color idToColor(u32 id)
+    {
+        Color color;
+        u32 red, green, blue;
 
-		// compute the numbers we'll store in the components
-		red   = (id >> (gMask/*Used*/+bMask/*Used*/)) & (0xff >> (8-rMask/*Used*/));
-		green = (id >> bMask/*Used*/) & (0xff >> (8-gMask/*Used*/));
-		blue  = (id) & (0xff >> (8-bMask/*Used*/));
+        // compute the numbers we'll store in the components
+        red   = (id >> (gMask/*Used*/+bMask/*Used*/)) & (0xff >> (8-rMask/*Used*/));
+        green = (id >> bMask/*Used*/) & (0xff >> (8-gMask/*Used*/));
+        blue  = (id) & (0xff >> (8-bMask/*Used*/));
 
-		// shift left bits a bit and add one, this circumvents
-		// at least some potential rounding errors in GL/GLES
-		// driver / hw implementation.
-		//if (rMaskUsed != rMask)
-		//red = red * 2 + 1;
-		//if (gMaskUsed != gMask)
-		//green = green * 2 + 1;
-		//if (bMaskUsed != bMask)
-		//blue  = blue  * 2 + 1;
+        // shift left bits a bit and add one, this circumvents
+        // at least some potential rounding errors in GL/GLES
+        // driver / hw implementation.
+        //if (rMaskUsed != rMask)
+        //red = red * 2 + 1;
+        //if (gMaskUsed != gMask)
+        //green = green * 2 + 1;
+        //if (bMaskUsed != bMask)
+        //blue  = blue  * 2 + 1;
 
-		// shift up to be full 8bit values
-		red   = red   << (8 - rMask);
-		green = green << (8 - gMask);
-		blue  = blue  << (8 - bMask);
+        // shift up to be full 8bit values
+        red   = red   << (8 - rMask);
+        green = green << (8 - gMask);
+        blue  = blue  << (8 - bMask);
 
-		color.red   = (u8)red;
-		color.green = (u8)green;
-		color.blue  = (u8)blue;
-		color.alpha = 0xff;
+        color.red   = (u8)red;
+        color.green = (u8)green;
+        color.blue  = (u8)blue;
+        color.alpha = 0xff;
 
-		return color;
-	}
+        return color;
+    }
 
-	u32 pixelToId (u8 pixel[4])                 
-	{
-		u8  red, green, blue;
+    u32 pixelToId (u8 pixel[4])                 
+    {
+        u8  red, green, blue;
 
-		// reduce the pixel components to the number of bits actually used of the 8bits.
-		red   = pixel[0] >> (8 - rMask);
-		green = pixel[1] >> (8 - gMask);
-		blue  = pixel[2] >> (8 - bMask);
+        // reduce the pixel components to the number of bits actually used of the 8bits.
+        red   = pixel[0] >> (8 - rMask);
+        green = pixel[1] >> (8 - gMask);
+        blue  = pixel[2] >> (8 - bMask);
 
-		// divide potentially by two if 'fuzzy'
-		//red   = red   >> (rMaskUsed - rMask);
-		//green = green >> (gMaskUsed - gMask);
-		//blue  = blue  >> (bMaskUsed - bMask);  
+        // divide potentially by two if 'fuzzy'
+        //red   = red   >> (rMaskUsed - rMask);
+        //green = green >> (gMaskUsed - gMask);
+        //blue  = blue  >> (bMaskUsed - bMask);  
 
-		// combine the correct per component values into the final id
-		u32 id =  blue + (green << bMask/*Used*/) + (red << (bMask/*Used*/ + gMask/*Used*/));
+        // combine the correct per component values into the final id
+        u32 id =  blue + (green << bMask/*Used*/) + (red << (bMask/*Used*/ + gMask/*Used*/));
 
-		return id;
-	} 
-	
-	Actor* Stage::doPick(u32 x, u32 y)
-	{
-		GLint	viewport[4];
-		glGetIntegerv(GL_VIEWPORT, viewport);
-		
-		// Read the color of the screen co-ords pixel
-		u8	pixel[4];
-		glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
-		
-		GLenum err = glGetError();
-		assert(err==GL_NO_ERROR);
+        return id;
+    } 
 
-		if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
-			return this;
+    Actor* Stage::doPick(u32 x, u32 y)
+    {
+        GLint	viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
 
-		u32 id = pixelToId(pixel);
-		assert(id < mRenderQueue.size());
-		return mRenderQueue[id].actor;
-	}
+        // Read the color of the screen co-ords pixel
+        u8	pixel[4];
+        glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 
-	void Stage::enterPhase(Phase nextPhase)
-	{
-		switch (nextPhase)
-		{
-			case PHASE_EVENT_HANDLING:
-				outlineActors();
-				break;
+        GLenum err = glGetError();
+        assert(err==GL_NO_ERROR);
 
-			case PHASE_ALLOCATE:
-				if (mDoAllocate)
-				{
-					mDoAllocate = false;
-					onAllocate();
+        if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
+            return this;
 
-					mRenderQueue.clear();
-					updateRenderQueue(this, getTransformMatrix());
-				}
-				break;
+        u32 id = pixelToId(pixel);
+        assert(id < mRenderQueue.size());
+        return mRenderQueue[id].actor;
+    }
 
-			case PHASE_RENDERING:
-				renderActors();
-				glFlush();
-				break;
+    void Stage::enterPhase(Phase nextPhase)
+    {
+        switch (nextPhase)
+        {
+        case PHASE_EVENT_HANDLING:
+            {
+                PROFILER_CPU_BLOCK("outlineActors");
+                outlineActors();
+            }
+            break;
 
-			case PHASE_DEFAULT:
-				break;
+        case PHASE_ALLOCATE:
+            if (mDoAllocate)
+            {
+                mDoAllocate = false;
+                onAllocate();
 
-			default:
-				assert(0);
-		}
+                mRenderQueue.clear();
+                updateRenderQueue(this, getTransformMatrix());
+            }
+            break;
 
-		mPhase = nextPhase;
-	}
+        case PHASE_RENDERING:
+            {
+                PROFILER_CPU_BLOCK("renderActors");
 
-	//!!!!!!!!!!!Refactor
-	void setupUIViewMatrix(const glm::mat4& proj, float width, float height)
-	{
-		glm::mat4 inv = glm::inverseGTX(proj);
-		glm::vec4 ur = inv*glm::vec4(1, 1, -1, 1);
-		ur/=ur.w;
+                renderActors();
+                glFlush();
+            }
+            break;
 
-		glLoadIdentity();
-		glScalef(ur.x, ur.y, 1);
-		glTranslatef(-1, 1, -0.1f/*z_near*/);
-		glScalef(2.0f/width, -2.0f/height, 1.0f/width);
-	}
+        case PHASE_DEFAULT:
+            break;
 
-	void Stage::outlineActors()
-	{
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClearDepth(1.0f);
-		glClearStencil(0);
+        default:
+            assert(0);
+        }
 
-		glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
-		glDisable(GL_MULTISAMPLE);
-		glDepthMask(GL_TRUE);
-		glStencilMask( 0xFF );
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glUseProgram(0);
-		glDisable(GL_BLEND);
-		glDisable(GL_TEXTURE_2D);
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(mProjection);
-		
-		glMatrixMode(GL_MODELVIEW);
-		setupUIViewMatrix(mProjection, mWidth, mHeight);
+        mPhase = nextPhase;
+    }
 
-		for(size_t i = 0; i < mRenderQueue.size(); ++i)
-		{
-			glPushMatrix();
-			glMultMatrixf(mRenderQueue[i].transform);
-			mRenderQueue[i].actor->onPick(idToColor(i));
-			glPopMatrix();
-		}
+    //!!!!!!!!!!!Refactor
+    void setupUIViewMatrix(const glm::mat4& proj, float width, float height)
+    {
+        glm::mat4 inv = glm::inverseGTX(proj);
+        glm::vec4 ur = inv*glm::vec4(1, 1, -1, 1);
+        ur/=ur.w;
 
-		glPopAttrib();
-		glFinish();
+        glLoadIdentity();
+        glScalef(ur.x, ur.y, 1);
+        glTranslatef(-1, 1, -0.1f/*z_near*/);
+        glScalef(2.0f/width, -2.0f/height, 1.0f/width);
+    }
+
+    void Stage::outlineActors()
+    {
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClearDepth(1.0f);
+        glClearStencil(0);
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
+        glDisable(GL_MULTISAMPLE);
+        glDepthMask(GL_TRUE);
+        glStencilMask( 0xFF );
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glUseProgram(0);
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
+        glMatrixMode(GL_PROJECTION);
+        glLoadMatrixf(mProjection);
+
+        glMatrixMode(GL_MODELVIEW);
+        setupUIViewMatrix(mProjection, mWidth, mHeight);
+        for(size_t i = 0; i < mRenderQueue.size(); ++i)
+        {
+            glPushMatrix();
+            glMultMatrixf(mRenderQueue[i].transform);
+            mRenderQueue[i].actor->onPick(idToColor(i));
+            glPopMatrix();
+        }
+        glPopAttrib();
 #if defined(DEBUG) || defined(_DEBUG)
-		if (dumpPickImage)
-		{
-			//GLuint w = (GLuint)mWidth;
-			//GLuint h = (GLuint)mHeight;
-			//u8* p = new u8[w*h*4];
-			//glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
-			//SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
-			//delete [] p;
-			SOIL_save_screenshot("pick.tga", SOIL_SAVE_TYPE_TGA, 0, 0, (GLuint)mWidth, (GLuint)mHeight);
-			dumpPickImage = FALSE;
-		}
+        if (dumpPickImage)
+        {
+            //GLuint w = (GLuint)mWidth;
+            //GLuint h = (GLuint)mHeight;
+            //u8* p = new u8[w*h*4];
+            //glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
+            //SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
+            //delete [] p;
+            SOIL_save_screenshot("pick.tga", SOIL_SAVE_TYPE_TGA, 0, 0, (GLuint)mWidth, (GLuint)mHeight);
+            dumpPickImage = FALSE;
+        }
 #endif
-	}
+    }
 
-	void Stage::renderActors()
-	{
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClearDepth(1.0);
-		glClearStencil(0);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-		
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LEQUAL);
+    void Stage::renderActors()
+    {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearDepth(1.0);
+        glClearStencil(0);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
-											end = mRenderQueue.end();
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f)/*mProjection*/);
+        std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
+            end = mRenderQueue.end();
 
-		glMatrixMode(GL_MODELVIEW);
-		setupUIViewMatrix(mProjection, mWidth, mHeight);
+        glMatrixMode(GL_PROJECTION);
+        glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f)/*mProjection*/);
 
-		glPushMatrix();
-		onPaint();
-		glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        setupUIViewMatrix(mProjection, mWidth, mHeight);
 
-		for (; it != end; ++it)
-		{
-			if ((*it).actor->isVisible())
-			{
-				glPushMatrix();
-				glMultMatrixf((*it).transform);
-				(*it).actor->onPaint();
-				glPopMatrix();
-			}
-		}
+        glPushMatrix();
+        onPaint();
+        glPopMatrix();
 
-		glFlush();
-	}
+        for (; it != end; ++it)
+        {
+            if ((*it).actor->isVisible())
+            {
+                glPushMatrix();
+                glMultMatrixf((*it).transform);
+                (*it).actor->onPaint();
+                glPopMatrix();
+            }
+        }
 
-	void Stage::updateRenderQueue(Container* container, const glm::mat4& parentTransform)
-	{
-		ChildsVector::iterator	it  = container->mChilds.begin(),
-								end = container->mChilds.end();
-		for (; it != end; ++it)
-		{
-			Actor* child = *it;
+        glFlush();
+    }
 
-			//if (child->isVisible())
-			{
-				glm::mat4	actorTransform = parentTransform*child->getTransformMatrix();
-				RenderItem	item = {actorTransform, child};
+    void Stage::updateRenderQueue(Container* container, const glm::mat4& parentTransform)
+    {
+        ChildsVector::iterator	it  = container->mChilds.begin(),
+            end = container->mChilds.end();
+        for (; it != end; ++it)
+        {
+            Actor* child = *it;
 
-				mRenderQueue.push_back(item);
+            //if (child->isVisible())
+            {
+                glm::mat4	actorTransform = parentTransform*child->getTransformMatrix();
+                RenderItem	item = {actorTransform, child};
 
-				Container* childAsContainer = dynamic_cast<Container*>(child);
-				if (childAsContainer)
-					updateRenderQueue(childAsContainer, actorTransform);
-			}
-		}
-	}
+                mRenderQueue.push_back(item);
+
+                Container* childAsContainer = dynamic_cast<Container*>(child);
+                if (childAsContainer)
+                    updateRenderQueue(childAsContainer, actorTransform);
+            }
+        }
+    }
 
 }

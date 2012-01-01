@@ -12,36 +12,37 @@ class  ProfilerOverlay;
 
 namespace ui
 {
-	//! Refactor initializing code
-	class SDLStage: public Stage
-	{
-		public:
-			SDLStage();
-			~SDLStage();
-			
-			void run();
-			void close();
-			
-		protected:
-			//Debug functions and callbacks
-			void addPrograms(size_t count, GLuint* programs);
-			virtual void onShaderRecompile() {}
+    //! Refactor initializing code
+    class SDLStage: public Stage
+    {
+    public:
+        SDLStage();
+        ~SDLStage();
 
-		protected:
-			bool	mFullscreen;
+        void run();
+        void close();
 
-		private:
-			void handleInput();
-			void handleRender();
-		
-		private:
-			size_t				mState;
+    protected:
+        //Debug functions and callbacks
+        void addPrograms(size_t count, GLuint* programs);
+        virtual void onShaderRecompile() {}
 
-			ShaderEditOverlay*	mShaderEditOverlay;
-			ProfilerOverlay*	mProfilerOverlay;
+    protected:
+        bool	mFullscreen;
 
-			SDL_Surface			*mScreen;
-	};
+    private:
+        void handleInput();
+        void handleRender();
+        void frameStep();
+
+    private:
+        size_t				mState;
+
+        ShaderEditOverlay*	mShaderEditOverlay;
+        ProfilerOverlay*	mProfilerOverlay;
+
+        SDL_Surface			*mScreen;
+    };
 }
 
 #endif
