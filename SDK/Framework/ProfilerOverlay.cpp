@@ -49,9 +49,13 @@ void ProfilerOverlay::initialise(int w, int h)
 
 void ProfilerOverlay::update()
 {
-    char* buf = (char*) malloc(profilerData.numBlocks*100);
+    size_t              numBlocks;
+    profiler_block_t*   blocks;
 
-    memset(buf, ' ', profilerData.numBlocks*100);
+    getProfilerData(&numBlocks, &blocks);
+    char* buf = (char*) malloc(numBlocks*100);
+
+    memset(buf, ' ', numBlocks*100);
 
     char*	line=buf;
     size_t	st[10];
@@ -59,13 +63,13 @@ void ProfilerOverlay::update()
 
     st[nestLvl] = 0;
 
-    for (size_t i=0; i<profilerData.numBlocks; ++i)
+    for (size_t i=0; i<numBlocks; ++i)
     {
         size_t           prevID = st[nestLvl];
-        profiler_block_t prev   = profilerData.blocks[prevID];
-        profiler_block_t block  = profilerData.blocks[i];
+        profiler_block_t prev   = blocks[prevID];
+        profiler_block_t block  = blocks[i];
 
-        while (nestLvl>0 && block.start>=profilerData.blocks[st[nestLvl-1]].end)
+        while (nestLvl>0 && block.start>=blocks[st[nestLvl-1]].end)
             --nestLvl;
 
         if (i>0 && block.start<prev.end && block.end<=prev.end)
