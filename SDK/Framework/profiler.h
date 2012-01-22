@@ -10,6 +10,7 @@ struct profiler_block_t
 {
     __int64		start;
     __int64		end;
+    __int64     threadID;
     const char*	name;
     float		duration;
 };

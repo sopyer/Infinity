@@ -86,6 +86,9 @@ struct GPUTimer
 	GLuint		mTimeQuery;
 };
 
+__int64 timerGetTimeMS();
+
+
 #include <Scheduler.h>
 
 #endif

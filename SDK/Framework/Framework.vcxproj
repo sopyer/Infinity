@@ -48,7 +48,7 @@
     <ClCompile>
       <AdditionalOptions>/Gs %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;..\include\libavcodec;..\include\libavformat;..\include\libswscale;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -83,6 +83,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Controls.cpp" />
+    <ClCompile Include="media_api.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="ProfilerOverlay.cpp" />
     <ClCompile Include="ShaderEditOverlay.cpp" />
@@ -96,6 +97,7 @@
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SDLStage.cpp" />
     <ClCompile Include="Stage.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
@@ -104,6 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h" />
+    <ClInclude Include="media_api.h" />
     <ClInclude Include="profiler.h" />
     <ClInclude Include="ProfilerOverlay.h" />
     <ClInclude Include="ShaderEditOverlay.h" />
