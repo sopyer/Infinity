@@ -5,6 +5,8 @@
 #include <al/al.h>
 #include <al/alc.h>
 
+#include <utils.h>
+
 extern "C"
 {
 #include <avformat.h>
@@ -12,56 +14,115 @@ extern "C"
 #include <swscale.h>
 }
 
-__int64 timerGetTimeMS();
+__int64 timerAbsoluteTime();
 
-#define NUM_BUFFERS 4
+#define NUM_BUFFERS 3
+
+static const int aFramesCache = 2;
+static const int vFramesCache = 1;
+
+//Simple ring buffer for AVPacket
+//Relies on overflow behaviour
+#define PACKET_BUFFER_SIZE 64
+struct AVPacketRingBuffer
+{
+    unsigned int head;
+    unsigned int tail;
+    AVPacket     buf[PACKET_BUFFER_SIZE];
+};
+
+void resetAVPackets(AVPacketRingBuffer* rbuf)
+{
+    rbuf->head = rbuf->tail = 0;
+}
+
+unsigned int usedAVPackets(AVPacketRingBuffer* rbuf)
+{
+    return rbuf->head-rbuf->tail;
+}
+
+AVPacket* allocAVPacket(AVPacketRingBuffer* rbuf)
+{
+    return (usedAVPackets(rbuf) < PACKET_BUFFER_SIZE) ? (rbuf->buf + rbuf->head++%PACKET_BUFFER_SIZE) : 0;
+}
+
+AVPacket* frontAVPacket(AVPacketRingBuffer* rbuf)
+{
+    return (usedAVPackets(rbuf) != 0) ? rbuf->buf+(rbuf->tail % PACKET_BUFFER_SIZE) : 0;
+}
+
+void popAVPacket(AVPacketRingBuffer* rbuf)
+{
+    if (usedAVPackets != 0) rbuf->tail++;
+}
 
 struct media_player_data_t
 {
 
-    AVFormatContext *pFormatCtx;
-    AVCodecContext  *pVideoCodecCtx;
-    AVCodecContext  *pAudioCodecCtx;
-    SwsContext*		img_convert_ctx;
-    unsigned int    videoStream;
-    unsigned int    audioStream;
-    AVFrame         *pFrame; 
-    AVFrame         *pFrameRGB;
-    int     		mAudioFormat;
-    char*	        mAudioData;
-    int             numBytes;
-    int				width;
-    int             height;
-    uint8_t         *buffer;
-    PixelFormat		srcFormat;
-    PixelFormat     dstFormat;
-    double			timeBase;
-    int             playback;
+    AVFormatContext* pFormatCtx;
+    AVCodecContext*  pVideoCodecCtx;
+    AVCodecContext*  pAudioCodecCtx;
+    unsigned int     videoStream;
+    unsigned int     audioStream;
+    AVFrame*         pFrame; 
+    int     		 mAudioFormat;
+    char*	         mAudioData;
+    int              numBytes;
+    int				 width;
+    int              height;
+    PixelFormat		 srcFormat;
+    double			 timeBase;
+    int              playback;
+    int              streamEnd;
 
-    __int64 baseTime, timeOfNextFrame, curTexture, frameTime;
+    AVPacketRingBuffer aPackets;
+    AVPacketRingBuffer vPackets;
+    
+    __int64 baseTime, timeOfNextFrame, frameTime;
 
-    //int					mAudioFormat;
-    //std::vector<char>	mAudioData;
-    //TODO: implement pool, maybe fixed at first!!!!
-    GLuint texCur;
-    GLuint texNext;
+    __int64 FPS;
+    __int64 vFrameTime;
+    __int64 aFrameSamples, aSamplesDecoded, aBufferSamples;
+    __int64 aFramesAva, vFramesAva;
+
+    GLuint texY[2];
+    GLuint texU[2];
+    GLuint texV[2];
+    GLuint pbo;
+
     ALuint		audioSource;
     ALuint		audioBuffers[NUM_BUFFERS];
     int			availableAudioBuffers;
 
-    //TODO: implement pool, maybe fixed at first!!!!
     char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
-    char __declspec(align(16)) audioBuf2[AVCODEC_MAX_AUDIO_FRAME_SIZE*10];
-    int                               bufSize;
+    char __declspec(align(16)) audioBuf2[AVCODEC_MAX_AUDIO_FRAME_SIZE];
+    int                        bufSize;
 };
 
 typedef struct media_player_data_t* media_player_t;
 
-
 static int                        extAudioFormatsPresent;
 
+const char srcYUV2RGB[] = 
+    "uniform sampler2D samY;                                                                        \n"
+    "uniform sampler2D samU;                                                                        \n"
+    "uniform sampler2D samV;                                                                        \n"
+    "                                                                                               \n"
+    "void main()                                                                                    \n"
+    "{                                                                                              \n"
+    "    float y   = texture2D(samY, gl_TexCoord[0].xy).r;                                          \n"
+    "    float u   = texture2D(samU, gl_TexCoord[0].xy).r - 0.5;                                    \n"
+    "    float v   = texture2D(samV, gl_TexCoord[0].xy).r - 0.5;                                    \n"
+    "                                                                                               \n"
+    "    vec3 rgb = vec3(y) + u*vec3(0.0, -0.344, 1.770) + v*vec3(1.403, -0.714, 0.0);              \n"
+    "                                                                                               \n"
+    "    gl_FragColor = vec4(rgb, 1.0)*gl_Color;                                                    \n"
+    "}                                                                                              \n";
+
+GLuint progYUV2RGB;
+
 //TODO: implement pool, maybe fixed at first!!!!
-media_player_data_t               hack;
+media_player_data_t hack;
 
 static void closeAudioStream(media_player_t player)
 {
@@ -70,6 +131,7 @@ static void closeAudioStream(media_player_t player)
         avcodec_close(player->pAudioCodecCtx);
 
         ALint enqueuedBuffers;
+        alSourceStop(player->audioSource);
         alGetSourcei(player->audioSource, AL_BUFFERS_QUEUED, &enqueuedBuffers);
         assert(player->availableAudioBuffers+enqueuedBuffers == NUM_BUFFERS);
         alSourceUnqueueBuffers(player->audioSource, enqueuedBuffers, player->audioBuffers+player->availableAudioBuffers);
@@ -107,8 +169,12 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
 
     player->pAudioCodecCtx = audioContext;
 
-	alGenSources(1, &player->audioSource);
-	alGenBuffers(NUM_BUFFERS, player->audioBuffers);
+    alGenSources(1, &player->audioSource);
+    alGenBuffers(NUM_BUFFERS, player->audioBuffers);
+
+    //TODO: HARDCODE!!!!!!!
+    player->aBufferSamples  = player->pAudioCodecCtx->sample_rate / 25 * 2 * 2 * 2;
+    player->aSamplesDecoded = 0;
 
     player->availableAudioBuffers = NUM_BUFFERS;
 
@@ -119,20 +185,29 @@ static void closeVideoStream(media_player_t player)
 {
     if (player->pVideoCodecCtx)
     {
-        sws_freeContext(player->img_convert_ctx);
-
-        free(player->buffer);
-        av_free(player->pFrameRGB);
         av_free(player->pFrame);
 
         avcodec_close(player->pVideoCodecCtx);
 
-        glDeleteTextures(1, &player->texCur);
-        glDeleteTextures(1, &player->texNext);
+        glDeleteTextures(2, player->texY );
+        glDeleteTextures(2, player->texU);
+        glDeleteTextures(2, player->texV);
 
+        glDeleteBuffers(1, &player->pbo);
         player->pVideoCodecCtx = 0;
         player->bufSize = 0;
     }
+}
+
+static void initTexture(GLuint tex, GLuint width, GLuint height)
+{
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 }
 
 static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
@@ -141,65 +216,78 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
 
     AVCodec* pVideoCodec=avcodec_find_decoder(videoContext->codec_id);
     if(pVideoCodec==NULL || avcodec_open(videoContext, pVideoCodec)<0)
-        return 0; // Could not open codec
+        return 0;
 
     // Hack to correct wrong frame rates that seem to be generated by some codecs
     // if(pVideoCodecCtx->frame_rate>1000 && pVideoCodecCtx->frame_rate_base==1)
     //    pVideoCodecCtx->frame_rate_base=1000;
 
     player->pVideoCodecCtx = videoContext;
+    player->pFrame         = avcodec_alloc_frame();
+    player->numBytes       = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
 
-    player->pFrame    = avcodec_alloc_frame();
-    player->pFrameRGB = avcodec_alloc_frame();
-
-    player->numBytes = avpicture_get_size(PIX_FMT_RGB24, videoContext->width, videoContext->height);
-    player->buffer   = (uint8_t*)malloc(player->numBytes);
-
-    // Assign appropriate parts of buffer to image planes in pFrameRGB
-    avpicture_fill((AVPicture *)player->pFrameRGB, player->buffer, PIX_FMT_RGB24, videoContext->width, videoContext->height);
+    resetAVPackets(&player->aPackets);
+    resetAVPackets(&player->vPackets);
+    
+    player->vFramesAva = 0;
 
     player->width     = videoContext->width;
     player->height    = videoContext->height;
     player->srcFormat = videoContext->pix_fmt;
-    player->dstFormat = PIX_FMT_RGB24;
-    player->img_convert_ctx = sws_getContext(
-        player->width, player->height, player->srcFormat, 
-        player->width, player->height, player->dstFormat,
-        SWS_BICUBIC, NULL, NULL, NULL
-    );
+    assert(player->srcFormat == PIX_FMT_YUV420P);
 
-    glGenTextures(1, &player->texCur);
-    glGenTextures(1, &player->texNext);
+    glGenBuffers(1, &player->pbo);
 
-    glBindTexture(GL_TEXTURE_2D, player->texCur);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glGenTextures(2, player->texY);
+    glGenTextures(2, player->texU);
+    glGenTextures(2, player->texV);
 
-    glBindTexture(GL_TEXTURE_2D, player->texNext);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    initTexture(player->texY[0], player->width,   player->height  );
+    initTexture(player->texY[1], player->width,   player->height  );
+    initTexture(player->texU[0], player->width/2, player->height/2);
+    initTexture(player->texU[1], player->width/2, player->height/2);
+    initTexture(player->texV[0], player->width/2, player->height/2);
+    initTexture(player->texV[1], player->width/2, player->height/2);
 
     return 1;
 }
 
-static void decodeFrame(media_player_t player, GLuint texture, ALuint buffer)
+static void streamMediaData(media_player_t player)
 {
-    AVPacket        packet;
-    int             frameCompleted;
-        
-    frameCompleted = 0;
-    while(player->playback = (av_read_frame(player->pFormatCtx, &packet)>=0))
+    AVPacket packet;
+
+    if (!player->streamEnd && av_read_frame(player->pFormatCtx, &packet)>=0)
     {
         if (packet.stream_index==player->audioStream)
         {
-            uint8_t*	inData     = packet.data;
-            int			inSize     = packet.size;
+            *allocAVPacket(&player->aPackets) = packet;
+        }
+        else if (packet.stream_index==player->videoStream)
+        {
+            *allocAVPacket(&player->vPackets) = packet;
+        }
+    }
+    else if (!player->streamEnd)
+    {
+        player->streamEnd = true;
+        packet.data = 0;
+        packet.size = 0;
+        *allocAVPacket(&player->vPackets) = packet;
+    }
+}
+
+static void decodeAudio(media_player_t player, __int64 time)
+{
+    __int64 aSamples = (time<0?0:time) / 1000 * player->pAudioCodecCtx->sample_rate / 1000;
+
+    int audioDataAva = 1;
+    while((aSamples+player->aBufferSamples)>player->aSamplesDecoded && audioDataAva)
+    {
+        AVPacket* pkt = frontAVPacket(&player->aPackets);
+        if (pkt)
+        {
+            uint8_t*	inData     = pkt->data;
+            int			inSize     = pkt->size;
             int         bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
             while(inSize > 0)
@@ -216,45 +304,21 @@ static void decodeFrame(media_player_t player, GLuint texture, ALuint buffer)
 
                 if (processed>0)
                 {
-                    assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE*10);
+                    assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
                     memcpy(player->audioBuf2+player->bufSize, player->audioBuf, bufSizeAva);
                     player->bufSize += bufSizeAva;
+                    player->aSamplesDecoded+=bufSizeAva/2/2;
                 }
             }
-            av_free_packet(&packet);
+
+            av_free_packet(pkt);
+            popAVPacket(&player->aPackets);
         }
-        if (packet.stream_index==player->videoStream)
-        {
-            avcodec_decode_video(player->pVideoCodecCtx, player->pFrame, &frameCompleted, packet.data, packet.size);
+        else
+            streamMediaData(player);
 
-            if(frameCompleted)
-            {
-                player->timeOfNextFrame = player->baseTime+player->timeBase*packet.dts*1000;
-                av_free_packet(&packet);
-                break;
-            }
-        }
-
-        //Free the packet that was allocated by av_read_frame
-        av_free_packet(&packet);
+        audioDataAva = !player->streamEnd || usedAVPackets(&player->aPackets)!=0;
     }
-
-    int realWidth = player->pFrameRGB->linesize[0];
-
-    sws_scale(player->img_convert_ctx, player->pFrame->data, player->pFrame->linesize, 0, 
-        player->height, player->pFrameRGB->data, player->pFrameRGB->linesize);
-
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, player->width, player->height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-    for(GLsizei y=0; y<player->height; y++)
-    {
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y, player->width, 1, GL_RGB, GL_UNSIGNED_BYTE,
-            player->pFrameRGB->data[0]+y*realWidth);
-        GLenum err = glGetError();
-        assert(err == GL_NO_ERROR);
-    }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     if (player->bufSize>0 && player->availableAudioBuffers>0)
     {
@@ -262,6 +326,16 @@ static void decodeFrame(media_player_t player, GLuint texture, ALuint buffer)
         alBufferData(buffer, player->mAudioFormat, player->audioBuf2, player->bufSize, player->pAudioCodecCtx->sample_rate);
         alSourceQueueBuffers(player->audioSource, 1, &buffer);
         player->bufSize = 0;
+    }
+
+    ALint  count;
+    alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
+    if (count>0)
+    {
+        ALuint buffer;
+        alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
+        assert(player->availableAudioBuffers<NUM_BUFFERS);
+        player->audioBuffers[player->availableAudioBuffers++] = buffer;
     }
 
     ALint state;
@@ -272,16 +346,142 @@ static void decodeFrame(media_player_t player, GLuint texture, ALuint buffer)
     }
 }
 
+static void decodeFrame(media_player_t player, __int64 time)
+{
+    int frameDone, videoDataAva;
+
+    if (time<player->timeOfNextFrame) return;
+
+    frameDone    = 0;
+    videoDataAva = 1;
+    while(!frameDone && videoDataAva)
+    {
+        player->playback = !player->streamEnd || usedAVPackets(&player->aPackets)!=0 || usedAVPackets(&player->vPackets)!=0;
+
+        AVPacket* pkt = frontAVPacket(&player->vPackets);
+        if (pkt)
+        {
+            avcodec_decode_video(player->pVideoCodecCtx, player->pFrame, &frameDone, pkt->data, pkt->size);
+
+            av_free_packet(pkt);
+            popAVPacket(&player->vPackets);
+        }
+        else
+            streamMediaData(player);
+
+        if(frameDone)
+        {
+            player->timeOfNextFrame = player->baseTime+player->timeBase*pkt->dts*1000000;
+                
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, player->pbo);
+            glBufferData(GL_PIXEL_UNPACK_BUFFER, player->numBytes, 0, GL_STREAM_DRAW);
+
+            uint8_t* ptr = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+
+            size_t sizeY;
+            size_t sizeU;
+            size_t sizeV;
+            size_t offsetU;
+            size_t offsetV;
+
+            sizeY = player->width  *player->height;
+            sizeU = player->width/2*player->height/2;
+            sizeV = player->width/2*player->height/2;
+
+            offsetU = sizeY;
+            offsetV = offsetU+sizeU;
+
+            assert(player->pFrame->linesize[0]==player->width  );
+            assert(player->pFrame->linesize[1]==player->width/2);
+            assert(player->pFrame->linesize[2]==player->width/2);
+            assert(sizeY+sizeU+sizeV==player->numBytes);
+
+            memcpy(ptr,         player->pFrame->data[0], sizeY);
+            memcpy(ptr+offsetU, player->pFrame->data[1], sizeU);
+            memcpy(ptr+offsetV, player->pFrame->data[2], sizeV);
+
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+
+            glBindTexture(GL_TEXTURE_2D, player->texY[1]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width, player->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+   
+            glBindTexture(GL_TEXTURE_2D, player->texU[1]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width/2, player->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetU);
+
+            glBindTexture(GL_TEXTURE_2D, player->texV[1]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width/2, player->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetV);
+
+            GLenum err = glGetError();
+            assert(err == GL_NO_ERROR);
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+            std::swap(player->texY[0], player->texY[1]);
+            std::swap(player->texU[0], player->texU[1]);
+            std::swap(player->texV[0], player->texV[1]);
+        }
+        videoDataAva = !player->streamEnd || usedAVPackets(&player->vPackets)!=0;
+    }
+}
+
+#ifdef _DEBUG
+char errBuf[2048];
+#endif
+
 void mediaInit()
 {
+    const char* src;
+    GLsizei     len, res;
+    GLuint      fs;
+    GLuint      uni;
+
     // Register all formats and codecs
     av_register_all();
+
+    fs  = glCreateShader(GL_FRAGMENT_SHADER);
+    progYUV2RGB = glCreateProgram();
+
+    src = srcYUV2RGB;
+    len = sizeof(srcYUV2RGB);
+
+    glShaderSource(fs, 1, (const GLchar**)&src, &len);
+    glCompileShader(fs);
+
+#ifdef _DEBUG
+    glGetShaderInfoLog(fs, sizeof(errBuf), &len, errBuf); 
+    glGetShaderiv(fs, GL_COMPILE_STATUS, &res);
+    assert(res);
+#endif
+
+    glAttachShader(progYUV2RGB, fs);
+    glLinkProgram(progYUV2RGB);
+
+#ifdef _DEBUG
+    glGetProgramInfoLog(progYUV2RGB, sizeof(errBuf), &len, errBuf); 
+    glGetProgramiv(progYUV2RGB, GL_LINK_STATUS, &res);
+    assert(res);
+#endif
+
+    glDeleteShader(fs);
+
+    glUseProgram(progYUV2RGB);
+    uni = glGetUniformLocation(progYUV2RGB, "samY"); glUniform1i(uni, 0);
+    uni = glGetUniformLocation(progYUV2RGB, "samU"); glUniform1i(uni, 1);
+    uni = glGetUniformLocation(progYUV2RGB, "samV"); glUniform1i(uni, 2);
+    glUseProgram(0);
+
+#ifdef _DEBUG
+    GLenum err = glGetError();
+    assert(err==GL_NO_ERROR);
+#endif
 
     extAudioFormatsPresent = alIsExtensionPresent("AL_EXT_MCFORMATS");
 }
 
 void mediaShutdown()
 {
+    glDeleteProgram(progYUV2RGB);
 }
 
 media_player_t mediaCreatePlayer(const char* source)
@@ -294,8 +494,7 @@ media_player_t mediaCreatePlayer(const char* source)
     if (av_find_stream_info(player->pFormatCtx)<0)
         return 0 ;
 
-    // Dump information about file onto standard error
-    dump_format(player->pFormatCtx, 0, source, false);
+    dump_format(player->pFormatCtx, 0, source, false); // Dump information about file onto standard error
 
     unsigned int  numStreams = player->pFormatCtx->nb_streams;
     AVStream**    streams    = player->pFormatCtx->streams;
@@ -326,6 +525,8 @@ media_player_t mediaCreatePlayer(const char* source)
     return player;
 }
 
+#include <cstdlib>
+
 void mediaDestroyPlayer(media_player_t player)
 {
     closeAudioStream(player);
@@ -337,56 +538,57 @@ void mediaDestroyPlayer(media_player_t player)
 void mediaStartPlayback(media_player_t player)
 {
     player->playback = TRUE;
-    player->timeOfNextFrame = player->baseTime = timerGetTimeMS();
-    decodeFrame(player, player->texNext, 0);
+    player->baseTime = player->timeOfNextFrame = timerAbsoluteTime();
+    player->streamEnd = false;
+    decodeAudio(player, 0);
+    decodeFrame(player, player->baseTime);
+    //player->baseTime = player->baseTime-(player->timeOfNextFrame-player->baseTime);
 }
 
 void mediaPlayerUpdate(media_player_t player)
 {
-    //AVPacket        packet;
-    //int frameFinished = 0;
-
     if (!player->playback)
         return;
 
-    if (timerGetTimeMS()>=player->timeOfNextFrame)
-    {
-        std::swap(player->texCur, player->texNext);
+    __int64 currentTime = timerAbsoluteTime();
+    decodeAudio(player, currentTime-player->baseTime);
+    //TODO: Hack
+    decodeFrame(player, currentTime+8000000);
+}
 
-        ALint  count;
-        alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
-        if (count>0)
-        {
-            ALuint buffer;
-        	alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
-            //enqueue buffer to free list
-            assert(player->availableAudioBuffers<NUM_BUFFERS);
-            player->audioBuffers[player->availableAudioBuffers++] = buffer;
-        }
+void mediaPlayerPrepareRender(media_player_t player)
+{
+    glUseProgram(progYUV2RGB);
 
-        decodeFrame(player, player->texNext, 0);
-    }
+    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, player->texY[0]);
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, player->texU[0]);
+    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, player->texV[0]);
+
+#ifdef _DEBUG
+    GLenum err = glGetError();
+    assert(err==GL_NO_ERROR);
+#endif
 }
 
 void mediaPlayerRender(media_player_t player)
 {
-    const GLfloat w = 6.4f*1.1f, h = 3.6f*1.1f;
+    glUseProgram(progYUV2RGB);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glTranslatef(0, 0, -5);
+    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, player->texY[0]);
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, player->texU[0]);
+    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, player->texV[0]);
 
-    glBindTexture(GL_TEXTURE_2D, player->texCur);
-    glEnable(GL_TEXTURE_2D);
-    glColor3f(1, 1, 1);
     glBegin(GL_QUADS);
-    glTexCoord2f(0, 0);
-    glVertex2f(-w/2,  h/2);
-    glTexCoord2f(1, 0);
-    glVertex2f( w/2,  h/2);
-    glTexCoord2f(1, 1);
-    glVertex2f( w/2, -h/2);
-    glTexCoord2f(0, 1);
-    glVertex2f(-w/2, -h/2);
+    glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f,  1.0f);
+    glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f,  1.0f);
+    glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f, -1.0f);
+    glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, -1.0f);
     glEnd();
+
+    glUseProgram(0);
+
+#ifdef _DEBUG
+    GLenum err = glGetError();
+    assert(err==GL_NO_ERROR);
+#endif
 }

@@ -1,6 +1,8 @@
 #ifndef _UTILS_H_INCLUDED_
 #	define _UTILS_H_INCLUDED_
 
+//Windows only code!!!!!!!!!!!!!!!
+
 #define UNUSED(var)			((void)(var))
 #define ARRAY_SIZE(arr)		sizeof(arr)/sizeof(arr[0])
 
