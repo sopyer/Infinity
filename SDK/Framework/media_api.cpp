@@ -78,7 +78,7 @@ struct media_player_data_t
     AVPacketRingBuffer aPackets;
     AVPacketRingBuffer vPackets;
     
-    __int64 baseTime, timeOfNextFrame, frameTime;
+    __int64 baseTime, timeShift, timeOfNextFrame, frameTime;
 
     __int64 FPS;
     __int64 vFrameTime;
@@ -371,30 +371,27 @@ static void decodeFrame(media_player_t player, __int64 time)
 
         if(frameDone)
         {
-            player->timeOfNextFrame = player->baseTime+player->timeBase*pkt->dts*1000000;
+            player->timeOfNextFrame = player->timeBase*pkt->dts*1000000;
                 
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, player->pbo);
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, player->numBytes, 0, GL_STREAM_DRAW);
-
-            uint8_t* ptr = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-
             size_t sizeY;
             size_t sizeU;
             size_t sizeV;
             size_t offsetU;
             size_t offsetV;
+            size_t bufferSize;
 
-            sizeY = player->width  *player->height;
-            sizeU = player->width/2*player->height/2;
-            sizeV = player->width/2*player->height/2;
+            sizeY = player->pFrame->linesize[0]*player->height;
+            sizeU = player->pFrame->linesize[1]*player->height/2;
+            sizeV = player->pFrame->linesize[2]*player->height/2;
 
-            offsetU = sizeY;
-            offsetV = offsetU+sizeU;
+            offsetU    = sizeY;
+            offsetV    = offsetU+sizeU;
+            bufferSize = offsetV+sizeV;
 
-            assert(player->pFrame->linesize[0]==player->width  );
-            assert(player->pFrame->linesize[1]==player->width/2);
-            assert(player->pFrame->linesize[2]==player->width/2);
-            assert(sizeY+sizeU+sizeV==player->numBytes);
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, player->pbo);
+            glBufferData(GL_PIXEL_UNPACK_BUFFER, bufferSize, 0, GL_STREAM_DRAW);
+
+            uint8_t* ptr = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
 
             memcpy(ptr,         player->pFrame->data[0], sizeY);
             memcpy(ptr+offsetU, player->pFrame->data[1], sizeU);
@@ -403,13 +400,18 @@ static void decodeFrame(media_player_t player, __int64 time)
             glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 
             glBindTexture(GL_TEXTURE_2D, player->texY[1]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width, player->height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
    
             glBindTexture(GL_TEXTURE_2D, player->texU[1]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width/2, player->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetU);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetU);
 
             glBindTexture(GL_TEXTURE_2D, player->texV[1]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, player->width/2, player->height/2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetV);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetV);
+
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
             GLenum err = glGetError();
             assert(err == GL_NO_ERROR);
@@ -537,12 +539,15 @@ void mediaDestroyPlayer(media_player_t player)
 
 void mediaStartPlayback(media_player_t player)
 {
-    player->playback = TRUE;
-    player->baseTime = player->timeOfNextFrame = timerAbsoluteTime();
-    player->streamEnd = false;
+    player->timeOfNextFrame = 0;
+    player->streamEnd       = FALSE;
+
     decodeAudio(player, 0);
-    decodeFrame(player, player->baseTime);
-    //player->baseTime = player->baseTime-(player->timeOfNextFrame-player->baseTime);
+    decodeFrame(player, 0);
+
+    player->playback  = TRUE;
+    player->timeShift = player->timeOfNextFrame; //in some videos first dts differs from 0
+    player->baseTime  = timerAbsoluteTime();
 }
 
 void mediaPlayerUpdate(media_player_t player)
@@ -550,10 +555,10 @@ void mediaPlayerUpdate(media_player_t player)
     if (!player->playback)
         return;
 
-    __int64 currentTime = timerAbsoluteTime();
-    decodeAudio(player, currentTime-player->baseTime);
-    //TODO: Hack
-    decodeFrame(player, currentTime+8000000);
+    __int64 currentTime = timerAbsoluteTime()-player->baseTime;
+
+    decodeAudio(player, currentTime);
+    decodeFrame(player, currentTime+player->timeShift);
 }
 
 void mediaPlayerPrepareRender(media_player_t player)
