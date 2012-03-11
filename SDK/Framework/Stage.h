@@ -29,6 +29,9 @@ namespace ui
         };
 
     protected:
+        void createGLResources();
+        void destroyGLResources();
+
         void processKeyDown(const KeyEvent& event);
         void processKeyUp(const KeyEvent& event);
         void processTouch(const ButtonEvent& event);
@@ -55,6 +58,12 @@ namespace ui
         void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
 
     private:
+        GLuint  mPickFBO;
+        GLuint  mPickIDRB;
+        GLuint  mPickZRB;
+        GLuint  mPickProgram;
+        GLint   mColorLoc;
+
         bool	mDoAllocate;
         Phase	mPhase;
 

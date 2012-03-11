@@ -6,6 +6,18 @@
 #include "Framework.h"
 #include <SOIL.h> // remove later
 
+static const char pickFragmentSource[] = 
+    "#version 330                                       \n"
+    "uniform uint ID;                                  \n"
+    "layout(location = 0) out uint rtVal;              \n"
+    "                                                   \n"
+    "void main()                                        \n"
+    "{                                                  \n"
+    "	rtVal = ID;                                     \n"
+    "}                                                  \n";
+
+static const GLuint emptyPickValue = 0xFF7FFFFF;
+
 namespace ui
 {
     Stage::Stage():	mDoAllocate(true),
@@ -49,6 +61,33 @@ namespace ui
             mat4x4[12], mat4x4[13], mat4x4[14], mat4x4[15]
         );
         return *this;
+    }
+    
+    void Stage::createGLResources()
+    {
+        mPickIDRB = resources::createRenderbuffer(GL_R32UI, (GLsizei)mWidth, (GLsizei)mHeight);
+        mPickZRB  = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, (GLsizei)mWidth, (GLsizei)mHeight);
+
+        glGenFramebuffers(1, &mPickFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mPickFBO);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, mPickIDRB);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, mPickZRB);
+
+        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+        assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        mPickProgram = resources::createProgram(GL_FRAGMENT_SHADER, pickFragmentSource);
+        mColorLoc = glGetUniformLocation(mPickProgram, "ID");
+    }
+
+    void Stage::destroyGLResources()
+    {
+        glDeleteProgram(mPickProgram);
+        glDeleteFramebuffers(1, &mPickFBO);
+        glDeleteRenderbuffers(1, &mPickIDRB);
+        glDeleteRenderbuffers(1, &mPickZRB);
     }
 
     void Stage::processKeyDown(const KeyEvent& event)
@@ -122,85 +161,24 @@ namespace ui
         mLastVisited = actor;
     }
 
-    static const u32 rMaskUsed = 8;
-    static const u32 gMaskUsed = 8;
-    static const u32 bMaskUsed = 8;
-
-    static const u32 rMask = 5;
-    static const u32 gMask = 5;
-    static const u32 bMask = 5;
-
-    //code from clutter!!!!!!!!!!!!!!!!!!!!LGPL????????????????????????
-    Color idToColor(u32 id)
-    {
-        Color color;
-        u32 red, green, blue;
-
-        // compute the numbers we'll store in the components
-        red   = (id >> (gMask/*Used*/+bMask/*Used*/)) & (0xff >> (8-rMask/*Used*/));
-        green = (id >> bMask/*Used*/) & (0xff >> (8-gMask/*Used*/));
-        blue  = (id) & (0xff >> (8-bMask/*Used*/));
-
-        // shift left bits a bit and add one, this circumvents
-        // at least some potential rounding errors in GL/GLES
-        // driver / hw implementation.
-        //if (rMaskUsed != rMask)
-        //red = red * 2 + 1;
-        //if (gMaskUsed != gMask)
-        //green = green * 2 + 1;
-        //if (bMaskUsed != bMask)
-        //blue  = blue  * 2 + 1;
-
-        // shift up to be full 8bit values
-        red   = red   << (8 - rMask);
-        green = green << (8 - gMask);
-        blue  = blue  << (8 - bMask);
-
-        color.red   = (u8)red;
-        color.green = (u8)green;
-        color.blue  = (u8)blue;
-        color.alpha = 0xff;
-
-        return color;
-    }
-
-    u32 pixelToId (u8 pixel[4])                 
-    {
-        u8  red, green, blue;
-
-        // reduce the pixel components to the number of bits actually used of the 8bits.
-        red   = pixel[0] >> (8 - rMask);
-        green = pixel[1] >> (8 - gMask);
-        blue  = pixel[2] >> (8 - bMask);
-
-        // divide potentially by two if 'fuzzy'
-        //red   = red   >> (rMaskUsed - rMask);
-        //green = green >> (gMaskUsed - gMask);
-        //blue  = blue  >> (bMaskUsed - bMask);  
-
-        // combine the correct per component values into the final id
-        u32 id =  blue + (green << bMask/*Used*/) + (red << (bMask/*Used*/ + gMask/*Used*/));
-
-        return id;
-    } 
-
     Actor* Stage::doPick(u32 x, u32 y)
     {
-        GLint	viewport[4];
+        GLuint id;
+        GLenum err;
+        GLint  viewport[4];
+
         glGetIntegerv(GL_VIEWPORT, viewport);
 
-        // Read the color of the screen co-ords pixel
-        u8	pixel[4];
-        glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, mPickFBO);
+        glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &id);
+        err = glGetError(); assert(err==GL_NO_ERROR);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-        GLenum err = glGetError();
-        assert(err==GL_NO_ERROR);
-
-        if (pixel[0] == 0xff && pixel[1] == 0xff && pixel[2] == 0xff)
+        if (id == emptyPickValue)
             return this;
 
-        u32 id = pixelToId(pixel);
         assert(id < mRenderQueue.size());
+
         return mRenderQueue[id].actor;
     }
 
@@ -260,43 +238,62 @@ namespace ui
 
     void Stage::outlineActors()
     {
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClearDepth(1.0f);
-        glClearStencil(0);
+        GLenum err;
+
+        GLuint  clearColor[4] = {emptyPickValue, 0, 0, 0};
+        GLfloat depth1 = 1.0f;
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mPickFBO);
+        glClearBufferfv(GL_COLOR, 0, (float*)clearColor);
+        glClearBufferfv(GL_DEPTH, 0, &depth1);
 
         glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
-        glDisable(GL_MULTISAMPLE);
-        glDepthMask(GL_TRUE);
-        glStencilMask( 0xFF );
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        glUseProgram(0);
         glDisable(GL_BLEND);
         glDisable(GL_TEXTURE_2D);
+        glDisable(GL_MULTISAMPLE);
+        glDepthMask(GL_TRUE);
+        glStencilMask(0xFF);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+        glUseProgram(mPickProgram);
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixf(mProjection);
-
         glMatrixMode(GL_MODELVIEW);
         setupUIViewMatrix(mProjection, mWidth, mHeight);
+
         for(size_t i = 0; i < mRenderQueue.size(); ++i)
         {
             glPushMatrix();
             glMultMatrixf(mRenderQueue[i].transform);
-            mRenderQueue[i].actor->onPick(idToColor(i));
+            Actor* actor = mRenderQueue[i].actor;
+            GLuint color = i;
+            glUniform1ui(mColorLoc, color);
+            glBegin(GL_QUADS);
+            glVertex2f(0,0);
+            glVertex2f(actor->mWidth,0);
+            glVertex2f(actor->mWidth,actor->mHeight);
+            glVertex2f(0,actor->mHeight);
+            glEnd();
             glPopMatrix();
         }
         glPopAttrib();
+
+        err = glGetError();
+        assert(err==GL_NO_ERROR);
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
 #if defined(DEBUG) || defined(_DEBUG)
         if (dumpPickImage)
         {
-            //GLuint w = (GLuint)mWidth;
-            //GLuint h = (GLuint)mHeight;
-            //u8* p = new u8[w*h*4];
-            //glReadPixels (0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
-            //SOIL_save_image("pick.bmp", SOIL_SAVE_TYPE_BMP, w, h, 4, p);		
-            //delete [] p;
-            SOIL_save_screenshot("pick.tga", SOIL_SAVE_TYPE_TGA, 0, 0, (GLuint)mWidth, (GLuint)mHeight);
-            dumpPickImage = FALSE;
+            GLuint w = (GLuint)mWidth;
+            GLuint h = (GLuint)mHeight;
+            u8* p = new u8[w*h*4];
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, mPickFBO);
+            glReadPixels (0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, p);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            SOIL_save_image("pick.tga", SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
+            delete [] p;
         }
 #endif
     }

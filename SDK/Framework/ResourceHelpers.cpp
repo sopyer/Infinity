@@ -249,4 +249,18 @@ namespace resources
         SOIL_save_image(imageName, SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
         delete [] p;
     }
+
+	GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height)
+	{
+		GLuint rbo;
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        GLenum err = glGetError();
+        assert(err==GL_NO_ERROR);
+
+		return rbo;
+	}
 }

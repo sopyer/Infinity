@@ -77,6 +77,8 @@ namespace ui
         SDL_GetWMInfo(&info);
         Platform_Initialise(info.window);
 
+        createGLResources();
+
         mShaderEditOverlay = new ShaderEditOverlay;
         mShaderEditOverlay->initialise(mWidth, mHeight);
 
@@ -98,6 +100,8 @@ namespace ui
 
     SDLStage::~SDLStage()
     {
+        destroyGLResources();
+
         delete mShaderEditOverlay;
         delete mProfilerOverlay;
         Platform_Finalise();

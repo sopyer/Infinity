@@ -25,6 +25,8 @@ namespace resources
 								  GLenum format, GLenum type, const GLvoid *pixels);
 
 
+	GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height);
+
 	void saveScreenToFile(const char* imageName);
 }
 
