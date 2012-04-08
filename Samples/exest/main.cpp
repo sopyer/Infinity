@@ -3,65 +3,14 @@
 #include <cassert>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
-
-class FirstPersonCamera1
-{
-public:
-    glm::mat4	viewMatrix;
-    glm::vec3	pos;
-public:
-    FirstPersonCamera1()
-    {
-        viewMatrix = glm::mat4(1,0,0,0,
-            0,1,0,0,
-            0,0,1,0,
-            0,0,0,1);
-    }
-
-    void set(const glm::vec3& _pos, const glm::vec3& lookAt)
-    {
-        //pos = _pos;
-        //viewMatrix = glm::lookAtGTX(pos, lookAt, glm::vec3(0, 1, 0));
-    }
-
-    void rotateLR(float angle)
-    {
-        viewMatrix = glm::mat4GTX(glm::angleAxisGTX(-angle, 0.0f, 1.0f, 0.0f)) * viewMatrix;
-    }
-    void rotateUD(float angle)
-    {
-        viewMatrix = glm::mat4GTX(glm::angleAxisGTX(angle, /*1.0f, 0.0f, 0.0f)*/glm::vec3(viewMatrix[0]))) * viewMatrix;
-    }
-    glm::mat4 getViewMatrix()
-    {
-        return glm::inverseGTX(viewMatrix);
-    }
-    void moveFB(float dist)
-    {
-        pos+=glm::vec3(viewMatrix[2])*(-dist);
-    }
-    void moveLR(float dist)
-    {
-        pos+=glm::vec3(viewMatrix[0])*(-dist);
-    }
-    void moveUD(float dist)
-    {
-        pos+=glm::vec3(viewMatrix[1])*(-dist);
-    }
-
-    void rotate(float psi, float phi)
-    {
-        rotateLR(psi);
-        rotateUD(phi);
-    }
-};
+#include <SpectatorCamera.h>
 
 #include "CDLODTerrain.h"
 
 class Exest: public ui::SDLStage
 {
 private:
-    FirstPersonCamera1	camera;
+    SpectatorCamera     camera;
 
     VFS				mVFS;
 
@@ -70,12 +19,14 @@ private:
     float vertAngle, horzAngle;
     CDLODTerrain terrain;
 
-    mt::Task		mUpdateTask;
-    ui::ProfileStatsBox		mStatsBox;
+    mt::Task                mUpdateTask;
+    ui::ProfileStatsBox     mStatsBox;
 
 public:
-    Exest(): fixedMode(false)
+    Exest(): fixedMode(false), moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false)
     {
+        lastTimeMark = timerAbsoluteTime();
+
         VFS::mount("AppData");
         VFS::mount("../AppData");
         VFS::mount("../../AppData");
@@ -84,11 +35,13 @@ public:
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
-        camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
-            0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
-            -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,
-            0.0f,          0.0f,              0.0f,          1.0f);
-        camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
+        camera.acceleration = glm::vec3(150, 150, 150);
+        camera.maxVelocity  = glm::vec3(60, 60, 60);
+        //camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
+        //    0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
+        //    -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,
+        //    0.0f,          0.0f,              0.0f,          1.0f);
+        //camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
 
         terrain.viewData.uViewPoint = vi_load_zero();
         glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
@@ -214,14 +167,10 @@ protected:
         glLoadMatrixf(mProj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-        glm::mat4 view = camera.getViewMatrix();
 
-        glLoadMatrixf(view);
-        glm::mat4 xm;
-        glGetFloatv(GL_MODELVIEW_MATRIX, xm);
-        glTranslatef(-camera.pos[0], -camera.pos[1], -camera.pos[2]);
-
-        glGetFloatv(GL_MODELVIEW_MATRIX, xm);
+        glm::mat4 vm;
+        camera.getViewMatrix(vm);
+        glLoadMatrixf(vm);
 
         glDisable(GL_CULL_FACE);
 
@@ -235,14 +184,13 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        glm::mat4 vm = camera.getViewMatrix();
-
         terrain.viewDir = glm::vec4(vm[0].z, vm[1].z, -vm[2].z, 1);
 
         if (!fixedMode)
         {
-            terrain.viewData.uViewPoint = vi_set(camera.pos.x, camera.pos.y, camera.pos.z, 0.0f);
-            terrain.setSelectMatrix(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
+            glm::vec3 pos = camera.getPosition();
+            terrain.viewData.uViewPoint = vi_set(pos.x, pos.y, pos.z, 0.0f);
+            terrain.setSelectMatrix(mProj*vm);
         }
         else
         {
@@ -251,7 +199,7 @@ protected:
             drawFrustum(VP);
         }
 
-        terrain.setMVPMatrix(glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos));
+        terrain.setMVPMatrix(mProj*vm);
 
         terrain.drawTerrain();
 
@@ -279,28 +227,68 @@ protected:
     bool fixedMode;
     glm::vec3 VPpp;
     uint8_t prevKeystate[SDLK_LAST];
+    bool moveFwd, moveBwd, moveLeft, moveRight;
+    __int64 lastTimeMark;
+
+    void onMotion(const MotionEvent& event)
+    {
+        camera.rotateSmoothly((float)-event.xrel, (float)-event.yrel);
+    }
 
     void handleInput()
     {
+        glm::vec3 direction;
+        float heading = 0.0f, pitch = 0.0f;
         uint8_t *keystate = SDL_GetKeyState(NULL);
         if (keystate[SDLK_ESCAPE])
             close();
         if (keystate[SDLK_w])
-            camera.moveFB(keystate[SDLK_LSHIFT]?5.1f:0.5f);
+        {
+            camera.velocity.z = moveFwd?camera.velocity.z:0.0f;
+            moveFwd = true;
+            direction.z += 1.0f;
+        }
+        else
+            moveFwd = false;
         if (keystate[SDLK_s])
-            camera.moveFB(keystate[SDLK_LSHIFT]?-5.1f:-0.5f);
+        {
+            camera.velocity.z = moveBwd?camera.velocity.z:0.0f;
+            moveBwd = true;
+            direction.z -= 1.0f;
+        }
+        else
+            moveBwd = false;
         if (keystate[SDLK_a])
-            camera.moveLR(keystate[SDLK_LSHIFT]?5.1f:0.5f);
+        {
+            camera.velocity.x = moveLeft?camera.velocity.x:0.0f;
+            moveLeft = true;
+            direction.x -= 1.0f;
+        }
+        else
+            moveLeft = false;
         if (keystate[SDLK_d])
-            camera.moveLR(keystate[SDLK_LSHIFT]?-5.1f:-0.5f);
+        {
+            camera.velocity.x = moveRight?camera.velocity.x:0.0f;
+            moveRight = true;
+            direction.x += 1.0f;
+        }
+        else
+            moveRight = false;
         if (keystate[SDLK_KP8])
-            camera.rotateUD(1.5);
+            pitch += 1.50f;
         if (keystate[SDLK_KP5])
-            camera.rotateUD(-1.5);
+            pitch += -1.50f;
         if (keystate[SDLK_KP4])
-            camera.rotateLR(-1.5);
+            heading += 1.50f;
         if (keystate[SDLK_KP6])
-            camera.rotateLR(1.5);
+            heading += -1.50f;
+
+        _int64 time = timerAbsoluteTime();
+
+        camera.rotateSmoothly(heading, pitch);
+        camera.updatePosition(direction, (time-lastTimeMark)*0.000001f);
+
+        lastTimeMark = time;
 
         bool lockView = false;
         if (keystate[SDLK_l]&&!prevKeystate[SDLK_l])
@@ -321,9 +309,10 @@ protected:
 
         if (lockView)
         {
-            printf("%d\n", fixedMode);
-            VP = glm::translate3DGTX(mProj*camera.getViewMatrix(), -camera.pos);
-            VPpp = camera.pos;
+            glm::mat4 vm;
+            camera.getViewMatrix(vm);
+            VP = mProj*vm;
+            VPpp = camera.getPosition();
         }
 
         memcpy(prevKeystate, keystate, SDLK_LAST);

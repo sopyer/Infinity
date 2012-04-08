@@ -54,7 +54,7 @@ namespace ui
         SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
-        SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
+        SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );
 
         if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
         {
@@ -130,7 +130,15 @@ namespace ui
                 switch (mState)
                 {
                 case STATE_DEFAULT:
-                    processKeyDown(E.key);
+                    if ((E.key.keysym.sym==SDLK_LALT&&E.key.keysym.mod==KMOD_LCTRL||
+                        E.key.keysym.sym==SDLK_LCTRL&&E.key.keysym.mod==KMOD_LALT) &&
+                        SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON)
+                    {
+                        SDL_ShowCursor(TRUE);
+                        SDL_WM_GrabInput(SDL_GRAB_OFF);
+                    }
+                    else
+                        processKeyDown(E.key);
                     break;
                 case STATE_SHADER_EDIT:
                     mShaderEditOverlay->handleKeyDown(E.key);
@@ -155,11 +163,26 @@ namespace ui
                 break;
             case SDL_MOUSEMOTION:
                 if (mState==STATE_DEFAULT)
-                    processMotion(E.motion);
+                {
+                    Actor* actor = doPick((u32)E.button.x, (u32)E.button.y);
+
+                    if (!(actor==(Actor*)this && SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF))
+                        processMotion(E.motion);
+                }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (mState==STATE_DEFAULT)
-                    processTouch(E.button);
+                {
+                    Actor* actor = doPick((u32)E.button.x, (u32)E.button.y);
+
+                    if (actor==(Actor*)this && SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF)
+                    {
+                        SDL_ShowCursor(FALSE);
+                        SDL_WM_GrabInput(SDL_GRAB_ON);
+                    }
+                    else
+                        processTouch(E.button);
+                }
                 break;
             case SDL_MOUSEBUTTONUP:
                 if (mState==STATE_DEFAULT)

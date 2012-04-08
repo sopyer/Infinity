@@ -320,14 +320,6 @@ static void decodeAudio(media_player_t player, __int64 time)
         audioDataAva = !player->streamEnd || usedAVPackets(&player->aPackets)!=0;
     }
 
-    if (player->bufSize>0 && player->availableAudioBuffers>0)
-    {
-        ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
-        alBufferData(buffer, player->mAudioFormat, player->audioBuf2, player->bufSize, player->pAudioCodecCtx->sample_rate);
-        alSourceQueueBuffers(player->audioSource, 1, &buffer);
-        player->bufSize = 0;
-    }
-
     ALint  count;
     alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
     if (count>0)
@@ -336,6 +328,14 @@ static void decodeAudio(media_player_t player, __int64 time)
         alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
         assert(player->availableAudioBuffers<NUM_BUFFERS);
         player->audioBuffers[player->availableAudioBuffers++] = buffer;
+    }
+
+    if (player->bufSize>0 && player->availableAudioBuffers>0)
+    {
+        ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
+        alBufferData(buffer, player->mAudioFormat, player->audioBuf2, player->bufSize, player->pAudioCodecCtx->sample_rate);
+        alSourceQueueBuffers(player->audioSource, 1, &buffer);
+        player->bufSize = 0;
     }
 
     ALint state;

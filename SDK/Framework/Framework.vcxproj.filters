@@ -65,6 +65,7 @@
     </ClCompile>
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="media_api.cpp" />
+    <ClCompile Include="SpectatorCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">
@@ -125,5 +126,6 @@
       <Filter>UI\Misc</Filter>
     </ClInclude>
     <ClInclude Include="media_api.h" />
+    <ClInclude Include="SpectatorCamera.h" />
   </ItemGroup>
 </Project>

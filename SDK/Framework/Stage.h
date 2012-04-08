@@ -40,8 +40,7 @@ namespace ui
 
         void enterPhase(Phase nextPhase);// {mPhase = nextPhase;}
 
-    protected:
-        //VG				mVG;
+        Actor* doPick(u32 x, u32 y);
 
     private:
         struct RenderItem
@@ -51,8 +50,6 @@ namespace ui
         };
 
     private:
-        Actor* doPick(u32 x, u32 y);
-
         void outlineActors();
         void renderActors();
         void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
