@@ -21,6 +21,7 @@ private:
 
     mt::Task                mUpdateTask;
     ui::ProfileStatsBox     mStatsBox;
+    GLuint colorTex;
 
 public:
     Exest(): fixedMode(false), moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false)
@@ -43,14 +44,13 @@ public:
         //    0.0f,          0.0f,              0.0f,          1.0f);
         //camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
 
-        terrain.viewData.uViewPoint = vi_load_zero();
         glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
         glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
         VP = proj*lookAt;
 
         mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
-
+        colorTex = resources::createTexture2D("debugTexture.png");
         File	src = VFS::openRead("bridge_demo.pmp");
         //explicit conversion to avoid warning on 32-bit system
         //assert(src.size()<SIZE_MAX);
@@ -78,8 +78,9 @@ public:
 
         add(mStatsBox.add(mSelectTimeLabel)
             .add(mDrawTimeLabel)
+            .add(mGeomStatLabel)
             .setPos(10, 10)
-            .setSize(300, 120)
+            .setSize(300, 140)
             );
 
         mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
@@ -90,9 +91,11 @@ public:
 
     ui::Label	mDrawTimeLabel;
     ui::Label	mSelectTimeLabel;
+    ui::Label	mGeomStatLabel;
 
     ~Exest()
     {
+        glDeleteTextures(1, &colorTex);
         terrain.cleanup();
     }
 
@@ -160,6 +163,8 @@ protected:
 
     void onPaint()
     {
+        GLenum err;
+
         glClearDepth(1.0);
 
         glMatrixMode(GL_PROJECTION);
@@ -188,13 +193,12 @@ protected:
 
         if (!fixedMode)
         {
-            glm::vec3 pos = camera.getPosition();
-            terrain.viewData.uViewPoint = vi_set(pos.x, pos.y, pos.z, 0.0f);
+            terrain.viewPoint = camera.getPosition();
             terrain.setSelectMatrix(mProj*vm);
         }
         else
         {
-            terrain.viewData.uViewPoint = vi_set(VPpp.x, VPpp.y, VPpp.z, 0.0f);
+            terrain.viewPoint = VPpp;
             terrain.setSelectMatrix(VP);
             drawFrustum(VP);
         }
@@ -210,7 +214,7 @@ protected:
 
         glDisable(GL_BLEND);
 
-        GLenum err = glGetError();
+        err = glGetError();
         assert(err==GL_NO_ERROR);
     }
 
@@ -222,6 +226,10 @@ protected:
         mSelectTimeLabel.setText(str);
         _snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
         mDrawTimeLabel.setText(str);
+        int patches = terrain.patchCount;
+        int vtx = patches*terrain.patchDim*terrain.patchDim;
+        _snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
+        mGeomStatLabel.setText(str);
     }
 
     bool fixedMode;

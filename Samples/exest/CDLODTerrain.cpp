@@ -1,11 +1,26 @@
 #include "CDLODTerrain.h"
-#include <profiler.h>
 
 struct PatchData
 {
     float baseX, baseY;
     float level;
     float padding;
+};
+
+struct TerrainData
+{
+    vec4		uHMDim;
+    vec4		uOffset;
+    vec4		uScale;
+    vec4		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
+    vec4		uColors[CDLODTerrain::MAX_LOD_COUNT];
+};
+
+struct GradientData
+{
+    vec4		uStops[8];
+    vec4		uScales[8];
+    float		uInvStopCount;
 };
 
 #define ATTR_POSITION	0
@@ -216,61 +231,28 @@ void CDLODTerrain::cleanup()
     glDeleteBuffers(1, &geomVBO);
     glDeleteBuffers(1, &instVBO);
     glDeleteBuffers(1, &ibo);
-    if (minmaxData) free(minmaxData);
     glDeleteProgram(prgTerrain);
     glDeleteProgram(prgInstancedTerrain);
     glDeleteTextures(1, &mHeightmapTex);
     glDeleteTextures(1, &mColorRampTex);
 }
 
-void CDLODTerrain::calculateLODRanges(float* ranges)
+void CDLODTerrain::calculateLODParams(vec4* morphParams)
 {
-    float	curDetailBalance=1.0f,
-        totalDetail = 0.0f;
-
-    for (size_t i=0; i<LODCount; ++i)
-    {
-        totalDetail += curDetailBalance;
-        curDetailBalance *= detailBalance;
-    }
-
-    float	minDetailDist = visibilityDistance/totalDetail;
-
-    curDetailBalance = 1.0f;
-
-    for (size_t i=0; i<LODCount; ++i)
-    {
-        float range = minDetailDist*curDetailBalance;
-        ranges[i] = range;
-        curDetailBalance *= detailBalance;
-    }
-}
-
-void CDLODTerrain::calculateLODParams()
-{
-    float ranges[MAX_LOD_COUNT]; 
     assert(LODCount<=MAX_LOD_COUNT);
-
-    calculateLODRanges(ranges);
 
     size_t	dim = patchDim;
     size_t	patchCountX = (gridDimX-1+dim-1)/dim;
     size_t	patchCountY = (gridDimY-1+dim-1)/dim;
     size_t	patchCount = patchCountX*patchCountY;
     float	size2=cellSize*cellSize*patchDim*patchDim,
-        deltaZ2=heightScale*heightScale,
-        curRange=0.0f;
-
-    minmaxDataSize = 0;
-    curRange=0.0f;
+            range=400.0f, curRange=0.0f;
 
     for (size_t i=0; i<LODCount; ++i)
     {
         //To avoid cracks when height is greater then minRange,
-        //minRange should take height into account too
-        //minRange = 2.0f*sqrt(width^2+height^2+heightScale^2)
-        float minRange = 2.0f*sqrt(size2+size2+deltaZ2);
-        float range    = std::max(ranges[i], minRange);
+        float minRange = 2.0f*sqrt(size2+size2);
+        float range    = std::max(range, minRange);
 
         LODs[i].rangeStart  = curRange;
         curRange           += range;
@@ -278,23 +260,26 @@ void CDLODTerrain::calculateLODParams()
         float rangeEnd   = curRange;
         float morphRange = range*morphZoneRatio;
         float morphStart = rangeEnd-morphRange;
+        float rangeEndY   = curRange+heightScale/2.0f;
+        float morphRangeY = range*morphZoneRatio;
+        float morphStartY = rangeEndY-morphRangeY;
 
-        terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0, 0);
+        morphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 1.0f/morphRangeY, -morphStartY/morphRangeY);
 
         LODs[i].patchDim     = dim;
-        LODs[i].minmaxPitch  = patchCountX;
-        LODs[i].minmaxOffset = minmaxDataSize;
 
-        minmaxDataSize += patchCount*2;
         patchCountX     = (patchCountX+1)/2;
         patchCountY     = (patchCountY+1)/2;
         patchCount      = patchCountX*patchCountY;
 
+        range *= 1.5f;
+
         size2 *= 4;
         dim   *= 2;
     }
+
     //Fix unnecessary morph in last LOD level
-    terrainData.uMorphParams[LODCount-1] = vi_load_zero();
+   morphParams[LODCount-1] = vi_load_zero();
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
@@ -326,33 +311,22 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
     }
 }
 
-void CDLODTerrain::getAABB(size_t level, size_t i, size_t j, ml::aabb* patchAABB)
-{
-    float* minmax = minmaxData+LODs[level].minmaxOffset;
-
-    float minZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+0];
-    float maxZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+1];
-
-    assert(0<=minZ && minZ<=maxZ);
-    assert(minZ<=maxZ && maxZ<=heightScale);
-
-    float sizeX = std::min(LODs[level].patchDim,  gridDimX-i)*cellSize;
-    float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
-
-    float baseX = startX-cellSize*i;
-    float baseY = startY+cellSize*j;
-
-    patchAABB->min = vi_set(baseX-sizeX, minZ, baseY,       1);
-    patchAABB->max = vi_set(baseX,       maxZ, baseY+sizeY, 1);
-}
-
 void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
 {
     if (i>=gridDimX-1 || j>=gridDimY-1) return;
 
     ml::aabb AABB;
 
-    getAABB(level, i, j, &AABB);
+    float sizeX = std::min(LODs[level].patchDim, gridDimX-i)*cellSize;
+    float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
+
+    float minX = startX+cellSize*i;
+    float minY = startY+cellSize*j;
+    float maxX = minX+sizeX;
+    float maxY = minY+sizeY;
+
+    AABB.min = vi_set(minX, 0.0f,        minY, 1.0f);
+    AABB.max = vi_set(maxX, heightScale, maxY, 1.0f);
 
     if (!skipFrustumTest)
     {
@@ -363,14 +337,39 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
         skipFrustumTest = result==ml::IT_INSIDE;
     }
 
-    if (level==0)
+    if (level==0 || (LODs[level].rangeStart+heightScale<viewPoint.y))
     {
         addPatchToQueue(level, i, j);
         return;
     }
 
     //Check whether patch intersects it's LOD sphere and thus require subdivision
-    if (!ml::sphereAABBTest(&AABB, viewData.uViewPoint, LODs[level].rangeStart))
+    glm::vec3 vp2d = viewPoint;
+    vp2d.y = 0.0f;
+    ml::aabb AABB2D = AABB;
+    AABB2D.min.m128_f32[1] = 0.0f;
+    AABB2D.max.m128_f32[1] = 0.0f;
+    vec4 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
+
+    vec4 vdist, r2;
+        
+    vdist = ml::distanceToAABB(&AABB, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0.0));
+    vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
+    vdist = vi_dot3(vdist, vdist);
+
+    r2 = vi_set_all(LODs[level].rangeStart);
+    r2 = vi_mul(r2, r2);
+    
+    bool intersect = vi_all(vi_cmp_le(vdist, r2));
+
+    assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODs[level].rangeStart));
+
+    if (!intersect
+        /*maxX-vp2d.x<-LODs[level].rangeStart ||
+        minX-vp2d.x>LODs[level].rangeStart ||
+        maxY-vp2d.z<-LODs[level].rangeStart ||
+        minY-vp2d.z>LODs[level].rangeStart*/
+        )
     {
         addPatchToQueue(level, i, j);
     }
@@ -424,11 +423,11 @@ void CDLODTerrain::generateGeometry()
         for (size_t x=0; x<patchDim; ++x)
         {
             *ptr2++ = INDEX_FOR_LOCATION(x,   y);
-            *ptr2++ = INDEX_FOR_LOCATION(x+1, y);
             *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
             *ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+            *ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+            *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
             *ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-            *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
         }
     }
 
@@ -481,6 +480,9 @@ void CDLODTerrain::drawTerrain()
     {
         PROFILER_CPU_BLOCK("Render");
         glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+        float vertDistToTerrain = abs(viewPoint.y/*-uOffset.y*/-heightScale/2.0f);
+        viewData.uLODViewK = vi_set(startX - viewPoint.x, vertDistToTerrain>heightScale/2.0?vertDistToTerrain-heightScale/2.0f:0.0f, startY - viewPoint.z, 0.0f);
 
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
@@ -540,36 +542,32 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     gridDimY = height;
 
     cellSize = 4.0f;
-    startX =  0.5f*cellSize*(gridDimX-1);
+    startX = -0.5f*cellSize*(gridDimX-1);
     startY = -0.5f*cellSize*(gridDimY-1);
 
     patchDim = 8;
 
-    visibilityDistance = 300;
     //TODO: LODCount should clamped based on minPatchDim* and gridDimX
     LODCount = 5;
-    detailBalance = 2.0f;
     //TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
     morphZoneRatio = 0.30f;
     heightScale = 65535.0f/732.0f;
 
     maxPatchCount = MAX_PATCH_COUNT;
 
-    calculateLODParams();
     generateGeometry();
-    generateBBoxData(data);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    TerrainData&  terrainData  = *(TerrainData*)(uniforms+uniTerrainOffset);
+    GradientData& gradientData = *(GradientData*)(uniforms+uniGradientOffset);
+
+    calculateLODParams(terrainData.uMorphParams);
 
     terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
     terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
-    terrainData.uScale  = vi_set(-cellSize, heightScale, cellSize, 0.0f);
+    terrainData.uScale  = vi_set(cellSize, heightScale, cellSize, 0.0f);
     memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
-    glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(TerrainData), &terrainData);
 
     // Terrain Gradient
     const int stopCount = 3;
@@ -595,9 +593,17 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
     memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
     gradientData.uInvStopCount = 1.0f/stopCount;
-    glBufferSubData(GL_UNIFORM_BUFFER, uniGradientOffset, sizeof(GradientData), &gradientData);
 
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     unsigned char c[] = {
         0,   0, 255, 255,
@@ -610,90 +616,4 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);
-}
-
-void downsample(size_t w, size_t h, const float* inData,
-    size_t kx, size_t ky,
-    size_t& w2, size_t& h2, float* outData)
-{
-    float* base = outData;
-    float* cur = base;
-
-    w2 = w/kx+!!(w%kx);
-    h2 = h/ky+!!(h%ky);
-
-    for (size_t baseY=0; baseY<w; baseY+=kx)
-    {
-        for (size_t baseX=0; baseX<h; baseX+=ky)
-        {
-            float mn=255.0, mx = 0.0;
-            size_t endX=std::min(baseX+kx, w);
-            size_t endY=std::min(baseY+ky, h);
-
-            for (size_t v=baseY; v<endY; ++v)
-            {
-                for (size_t u=baseX; u<endX; ++u)
-                {
-                    mn = std::min(mn, inData[2*(v*w+u)+0]);//first is min value
-                    mx = std::max(mx, inData[2*(v*w+u)+1]);//second is max value
-                }
-            }
-
-            *cur++ = mn;
-            *cur++ = mx;
-        }
-    }
-
-    assert(cur-base==w2*h2*2);
-}
-
-void downsamplep1(size_t w, size_t h, const uint16_t* inData,
-    size_t kx, size_t ky, float heightScale,
-    size_t& w2, size_t& h2, float* outData)
-{
-    float* base = outData;
-    float* cur = base;
-
-    w2 = (w-1)/(kx-1)+!!((w-1)%(kx-1));
-    h2 = (h-1)/(ky-1)+!!((h-1)%(ky-1));
-
-    for (size_t baseY=0; baseY<h-1; baseY+=ky-1)
-    {
-        for (size_t baseX=0; baseX<w-1; baseX+=kx-1)
-        {
-            float mn=255.0, mx = 0.0;
-            size_t endX=std::min(baseX+kx, w);
-            size_t endY=std::min(baseY+ky, h);
-
-            for (size_t v=baseY; v<endY; ++v)
-            {
-                for (size_t u=baseX; u<endX; ++u)
-                {
-                    float value = inData[v*w+u]/65535.0f;
-                    mn = std::min(mn, value);
-                    mx = std::max(mx, value);
-                }
-            }
-
-            *cur++ = mn*heightScale;
-            *cur++ = mx*heightScale;
-        }
-    }
-
-    assert(cur-base==w2*h2*2);
-}
-
-void CDLODTerrain::generateBBoxData(uint16_t* data)
-{
-    minmaxData = (float*)malloc(minmaxDataSize*sizeof(float));
-
-    size_t w, h;
-    downsamplep1(gridDimX, gridDimY, data, patchDim+1, patchDim+1, heightScale, w, h, minmaxData+LODs[0].minmaxOffset);
-
-    for (size_t i=1; i<LODCount; ++i)
-    {
-        assert((LODs[i].minmaxOffset-LODs[i-1].minmaxOffset) == 2*w*h);
-        downsample(w, h,  minmaxData+LODs[i-1].minmaxOffset, 2, 2, w, h, minmaxData+LODs[i].minmaxOffset);
-    }
-    assert(LODs[LODCount-1].minmaxOffset+2*w*h==minmaxDataSize);
 }
