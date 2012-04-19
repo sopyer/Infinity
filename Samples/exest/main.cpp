@@ -24,7 +24,7 @@ private:
     GLuint colorTex;
 
 public:
-    Exest(): fixedMode(false), moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false)
+    Exest(): fixedMode(false), moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false), loc(0)
     {
         lastTimeMark = timerAbsoluteTime();
 
@@ -87,6 +87,20 @@ public:
 
         GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
         addPrograms(2, prgs);
+
+        FILE* cam = fopen("cameras.txt", "r");
+        if (cam)
+        {
+            while(!feof(cam))
+            {
+                glm::__quatGTX  q;
+                glm::vec3       p;
+                fscanf(cam, "%f %f %f %f %f %f %f\n", &q.x, &q.y, &q.z, &q.w, &p.x, &p.y, &p.z);
+                savedCamOrient.push_back(q);
+                savedCamPos.push_back(p);
+            }
+            fclose(cam);
+        }
     }
 
     ui::Label	mDrawTimeLabel;
@@ -95,6 +109,17 @@ public:
 
     ~Exest()
     {
+        FILE* cam = fopen("cameras.txt", "w");
+        if (cam)
+        {
+            for (size_t i=0; i<savedCamOrient.size(); ++i)
+            {
+                glm::__quatGTX  q=savedCamOrient[i];
+                glm::vec3       p=savedCamPos[i];
+                fprintf(cam, "%f %f %f %f %f %f %f\n", q.x, q.y, q.z, q.w, p.x, p.y, p.z);
+            }
+            fclose(cam);
+        }
         glDeleteTextures(1, &colorTex);
         terrain.cleanup();
     }
@@ -145,6 +170,10 @@ protected:
         terrain.reset();
     }
 
+    std::vector<glm::__quatGTX> savedCamOrient;
+    std::vector<glm::vec3>      savedCamPos;
+    int                         loc;
+
     void onKeyUp(const KeyEvent& event)
     {
         if (event.keysym.sym==SDLK_BACKSLASH)
@@ -158,6 +187,23 @@ protected:
         if (event.keysym.sym==SDLK_RIGHTBRACKET)
         {
             terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
+        }
+        if (event.keysym.sym==SDLK_0)
+        {
+            savedCamOrient.push_back(camera.getOrientation());
+            savedCamPos.push_back(camera.getPosition());
+        }
+        if (event.keysym.sym==SDLK_PERIOD && savedCamOrient.size())
+        {
+            loc=(loc+1)%savedCamOrient.size();
+            camera.setOrientation(savedCamOrient[loc]);
+            camera.setPosition(savedCamPos[loc]);
+        }
+        if (event.keysym.sym==SDLK_COMMA && savedCamOrient.size())
+        {
+            loc=(loc-1)%savedCamOrient.size();
+            camera.setOrientation(savedCamOrient[loc]);
+            camera.setPosition(savedCamPos[loc]);
         }
     }
 
