@@ -33,54 +33,47 @@ uniform uniTerrain
 	// uMorphParam[...].x = 1.0/(morphEnd-morphStart)
 	// uMorphParam[...].y = -morphStart/(morphEnd-morphStart)
 	vec2		uMorphParams[MAX_LOD_COUNT];
-
 	vec3		uColors[MAX_LOD_COUNT];
 };
 
 uniform uniView
 {
 	mat4		uMVP;
-	vec4		uViewPos;
+	vec4		uLODViewK;
 };
 
 uniform sampler2D	uHeightmap;
 
 out float vHeight;
 out vec4  vColor;
-
-vec3 getVertexPos(vec2 gridPos)
-{
-	vec3 vertexPos;
-	vec2 tc = (gridPos+vec2(0.5))*uHMDim.zw; //TODO: optimize!!!
-
-	vertexPos.xz = clamp(gridPos, vec2(0.0), uHMDim.xy-vec2(1.0)); //TODO: optimize!!!
-	vertexPos.y = textureLod(uHeightmap, tc, 0).r;
-
-	return vertexPos;
-}
+out vec2 vUV;
 
 void main()
 {
 	vec2  patchScale = vec2(1<<int(aLevel.x));
-	vec2  morphDir   = fract(aVertex*0.5)*2.0;
+	vec2  morphDir   = fract(aVertex*0.5)*2.0*patchScale;
 
-	vec3  vertexPos, morphDestPos;
+	vec3  vertexPos;
 	float distance, morphK;
 	
-	vertexPos    = getVertexPos(aPatchBase + patchScale*aVertex);
-	morphDestPos = getVertexPos(vertexPos.xz + morphDir*patchScale);
+	vertexPos.xz = aPatchBase + patchScale*aVertex;
+	vertexPos.xz = clamp(vertexPos.xz, vec2(0.0), uHMDim.xy-vec2(1.0)); //TODO: optimize!!!
+	vertexPos.y  = 0.0;
 
 	//Applying morphing for seamless connectivity
 
-	distance  = length(vertexPos*uScale + (uOffset-uViewPos.xyz)); //TODO: optimize!!!
-	morphK    = clamp(distance*uMorphParams[int(aLevel.x)].x + uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
-	vertexPos = mix(vertexPos, morphDestPos, morphK);
+	distance     = length(vertexPos*uScale + uLODViewK.xyz);
+	morphK       = clamp(distance*uMorphParams[int(aLevel.x)].x + uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
+	vertexPos.xz = vertexPos.xz+morphDir*morphK;
+	vec2 uv      = (vertexPos.xz+vec2(0.5))*uHMDim.zw; //TODO: optimize!!!
+	vertexPos.y  = textureLod(uHeightmap, uv, 0).r;
 
 	//Varyings
 
+	gl_Position = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
 	vHeight     = vertexPos.y;
 	vColor      = vec4(uColors[int(aLevel.x)], 1);
-
+	vUV         = vertexPos.xz*uHMDim.zw;
 	vec4 p = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
 	p.z = (p.z>0 && p.z>p.w)?p.w:p.z;
 	gl_Position = p;

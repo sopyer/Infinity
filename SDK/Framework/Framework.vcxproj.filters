@@ -59,6 +59,13 @@
     <ClCompile Include="ShaderEditOverlay.cpp">
       <Filter>UI\Misc</Filter>
     </ClCompile>
+    <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="ProfilerOverlay.cpp">
+      <Filter>UI\Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Timer.cpp" />
+    <ClCompile Include="media_api.cpp" />
+    <ClCompile Include="SpectatorCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h">
@@ -114,5 +121,11 @@
     <ClInclude Include="ShaderEditOverlay.h">
       <Filter>UI\Misc</Filter>
     </ClInclude>
+    <ClInclude Include="profiler.h" />
+    <ClInclude Include="ProfilerOverlay.h">
+      <Filter>UI\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="media_api.h" />
+    <ClInclude Include="SpectatorCamera.h" />
   </ItemGroup>
 </Project>

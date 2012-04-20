@@ -2,9 +2,25 @@
 
 struct PatchData
 {
-	float baseX, baseY;
-	float level;
-	float padding;
+    float baseX, baseY;
+    float level;
+    float padding;
+};
+
+struct TerrainData
+{
+    vec4		uHMDim;
+    vec4		uOffset;
+    vec4		uScale;
+    vec4		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
+    vec4		uColors[CDLODTerrain::MAX_LOD_COUNT];
+};
+
+struct GradientData
+{
+    vec4		uStops[8];
+    vec4		uScales[8];
+    float		uInvStopCount;
 };
 
 #define ATTR_POSITION	0
@@ -22,380 +38,364 @@ struct PatchData
 
 void CDLODTerrain::initialize()
 {
-	useInstancing = true;
-	drawWireframe = false;
+    useInstancing = true;
+    drawWireframe = false;
 	useOverDrawOptimization = true;
 
-	GLint uniTerrain, uniPatch, uniView, uniGradient;
-	GLint uniHeightmap, uniColorRamp;
-	
-	char* define;
+    GLint uniTerrain, uniPatch, uniView, uniGradient;
+    GLint uniHeightmap, uniColorRamp;
 
-	// Create non-instanced terrain program
-	define = "#version 330\n";
-	prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag");//, 1, (const char**)&define);
+    char* define;
 
-	uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
-	uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-	uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
-	uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
+    // Create non-instanced terrain program
+    define = "#version 330\n";
+    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
 
-	glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-	glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-	glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
-	glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
+    uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+    uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
+    uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
+    uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
 
-#ifdef _DEBUG
-	{
-		GLint structSize;
-
-		glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(TerrainData));
-		glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(ViewData));
-		glGetActiveUniformBlockiv(prgTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(GradientData));
-		glGetActiveUniformBlockiv(prgTerrain, uniPatch, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(PatchData));
-	}
-#endif
-
-	uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
-	uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
-
-	glUseProgram(prgTerrain);
-	glUniform1i(uniHeightmap, 0);
-	glUniform1i(uniColorRamp, 1);
-	glUseProgram(0);
-
-	// Create instanced terrain program
-	define = "#version 330\n#define ENABLE_INSTANCING\n";
-	prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
-
-	uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
-	uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
-	uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
-
-	glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-	glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-	glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
+    glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+    glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
+    glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
+    glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
 
 #ifdef _DEBUG
-	{
-		GLint structSize;
+    {
+        GLint structSize;
 
-		glGetActiveUniformBlockiv(prgInstancedTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(TerrainData));
-		glGetActiveUniformBlockiv(prgInstancedTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(ViewData));
-		glGetActiveUniformBlockiv(prgInstancedTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-		assert(structSize==sizeof(GradientData));
-	}
+        glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(TerrainData));
+        glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(ViewData));
+        glGetActiveUniformBlockiv(prgTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(GradientData));
+        glGetActiveUniformBlockiv(prgTerrain, uniPatch, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(PatchData));
+    }
 #endif
 
-	uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-	uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+    uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
+    uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
 
-	glUseProgram(prgInstancedTerrain);
-	glUniform1i(uniHeightmap, 0);
-	glUniform1i(uniColorRamp, 1);
-	glUseProgram(0);
+    glUseProgram(prgTerrain);
+    glUniform1i(uniHeightmap, 0);
+    glUniform1i(uniColorRamp, 1);
+    glUseProgram(0);
 
-	GLint totalSize=0;
-	GLint align;
+    // Create instanced terrain program
+    define = "#version 330\n#define ENABLE_INSTANCING\n";
+    prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
 
-	glGenTextures(1, &mHeightmapTex);
-	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
+    uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
+    uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
 
-	glGenTextures(1, &mColorRampTex);
-	glBindTexture(GL_TEXTURE_1D, mColorRampTex);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+    glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
+    glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
 
-	glGenBuffers(1, &geomVBO);
-	glGenBuffers(1, &instVBO);
-	glGenBuffers(1, &ibo);
+#ifdef _DEBUG
+    {
+        GLint structSize;
 
-	glGenVertexArrays(1, &vaoInst);
-	glBindVertexArray(vaoInst);
-	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-	glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(ATTR_POSITION, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-	glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
-	glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
-	glVertexAttribPointer(ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)8);
-	glVertexAttribDivisor(ATTR_LEVEL, 1);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glEnableVertexAttribArray(ATTR_POSITION);
-	glEnableVertexAttribArray(ATTR_LEVEL);
-	glEnableVertexAttribArray(ATTR_PATCH_BASE);
-	glBindVertexArray(0);
-	
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-	glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(ATTR_POSITION, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glEnableVertexAttribArray(ATTR_POSITION);
-	glBindVertexArray(0);
+        glGetActiveUniformBlockiv(prgInstancedTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(TerrainData));
+        glGetActiveUniformBlockiv(prgInstancedTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(ViewData));
+        glGetActiveUniformBlockiv(prgInstancedTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(GradientData));
+    }
+#endif
 
-	// Assumption - align is power of 2
-	glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-	--align;
+    uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
+    uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
 
-	uniTerrainOffset  = totalSize;	totalSize+=sizeof(TerrainData);		totalSize += align; totalSize &=~align;
-	uniViewOffset     = totalSize;	totalSize+=sizeof(ViewData);		totalSize += align; totalSize &=~align;
-	uniGradientOffset = totalSize;	totalSize+=sizeof(GradientData);	totalSize += align; totalSize &=~align;
-	uniPatchOffset    = totalSize;	totalSize+=sizeof(PatchData);		totalSize += align; totalSize &=~align;
+    glUseProgram(prgInstancedTerrain);
+    glUniform1i(uniHeightmap, 0);
+    glUniform1i(uniColorRamp, 1);
+    glUseProgram(0);
 
-	glGenBuffers(1, &ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-	glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    GLint totalSize=0;
+    GLint align;
 
-	patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
+    glGenTextures(1, &mHeightmapTex);
+    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+    glGenTextures(1, &mColorRampTex);
+    glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenBuffers(1, &geomVBO);
+    glGenBuffers(1, &instVBO);
+    glGenBuffers(1, &ibo);
+
+    glGenVertexArrays(1, &vaoInst);
+    glBindVertexArray(vaoInst);
+    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
+    glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(ATTR_POSITION, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+    glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
+    glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
+    glVertexAttribPointer(ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)8);
+    glVertexAttribDivisor(ATTR_LEVEL, 1);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glEnableVertexAttribArray(ATTR_POSITION);
+    glEnableVertexAttribArray(ATTR_LEVEL);
+    glEnableVertexAttribArray(ATTR_PATCH_BASE);
+    glBindVertexArray(0);
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
+    glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribDivisor(ATTR_POSITION, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glEnableVertexAttribArray(ATTR_POSITION);
+    glBindVertexArray(0);
+
+    // Assumption - align is power of 2
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
+    --align;
+
+    uniTerrainOffset  = totalSize;	totalSize+=sizeof(TerrainData);		totalSize += align; totalSize &=~align;
+    uniViewOffset     = totalSize;	totalSize+=sizeof(ViewData);		totalSize += align; totalSize &=~align;
+    uniGradientOffset = totalSize;	totalSize+=sizeof(GradientData);	totalSize += align; totalSize &=~align;
+    uniPatchOffset    = totalSize;	totalSize+=sizeof(PatchData);		totalSize += align; totalSize &=~align;
+
+    glGenBuffers(1, &ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	instData     = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
 
-	GLenum err = glGetError();
-	assert(err==GL_NO_ERROR);
+    patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
+
+    GLenum err = glGetError();
+    assert(err==GL_NO_ERROR);
 }
 
 void CDLODTerrain::reset()
 {
-	GLint uniTerrain, uniPatch, uniView, uniGradient;
-	GLint uniHeightmap, uniColorRamp;
+    GLint uniTerrain, uniPatch, uniView, uniGradient;
+    GLint uniHeightmap, uniColorRamp;
 
-	uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
-	uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-	uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
-	uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
+    uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+    uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
+    uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
+    uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
 
-	glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-	glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-	glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
-	glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
+    glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+    glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
+    glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
+    glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
 
-	uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
-	uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
+    uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
+    uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
 
-	glUseProgram(prgTerrain);
-	glUniform1i(uniHeightmap, 0);
-	glUniform1i(uniColorRamp, 1);
-	glUseProgram(0);
+    glUseProgram(prgTerrain);
+    glUniform1i(uniHeightmap, 0);
+    glUniform1i(uniColorRamp, 1);
+    glUseProgram(0);
 
-	uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
-	uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
-	uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
+    uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
+    uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
+    uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
 
-	glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-	glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-	glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
+    glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
+    glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
+    glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
 
-	uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-	uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+    uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
+    uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
 
-	glUseProgram(prgInstancedTerrain);
-	glUniform1i(uniHeightmap, 0);
-	glUniform1i(uniColorRamp, 1);
-	glUseProgram(0);
+    glUseProgram(prgInstancedTerrain);
+    glUniform1i(uniHeightmap, 0);
+    glUniform1i(uniColorRamp, 1);
+    glUseProgram(0);
 }
 
 
 void CDLODTerrain::cleanup()
 {
-	free(instData);
-	free(patchDataMem);
-	glDeleteBuffers(1, &ubo);
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &geomVBO);
-	glDeleteBuffers(1, &instVBO);
-	glDeleteBuffers(1, &ibo);
-	if (minmaxData) free(minmaxData);
-	glDeleteProgram(prgTerrain);
-	glDeleteProgram(prgInstancedTerrain);
-	glDeleteTextures(1, &mHeightmapTex);
-	glDeleteTextures(1, &mColorRampTex);
+    free(instData);
+    free(patchDataMem);
+    glDeleteBuffers(1, &ubo);
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &geomVBO);
+    glDeleteBuffers(1, &instVBO);
+    glDeleteBuffers(1, &ibo);
+    glDeleteProgram(prgTerrain);
+    glDeleteProgram(prgInstancedTerrain);
+    glDeleteTextures(1, &mHeightmapTex);
+    glDeleteTextures(1, &mColorRampTex);
 }
 
-void CDLODTerrain::calculateLODRanges(float* ranges)
+void CDLODTerrain::calculateLODParams(vec4* morphParams)
 {
-	float	curDetailBalance=1.0f,
-			totalDetail = 0.0f;
+    assert(LODCount<=MAX_LOD_COUNT);
 
-	for (size_t i=0; i<LODCount; ++i)
-	{
-		totalDetail += curDetailBalance;
-		curDetailBalance *= detailBalance;
-	}
+    size_t	dim = patchDim;
+    size_t	patchCountX = (gridDimX-1+dim-1)/dim;
+    size_t	patchCountY = (gridDimY-1+dim-1)/dim;
+    size_t	patchCount = patchCountX*patchCountY;
+    float	size2=cellSize*cellSize*patchDim*patchDim,
+            range=400.0f, curRange=0.0f;
 
-	float	minDetailDist = visibilityDistance/totalDetail;
-	
-	curDetailBalance = 1.0f;
+    for (size_t i=0; i<LODCount; ++i)
+    {
+        //To avoid cracks when height is greater then minRange,
+        float minRange = 2.0f*sqrt(size2+size2);
+        float range    = std::max(range, minRange);
 
-	for (size_t i=0; i<LODCount; ++i)
-	{
-		float range = minDetailDist*curDetailBalance;
-		ranges[i] = range;
-		curDetailBalance *= detailBalance;
-	}
-}
+        LODs[i].rangeStart  = curRange;
+        curRange           += range;
 
-void CDLODTerrain::calculateLODParams()
-{
-	float ranges[MAX_LOD_COUNT]; 
-	assert(LODCount<=MAX_LOD_COUNT);
+        float rangeEnd   = curRange;
+        float morphRange = range*morphZoneRatio;
+        float morphStart = rangeEnd-morphRange;
+        float rangeEndY   = curRange+heightScale/2.0f;
+        float morphRangeY = range*morphZoneRatio;
+        float morphStartY = rangeEndY-morphRangeY;
 
-	calculateLODRanges(ranges);
+        morphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 1.0f/morphRangeY, -morphStartY/morphRangeY);
 
-	size_t	dim = patchDim;
-	size_t	patchCountX = (gridDimX-1+dim-1)/dim;
-	size_t	patchCountY = (gridDimY-1+dim-1)/dim;
-	size_t	patchCount = patchCountX*patchCountY;
-	float	size2=cellSize*cellSize*patchDim*patchDim,
-			deltaZ2=heightScale*heightScale,
-			curRange=0.0f;
-			
-	minmaxDataSize = 0;
-	curRange=0.0f;
+        LODs[i].patchDim     = dim;
 
-	for (size_t i=0; i<LODCount; ++i)
-	{
-		//To avoid cracks when height is greater then minRange,
-		//minRange should take height into account too
-		//minRange = 2.0f*sqrt(width^2+height^2+heightScale^2)
-		float minRange = 2.0f*sqrt(size2+size2+deltaZ2);
-		float range    = std::max(ranges[i], minRange);
+        patchCountX     = (patchCountX+1)/2;
+        patchCountY     = (patchCountY+1)/2;
+        patchCount      = patchCountX*patchCountY;
 
-		LODs[i].rangeStart  = curRange;
-		curRange           += range;
-		
-		float rangeEnd   = curRange;
-		float morphRange = range*morphZoneRatio;
-		float morphStart = rangeEnd-morphRange;
-		
-		terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0, 0);
+        range *= 1.5f;
 
-		LODs[i].patchDim     = dim;
-		LODs[i].minmaxPitch  = patchCountX;
-		LODs[i].minmaxOffset = minmaxDataSize;
+        size2 *= 4;
+        dim   *= 2;
+    }
 
-		minmaxDataSize += patchCount*2;
-		patchCountX     = (patchCountX+1)/2;
-		patchCountY     = (patchCountY+1)/2;
-		patchCount      = patchCountX*patchCountY;
-
-		size2 *= 4;
-		dim   *= 2;
-	}
-	//Fix unnecessary morph in last LOD level
-	terrainData.uMorphParams[LODCount-1] = vi_load_zero();
+    //Fix unnecessary morph in last LOD level
+   morphParams[LODCount-1] = vi_load_zero();
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 {
-	sseVP.r0 = vi_loadu(mat[0]);
-	sseVP.r1 = vi_loadu(mat[1]);
-	sseVP.r2 = vi_loadu(mat[2]);
-	sseVP.r3 = vi_loadu(mat[3]);
+    sseVP.r0 = vi_loadu(mat[0]);
+    sseVP.r1 = vi_loadu(mat[1]);
+    sseVP.r2 = vi_loadu(mat[2]);
+    sseVP.r3 = vi_loadu(mat[3]);
 }
 
 void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 {
-	viewData.uMVP.r0 = vi_loadu(mat[0]);
-	viewData.uMVP.r1 = vi_loadu(mat[1]);
-	viewData.uMVP.r2 = vi_loadu(mat[2]);
-	viewData.uMVP.r3 = vi_loadu(mat[3]);
+    viewData.uMVP.r0 = vi_loadu(mat[0]);
+    viewData.uMVP.r1 = vi_loadu(mat[1]);
+    viewData.uMVP.r2 = vi_loadu(mat[2]);
+    viewData.uMVP.r3 = vi_loadu(mat[3]);
 }
 
-void CDLODTerrain::addPatchToQueue(size_t level, int i, int j)
+void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 {
-	if (patchCount<MAX_PATCH_COUNT)
-	{
-		instData[patchCount].baseX = (float)i;
-		instData[patchCount].baseY = (float)j;
-		instData[patchCount].level = (float)level;
+    if (patchCount<maxPatchCount)
+    {
+        instData[patchCount].baseX = (float)i;
+        instData[patchCount].baseY = (float)j;
+        instData[patchCount].level = (float)level;
 
-		++patchCount;
-	}
+        ++patchCount;
+    }
 }
 
-void CDLODTerrain::getAABB(size_t level, int i, int j, ml::aabb* patchAABB)
+void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
 {
-	float* minmax = minmaxData+LODs[level].minmaxOffset;
+    if (i>=gridDimX-1 || j>=gridDimY-1) return;
 
-	float minZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+0];
-	float maxZ = minmax[2*((j/LODs[level].patchDim)*LODs[level].minmaxPitch+(i/LODs[level].patchDim))+1];
+    ml::aabb AABB;
 
-	assert(0<=minZ && minZ<=maxZ);
-	assert(minZ<=maxZ && maxZ<=heightScale);
+    float sizeX = std::min(LODs[level].patchDim, gridDimX-i)*cellSize;
+    float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
 
-	float sizeX = std::min(LODs[level].patchDim,  gridDimX-i)*cellSize;
-	float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
+    float minX = startX+cellSize*i;
+    float minY = startY+cellSize*j;
+    float maxX = minX+sizeX;
+    float maxY = minY+sizeY;
 
-	float baseX = startX-cellSize*i;
-	float baseY = startY+cellSize*j;
+    AABB.min = vi_set(minX, 0.0f,        minY, 1.0f);
+    AABB.max = vi_set(maxX, heightScale, maxY, 1.0f);
 
-	patchAABB->min = vi_set(baseX-sizeX, minZ, baseY,       1);
-	patchAABB->max = vi_set(baseX,       maxZ, baseY+sizeY, 1);
-}
+    if (!skipFrustumTest)
+    {
+        //Check whether AABB intersects frustum
+        int result = ml::intersectionTest(&AABB, &sseVP);
 
-void CDLODTerrain::selectQuadsForDrawing(size_t level, int i, int j, bool skipFrustumTest)
-{
-	if (i>=gridDimX-1 || j>=gridDimY-1 || i<0 || j<0) return;
+        if (result==ml::IT_OUTSIDE) return;
+        skipFrustumTest = result==ml::IT_INSIDE;
+    }
 
-	ml::aabb AABB;
+    if (level==0 || (LODs[level].rangeStart+heightScale<viewPoint.y))
+    {
+        addPatchToQueue(level, i, j);
+        return;
+    }
 
-	getAABB(level, i, j, &AABB);
+    //Check whether patch intersects it's LOD sphere and thus require subdivision
+    glm::vec3 vp2d = viewPoint;
+    vp2d.y = 0.0f;
+    ml::aabb AABB2D = AABB;
+    AABB2D.min.m128_f32[1] = 0.0f;
+    AABB2D.max.m128_f32[1] = 0.0f;
+    vec4 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
 
-	if (!skipFrustumTest)
-	{
-		//Check whether AABB intersects frustum
-		int result = ml::intersectionTest(&AABB, &sseVP);
+    vec4 vdist, r2;
+        
+    vdist = ml::distanceToAABB(&AABB, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0.0));
+    vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
+    vdist = vi_dot3(vdist, vdist);
 
-		if (result==ml::IT_OUTSIDE) return;
-		skipFrustumTest = result==ml::IT_INSIDE;
-	}
+    r2 = vi_set_all(LODs[level].rangeStart);
+    r2 = vi_mul(r2, r2);
+    
+    bool intersect = vi_all(vi_cmp_le(vdist, r2));
 
-	if (level==0)
-	{
-		addPatchToQueue(level, i, j);
-		return;
-	}
+    assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODs[level].rangeStart));
 
-	//Check whether patch intersects it's LOD sphere and thus require subdivision
-	if (!ml::sphereAABBTest(&AABB, viewData.uViewPoint, LODs[level].rangeStart))
-	{
-		addPatchToQueue(level, i, j);
-	}
-	else
-	{
-		//TODO: add front to back sorting to minimize overdraw(optimization)
-		size_t offset = LODs[level].patchDim/2;
-		selectQuadsForDrawing(level-1, i,        j, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i+offset, j, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i,        j+offset, skipFrustumTest);
-		selectQuadsForDrawing(level-1, i+offset, j+offset, skipFrustumTest);
-	}
+    if (!intersect
+        /*maxX-vp2d.x<-LODs[level].rangeStart ||
+        minX-vp2d.x>LODs[level].rangeStart ||
+        maxY-vp2d.z<-LODs[level].rangeStart ||
+        minY-vp2d.z>LODs[level].rangeStart*/
+        )
+    {
+        addPatchToQueue(level, i, j);
+    }
+    else
+    {
+        //TODO: add front to back sorting to minimize overdraw(optimization)
+        size_t offset = LODs[level].patchDim/2;
+        selectQuadsForDrawing(level-1, i,        j, skipFrustumTest);
+        selectQuadsForDrawing(level-1, i+offset, j, skipFrustumTest);
+        selectQuadsForDrawing(level-1, i,        j+offset, skipFrustumTest);
+        selectQuadsForDrawing(level-1, i+offset, j+offset, skipFrustumTest);
+    }
 }
 
 glm::vec4 colors[] = 
 {
-	glm::vec4(0.5f, 0.0f, 1.0f, 1.0f),
-	glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
-	glm::vec4(1.0f, 0.6f, 0.6f, 1.0f),
-	glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
-	glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-	glm::vec4(1.0f, 0.2f, 0.2f, 1.0f),
-	glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-	glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
+    glm::vec4(0.5f, 0.0f, 1.0f, 1.0f),
+    glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
+    glm::vec4(1.0f, 0.6f, 0.6f, 1.0f),
+    glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+    glm::vec4(1.0f, 0.2f, 0.2f, 1.0f),
+    glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
+    glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
 };
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*stride+(x))
@@ -418,20 +418,20 @@ void generateQuadIndices(uint16_t** ptr, int xs, int ys, int xe, int ye)
 				if (sx>0)
 				{
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 				}
 				else
 				{
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 				}
 			}
 		}
@@ -445,20 +445,20 @@ void generateQuadIndices(uint16_t** ptr, int xs, int ys, int xe, int ye)
 				if (sy>0)
 				{
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 				}
 				else
 				{
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
+					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
-					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y);
-					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 					*ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
+					*ptr2++ = INDEX_FOR_LOCATION(x+1, y);
 				}
 			}
 		}
@@ -471,19 +471,19 @@ void generateQuadIndices(uint16_t** ptr, int xs, int ys, int xe, int ye)
 
 void CDLODTerrain::generateGeometry()
 {
-	glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(patchDim+1)*(patchDim+1), 0, GL_STATIC_DRAW);
-	glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	for (size_t y=0; y<=patchDim; ++y)
-	{
-		for (size_t x=0; x<=patchDim; ++x)
-		{
-			*ptr++ = glm::vec2(x, y);
-		}
-	}
-	glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(patchDim+1)*(patchDim+1), 0, GL_STATIC_DRAW);
+    glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    for (size_t y=0; y<=patchDim; ++y)
+    {
+        for (size_t x=0; x<=patchDim; ++x)
+        {
+            *ptr++ = glm::vec2(x, y);
+        }
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*(patchDim+1)+(x))
 
@@ -514,13 +514,14 @@ void CDLODTerrain::generateGeometry()
 
 #undef INDEX_FOR_LOCATION
 
-	glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void CDLODTerrain::drawTerrain()
 {
-	cpuTimer.start();
+    PROFILER_CPU_BLOCK("CDLODTerrain");
+    cpuTimer.start();
 
 	patchCount = 0;
 	cpuSelectTimer.start();
@@ -559,8 +560,8 @@ void CDLODTerrain::drawTerrain()
 		}
 	} cmp;
 
-	cmp.cx=glm::clamp<float>(-(viewData.uViewPoint.m128_f32[0]-startX)/cellSize, -16000, 16000)-patchDim/2;
-	cmp.cy=glm::clamp<float>((viewData.uViewPoint.m128_f32[2]-startY)/cellSize, -16000, 16000)-patchDim/2;
+	cmp.cx=floorf((viewPoint.x-startX)/cellSize);
+	cmp.cy=floorf((viewPoint.z-startY)/cellSize);
 
 	if (useOverDrawOptimization) std::sort(instData, instData+patchCount, cmp);
 	memcpy(sortedData, instData, sizeof(PatchData)*patchCount);
@@ -571,34 +572,36 @@ void CDLODTerrain::drawTerrain()
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	cpuDrawTimer.start();
-	gpuTimer.start();
+    cpuDrawTimer.start();
+    gpuTimer.start();
 
-	patchCount = std::min(patchCount, maxPatchCount);
+    if (patchCount)
+    {
+        PROFILER_CPU_BLOCK("Render");
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-	if (patchCount)
-	{
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
+        float vertDistToTerrain = abs(viewPoint.y/*-uOffset.y*/-heightScale/2.0f);
+        viewData.uLODViewK = vi_set(startX - viewPoint.x, vertDistToTerrain>heightScale/2.0?vertDistToTerrain-heightScale/2.0f:0.0f, startY - viewPoint.z, 0.0f);
 
-		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
-		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
-		glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GRADIENT_BINDING, ubo, uniGradientOffset, sizeof(GradientData));
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GRADIENT_BINDING, ubo, uniGradientOffset, sizeof(GradientData));
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_1D, mColorRampTex);
 
-		//TODO: Enable triangle culling and fix mesh(Partially done)
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		if (drawWireframe)
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        //TODO: Enable triangle culling and fix mesh(Partially done)
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        if (drawWireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glEnable(GL_DEPTH_TEST);
 
-		glEnable(GL_DEPTH_TEST);
-		if (useOverDrawOptimization)
+        if (useOverDrawOptimization)
 		{
-			//glDisable(GL_DEPTH_TEST);
+			glDisable(GL_DEPTH_TEST);
 			//Probably can be replaced with depth test, with function GL_LESS
 			//but atm following is not working
 			//glDepthFunc(GL_LESS);
@@ -609,204 +612,120 @@ void CDLODTerrain::drawTerrain()
 			glStencilMask(0x80);
 		}
 
-		glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
+        glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
 
-		glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-		glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
 
-		GLsizei idxOffset = idxCount*sizeof(uint16_t)*quadIdx;
-		if (useInstancing)
-		{
-			glBindVertexArray(vaoInst);
-			glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset, patchCount);
-		}
-		else
-		{
-			glBindBufferRange(GL_UNIFORM_BUFFER, UNI_PATCH_BINDING, ubo, uniPatchOffset, sizeof(PatchData));
-			glBindVertexArray(vao);
-			for (size_t i=0; i<patchCount; ++i)
-			{
-				glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), sortedData+i);
-				glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset);
-			}
-		}
+        if (useInstancing)
+        {
+            glBindVertexArray(vaoInst);
+            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+        }
+        else
+        {
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_PATCH_BINDING, ubo, uniPatchOffset, sizeof(PatchData));
+            glBindVertexArray(vao);
+            for (size_t i=0; i<patchCount; ++i)
+            {
+                glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
+                glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
+            }
+        }
 
-		glUseProgram(0);
-		glBindVertexArray(0);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glPopAttrib();
-	}
+        glUseProgram(0);
+        glBindVertexArray(0);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glPopAttrib();
+    }
 
-	cpuDrawTime = cpuDrawTimer.elapsed();
-	cpuDrawTimer.stop();
-
-	gpuTimer.stop();
-	cpuTime = cpuTimer.elapsed();
-	gpuTime = gpuTimer.getResult();
-	cpuTimer.stop();
+    cpuDrawTime = cpuDrawTimer.elapsed();
+    cpuDrawTimer.stop();
+    gpuTimer.stop();
+    cpuTime = cpuTimer.elapsed();
+    gpuTime = gpuTimer.getResult();
+    cpuTimer.stop();
 }
 
 void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 {
-	gridDimX = width;
-	gridDimY = height;
+    gridDimX = width;
+    gridDimY = height;
 
-	cellSize = 40.0f;
-	startX =  0.5f*cellSize*(gridDimX-1);
-	startY = -0.5f*cellSize*(gridDimY-1);
+    cellSize = 4.0f;
+    startX = -0.5f*cellSize*(gridDimX-1);
+    startY = -0.5f*cellSize*(gridDimY-1);
 
-	patchDim = 8;
+    patchDim = 8;
 
-	visibilityDistance = 500;
-	//TODO: LODCount should clamped based on minPatchDim* and gridDimX
-	LODCount = 5;
-	detailBalance = 2.0f;
-	//TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
-	morphZoneRatio = 0.30f;
-	heightScale = 65535.0f/732.0f*10;
+    //TODO: LODCount should clamped based on minPatchDim* and gridDimX
+    LODCount = 5;
+    //TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
+    morphZoneRatio = 0.30f;
+    heightScale = 65535.0f/732.0f;
 
-	maxPatchCount = MAX_PATCH_COUNT;
+    maxPatchCount = MAX_PATCH_COUNT;
 
-	calculateLODParams();
-	generateGeometry();
-	generateBBoxData(data);
+    generateGeometry();
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    TerrainData&  terrainData  = *(TerrainData*)(uniforms+uniTerrainOffset);
+    GradientData& gradientData = *(GradientData*)(uniforms+uniGradientOffset);
 
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    calculateLODParams(terrainData.uMorphParams);
 
-	terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
-	terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
-	terrainData.uScale  = vi_set(-cellSize, heightScale, cellSize, 0.0f);
-	memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
-	glBufferSubData(GL_UNIFORM_BUFFER, uniTerrainOffset, sizeof(TerrainData), &terrainData);
+    terrainData.uHMDim  = vi_set((GLfloat)width, (GLfloat)height, 1.0f/width, 1.0f/height);
+    terrainData.uOffset = vi_set(startX, 0.0f, startY, 0.0f);
+    terrainData.uScale  = vi_set(cellSize, heightScale, cellSize, 0.0f);
+    memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 
-	// Terrain Gradient
-	const int stopCount = 3;
-	float stops[stopCount] = {0.0000f, 0.500f, 1.000f};
+    // Terrain Gradient
+    const int stopCount = 3;
+    float stops[stopCount] = {0.0000f, 0.500f, 1.000f};
 
-	float stopsData[8*4], scalesData[8*4];
+    float stopsData[8*4], scalesData[8*4];
 
-	for (int i=0; i<8*4; ++i)
-	{
-		stopsData[i]  = 1.0f;
-		scalesData[i] = 0.0f;
-	}
+    for (int i=0; i<8*4; ++i)
+    {
+        stopsData[i]  = 1.0f;
+        scalesData[i] = 0.0f;
+    }
 
-	memcpy(stopsData, stops, stopCount*4);
+    memcpy(stopsData, stops, stopCount*4);
 
-	for (int i=0; i<stopCount-1; ++i)
-	{
-		float delta = stops[i+1]-stops[i];
-		assert(delta>=0);
-		scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
-	}
+    for (int i=0; i<stopCount-1; ++i)
+    {
+        float delta = stops[i+1]-stops[i];
+        assert(delta>=0);
+        scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
+    }
 
-	memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
-	memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
-	gradientData.uInvStopCount = 1.0f/stopCount;
-	glBufferSubData(GL_UNIFORM_BUFFER, uniGradientOffset, sizeof(GradientData), &gradientData);
-	
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
+    memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
+    gradientData.uInvStopCount = 1.0f/stopCount;
 
-	unsigned char c[] = {
-		  0,   0, 255, 255,
-		  0, 255,   0, 255,
-		255,   0,   0, 255,
-	};
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	glBindTexture(GL_TEXTURE_1D, mColorRampTex);
-	glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	GLenum err = glGetError();
-	assert(err==GL_NO_ERROR);
-}
+    unsigned char c[] = {
+        0,   0, 255, 255,
+        0, 255,   0, 255,
+        255,   0,   0, 255,
+    };
 
-void downsample(size_t w, size_t h, const float* inData,
-				size_t kx, size_t ky,
-				size_t& w2, size_t& h2, float* outData)
-{
-	float* base = outData;
-	float* cur = base;
+    glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
 
-	w2 = w/kx+!!(w%kx);
-	h2 = h/ky+!!(h%ky);
-
-	for (size_t baseY=0; baseY<w; baseY+=kx)
-	{
-		for (size_t baseX=0; baseX<h; baseX+=ky)
-		{
-			float mn=255.0, mx = 0.0;
-			size_t endX=std::min(baseX+kx, w);
-			size_t endY=std::min(baseY+ky, h);
-
-			for (size_t v=baseY; v<endY; ++v)
-			{
-				for (size_t u=baseX; u<endX; ++u)
-				{
-					mn = std::min(mn, inData[2*(v*w+u)+0]);//first is min value
-					mx = std::max(mx, inData[2*(v*w+u)+1]);//second is max value
-				}
-			}
-
-			*cur++ = mn;
-			*cur++ = mx;
-		}
-	}
-
-	assert(cur-base==w2*h2*2);
-}
-
-void downsamplep1(size_t w, size_t h, const uint16_t* inData,
-				size_t kx, size_t ky, float heightScale,
-				size_t& w2, size_t& h2, float* outData)
-{
-	float* base = outData;
-	float* cur = base;
-
-	w2 = (w-1)/(kx-1)+!!((w-1)%(kx-1));
-	h2 = (h-1)/(ky-1)+!!((h-1)%(ky-1));
-
-	for (size_t baseY=0; baseY<h-1; baseY+=ky-1)
-	{
-		for (size_t baseX=0; baseX<w-1; baseX+=kx-1)
-		{
-			float mn=255.0, mx = 0.0;
-			size_t endX=std::min(baseX+kx, w);
-			size_t endY=std::min(baseY+ky, h);
-
-			for (size_t v=baseY; v<endY; ++v)
-			{
-				for (size_t u=baseX; u<endX; ++u)
-				{
-					float value = inData[v*w+u]/65535.0f;
-					mn = std::min(mn, value);
-					mx = std::max(mx, value);
-				}
-			}
-
-			*cur++ = mn*heightScale;
-			*cur++ = mx*heightScale;
-		}
-	}
-
-	assert(cur-base==w2*h2*2);
-}
-
-void CDLODTerrain::generateBBoxData(uint16_t* data)
-{
-	minmaxData = (float*)malloc(minmaxDataSize*sizeof(float));
-
-	size_t w, h;
-	downsamplep1(gridDimX, gridDimY, data, patchDim+1, patchDim+1, heightScale, w, h, minmaxData+LODs[0].minmaxOffset);
-
-	for (size_t i=1; i<LODCount; ++i)
-	{
-		assert((LODs[i].minmaxOffset-LODs[i-1].minmaxOffset) == 2*w*h);
-		downsample(w, h,  minmaxData+LODs[i-1].minmaxOffset, 2, 2, w, h, minmaxData+LODs[i].minmaxOffset);
-	}
-	assert(LODs[LODCount-1].minmaxOffset+2*w*h==minmaxDataSize);
+    GLenum err = glGetError();
+    assert(err==GL_NO_ERROR);
 }

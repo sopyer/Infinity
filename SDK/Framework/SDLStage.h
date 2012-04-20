@@ -6,37 +6,43 @@
 #include <Stage.h>
 
 struct SDL_Surface;
+
 class  ShaderEditOverlay;
+class  ProfilerOverlay;
 
 namespace ui
 {
-	//! Refactor initializing code
-	class SDLStage: public Stage
-	{
-		public:
-			SDLStage();
-			~SDLStage();
-			
-			void run();
-			void close();
-			
-		protected:
-			//Debug functions and callbacks
-			void addPrograms(size_t count, GLuint* programs);
-			virtual void onShaderRecompile() {}
+    //! Refactor initializing code
+    class SDLStage: public Stage
+    {
+    public:
+        SDLStage();
+        ~SDLStage();
 
-		protected:
-			bool	mFullscreen;
+        void run();
+        void close();
 
-		private:
-			void handleInput();
-			void handleRender();
-		
-		private:
-			ShaderEditOverlay*	mShaderEditOverlay;
-			SDL_Surface			*mScreen;
-			bool				mShaderEditOverlayVisible;
-	};
+    protected:
+        //Debug functions and callbacks
+        void addPrograms(size_t count, GLuint* programs);
+        virtual void onShaderRecompile() {}
+
+    protected:
+        bool	mFullscreen;
+
+    private:
+        void handleInput();
+        void handleRender();
+        void frameStep();
+
+    private:
+        size_t				mState;
+
+        ShaderEditOverlay*	mShaderEditOverlay;
+        ProfilerOverlay*	mProfilerOverlay;
+
+        SDL_Surface			*mScreen;
+    };
 }
 
 #endif

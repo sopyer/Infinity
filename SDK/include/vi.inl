@@ -34,10 +34,18 @@ __forceinline vec4 vi_select(vec4 a, vec4 b)
 	return _mm_blend_ps(a, b, mask);
 }
 
+#ifdef USE_SSE4
 __forceinline vec4 vi_select(vec4 mask, vec4 a, vec4 b)
 {
 	return _mm_blendv_ps(a, b, mask);
 }
+#else
+//untested: http://realtimecollisiondetection.net/blog/?p=90
+__forceinline vec4 vi_select(vec4 mask, vec4 a, vec4 b)
+{
+	return vi_xor(vi_and(vi_xor(a, b), mask), a);
+}
+#endif
 
 __forceinline vec4 vi_set(float x, float y, float z, float w)
 {

@@ -17,25 +17,69 @@ namespace ml
 		vec4 min, max;
 	};
 
+    inline vec4 distanceToAABB(aabb* AABB, vec4 pt)
+    {
+		vec4  deltaMin, deltaMax;
+        vec4  maskMin,  maskMax;
+        vec4  vdist;
+
+        deltaMin = vi_sub(AABB->min, pt);
+        maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
+		deltaMax = vi_sub(pt, AABB->max);
+        maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+        vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
+
+        return vdist;
+    }
+
+    inline bool sphereAABBTest2(aabb* AABB, vec4 center, float radius, vec4 res)
+    {
+		vec4  deltaMin, deltaMax;
+        vec4  maskMin,  maskMax;
+        vec4  vdist;
+        float d;
+
+        deltaMin = vi_sub(AABB->min, center);
+        maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
+		deltaMax = vi_sub(center, AABB->max);
+        maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+        vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
+        vdist    = vi_dot3(vdist, vdist);
+
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_load_zero())));
+        assert(vi_all(vi_cmp_eq(vdist, res)));
+        
+        _mm_store_ss(&d, vdist);
+        return d<=radius*radius;
+    }
+
 	inline bool sphereAABBTest(aabb* AABB, vec4 center, float radius)
 	{
-		vec4 deltaMin, deltaMax, res, maskMin, maskMax, r2;
+		vec4 deltaMin, deltaMax;
+        vec4 maskMin, maskMax;
+        vec4 res, r2;
 
 		deltaMin = vi_sub(AABB->min, center);
-		maskMin = vi_cmp_gt(deltaMin, vi_load_zero());
+		maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
 		deltaMin = vi_and(maskMin, deltaMin);
 		res = vi_dot3(deltaMin, deltaMin);
 
 		deltaMax = vi_sub(center, AABB->max);
-		maskMax = vi_cmp_gt(deltaMax, vi_load_zero());
-		maskMax = vi_andnot(maskMax, maskMin);
+		maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+		//maskMax = vi_andnot(maskMax, maskMin);
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_load_zero())));
 		deltaMax = vi_and(maskMax, deltaMax);
 		res = vi_add(res, vi_dot3(deltaMax, deltaMax));
 
 		r2 = vi_set_all(radius);
 		r2 = vi_mul(r2, r2);
+        
+        bool res1 = vi_all(vi_cmp_le(res, r2));
+        bool res2 = sphereAABBTest2(AABB, center, radius, res);
+        
+        assert(res2==res1);
 
-		return vi_all(vi_cmp_le(res, r2));
+		return res2;
 	}
 
 	inline void transformPointsSOA4(vec4* dest, vec4 xxxx, vec4 yyyy, vec4 zzzz, /*vec4 wwww,*/ const mat4x4* matrix)

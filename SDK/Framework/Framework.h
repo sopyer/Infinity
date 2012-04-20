@@ -6,6 +6,7 @@
 #include <UI.h>
 #include <ResourceHelpers.h>
 #include <Context.h>
+#include <profiler.h>
 
 //TODO: make shorter e.g. log
 namespace logging

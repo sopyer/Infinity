@@ -48,7 +48,7 @@
     <ClCompile>
       <AdditionalOptions>/Gs %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;..\include\libavcodec;..\include\libavformat;..\include\libswscale;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -65,7 +65,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;.\iniparser;.\SOIL;..;..\glClasses;..\utils;..\vfs;..\External;..\External\glfw;..\External\freetype\include;..\External\glFont;..\External\SDL\include;..\include;..\include\libavcodec;..\include\libavformat;..\include\libswscale;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;FTGL_LIBRARY_STATIC;GLFW_DLL</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
@@ -83,6 +83,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Controls.cpp" />
+    <ClCompile Include="media_api.cpp" />
+    <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="ProfilerOverlay.cpp" />
     <ClCompile Include="ShaderEditOverlay.cpp" />
     <ClCompile Include="opengl.c" />
     <ClCompile Include="ResourceHelpers.cpp" />
@@ -93,7 +96,9 @@
     <ClCompile Include="SOIL\stb_image_aug.c" />
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SDLStage.cpp" />
+    <ClCompile Include="SpectatorCamera.cpp" />
     <ClCompile Include="Stage.cpp" />
+    <ClCompile Include="Timer.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
@@ -102,6 +107,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FirstPersonCamera.h" />
+    <ClInclude Include="media_api.h" />
+    <ClInclude Include="profiler.h" />
+    <ClInclude Include="ProfilerOverlay.h" />
     <ClInclude Include="ShaderEditOverlay.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />
@@ -114,6 +122,7 @@
     <ClInclude Include="Container.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="SDLStage.h" />
+    <ClInclude Include="SpectatorCamera.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="Controls.h" />
