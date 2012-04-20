@@ -617,10 +617,11 @@ void CDLODTerrain::drawTerrain()
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
 
+		GLsizei idxOffset = idxCount*sizeof(uint16_t)*quadIdx;
         if (useInstancing)
         {
             glBindVertexArray(vaoInst);
-            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset, patchCount);
         }
         else
         {
@@ -629,7 +630,7 @@ void CDLODTerrain::drawTerrain()
             for (size_t i=0; i<patchCount; ++i)
             {
                 glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
-                glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
+                glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset);
             }
         }
 

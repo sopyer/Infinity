@@ -239,7 +239,7 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        terrain.viewDir = glm::vec4(vm[0].z, vm[1].z, -vm[2].z, 1);
+        terrain.viewDir = glm::vec4(-vm[0].z, -vm[1].z, -vm[2].z, 1);
 
         if (!fixedMode)
         {
@@ -256,6 +256,16 @@ protected:
         terrain.setMVPMatrix(mProj*vm);
 
         terrain.drawTerrain();
+
+        glUseProgram(0);
+        glBegin(GL_LINES);
+        glColor3f(1, 0, 0);
+        glVertex3f(0, 100, 0); glVertex3f(100, 100,   0);
+        glColor3f(0, 1, 0);
+        glVertex3f(0, 100, 0); glVertex3f(  0, 200,   0);
+        glColor3f(0, 0, 1);
+        glVertex3f(0, 100, 0); glVertex3f(  0, 100, 100);
+        glEnd();
 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
