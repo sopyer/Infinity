@@ -45,7 +45,6 @@ public:
     GLuint		geomVBO, instVBO, ibo, ubo;
 
     PatchData*	instData;
-    PatchData*	patchDataMem;
     size_t		patchCount;
     size_t		maxPatchCount;
     GLsizei		idxCount;

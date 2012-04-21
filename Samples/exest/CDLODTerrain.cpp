@@ -178,8 +178,6 @@ void CDLODTerrain::initialize()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	instData     = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
 
-    patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
-
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);
 }
@@ -228,7 +226,6 @@ void CDLODTerrain::reset()
 void CDLODTerrain::cleanup()
 {
     free(instData);
-    free(patchDataMem);
     glDeleteBuffers(1, &ubo);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &geomVBO);
@@ -536,19 +533,6 @@ void CDLODTerrain::drawTerrain()
 	int yoverx = abs(viewDir.x)>abs(viewDir.z);
 	int quadIdx = useOverDrawOptimization?(yoverx<<2)|((viewDir.z>0)<<1)|(viewDir.x>0):0;
 
-	PatchData*	sortedData;
-	if (useInstancing)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-		//Discard data from previous frame
-		glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-		sortedData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	}
-	else
-	{
-		sortedData = patchDataMem;
-	}
-
 	struct
 	{
 		float cx, cy;
@@ -564,10 +548,14 @@ void CDLODTerrain::drawTerrain()
 	cmp.cy=floorf((viewPoint.z-startY)/cellSize);
 
 	if (useOverDrawOptimization) std::sort(instData, instData+patchCount, cmp);
-	memcpy(sortedData, instData, sizeof(PatchData)*patchCount);
 
 	if (useInstancing)
 	{
+		glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+		//Discard data from previous frame
+		glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+		PatchData* sortedData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    	memcpy(sortedData, instData, sizeof(PatchData)*patchCount);
 		glUnmapBuffer(GL_ARRAY_BUFFER);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
@@ -629,7 +617,7 @@ void CDLODTerrain::drawTerrain()
             glBindVertexArray(vao);
             for (size_t i=0; i<patchCount; ++i)
             {
-                glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
+                glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), instData+i);
                 glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, (GLvoid*)idxOffset);
             }
         }

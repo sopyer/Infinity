@@ -215,8 +215,6 @@ protected:
     {
         GLenum err;
 
-        glClearDepth(1.0);
-
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadMatrixf(mProj);
