@@ -237,15 +237,15 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        terrain.viewDir = glm::vec4(-vm[0].z, -vm[1].z, -vm[2].z, 1);
-
         if (!fixedMode)
         {
+            terrain.viewDir = glm::vec3(-vm[0].z, -vm[1].z, -vm[2].z);
             terrain.viewPoint = camera.getPosition();
             terrain.setSelectMatrix(mProj*vm);
         }
         else
         {
+            terrain.viewDir = savedVD;
             terrain.viewPoint = VPpp;
             terrain.setSelectMatrix(VP);
             drawFrustum(VP);
@@ -291,7 +291,7 @@ protected:
     }
 
     bool fixedMode;
-    glm::vec3 VPpp;
+    glm::vec3 VPpp, savedVD;
     uint8_t prevKeystate[SDLK_LAST];
     bool moveFwd, moveBwd, moveLeft, moveRight;
     __int64 lastTimeMark;
@@ -377,6 +377,7 @@ protected:
         {
             glm::mat4 vm;
             camera.getViewMatrix(vm);
+            savedVD = glm::vec3(-vm[0].z, -vm[1].z, -vm[2].z);
             VP = mProj*vm;
             VPpp = camera.getPosition();
         }

@@ -538,14 +538,14 @@ void CDLODTerrain::drawTerrain()
 		float cx, cy;
 		bool operator()(const PatchData& left, const PatchData& right)
 		{
-			size_t a = ((int)left.level<<16)|((int)(abs(left.baseX-cx)+abs(left.baseY-cy))&0xFFFF);
-			size_t b = ((int)right.level<<16)|((int)(abs(right.baseX-cx)+abs(right.baseY-cy))&0xFFFF);
+			size_t a = ((int)left.level<<16)|(((int)(abs(left.baseX-cx)+abs(left.baseY-cy)))&0xFFFF);
+			size_t b = ((int)right.level<<16)|(((int)(abs(right.baseX-cx)+abs(right.baseY-cy)))&0xFFFF);
 			return a<b;
 		}
 	} cmp;
 
-	cmp.cx=floorf((viewPoint.x-startX)/cellSize);
-	cmp.cy=floorf((viewPoint.z-startY)/cellSize);
+	cmp.cx=floorf(floorf((viewPoint.x-startX)/cellSize)/patchDim)*patchDim;
+	cmp.cy=floorf(floorf((viewPoint.z-startY)/cellSize)/patchDim)*patchDim;
 
 	if (useOverDrawOptimization) std::sort(instData, instData+patchCount, cmp);
 

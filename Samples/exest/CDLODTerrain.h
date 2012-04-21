@@ -49,7 +49,7 @@ public:
     size_t		maxPatchCount;
     GLsizei		idxCount;
 
-    glm::vec4	viewDir;
+    glm::vec3	viewDir;
     glm::vec3   viewPoint;
 
     ml::mat4x4	sseVP;
