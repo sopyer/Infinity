@@ -36,8 +36,8 @@ public:
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
-        camera.acceleration = glm::vec3(150, 150, 150);
-        camera.maxVelocity  = glm::vec3(60, 60, 60);
+        camera.acceleration = glm::vec3(150*6, 150*6, 150*6);
+        camera.maxVelocity  = glm::vec3(60*6, 60*6, 60*6);
         //camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
         //    0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
         //    -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,

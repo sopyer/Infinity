@@ -71,10 +71,10 @@ namespace ml
 		deltaMax = vi_and(maskMax, deltaMax);
 		res = vi_add(res, vi_dot3(deltaMax, deltaMax));
 
-		r2 = vi_set_all(radius);
-		r2 = vi_mul(r2, r2);
+        float d2;
+        _mm_store_ss(&d2, res);
         
-        bool res1 = vi_all(vi_cmp_le(res, r2));
+        bool res1 = d2<radius*radius;
         bool res2 = sphereAABBTest2(AABB, center, radius, res);
         
         assert(res2==res1);
