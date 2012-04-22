@@ -79,8 +79,10 @@ public:
         add(mStatsBox.add(mSelectTimeLabel)
             .add(mDrawTimeLabel)
             .add(mGeomStatLabel)
+            .add(mInstSwitch)
+            .add(mOverSwitch)
             .setPos(10, 10)
-            .setSize(300, 140)
+            .setSize(300, 170)
             );
 
         mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
@@ -106,6 +108,8 @@ public:
     ui::Label	mDrawTimeLabel;
     ui::Label	mSelectTimeLabel;
     ui::Label	mGeomStatLabel;
+    ui::Label   mInstSwitch;
+    ui::Label   mOverSwitch;
 
     ~Exest()
     {
@@ -278,16 +282,26 @@ protected:
 
     void onUpdateStats()
     {
-        mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
         wchar_t str[256];
+
+        mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
+
         _snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
         mSelectTimeLabel.setText(str);
+
         _snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
         mDrawTimeLabel.setText(str);
+
         int patches = terrain.patchCount;
         int vtx = patches*terrain.patchDim*terrain.patchDim;
         _snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
         mGeomStatLabel.setText(str);
+
+        _snwprintf(str, 256, L"Overdraw opt:%s", terrain.useOverDrawOptimization?L"on":L"off");
+        mOverSwitch.setText(str);
+
+        _snwprintf(str, 256, L"Instancing opt:%s", terrain.useInstancing?L"on":L"off");
+        mInstSwitch.setText(str);
     }
 
     bool fixedMode;

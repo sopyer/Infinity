@@ -590,7 +590,7 @@ void CDLODTerrain::drawTerrain()
 
         if (useOverDrawOptimization)
 		{
-			glDisable(GL_DEPTH_TEST);
+			//glDisable(GL_DEPTH_TEST);
 			//Probably can be replaced with depth test, with function GL_LESS
 			//but atm following is not working
 			//glDepthFunc(GL_LESS);
