@@ -357,10 +357,10 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
     vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
     vdist = vi_dot3(vdist, vdist);
 
-    r2 = vi_set_all(LODs[level].rangeStart);
-    r2 = vi_mul(r2, r2);
-    
-    bool intersect = vi_all(vi_cmp_le(vdist, r2));
+    float d2;
+    _mm_store_ss(&d2, vdist);
+        
+    bool intersect = d2<LODs[level].rangeStart*LODs[level].rangeStart;
 
     assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODs[level].rangeStart));
 
@@ -542,7 +542,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     gridDimX = width;
     gridDimY = height;
 
-    cellSize = 4.0f;
+    cellSize = 4.0f*10.0f;
     startX = -0.5f*cellSize*(gridDimX-1);
     startY = -0.5f*cellSize*(gridDimY-1);
 
@@ -552,7 +552,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     LODCount = 5;
     //TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
     morphZoneRatio = 0.30f;
-    heightScale = 65535.0f/732.0f;
+    heightScale = 65535.0f/732.0f*10.0f;
 
     maxPatchCount = MAX_PATCH_COUNT;
 
@@ -560,7 +560,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    TerrainData&  terrainData  = *(TerrainData*)(uniforms+uniTerrainOffset);
+    TerrainData&  terrainData  = *(TerrainData*) (uniforms+uniTerrainOffset);
     GradientData& gradientData = *(GradientData*)(uniforms+uniGradientOffset);
 
     calculateLODParams(terrainData.uMorphParams);
