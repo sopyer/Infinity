@@ -300,7 +300,7 @@ void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 
 void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
 {
-    if (patchCount<maxPatchCount)
+    if (patchCount<MAX_PATCH_COUNT)
     {
         instData->baseX = (float)i;
         instData->baseY = (float)j;
@@ -476,6 +476,7 @@ void CDLODTerrain::drawTerrain()
     cpuDrawTimer.start();
     gpuTimer.start();
 
+    patchCount = std::min(patchCount, maxPatchCount);
     if (patchCount)
     {
         PROFILER_CPU_BLOCK("Render");
