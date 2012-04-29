@@ -242,9 +242,6 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
     assert(LODCount<=MAX_LOD_COUNT);
 
     size_t	dim = patchDim;
-    size_t	patchCountX = (gridDimX-1+dim-1)/dim;
-    size_t	patchCountY = (gridDimY-1+dim-1)/dim;
-    size_t	patchCount = patchCountX*patchCountY;
     float	size2=cellSize*cellSize*patchDim*patchDim,
             range=400.0f, curRange=0.0f;
 
@@ -252,7 +249,7 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
     {
         //To avoid cracks when height is greater then minRange,
         float minRange = 2.0f*sqrt(size2+size2);
-        float range    = std::max(range, minRange);
+        range    = std::max(range, minRange);
 
         LODs[i].rangeStart  = curRange;
         curRange           += range;
@@ -267,10 +264,6 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
         morphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 1.0f/morphRangeY, -morphStartY/morphRangeY);
 
         LODs[i].patchDim     = dim;
-
-        patchCountX     = (patchCountX+1)/2;
-        patchCountY     = (patchCountY+1)/2;
-        patchCount      = patchCountX*patchCountY;
 
         range *= 1.5f;
 
