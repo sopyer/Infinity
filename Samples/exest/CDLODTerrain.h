@@ -54,13 +54,8 @@ public:
 
     ml::mat4x4	sseVP;
 
-    struct LODDesc
-    {
-        float	rangeStart;
-        size_t	patchDim;
-    };
-
-    LODDesc		LODs[MAX_LOD_COUNT];
+    float LODRange [MAX_LOD_COUNT];
+    float patchSize[MAX_LOD_COUNT];
 
     void generateGeometry();
     void generateBBoxData(uint16_t* data);
@@ -71,9 +66,9 @@ public:
 
     void calculateLODParams(vec4* morphParams);
 
-    void addPatchToQueue(size_t level, size_t i, size_t j);
+    void addPatchToQueue(size_t level, float bx, float by);
 
-    void selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest=false);
+    void selectQuadsForDrawing(size_t level, float bx, float by, bool skipFrustumTest=false);
 
     void initialize();
     void cleanup();

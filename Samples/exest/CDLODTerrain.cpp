@@ -241,7 +241,7 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
 {
     assert(LODCount<=MAX_LOD_COUNT);
 
-    size_t	dim = patchDim;
+    float	dim = (float)patchDim;
     float	size2=cellSize*cellSize*patchDim*patchDim,
             range=400.0f, curRange=0.0f;
 
@@ -251,8 +251,8 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
         float minRange = 2.0f*sqrt(size2+size2);
         range    = std::max(range, minRange);
 
-        LODs[i].rangeStart  = curRange;
-        curRange           += range;
+        LODRange[i]  = curRange;
+        curRange    += range;
 
         float rangeEnd   = curRange;
         float morphRange = range*morphZoneRatio;
@@ -263,7 +263,7 @@ void CDLODTerrain::calculateLODParams(vec4* morphParams)
 
         morphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 1.0f/morphRangeY, -morphStartY/morphRangeY);
 
-        LODs[i].patchDim     = dim;
+        patchSize[i]     = dim;
 
         range *= 1.5f;
 
@@ -291,12 +291,12 @@ void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
     viewData.uMVP.r3 = vi_loadu(mat[3]);
 }
 
-void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
+void CDLODTerrain::addPatchToQueue(size_t level, float bx, float by)
 {
     if (patchCount<MAX_PATCH_COUNT)
     {
-        instData->baseX = (float)i;
-        instData->baseY = (float)j;
+        instData->baseX = bx;
+        instData->baseY = by;
         instData->level = (float)level;
 
         ++instData;
@@ -304,17 +304,17 @@ void CDLODTerrain::addPatchToQueue(size_t level, size_t i, size_t j)
     }
 }
 
-void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool skipFrustumTest)
+void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float by, bool skipFrustumTest)
 {
-    if (i>=gridDimX-1 || j>=gridDimY-1) return;
+    if (bx>=gridDimX-1 || by>=gridDimY-1) return;
 
     ml::aabb AABB;
 
-    float sizeX = std::min(LODs[level].patchDim, gridDimX-i)*cellSize;
-    float sizeY = std::min(LODs[level].patchDim, gridDimY-j)*cellSize;
+    float sizeX = std::min<float>(patchSize[level], gridDimX-bx)*cellSize;
+    float sizeY = std::min<float>(patchSize[level], gridDimY-by)*cellSize;
 
-    float minX = startX+cellSize*i;
-    float minY = startY+cellSize*j;
+    float minX = startX+cellSize*bx;
+    float minY = startY+cellSize*by;
     float maxX = minX+sizeX;
     float maxY = minY+sizeY;
 
@@ -330,9 +330,9 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
         skipFrustumTest = result==ml::IT_INSIDE;
     }
 
-    if (level==0 || (LODs[level].rangeStart+heightScale<viewPoint.y))
+    if (level==0 || (LODRange[level]+heightScale<viewPoint.y/*-uOffset.y*/))
     {
-        addPatchToQueue(level, i, j);
+        addPatchToQueue(level, bx, by);
         return;
     }
 
@@ -344,7 +344,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
     AABB2D.max.m128_f32[1] = 0.0f;
     vec4 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
 
-    vec4 vdist, r2;
+    vec4 vdist;
         
     vdist = ml::distanceToAABB(&AABB, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0.0));
     vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
@@ -353,9 +353,9 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
     float d2;
     _mm_store_ss(&d2, vdist);
         
-    bool intersect = d2<LODs[level].rangeStart*LODs[level].rangeStart;
+    bool intersect = d2<LODRange[level]*LODRange[level];
 
-    assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODs[level].rangeStart));
+    assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODRange[level]));
 
     if (!intersect
         /*maxX-vp2d.x<-LODs[level].rangeStart ||
@@ -364,16 +364,16 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, size_t i, size_t j, bool 
         minY-vp2d.z>LODs[level].rangeStart*/
         )
     {
-        addPatchToQueue(level, i, j);
+        addPatchToQueue(level, bx, by);
     }
     else
     {
         //TODO: add front to back sorting to minimize overdraw(optimization)
-        size_t offset = LODs[level].patchDim/2;
-        selectQuadsForDrawing(level-1, i,        j, skipFrustumTest);
-        selectQuadsForDrawing(level-1, i+offset, j, skipFrustumTest);
-        selectQuadsForDrawing(level-1, i,        j+offset, skipFrustumTest);
-        selectQuadsForDrawing(level-1, i+offset, j+offset, skipFrustumTest);
+        float offset = patchSize[level]/2;
+        selectQuadsForDrawing(level-1, bx,        by,        skipFrustumTest);
+        selectQuadsForDrawing(level-1, bx+offset, by,        skipFrustumTest);
+        selectQuadsForDrawing(level-1, bx,        by+offset, skipFrustumTest);
+        selectQuadsForDrawing(level-1, bx+offset, by+offset, skipFrustumTest);
     }
 }
 
@@ -452,10 +452,10 @@ void CDLODTerrain::drawTerrain()
         cpuSelectTimer.start();
         patchCount = 0;
         size_t level = LODCount-1;
-        size_t step  = LODs[level].patchDim;
-        for (size_t j=0; j<gridDimY-1; j+=step)
-            for (size_t i=0; i<gridDimX-1; i+=step)
-                selectQuadsForDrawing(level, i, j);
+        float step  = patchSize[level];
+        for (float by=0; by<gridDimY-1; by+=step)
+            for (float bx=0; bx<gridDimX-1; bx+=step)
+                selectQuadsForDrawing(level, bx, by);
         cpuSelectTime = cpuSelectTimer.elapsed();
         cpuSelectTimer.stop();
     }
@@ -535,7 +535,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     gridDimX = width;
     gridDimY = height;
 
-    cellSize = 4.0f*10.0f;
+    cellSize = 4.0f;
     startX = -0.5f*cellSize*(gridDimX-1);
     startY = -0.5f*cellSize*(gridDimY-1);
 
@@ -545,7 +545,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     LODCount = 5;
     //TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
     morphZoneRatio = 0.30f;
-    heightScale = 65535.0f/732.0f*10.0f;
+    heightScale = 65535.0f/732.0f;
 
     maxPatchCount = MAX_PATCH_COUNT;
 

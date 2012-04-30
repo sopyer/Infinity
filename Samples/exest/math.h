@@ -57,7 +57,7 @@ namespace ml
 	{
 		vec4 deltaMin, deltaMax;
         vec4 maskMin, maskMax;
-        vec4 res, r2;
+        vec4 res;
 
 		deltaMin = vi_sub(AABB->min, center);
 		maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
