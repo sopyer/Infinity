@@ -6,18 +6,15 @@ layout(std140, column_major) uniform;
 
 layout(location = ATTR_POSITION)		in vec2		aVertex;
 
-//TODO: check whether some scales can be merged?
-
-//TODO: remove aLevel and replace it with aMorphParams and aPatchScale params
-//      and temporary aColor - make it work on SM 3.0
 #ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
-layout(location = ATTR_LEVEL)			in vec2		aLevel;
+layout(location = ATTR_LEVEL)			in float	aLevel;
 #else
 uniform uniPatch
 {
-	vec2 aPatchBase;
-	vec2 aLevel;  //Just in case, AMD seems to use actual size and does not pad uniform blocks :(
+	vec2  aPatchBase;
+	float aLevel;
+	float padding; //Just in case, AMD seems to use actual size and does not pad uniform blocks :(
 };
 #endif
 
@@ -25,15 +22,16 @@ uniform uniPatch
 
 uniform uniTerrain
 {
-	vec4		uHMDim;
-	vec3		uOffset;
+	vec4		uAABB;
 	vec3		uScale;
+	vec4		uUVXform;
+	vec2		uHeightXform;
 
 	// Morph parameter are evaluated as follows:
 	// uMorphParam[...].x = 1.0/(morphEnd-morphStart)
 	// uMorphParam[...].y = -morphStart/(morphEnd-morphStart)
 	vec2		uMorphParams[MAX_LOD_COUNT];
-	vec3		uColors[MAX_LOD_COUNT];
+	vec4		uColors[MAX_LOD_COUNT];
 };
 
 uniform uniView
@@ -46,33 +44,32 @@ uniform sampler2D	uHeightmap;
 
 out float vHeight;
 out vec4  vColor;
-out vec2 vUV;
 
 void main()
 {
-	vec2  patchScale = vec2(1<<int(aLevel.x));
+	vec2  patchScale = vec2(1<<int(aLevel))*uScale.x;
 	vec2  morphDir   = fract(aVertex*0.5)*2.0*patchScale;
 
 	vec3  vertexPos;
-	float distance, morphK;
-	
+
 	vertexPos.xz = aPatchBase + patchScale*aVertex;
-	vertexPos.xz = clamp(vertexPos.xz, vec2(0.0), uHMDim.xy-vec2(1.0)); //TODO: optimize!!!
+	vertexPos.xz = clamp(vertexPos.xz, uAABB.xy, uAABB.zw);
 	vertexPos.y  = 0.0;
 
-	//Applying morphing for seamless connectivity
+	float distance = length(vertexPos + uLODViewK.xyz);
+	float morphK   = clamp(distance*uMorphParams[int(aLevel)].x + uMorphParams[int(aLevel)].y, 0.0, 1.0);
 
-	distance     = length(vertexPos*uScale + uLODViewK.xyz);
-	morphK       = clamp(distance*uMorphParams[int(aLevel.x)].x + uMorphParams[int(aLevel.x)].y, 0.0, 1.0);
-	vertexPos.xz = vertexPos.xz+morphDir*morphK;
-	vec2 uv      = (vertexPos.xz+vec2(0.5))*uHMDim.zw; //TODO: optimize!!!
-	vertexPos.y  = textureLod(uHeightmap, uv, 0).r;
+	vertexPos.xz += morphDir*morphK; //Applying morphing for seamless connectivity
+
+	vec2  uv = vertexPos.xz*uUVXform.xy+uUVXform.zw;
+	float h  = textureLod(uHeightmap, uv, 0).r;
+
+	vertexPos.y   = h*uHeightXform.x+uHeightXform.y;
 
 	//Varyings
 
-	gl_Position = uMVP*vec4(vertexPos*uScale+uOffset, 1); //TODO: optimize!!!
-	vHeight     = vertexPos.y;
-	vColor      = vec4(uColors[int(aLevel.x)], 1);
-	vUV         = vertexPos.xz*uHMDim.zw;
+	gl_Position = uMVP*vec4(vertexPos, 1);
+	vHeight     = h;
+	vColor      = uColors[int(aLevel.x)];
 }
 

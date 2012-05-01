@@ -15,20 +15,22 @@ public:
     static const size_t MAX_LOD_COUNT = 8;
     static const size_t MAX_PATCH_COUNT = 4096;
 
-    size_t gridDimX;
-    size_t gridDimY;
     size_t LODCount;
-    size_t patchDim;
-    float  cellSize;
+    size_t patchDim;//should be local
+    float  cellSize;//Useless?????
+    float  chunkSize;
+    float  minX, maxX;
+    float  minY, maxY;
+    float  minZ, maxZ;
+    float  heightScale;//should be midHeight
+    float  morphZoneRatio;//should be local
 
-    float heightScale;
-    float startX;
-    float startY;
-    float morphZoneRatio;
+    bool useInstancing;
+    bool drawWireframe;
 
-    bool		useInstancing;
 
     GLuint		prgInstancedTerrain, prgTerrain;
+    GLuint		geomVBO, instVBO, ibo, ubo;
     GLuint		mHeightmapTex;
     GLuint		mColorRampTex;
     GLuint		vaoInst, vao;
@@ -41,8 +43,6 @@ public:
         vec4		uLODViewK;
     } viewData;
 
-    GLuint		geomVBO, instVBO, ibo, ubo;
-
     PatchData*	instData;
     PatchData*	patchDataMem;
     size_t		patchCount;
@@ -54,8 +54,8 @@ public:
 
     ml::mat4x4	sseVP;
 
-    float LODRange [MAX_LOD_COUNT];
-    float patchSize[MAX_LOD_COUNT];
+    float LODRange  [MAX_LOD_COUNT];
+    float patchScale[MAX_LOD_COUNT];
 
     void generateGeometry();
     void generateBBoxData(uint16_t* data);
@@ -66,9 +66,8 @@ public:
 
     void calculateLODParams(vec4* morphParams);
 
-    void addPatchToQueue(size_t level, float bx, float by);
-
-    void selectQuadsForDrawing(size_t level, float bx, float by, bool skipFrustumTest=false);
+    void addPatchToQueue(size_t level, float bx, float bz);
+    void selectQuadsForDrawing(size_t level, float bx, float bz, float patchSize, bool skipFrustumTest=false);
 
     void initialize();
     void cleanup();
@@ -76,8 +75,6 @@ public:
     void drawTerrain();
 
     void reset();
-
-    bool drawWireframe;
 
     CPUTimer	cpuTimer;
     CPUTimer	cpuSelectTimer;
