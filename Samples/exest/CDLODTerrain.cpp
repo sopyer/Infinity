@@ -322,7 +322,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
         skipFrustumTest = result==ml::IT_INSIDE;
     }
 
-    if (level==0 || (LODRange[level]+heightScale<viewPoint.y/*-uOffset.y*/))
+    if (level==0 || vertDistToTerrain>LODRange[level])
     {
         addPatchToQueue(level, bx, bz);
         return;
@@ -440,6 +440,9 @@ void CDLODTerrain::drawTerrain()
         instData = patchDataMem;
     }
 
+    vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
+    vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
+
     {
         PROFILER_CPU_BLOCK("Select");
         cpuSelectTimer.start();
@@ -465,10 +468,8 @@ void CDLODTerrain::drawTerrain()
     if (patchCount)
     {
         PROFILER_CPU_BLOCK("Render");
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
 
-        float vertDistToTerrain = abs(viewPoint.y/*-uOffset.y*/-heightScale/2.0f);
-        viewData.uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain>heightScale/2.0?vertDistToTerrain-heightScale/2.0f:0.0f, -viewPoint.z, 0.0f);
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
@@ -487,6 +488,8 @@ void CDLODTerrain::drawTerrain()
         glEnable(GL_DEPTH_TEST);
 
         glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
+
+        viewData.uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
@@ -525,6 +528,7 @@ void CDLODTerrain::drawTerrain()
 void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 {
     float  pixelsPerChunk;
+    float  heightScale;
 
     cellSize = 4.0f;
     patchDim = 8;

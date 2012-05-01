@@ -22,20 +22,10 @@ public:
     float  minX, maxX;
     float  minY, maxY;
     float  minZ, maxZ;
-    float  heightScale;//should be midHeight
     float  morphZoneRatio;//should be local
 
-    bool useInstancing;
-    bool drawWireframe;
-
-
-    GLuint		prgInstancedTerrain, prgTerrain;
-    GLuint		geomVBO, instVBO, ibo, ubo;
-    GLuint		mHeightmapTex;
-    GLuint		mColorRampTex;
-    GLuint		vaoInst, vao;
-
-    GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
+    float LODRange  [MAX_LOD_COUNT];
+    float patchScale[MAX_LOD_COUNT];
 
     struct ViewData
     {
@@ -43,38 +33,41 @@ public:
         vec4		uLODViewK;
     } viewData;
 
+    glm::vec4	viewDir;
+    glm::vec3   viewPoint;
+    ml::mat4x4	sseVP;
+    float       vertDistToTerrain;
+
     PatchData*	instData;
     PatchData*	patchDataMem;
     size_t		patchCount;
     size_t		maxPatchCount;
     GLsizei		idxCount;
 
-    glm::vec4	viewDir;
-    glm::vec3   viewPoint;
+    bool useInstancing;
+    bool drawWireframe;
 
-    ml::mat4x4	sseVP;
-
-    float LODRange  [MAX_LOD_COUNT];
-    float patchScale[MAX_LOD_COUNT];
+    GLuint		prgInstancedTerrain, prgTerrain;
+    GLuint		geomVBO, instVBO, ibo, ubo;
+    GLuint		mHeightmapTex;
+    GLuint		mColorRampTex;
+    GLuint		vaoInst, vao;
+    GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
 
     void generateGeometry();
-    void generateBBoxData(uint16_t* data);
-
-    void setHeightmap(uint16_t* data, size_t width, size_t height);
-    void setSelectMatrix(glm::mat4& mat);
-    void setMVPMatrix(glm::mat4& mat);
-
     void calculateLODParams(vec4* morphParams);
+    void setHeightmap(uint16_t* data, size_t width, size_t height);
 
     void addPatchToQueue(size_t level, float bx, float bz);
     void selectQuadsForDrawing(size_t level, float bx, float bz, float patchSize, bool skipFrustumTest=false);
 
     void initialize();
     void cleanup();
-
-    void drawTerrain();
-
     void reset();
+
+    void setSelectMatrix(glm::mat4& mat);
+    void setMVPMatrix(glm::mat4& mat);
+    void drawTerrain();
 
     CPUTimer	cpuTimer;
     CPUTimer	cpuSelectTimer;
