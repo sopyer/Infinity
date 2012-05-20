@@ -23,10 +23,10 @@ uniform uniPatch
 uniform uniTerrain
 {
 	vec4		uAABB;
-	vec3		uScale;
 	vec4		uUVXform;
 	vec2		uHeightXform;
 
+	float		uPatchScales[MAX_LOD_COUNT];
 	// Morph parameter are evaluated as follows:
 	// uMorphParam[...].x = 1.0/(morphEnd-morphStart)
 	// uMorphParam[...].y = -morphStart/(morphEnd-morphStart)
@@ -47,7 +47,7 @@ out vec4  vColor;
 
 void main()
 {
-	vec2  patchScale = vec2(1<<int(aLevel))*uScale.x;
+	float patchScale = uPatchScales[int(aLevel)];
 	vec2  morphDir   = fract(aVertex*0.5)*2.0*patchScale;
 
 	vec3  vertexPos;

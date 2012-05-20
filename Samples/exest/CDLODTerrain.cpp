@@ -10,9 +10,9 @@ struct PatchData
 struct TerrainData
 {
     vec4        uAABB;
-    vec4		uScale;
 	vec4		uUVXform;
 	vec4		uHeightXform;
+    vec4		uPatchScales[CDLODTerrain::MAX_LOD_COUNT];
     vec4		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
     vec4		uColors[CDLODTerrain::MAX_LOD_COUNT];
 };
@@ -234,39 +234,6 @@ void CDLODTerrain::cleanup()
     glDeleteTextures(1, &mColorRampTex);
 }
 
-void CDLODTerrain::calculateLODParams(vec4* morphParams)
-{
-    assert(LODCount<=MAX_LOD_COUNT);
-
-    float	invScale = patchDim*(float)(1<<LODCount);
-    float	size2=cellSize*cellSize*patchDim*patchDim,
-            range=100.0f, curRange=0.0f;
-
-    for (size_t i=0; i<LODCount; ++i)
-    {
-        //To avoid cracks when diagonal is greater then minRange,
-        float minRange = 2.0f*sqrt(size2+size2);
-        range = std::max(range, minRange);
-
-        LODRange[i]  = curRange;
-        curRange    += range;
-
-        float rangeEnd   = curRange;
-        float morphRange = range*morphZoneRatio;
-        float morphStart = rangeEnd-morphRange;
-
-        morphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0.0f, 0.0f);
-        patchScale [i] = chunkSize/invScale;
-
-        range    *= 2.5f;
-        size2    *= 4.0f;
-        invScale /= 2.0f;
-    }
-
-    //Fix unnecessary morph in last LOD level
-   morphParams[LODCount-1] = vi_load_zero();
-}
-
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 {
     sseVP.r0 = vi_loadu(mat[0]);
@@ -345,7 +312,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
     float d2;
     _mm_store_ss(&d2, vdist);
         
-    bool intersect = d2<LODRange[level]*LODRange[level];
+    bool intersect = d2<=LODRange[level]*LODRange[level];
 
     assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODRange[level]));
 
@@ -382,31 +349,34 @@ glm::vec4 colors[] =
     glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
 };
 
-void CDLODTerrain::generateGeometry()
+void CDLODTerrain::generateGeometry(size_t vertexCount)
 {
     glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2)*(patchDim+1)*(patchDim+1), 0, GL_STATIC_DRAW);
-    glm::vec2* ptr = (glm::vec2*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    for (size_t y=0; y<=patchDim; ++y)
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*vertexCount*vertexCount, 0, GL_STATIC_DRAW);
+    float* ptr = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    for (size_t y=0; y<vertexCount; ++y)
     {
-        for (size_t x=0; x<=patchDim; ++x)
+        for (size_t x=0; x<vertexCount; ++x)
         {
-            *ptr++ = glm::vec2(x, y);
+            *ptr++ = (float)x;
+            *ptr++ = (float)y;
         }
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-#define INDEX_FOR_LOCATION(x, y) ((y)*(patchDim+1)+(x))
+#define INDEX_FOR_LOCATION(x, y) ((y)*vertexCount+(x))
 
-    idxCount = patchDim*patchDim*6;
+    size_t quadsInRow = vertexCount-1;
+
+    idxCount = quadsInRow*quadsInRow*6;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
     uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
-    for (size_t y=0; y<patchDim; ++y)
+    for (size_t y=0; y<quadsInRow; ++y)
     {
-        for (size_t x=0; x<patchDim; ++x)
+        for (size_t x=0; x<quadsInRow; ++x)
         {
             *ptr2++ = INDEX_FOR_LOCATION(x,   y);
             *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
@@ -527,21 +497,18 @@ void CDLODTerrain::drawTerrain()
 
 void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 {
-    float  pixelsPerChunk;
-    float  heightScale;
-
-    cellSize = 4.0f;
-    patchDim = 8;
-
     //TODO: LODCount should clamped based on pixelsPerChunk
-    LODCount = 5;
+    LODCount  = 5;
+    patchDim  = 8;
+    chunkSize = 100;//patchSize[LODCount-1]*cellSize;
+
+    float  pixelsPerChunk = 129;
+    float  heightScale;
+    float  cellSize = chunkSize/(pixelsPerChunk-1);
     //TODO: morphZoneRatio should should be less then 1-patchDiag/LODDistance
-    morphZoneRatio = 0.30f;
+    float  morphZoneRatio = 0.30f;
 
     maxPatchCount = MAX_PATCH_COUNT;
-
-    chunkSize      = 512;//patchSize[LODCount-1]*cellSize;
-    pixelsPerChunk = 129;
 
     minX = -0.5f*cellSize*(width-1);
     minZ = -0.5f*cellSize*(height-1);
@@ -549,25 +516,52 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     maxZ = minZ+(height-1)*cellSize;
 
     heightScale = 65535.0f/732.0f;
-    minY        = 0.0f;
-    maxY        = heightScale;
+    minY        = -39.938129f;//0.0f;
+    maxY        =  133.064011f;//heightScale;
+    heightScale = maxY-minY;
 
     float du = 1.0f/width;
     float dv = 1.0f/height;
 
     float pixelsPerMeter = (pixelsPerChunk-1)/chunkSize;
 
-    generateGeometry();
+    generateGeometry(patchDim+1);
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     TerrainData&  terrainData  = *(TerrainData*) (uniforms+uniTerrainOffset);
     GradientData& gradientData = *(GradientData*)(uniforms+uniGradientOffset);
 
-    calculateLODParams(terrainData.uMorphParams);
+    assert(LODCount<=MAX_LOD_COUNT);
+
+    float	size2=cellSize*cellSize*patchDim*patchDim,
+            range=100.0f, curRange=0.0f;
+
+    for (size_t i=0; i<LODCount; ++i)
+    {
+        //To avoid cracks when diagonal is greater then minRange,
+        float minRange = 2.0f*sqrt(size2+size2);
+        range = std::max(range, minRange);
+
+        LODRange[i]  = curRange;
+        curRange    += range;
+
+        float rangeEnd   = curRange;
+        float morphRange = range*morphZoneRatio;
+        float morphStart = rangeEnd-morphRange;
+
+        terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0.0f, 0.0f);
+        terrainData.uPatchScales[i] = vi_set_all(cellSize);
+
+        range    *= 1.5f;
+        size2    *= 4.0f;
+        cellSize *= 2.0f;
+    }
+
+    //Fix unnecessary morph in last LOD level
+    terrainData.uMorphParams[LODCount-1] = vi_load_zero();
 
     terrainData.uAABB        = vi_set(minX, minZ, maxX, maxZ);
-    terrainData.uScale       = vi_set(cellSize, heightScale, cellSize, 0.0f);
     terrainData.uUVXform     = vi_set(pixelsPerMeter*du, pixelsPerMeter*dv, (-minX*pixelsPerMeter+0.5f)*du, (-minZ*pixelsPerMeter+0.5f)*dv);
     terrainData.uHeightXform = vi_set(heightScale, minY, 0.0f, 0.0f);
     memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));

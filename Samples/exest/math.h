@@ -74,7 +74,7 @@ namespace ml
         float d2;
         _mm_store_ss(&d2, res);
         
-        bool res1 = d2<radius*radius;
+        bool res1 = d2<=radius*radius;
         bool res2 = sphereAABBTest2(AABB, center, radius, res);
         
         assert(res2==res1);

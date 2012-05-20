@@ -51,7 +51,7 @@ public:
 
         mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
         colorTex = resources::createTexture2D("debugTexture.png");
-        File	src = VFS::openRead("bridge_demo.pmp");
+        File	src = VFS::openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system
         //assert(src.size()<SIZE_MAX);
         ///size_t fileSize = (size_t)src.size();
@@ -64,12 +64,15 @@ public:
         //assert(imgChannels==1);
 
         uint32_t blockCount, vertCount;
-        src.seek(4+4+4);
-        src.read(&blockCount, sizeof(blockCount), 1);
-        vertCount = blockCount*16+1;
-        uint16_t* data = new uint16_t[vertCount*vertCount];
-        src.read(data, vertCount*vertCount*sizeof(uint16_t), 1);
-        terrain.setHeightmap(data, vertCount, vertCount);
+        //src.seek(4+4+4);
+        //src.read(&blockCount, sizeof(blockCount), 1);
+        //vertCount = blockCount*16+1;
+        uint32_t w = 3073;
+        uint32_t h = 4097;
+
+        uint16_t* data = new uint16_t[w*h];
+        src.read(data, w*h*sizeof(uint16_t), 1);
+        terrain.setHeightmap(data, w, h);
 
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;

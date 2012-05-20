@@ -15,17 +15,14 @@ public:
     static const size_t MAX_LOD_COUNT = 8;
     static const size_t MAX_PATCH_COUNT = 4096;
 
+    size_t patchDim;
     size_t LODCount;
-    size_t patchDim;//should be local
-    float  cellSize;//Useless?????
     float  chunkSize;
     float  minX, maxX;
     float  minY, maxY;
     float  minZ, maxZ;
-    float  morphZoneRatio;//should be local
 
     float LODRange  [MAX_LOD_COUNT];
-    float patchScale[MAX_LOD_COUNT];
 
     struct ViewData
     {
@@ -54,8 +51,7 @@ public:
     GLuint		vaoInst, vao;
     GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
 
-    void generateGeometry();
-    void calculateLODParams(vec4* morphParams);
+    void generateGeometry(size_t vertexCount);
     void setHeightmap(uint16_t* data, size_t width, size_t height);
 
     void addPatchToQueue(size_t level, float bx, float bz);
