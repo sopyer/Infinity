@@ -50,7 +50,7 @@ out vec2  vUV;
 void main()
 {
 	float patchScale = uPatchScales[int(aLevel)];
-	vec2  morphDir   = fract(aVertex*0.5)*2.0*patchScale;
+	vec2  morphDir   = fract(aVertex*0.5)*2.0;
 
 	vec3  vertexPos;
 
@@ -61,7 +61,7 @@ void main()
 	float distance = length(vertexPos + uLODViewK.xyz);
 	float morphK   = clamp(distance*uMorphParams[int(aLevel)].x + uMorphParams[int(aLevel)].y, 0.0, 1.0);
 
-	vertexPos.xz += morphDir*morphK; //Applying morphing for seamless connectivity
+	vertexPos.xz += patchScale*morphDir*morphK; //Applying morphing for seamless connectivity
 
 	vec2  uv = vertexPos.xz*uUVXform.xy+uUVXform.zw;
 	float h  = textureLod(uHeightmap, uv, 0).r;
@@ -74,6 +74,6 @@ void main()
 	vHeight     = h;
 	vPos        = vertexPos;
 	vColor      = uColors[int(aLevel.x)];
-	vUV         = aVertex / 8.0 * 64.0/8.0;
+	vUV         = (aVertex + morphDir*morphK) / 8.0 * 64.0/8.0;
 }
 
