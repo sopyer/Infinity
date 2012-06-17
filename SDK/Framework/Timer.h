@@ -4,37 +4,6 @@
 #include <windows.h>
 #include <opengl.h>
 
-//#include <stdint.h>
-
-//class Timer
-//{
-//public:
-//	Timer(): mStartTime(0), mFrameStartTime(0) {QueryPerformanceFrequency(&mFrequency);}
-//	~Timer() {}
-//
-//	void resetFrame(){mFrameStartTime = getAbsTime();}
-//
-//	uint32_t getFrameTime() {return mFrameStartTime ? getAbsTime() - mFrameStartTime : 0;}
-//	uint32_t getTime() {return mStartTime ? getAbsTime() - mStartTime : 0;}
-//
-//	void start() {mStartTime = getAbsTime();}
-//	void stop() {mStartTime = 0; mFrameStartTime = 0;}
-//
-//private:
-//	uint32_t getAbsTime()
-//	{
-//		LARGE_INTEGER	time;
-//		QueryPerformanceCounter(&time);
-//		return uint32_t(time.QuadPart * 1000 / mFrequency.QuadPart);
-//	}
-//
-//private:
-//	uint32_t mStartTime;
-//	uint32_t mFrameStartTime;
-//
-//	LARGE_INTEGER mFrequency;
-//};
-//
 struct CPUTimer
 {
 	void start()
@@ -61,29 +30,53 @@ struct CPUTimer
 	LARGE_INTEGER startTime;
 };
 
+#define NUM_DELAYED_FRAMES 3
+
 struct GPUTimer
 {
-	GPUTimer() {glGenQueries(1, &mTimeQuery);}
-	~GPUTimer() {glDeleteQueries(1, &mTimeQuery);}
+	GPUTimer() : frameID(0), skipFrames(NUM_DELAYED_FRAMES)
+    {
+        glGenQueries(NUM_DELAYED_FRAMES, mQueries);
+    }
+	
+    ~GPUTimer()
+    {
+        glDeleteQueries(NUM_DELAYED_FRAMES, mQueries);
+    }
 
 	void start()
 	{
-		glBeginQuery(GL_TIME_ELAPSED, mTimeQuery);
+		glBeginQuery(GL_TIME_ELAPSED, mQueries[frameID]);
 	}
 
 	void stop()
 	{
 		glEndQuery(GL_TIME_ELAPSED);
+        frameID = (frameID+1)%NUM_DELAYED_FRAMES;
 	}
 
 	double getResult()
 	{
+        GLenum err = glGetError();
+        if (err!=GL_NO_ERROR) __asm int 3; 
+
+        if (skipFrames>1)
+        {
+            --skipFrames;
+            return 0.0f;
+        }
+
 		GLuint64EXT result;
-		glGetQueryObjectui64v(mTimeQuery, GL_QUERY_RESULT, &result);
-		return result/1000.0f/1000.0f;
+		glGetQueryObjectui64v(mQueries[frameID], GL_QUERY_RESULT, &result);
+        err = glGetError();
+        if (err!=GL_NO_ERROR) __asm int 3; 
+        
+        return result/1000.0f/1000.0f;
 	}
 
-	GLuint		mTimeQuery;
+	GLuint mQueries[NUM_DELAYED_FRAMES];
+    size_t frameID;
+    size_t skipFrames;
 };
 
 __int64 timerAbsoluteTime();

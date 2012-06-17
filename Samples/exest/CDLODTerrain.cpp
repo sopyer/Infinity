@@ -17,12 +17,6 @@ struct TerrainData
     vec4		uColors[CDLODTerrain::MAX_LOD_COUNT];
 };
 
-struct GradientData
-{
-    vec4		uStops[8];
-    vec4		uScales[8];
-    float		uInvStopCount;
-};
 
 #define ATTR_POSITION	0
 #define ATTR_PATCH_BASE	1
@@ -30,32 +24,33 @@ struct GradientData
 
 #define UNI_TERRAIN_BINDING  0
 #define UNI_VIEW_BINDING     1
-#define UNI_GRADIENT_BINDING 2
-#define UNI_PATCH_BINDING    3
+#define UNI_PATCH_BINDING    2
 
 void CDLODTerrain::initialize()
 {
     useInstancing = true;
     drawWireframe = false;
 
-    GLint uniTerrain, uniPatch, uniView, uniGradient;
-    GLint uniHeightmap, uniColorRamp;
+    GLint uniTerrain, uniPatch, uniView;
+    GLint uniHeightmap, uniMipTexture;
 
     char* define;
 
     // Create non-instanced terrain program
     define = "#version 330\n";
-    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
+    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
 
     uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
     uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-    uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
     uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
 
     glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
     glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
     glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
+    {
+        GLenum err = glGetError();
+        assert(err==GL_NO_ERROR);
+    }
 
 #ifdef _DEBUG
     {
@@ -65,32 +60,28 @@ void CDLODTerrain::initialize()
         assert(structSize==sizeof(TerrainData));
         glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(ViewData));
-        glGetActiveUniformBlockiv(prgTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==sizeof(GradientData));
         glGetActiveUniformBlockiv(prgTerrain, uniPatch, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(PatchData));
     }
 #endif
 
-    uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
-    uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
+    uniHeightmap  = glGetUniformLocation(prgTerrain, "uHeightmap");
+    uniMipTexture = glGetUniformLocation(prgTerrain, "uMipTexture");
 
     glUseProgram(prgTerrain);
-    glUniform1i(uniHeightmap, 0);
-    glUniform1i(uniColorRamp, 1);
+    glUniform1i(uniHeightmap,  0);
+    glUniform1i(uniMipTexture, 1);
     glUseProgram(0);
 
     // Create instanced terrain program
     define = "#version 330\n#define ENABLE_INSTANCING\n";
-    prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.HeightColored.frag", 1, (const char**)&define);
+    prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
 
     uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
     uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
-    uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
 
     glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
     glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
 
 #ifdef _DEBUG
     {
@@ -100,17 +91,15 @@ void CDLODTerrain::initialize()
         assert(structSize==sizeof(TerrainData));
         glGetActiveUniformBlockiv(prgInstancedTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(ViewData));
-        glGetActiveUniformBlockiv(prgInstancedTerrain, uniGradient, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==sizeof(GradientData));
     }
 #endif
 
-    uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-    uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+    uniHeightmap  = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
+    uniMipTexture = glGetUniformLocation(prgInstancedTerrain, "uMipTexture");
 
     glUseProgram(prgInstancedTerrain);
-    glUniform1i(uniHeightmap, 0);
-    glUniform1i(uniColorRamp, 1);
+    glUniform1i(uniHeightmap,  0);
+    glUniform1i(uniMipTexture, 1);
     glUseProgram(0);
 
     GLint totalSize=0;
@@ -118,17 +107,37 @@ void CDLODTerrain::initialize()
 
     glGenTextures(1, &mHeightmapTex);
     glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenTextures(1, &mipTexture);
+    glBindTexture(GL_TEXTURE_2D, mipTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-    glGenTextures(1, &mColorRampTex);
-    glBindTexture(GL_TEXTURE_1D, mColorRampTex);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA,  8,  8, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 3, GL_RGBA,  4,  4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 4, GL_RGBA,  2,  2, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 5, GL_RGBA,  1,  1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glGenFramebuffers(1, &compositeFBO);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, compositeFBO);
+    float levelColors[6][4] = 
+    {
+        {0.0f, 0.0f, 1.0f, 0.8f},
+        {0.0f, 0.5f, 1.0f, 0.4f},
+        {1.0f, 1.0f, 1.0f, 0.0f},
+        {1.0f, 0.7f, 0.0f, 0.2f},
+        {1.0f, 0.3f, 0.0f, 0.6f},
+        {1.0f, 0.0f, 0.0f, 0.8f}
+    };
+    for (GLint i=0; i<6; ++i)
+    {
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mipTexture, i);
+        glClearBufferfv(GL_COLOR, 0, levelColors[i]);
+    }
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glGenBuffers(1, &geomVBO);
     glGenBuffers(1, &instVBO);
@@ -165,7 +174,6 @@ void CDLODTerrain::initialize()
 
     uniTerrainOffset  = totalSize;	totalSize+=sizeof(TerrainData);		totalSize += align; totalSize &=~align;
     uniViewOffset     = totalSize;	totalSize+=sizeof(ViewData);		totalSize += align; totalSize &=~align;
-    uniGradientOffset = totalSize;	totalSize+=sizeof(GradientData);	totalSize += align; totalSize &=~align;
     uniPatchOffset    = totalSize;	totalSize+=sizeof(PatchData);		totalSize += align; totalSize &=~align;
 
     glGenBuffers(1, &ubo);
@@ -182,7 +190,7 @@ void CDLODTerrain::initialize()
 void CDLODTerrain::reset()
 {
     GLint uniTerrain, uniPatch, uniView, uniGradient;
-    GLint uniHeightmap, uniColorRamp;
+    GLint uniHeightmap, uniMipTexture;
 
     uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
     uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
@@ -191,15 +199,14 @@ void CDLODTerrain::reset()
 
     glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
     glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgTerrain, uniGradient, UNI_GRADIENT_BINDING);
     glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
 
     uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
-    uniColorRamp = glGetUniformLocation(prgTerrain, "samColorRamp");
+    uniMipTexture = glGetUniformLocation(prgTerrain, "uMipTexture");
 
     glUseProgram(prgTerrain);
-    glUniform1i(uniHeightmap, 0);
-    glUniform1i(uniColorRamp, 1);
+    glUniform1i(uniHeightmap,  0);
+    glUniform1i(uniMipTexture, 1);
     glUseProgram(0);
 
     uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
@@ -208,14 +215,13 @@ void CDLODTerrain::reset()
 
     glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
     glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgInstancedTerrain, uniGradient, UNI_GRADIENT_BINDING);
 
     uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-    uniColorRamp = glGetUniformLocation(prgInstancedTerrain, "samColorRamp");
+    uniMipTexture = glGetUniformLocation(prgInstancedTerrain, "uMipTexture");
 
     glUseProgram(prgInstancedTerrain);
-    glUniform1i(uniHeightmap, 0);
-    glUniform1i(uniColorRamp, 1);
+    glUniform1i(uniHeightmap,  0);
+    glUniform1i(uniMipTexture, 1);
     glUseProgram(0);
 }
 
@@ -231,7 +237,8 @@ void CDLODTerrain::cleanup()
     glDeleteProgram(prgTerrain);
     glDeleteProgram(prgInstancedTerrain);
     glDeleteTextures(1, &mHeightmapTex);
-    glDeleteTextures(1, &mColorRampTex);
+    glDeleteTextures(1, &mipTexture);
+    glDeleteFramebuffers(1, &compositeFBO);
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
@@ -443,12 +450,11 @@ void CDLODTerrain::drawTerrain()
 
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GRADIENT_BINDING, ubo, uniGradientOffset, sizeof(GradientData));
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_1D, mColorRampTex);
+        glBindTexture(GL_TEXTURE_2D, mipTexture);
 
         //TODO: Enable triangle culling and fix mesh(Partially done)
         glEnable(GL_CULL_FACE);
@@ -530,7 +536,6 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     TerrainData&  terrainData  = *(TerrainData*) (uniforms+uniTerrainOffset);
-    GradientData& gradientData = *(GradientData*)(uniforms+uniGradientOffset);
 
     assert(LODCount<=MAX_LOD_COUNT);
 
@@ -566,31 +571,6 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     terrainData.uHeightXform = vi_set(heightScale, minY, 0.0f, 0.0f);
     memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 
-    // Terrain Gradient
-    const int stopCount = 3;
-    float stops[stopCount] = {0.0000f, 0.500f, 1.000f};
-
-    float stopsData[8*4], scalesData[8*4];
-
-    for (int i=0; i<8*4; ++i)
-    {
-        stopsData[i]  = 1.0f;
-        scalesData[i] = 0.0f;
-    }
-
-    memcpy(stopsData, stops, stopCount*4);
-
-    for (int i=0; i<stopCount-1; ++i)
-    {
-        float delta = stops[i+1]-stops[i];
-        assert(delta>=0);
-        scalesData[i] = (delta>0)?(1.0f/delta):FLT_MAX;
-    }
-
-    memcpy(gradientData.uStops,  stopsData,  sizeof(gradientData.uStops));
-    memcpy(gradientData.uScales, scalesData, sizeof(gradientData.uScales));
-    gradientData.uInvStopCount = 1.0f/stopCount;
-
     glUnmapBuffer(GL_UNIFORM_BUFFER);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -601,15 +581,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    unsigned char c[] = {
-        0,   0, 255, 255,
-        0, 255,   0, 255,
-        255,   0,   0, 255,
-    };
-
-    glBindTexture(GL_TEXTURE_1D, mColorRampTex);
-    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, c);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);

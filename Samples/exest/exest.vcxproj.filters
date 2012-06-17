@@ -37,5 +37,8 @@
     <None Include="..\..\AppData\Terrain.HeightColored.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\AppData\Terrain.SHLighting.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

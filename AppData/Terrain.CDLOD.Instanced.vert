@@ -44,6 +44,8 @@ uniform sampler2D	uHeightmap;
 
 out float vHeight;
 out vec4  vColor;
+out vec3  vPos;
+out vec2  vUV;
 
 void main()
 {
@@ -70,6 +72,8 @@ void main()
 
 	gl_Position = uMVP*vec4(vertexPos, 1);
 	vHeight     = h;
+	vPos        = vertexPos;
 	vColor      = uColors[int(aLevel.x)];
+	vUV         = aVertex / 8.0 * 64.0/8.0;
 }
 

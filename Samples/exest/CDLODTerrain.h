@@ -47,9 +47,10 @@ public:
     GLuint		prgInstancedTerrain, prgTerrain;
     GLuint		geomVBO, instVBO, ibo, ubo;
     GLuint		mHeightmapTex;
-    GLuint		mColorRampTex;
+    GLuint      mipTexture;
+    GLuint      compositeFBO;
     GLuint		vaoInst, vao;
-    GLsizei		uniTerrainOffset, uniViewOffset, uniGradientOffset, uniPatchOffset;
+    GLsizei		uniTerrainOffset, uniViewOffset, uniPatchOffset;
 
     void generateGeometry(size_t vertexCount);
     void setHeightmap(uint16_t* data, size_t width, size_t height);
