@@ -33,9 +33,6 @@
     <ClCompile Include="Actor.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="SDLStage.cpp">
-      <Filter>UI</Filter>
-    </ClCompile>
     <ClCompile Include="Stage.cpp">
       <Filter>UI</Filter>
     </ClCompile>
@@ -96,9 +93,6 @@
       <Filter>UI</Filter>
     </ClInclude>
     <ClInclude Include="Events.h">
-      <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="SDLStage.h">
       <Filter>UI</Filter>
     </ClInclude>
     <ClInclude Include="Stage.h">

@@ -30,7 +30,7 @@ namespace ui
 
 #	include <Actor.h>
 #	include <Container.h>
-#	include <SDLStage.h>
+#	include <Stage.h>
 #	include <Controls.h>
 
 #endif

@@ -23,7 +23,7 @@ const char srcVideoOut[] =
 GLuint progVideoOut;
 
 
-class VideoSample: public ui::SDLStage
+class VideoSample: public ui::Stage
 {
 	public:
 		ALCdevice*	mAudioDevice;

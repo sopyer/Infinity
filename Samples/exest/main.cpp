@@ -7,7 +7,7 @@
 
 #include "CDLODTerrain.h"
 
-class Exest: public ui::SDLStage
+class Exest: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
@@ -179,6 +179,11 @@ protected:
 
     void onKeyUp(const KeyEvent& event)
     {
+        if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
+             event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
+        {
+            releaseMouse();
+        }
         if (event.keysym.sym==SDLK_BACKSLASH)
         {
             terrain.maxPatchCount = (terrain.maxPatchCount)?0:CDLODTerrain::MAX_PATCH_COUNT;
@@ -208,6 +213,12 @@ protected:
             camera.setOrientation(savedCamOrient[loc]);
             camera.setPosition(savedCamPos[loc]);
         }
+    }
+
+    void onTouch(const ButtonEvent& event)
+    {
+        UNUSED(event);
+        captureMouse();
     }
 
     void onPaint()

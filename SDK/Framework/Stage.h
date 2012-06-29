@@ -3,6 +3,13 @@
 
 #	include <Scheduler.h>
 #	include <queue>
+#   include <utils.h>
+#   include <Events.h>
+
+struct SDL_Surface;
+
+class  ShaderEditOverlay;
+class  ProfilerOverlay;
 
 namespace ui
 {
@@ -10,13 +17,20 @@ namespace ui
     {
     public:
         Stage();
+        ~Stage();
 
         Stage& queueRelayout();
+
+        Stage& captureMouse();
+        Stage& releaseMouse();
 
         Stage& captureFocus(Actor* focused);
         Stage& releaseFocus();
 
         Stage& setProjection(float* mat4x4);
+
+        void run();
+        void close();
 
     protected:
         enum Phase
@@ -29,6 +43,10 @@ namespace ui
         };
 
     protected:
+        //Debug functions and callbacks
+        void addPrograms(size_t count, GLuint* programs);
+        virtual void onShaderRecompile() {}
+
         void createGLResources();
         void destroyGLResources();
 
@@ -42,6 +60,9 @@ namespace ui
 
         Actor* doPick(u32 x, u32 y);
 
+    protected:
+        bool	mFullscreen;
+
     private:
         struct RenderItem
         {
@@ -53,6 +74,9 @@ namespace ui
         void outlineActors();
         void renderActors();
         void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
+        void handleInput();
+        void handleRender();
+        void frameStep();
 
     private:
         GLuint  mPickFBO;
@@ -70,9 +94,17 @@ namespace ui
         glm::mat4	mProjection;
 
         std::vector<RenderItem>		mRenderQueue;
+
 #if defined(DEBUG) || defined(_DEBUG)
         int		dumpPickImage:1;
 #endif
+
+        size_t				mState;
+
+        ShaderEditOverlay*	mShaderEditOverlay;
+        ProfilerOverlay*	mProfilerOverlay;
+
+        SDL_Surface			*mScreen;
     };
 }
 

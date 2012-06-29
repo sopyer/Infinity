@@ -25,7 +25,7 @@
 //		std::string	mText;
 //};
 
-class GUISample: public ui::SDLStage
+class GUISample: public ui::Stage
 {
 	public:
 		GUISample()/*:mUpdater(30), mAnim(2000, 100)*/

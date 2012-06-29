@@ -2,7 +2,7 @@
 #include "FTGLTextureFont.h"
 #include <assert.h>
 
-class FontTest: public ui::SDLStage
+class FontTest: public ui::Stage
 {
 	public:
 		FontTest()

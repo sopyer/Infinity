@@ -23,7 +23,7 @@ const int numCols = 20;
 const float hMargin = 10;
 const float vMargin = 10;
 
-class Sample3D: public ui::SDLStage
+class Sample3D: public ui::Stage
 {
 	public:
 		Sample3D():doMove(false), offsetX(0), offsetY(0)

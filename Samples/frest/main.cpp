@@ -204,7 +204,7 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
 	dd->texture(false);
 }
 
-class Exest: public ui::SDLStage
+class Exest: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
@@ -308,6 +308,11 @@ protected:
 
     void onKeyUp(const KeyEvent& event)
     {
+        if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
+             event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
+        {
+            releaseMouse();
+        }
         if (event.keysym.sym==SDLK_0)
         {
             savedCamOrient.push_back(camera.getOrientation());
@@ -325,6 +330,12 @@ protected:
             camera.setOrientation(savedCamOrient[loc]);
             camera.setPosition(savedCamPos[loc]);
         }
+    }
+
+    void onTouch(const ButtonEvent& event)
+    {
+        UNUSED(event);
+        captureMouse();
     }
 
     void onPaint()

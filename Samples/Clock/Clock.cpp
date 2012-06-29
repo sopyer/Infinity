@@ -92,7 +92,7 @@ class VectorImage: public ui::Actor
 };
 #endif
 
-class ClockSample: public ui::SDLStage
+class ClockSample: public ui::Stage
 {
 	public:
 		ClockSample():

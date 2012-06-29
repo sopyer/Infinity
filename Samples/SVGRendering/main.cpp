@@ -4,7 +4,7 @@
 #include <time.h>
 #include <vector>
 
-class SVGSample: public ui::SDLStage
+class SVGSample: public ui::Stage
 {
 	public:
 		SVGSample(const char* svgFile):

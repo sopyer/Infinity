@@ -16,7 +16,7 @@ static const VertexPosUV quadVertices[4] = {
 
 static uint16_t quadIndices[6] = {0, 1, 3, 1, 2, 3};
 
-class PhysisDemo: public ui::SDLStage
+class PhysisDemo: public ui::Stage
 {
 		enum TextureNames
 		{

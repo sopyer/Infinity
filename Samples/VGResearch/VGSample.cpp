@@ -145,7 +145,7 @@ private:
 //};
 
 
-class VGSample: public ui::SDLStage
+class VGSample: public ui::Stage
 {
 	public:
 		VGSample():

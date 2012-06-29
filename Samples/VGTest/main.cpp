@@ -463,7 +463,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 		meshStrokeSubdivideBezier3(geom, prevIdx, curIdx, cps[0], cps[1], cps[2], cps[3]);
 	}
 
-class VGTest: public ui::SDLStage
+class VGTest: public ui::Stage
 {
 	public:
 		VGTest():
