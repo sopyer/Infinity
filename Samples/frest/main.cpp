@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <framework.h>
 #include <glm\glmext.h>
 #include <cassert>

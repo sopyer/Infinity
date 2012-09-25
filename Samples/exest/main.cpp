@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <framework.h>
 #include <glm\glmext.h>
 #include <cassert>
@@ -63,7 +65,7 @@ public:
         //	&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
         //assert(imgChannels==1);
 
-        uint32_t blockCount, vertCount;
+        //uint32_t blockCount, vertCount;
         //src.seek(4+4+4);
         //src.read(&blockCount, sizeof(blockCount), 1);
         //vertCount = blockCount*16+1;

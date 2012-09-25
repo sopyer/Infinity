@@ -29,7 +29,7 @@ extern "C"
         threadCount = 0;
         memset(threadBlocksCount, 0, sizeof(threadBlocksCount));
         //calculated duration and thread histogram
-        for (size_t i=0; i<numBlocks; ++i)
+        for (long i=0; i<numBlocks; ++i)
         {
             profiler_block_t& b = blocks[i];
             float dur = (b.end-b.start)*1000000/ticksPerUs/1000.0f;
