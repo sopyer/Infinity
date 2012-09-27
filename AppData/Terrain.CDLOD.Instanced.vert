@@ -4,13 +4,17 @@ layout(std140, column_major) uniform;
 #define ATTR_PATCH_BASE	1
 #define ATTR_LEVEL		2
 
+#define UNI_TERRAIN_BINDING  0
+#define UNI_VIEW_BINDING     1
+#define UNI_PATCH_BINDING    2
+
 layout(location = ATTR_POSITION)		in vec2		aVertex;
 
 #ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
 layout(location = ATTR_LEVEL)			in float	aLevel;
 #else
-uniform uniPatch
+layout(binding = UNI_PATCH_BINDING) uniform uniPatch
 {
 	vec2  aPatchBase;
 	float aLevel;
@@ -20,7 +24,7 @@ uniform uniPatch
 
 #define MAX_LOD_COUNT 8
 
-uniform uniTerrain
+layout(binding = UNI_TERRAIN_BINDING) uniform uniTerrain
 {
 	vec4		uAABB;
 	vec4		uUVXform;
@@ -34,13 +38,13 @@ uniform uniTerrain
 	vec4		uColors[MAX_LOD_COUNT];
 };
 
-uniform uniView
+layout(binding = UNI_VIEW_BINDING) uniform uniView
 {
 	mat4		uMVP;
 	vec4		uLODViewK;
 };
 
-uniform sampler2D	uHeightmap;
+layout(binding = 0) uniform sampler2D	uHeightmap;
 
 out float vHeight;
 out vec4  vColor;

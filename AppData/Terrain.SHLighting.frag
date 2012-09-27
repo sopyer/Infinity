@@ -2,7 +2,7 @@ in float vHeight;
 in vec3  vPos;
 in vec2  vUV;
 
-uniform sampler2D	uMipTexture;
+layout(binding = 1) uniform sampler2D	uMipTexture;
 
 layout(location = 0, index = 0) out vec4 outColor;
 

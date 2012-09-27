@@ -31,30 +31,20 @@ void CDLODTerrain::initialize()
     useInstancing = true;
     drawWireframe = false;
 
-    GLint uniTerrain, uniPatch, uniView;
-    GLint uniHeightmap, uniMipTexture;
-
     char* define;
 
     // Create non-instanced terrain program
     define = "#version 330\n";
     prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
 
-    uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
-    uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-    uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
-
-    glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-    glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
-    {
-        GLenum err = glGetError();
-        assert(err==GL_NO_ERROR);
-    }
-
 #ifdef _DEBUG
     {
         GLint structSize;
+        GLint uniTerrain, uniPatch, uniView;
+
+        uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+        uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
+        uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
 
         glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(TerrainData));
@@ -65,27 +55,17 @@ void CDLODTerrain::initialize()
     }
 #endif
 
-    uniHeightmap  = glGetUniformLocation(prgTerrain, "uHeightmap");
-    uniMipTexture = glGetUniformLocation(prgTerrain, "uMipTexture");
-
-    glUseProgram(prgTerrain);
-    glUniform1i(uniHeightmap,  0);
-    glUniform1i(uniMipTexture, 1);
-    glUseProgram(0);
-
     // Create instanced terrain program
     define = "#version 330\n#define ENABLE_INSTANCING\n";
     prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
 
-    uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
-    uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
-
-    glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-    glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-
 #ifdef _DEBUG
     {
         GLint structSize;
+        GLint uniTerrain, uniView;
+
+        uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
+        uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
 
         glGetActiveUniformBlockiv(prgInstancedTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(TerrainData));
@@ -93,14 +73,6 @@ void CDLODTerrain::initialize()
         assert(structSize==sizeof(ViewData));
     }
 #endif
-
-    uniHeightmap  = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-    uniMipTexture = glGetUniformLocation(prgInstancedTerrain, "uMipTexture");
-
-    glUseProgram(prgInstancedTerrain);
-    glUniform1i(uniHeightmap,  0);
-    glUniform1i(uniMipTexture, 1);
-    glUseProgram(0);
 
     GLint totalSize=0;
     GLint align;
