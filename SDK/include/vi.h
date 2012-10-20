@@ -5,15 +5,9 @@
 #include <emmintrin.h>
 #include <smmintrin.h>
 
-//#include <stdint.h>
+typedef __m128	v128;
 
-typedef __m128	vec4;
-typedef __m128i	vec4i;
-typedef __m128d	vec4d;
-
-extern __m128 _vi_c_one;
-extern __m128 _vi_c_zero;
-extern __m128 _vi_c_255;
+#define VI_EPS7 0.0000001f
 
 #define VI_X	0x00
 #define VI_Y	0x01
@@ -48,58 +42,74 @@ extern __m128 _vi_c_255;
 
 //Component rearrange functions
 template<unsigned int mask>
-inline vec4 vi_swizzle(vec4 a);
+inline v128 vi_swizzle(v128 a);
 //select components from 2 source vectors
 template<unsigned int mask>
-inline vec4 vi_shuffle(vec4 a, vec4 b);
-inline vec4 vi_select(vec4 mask, vec4 a, vec4 b);
+inline v128 vi_shuffle(v128 a, v128 b);
+inline v128 vi_select (v128 mask, v128 a, v128 b);
 
-//load functions
-inline vec4 vi_set(float x, float y, float z, float w);
-inline vec4 vi_set_all(float x);
-inline vec4 vi_load(float* v4);
-inline vec4 vi_loadu(float* v4);
-inline vec4 vi_load_zero();
-inline vec4 vi_load_one();
+//load/store functions
+inline v128 vi_set         (float x, float y, float z, float w);
+inline v128 vi_set_xxxx    (float x);
+inline v128 vi_set_xxxx_i32(int x);
+inline v128 vi_set_x000_i32(int x);
+inline v128 vi_load        (void* m128);
+inline v128 vi_loadu       (void* m128);
+inline v128 vi_load_zero   ();
+inline v128 vi_load_one    ();
+inline void vi_store       (void* m128, v128 val);
+inline void vi_storeu      (void* m128, v128 val);
+inline void vi_storex      (void* m32,  v128 val);
 
 //math functions
-inline vec4 vi_dot4(vec4 a, vec4 b);
-inline vec4 vi_dot3(vec4 a, vec4 b);
-inline vec4 vi_mad(vec4 a, vec4 b, vec4 c);
-inline vec4 vi_mul(vec4 a, vec4 b);
-inline vec4 vi_add(vec4 a, vec4 b);
-inline vec4 vi_sub(vec4 a, vec4 b);
-inline vec4 vi_rcp(vec4 a);
-inline vec4 vi_rsqrt(vec4 a);
-inline vec4 vi_sqrt(vec4 a);
-inline vec4 vi_neg(vec4 a);
-inline vec4 vi_abs(vec4 a);
-inline vec4 vi_sign(vec4 a);
-inline vec4 vi_max(vec4 a, vec4 b);
-inline vec4 vi_min(vec4 a, vec4 b);
-inline vec4 vi_clamp(vec4 value, vec4 lower, vec4 upper);
-inline vec4 vi_sat(vec4 value);
+inline v128 vi_dot4  (v128 a, v128 b);
+inline v128 vi_dot3  (v128 a, v128 b);
+inline v128 vi_cross3(v128 a, v128 b);
+inline v128 vi_mad   (v128 a, v128 b, v128 c);
+inline v128 vi_mul   (v128 a, v128 b);
+inline v128 vi_div   (v128 a, v128 b);
+inline v128 vi_add   (v128 a, v128 b);
+inline v128 vi_sub   (v128 a, v128 b);
+inline v128 vi_rcp   (v128 a);
+inline v128 vi_rsqrt (v128 a);
+inline v128 vi_sqrt  (v128 a);
+inline v128 vi_neg   (v128 a);
+inline v128 vi_abs   (v128 a);
+inline v128 vi_sign  (v128 a);
+inline v128 vi_max   (v128 a, v128 b);
+inline v128 vi_min   (v128 a, v128 b);
+inline v128 vi_lerp  (v128 a, v128 b, float t);
+inline v128 vi_clamp (v128 value, v128 lower, v128 upper);
+inline v128 vi_sat   (v128 value);
 
-//compare functions
-inline vec4 vi_cmp_gt(vec4 a, vec4 b);
-inline vec4 vi_cmp_ge(vec4 a, vec4 b);
-inline vec4 vi_cmp_lt(vec4 a, vec4 b);
-inline vec4 vi_cmp_le(vec4 a, vec4 b);
-inline vec4 vi_cmp_eq(vec4 a, vec4 b);
-inline vec4 vi_cmp_ne(vec4 a, vec4 b);
+//vector compare functions
+inline v128 vi_cmp_gt(v128 a, v128 b);
+inline v128 vi_cmp_ge(v128 a, v128 b);
+inline v128 vi_cmp_lt(v128 a, v128 b);
+inline v128 vi_cmp_le(v128 a, v128 b);
+inline v128 vi_cmp_eq(v128 a, v128 b);
+inline v128 vi_cmp_ne(v128 a, v128 b);
+
+//scalar compare functions
+inline int vi_cmpx_gt(v128 a, v128 b);
+inline int vi_cmpx_ge(v128 a, v128 b);
+inline int vi_cmpx_lt(v128 a, v128 b);
+inline int vi_cmpx_le(v128 a, v128 b);
+inline int vi_cmpx_eq(v128 a, v128 b);
+inline int vi_cmpx_ne(v128 a, v128 b);
 
 //logical op functions
-inline vec4 vi_xor(vec4 a, vec4 b);
-inline vec4 vi_or(vec4 a, vec4 b);
-inline vec4 vi_and(vec4 a, vec4 b);
-inline vec4 vi_andnot(vec4 a, vec4 b);
+inline v128 vi_xor   (v128 a, v128 b);
+inline v128 vi_or    (v128 a, v128 b);
+inline v128 vi_and   (v128 a, v128 b);
+inline v128 vi_andnot(v128 a, v128 b);
 
 //logical result functions
-inline bool vi_all(vec4 a);
-inline bool vi_any(vec4 a);
+inline bool vi_all(v128 a);
+inline bool vi_any(v128 a);
 
 //color operations
-inline vec4 vi_cvt_ubyte4_to_vec4(__int32 ub4);
-inline vec4 vi_cvt_vec4_to_ubyte4(__int32 ub4);
+inline v128 vi_cvt_ubyte4_to_vec4(__int32 ub4);
+inline v128 vi_cvt_vec4_to_ubyte4(__int32 ub4);
 
 #include "vi.inl"

@@ -5,7 +5,7 @@
 #include <vector>
 #include <glm/glm.h>
 #include <vi.h>
-#include "math.h"
+#include <ml.h>
 
 struct PatchData;
 
@@ -27,7 +27,7 @@ public:
     struct ViewData
     {
         ml::mat4x4	uMVP;
-        vec4		uLODViewK;
+        v128		uLODViewK;
     } viewData;
 
     glm::vec4	viewDir;

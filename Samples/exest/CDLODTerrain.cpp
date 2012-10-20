@@ -3,18 +3,18 @@
 struct PatchData
 {
     float baseX, baseZ;
-    float level;
+    int   level;
     float padding;
 };
 
 struct TerrainData
 {
-    vec4        uAABB;
-	vec4		uUVXform;
-	vec4		uHeightXform;
-    vec4		uPatchScales[CDLODTerrain::MAX_LOD_COUNT];
-    vec4		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
-    vec4		uColors[CDLODTerrain::MAX_LOD_COUNT];
+    v128        uAABB;
+    v128		uUVXform;
+    v128		uHeightXform;
+    v128		uPatchScales[CDLODTerrain::MAX_LOD_COUNT];
+    v128		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
+    v128		uColors[CDLODTerrain::MAX_LOD_COUNT];
 };
 
 
@@ -121,7 +121,7 @@ void CDLODTerrain::initialize()
     glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glVertexAttribDivisor(ATTR_POSITION, 0);
     glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-    glVertexAttribPointer(ATTR_PATCH_BASE, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)0);
+    glVertexAttribIPointer(ATTR_PATCH_BASE, 2, GL_INT, sizeof(PatchData), (void*)0);
     glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
     glVertexAttribPointer(ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)8);
     glVertexAttribDivisor(ATTR_LEVEL, 1);
@@ -235,7 +235,7 @@ void CDLODTerrain::addPatchToQueue(size_t level, float bx, float bz)
     {
         instData->baseX = bx;
         instData->baseZ = bz;
-        instData->level = (float)level;
+        instData->level = level;
 
         ++instData;
         ++patchCount;
@@ -280,17 +280,17 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
     ml::aabb AABB2D = AABB;
     AABB2D.min.m128_f32[1] = 0.0f;
     AABB2D.max.m128_f32[1] = 0.0f;
-    vec4 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
+    v128 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
 
-    vec4 vdist;
-        
+    v128 vdist;
+
     vdist = ml::distanceToAABB(&AABB, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0.0));
     vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
     vdist = vi_dot3(vdist, vdist);
 
     float d2;
     _mm_store_ss(&d2, vdist);
-        
+
     bool intersect = d2<=LODRange[level]*LODRange[level];
 
     assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODRange[level]));
@@ -528,7 +528,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
         float morphStart = rangeEnd-morphRange;
 
         terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0.0f, 0.0f);
-        terrainData.uPatchScales[i] = vi_set_all(cellSize);
+        terrainData.uPatchScales[i] = vi_set_xxxx(cellSize);
 
         range    *= 1.5f;
         size2    *= 4.0f;

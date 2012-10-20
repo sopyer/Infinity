@@ -12,12 +12,12 @@ layout(location = ATTR_POSITION)		in vec2		aVertex;
 
 #ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
-layout(location = ATTR_LEVEL)			in float	aLevel;
+layout(location = ATTR_LEVEL)			in int  	aLevel;
 #else
 layout(binding = UNI_PATCH_BINDING) uniform uniPatch
 {
 	vec2  aPatchBase;
-	float aLevel;
+	int   aLevel;
 	float padding; //Just in case, AMD seems to use actual size and does not pad uniform blocks :(
 };
 #endif
@@ -53,7 +53,7 @@ out vec2  vUV;
 
 void main()
 {
-	float patchScale = uPatchScales[int(aLevel)];
+	float patchScale = uPatchScales[aLevel];
 	vec2  morphDir   = fract(aVertex*0.5)*2.0;
 
 	vec3  vertexPos;
@@ -63,7 +63,7 @@ void main()
 	vertexPos.y  = 0.0;
 
 	float distance = length(vertexPos + uLODViewK.xyz);
-	float morphK   = clamp(distance*uMorphParams[int(aLevel)].x + uMorphParams[int(aLevel)].y, 0.0, 1.0);
+	float morphK   = clamp(distance*uMorphParams[aLevel].x + uMorphParams[aLevel].y, 0.0, 1.0);
 
 	vertexPos.xz += patchScale*morphDir*morphK; //Applying morphing for seamless connectivity
 
@@ -77,7 +77,7 @@ void main()
 	gl_Position = uMVP*vec4(vertexPos, 1);
 	vHeight     = h;
 	vPos        = vertexPos;
-	vColor      = uColors[int(aLevel.x)];
+	vColor      = uColors[aLevel.x];
 	vUV         = (aVertex + morphDir*morphK) / 8.0 * 64.0/8.0;
 }
 
