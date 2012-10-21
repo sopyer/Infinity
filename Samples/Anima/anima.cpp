@@ -21,6 +21,9 @@ private:
 
     MD5Model model;
 
+    CPUTimer	cpuTimer;
+    GPUTimer	gpuTimer;
+
 public:
     Anima(): moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false), loc(0)
     {
@@ -149,6 +152,8 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
+        cpuTimer.start();
+
         static const float maxTimeStep = 0.03333f;
         static float       prevTime    = std::clock() / (float)CLOCKS_PER_SEC;
         
@@ -159,17 +164,15 @@ protected:
         deltaTime = std::min( deltaTime, maxTimeStep );
 
         model.Update(deltaTime);
-
-        v128 rot = vi_set(-0.70710677f, 0, 0, 0.70710677f);
-        v128 q   = vi_set(0, 0.70710677f, 0, 0.70710677f);
-        v128 v   = vi_set(1, 2, 3, 0);
-
-        v128 res;
         
-        res = ml::mul_quat(q, rot);
-        res = ml::rotate_quat_vec3(rot, v);
+        double cpuTime = cpuTimer.elapsed();
+        cpuTimer.stop();
 
+        gpuTimer.start();
         model.Render(mProj*vm);
+        gpuTimer.stop();
+
+        mStatsBox.setStats((float)cpuTime, (float)gpuTimer.getResult());
 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
