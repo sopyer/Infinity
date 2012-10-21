@@ -90,6 +90,8 @@ void mclose(memory_t* mem)
     mem->size = 0;
 }
 
+static ml::quat rotx = {-0.7071067812f, 0.0f, 0.0f, 0.7071067812f};
+
 bool MD5Model::LoadModel(const char* name)
 {
     memory_t mem;
@@ -151,6 +153,8 @@ bool MD5Model::LoadModel(const char* name)
                     build_w_quat( rotation );
 				
                     ml::create_dual_quat   (&mBindPoseDQ[i], &rotation, &location);
+                    ml::mul_quat           (&mBindPoseDQ[i].real, &rotx, &mBindPoseDQ[i].real);
+                    ml::mul_quat           (&mBindPoseDQ[i].dual, &rotx, &mBindPoseDQ[i].dual);
                     ml::conjugate_dual_quat(&mInvBindPoseDQ[i], &mBindPoseDQ[i]);
 
                     ++i;
@@ -329,6 +333,11 @@ bool MD5Model::LoadAnim( const char *name )
 				    {
 
                         ml::mul_dual_quat(&frameJoints[i], &frameJoints[parent], &frameJoints[i]);
+                    }
+                    else
+                    {
+                        ml::mul_quat(&frameJoints[i].real, &rotx, &frameJoints[i].real);
+                        ml::mul_quat(&frameJoints[i].dual, &rotx, &frameJoints[i].dual);
                     }
 				}
 				
