@@ -20,6 +20,8 @@ namespace resources
             file.read(srcShader, len, 1);
             srcShader[len]=0;
 
+            file.close();
+
             char* sources[MAX_DEFINES_TO_PROCESS+1];
             size_t sourceCount = std::min<size_t>(definesCount, MAX_DEFINES_TO_PROCESS);
             memcpy(sources, defines, sizeof(char*)*sourceCount);
