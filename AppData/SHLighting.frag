@@ -3,17 +3,14 @@
 uniform sampler2D uTexture;
 
 in vec3 vPosition;
-in vec3 vNormal;
-in vec2 vUV0;
+in vec3 vABC;
 
 layout(location = 0, index = 0) out vec4 outColor;
 
 void main()
 {
     vec3 P = vPosition;
-    vec4 N = vec4(normalize(vNormal), 1.0);
-
-	N = vec4(normalize(cross(dFdx(P), dFdy(P))), 1.0);
+	vec4 N = vec4(normalize(cross(dFdx(P), dFdy(P))), 1.0);
 
     mat4 r_sh_matrix = mat4(
 	     0.09010, -0.04719,  0.24026, -0.14838,
@@ -40,6 +37,13 @@ void main()
     c.g = dot((g_sh_matrix * N), N);
     c.b = dot((b_sh_matrix * N), N);
     c.a = 1.0;
+
+	//vec3  d = fwidth(vABC);
+	//vec3  a = smoothstep(vec3(0.0), d*0.95, vBC);
+	//float t = min(min(a3.x, a3.y), a3.z);
+
+	//c = mix(vec3(0.0), c+0.3, edgeFactor());
+	//gl_FragColor.a = 1.0;
 
 	outColor = c + 0.3;
 }

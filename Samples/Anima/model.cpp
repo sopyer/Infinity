@@ -675,12 +675,11 @@ void MD5Model::RenderSkeleton( DualQuatList& joints )
     glEnd();
 
     glPopAttrib();
-
 }
 
 void Skinning4PointShader::Create()
 {
-    program = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
+    program = resources::createProgramFromFiles("Skinning4.vert", "wireframe.geom", "SHLighting.frag");
 
 	bindUniforms();
 	assert(glGetError()==GL_NO_ERROR);

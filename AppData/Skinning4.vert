@@ -13,29 +13,9 @@ layout(location=4) in vec4  aBoneWeights;
 uniform mat4 uMVP;
 uniform mat4 uBoneMatrix[MAX_BONES];
 
-out vec3 vPosition;
-out vec3 vNormal;
-out vec2 vTexCoord0;
-
-//void main()
-//{
-//	vec4  weights = aBoneWeights;
-//	vec4  weightIndices = aBoneIndices;
-//    mat4  matTransform;
-//    float finalWeight = 1.0f - ( weights.x + weights.y + weights.z );
-//
-//	matTransform  = uBoneMatrix[int(weightIndices.x)] * weights.x;
-//    matTransform += uBoneMatrix[int(weightIndices.y)] * weights.y;
-//    matTransform += uBoneMatrix[int(weightIndices.z)] * weights.z;
-//    matTransform += uBoneMatrix[int(weightIndices.w)] * finalWeight;
-//
-//    vec4 objPos = matTransform*vec4(aVertex, 1.0);
-//
-//    gl_Position    = uMVP*objPos;
-//    vPosition      = objPos.xyz;
-//    vNormal        = (matTransform*vec4(aNormal, 0.0)).xyz;
-//    vTexCoord0     = aTexCoord;
-//}
+out vec3 gaPosition;
+out vec3 gaNormal;
+out vec2 gaTexCoord0;
 
 uniform mat2x4 uBoneDualQuat[MAX_BONES];
 
@@ -66,8 +46,8 @@ void main()
 	vec3 trans    = 2.0*(blendDQ[0].w*blendDQ[1].xyz - blendDQ[1].w*blendDQ[0].xyz + cross(blendDQ[0].xyz, blendDQ[1].xyz));
 	position += trans;
 
-    gl_Position    = uMVP * vec4(position, 1.0);
-    vPosition      = position;
-    vNormal        = normal;
-    vTexCoord0     = aTexCoord;
+    gl_Position = uMVP * vec4(position, 1.0);
+    gaPosition  = position;
+    gaNormal    = normal;
+    gaTexCoord0 = aTexCoord;
 }
