@@ -38,12 +38,11 @@ void main()
     c.b = dot((b_sh_matrix * N), N);
     c.a = 1.0;
 
-	//vec3  d = fwidth(vABC);
-	//vec3  a = smoothstep(vec3(0.0), d*0.95, vBC);
-	//float t = min(min(a3.x, a3.y), a3.z);
+	vec3  d  = fwidth(vABC);
+	vec3  a3 = smoothstep(vec3(0.0), d*0.95, vABC);
+	float t  = min(min(a3.x, a3.y), a3.z);
 
-	//c = mix(vec3(0.0), c+0.3, edgeFactor());
-	//gl_FragColor.a = 1.0;
+	c.xyz = mix(vec3(0.0), c.xyz+0.3, t);
 
-	outColor = c + 0.3;
+	outColor = c;
 }

@@ -27,4 +27,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\AppData\SHLighting.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\AppData\wireframe.geom">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\AppData\Skinning4.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
