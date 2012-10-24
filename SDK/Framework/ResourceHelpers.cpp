@@ -92,6 +92,47 @@ namespace resources
         return program;
     }
 
+    GLuint createProgramFromFiles(const char* vertShaderPath, const char* geomShaderPath, const char* fragShaderPath, size_t definesCount, const char** defines)
+    {
+        GLuint program = glCreateProgram();
+
+        if (vertShaderPath)
+        {
+            GLuint vertShader = createShaderFromFile(GL_VERTEX_SHADER, vertShaderPath, definesCount, defines);
+            glAttachShader(program, vertShader);
+            glDeleteShader(vertShader);
+        }
+
+        if (geomShaderPath)
+        {
+            GLuint fragShader = createShaderFromFile(GL_GEOMETRY_SHADER, geomShaderPath, definesCount, defines);
+            glAttachShader(program, fragShader);
+            glDeleteShader(fragShader);
+        }
+
+        if (fragShaderPath)
+        {
+            GLuint fragShader = createShaderFromFile(GL_FRAGMENT_SHADER, fragShaderPath, definesCount, defines);
+            glAttachShader(program, fragShader);
+            glDeleteShader(fragShader);
+        }
+
+        glLinkProgram(program);
+
+        const size_t	LOG_STR_LEN = 1024;
+        char			infoLog[LOG_STR_LEN] = {0};
+        GLsizei			length;
+        glGetProgramInfoLog(program, LOG_STR_LEN-1, &length, infoLog);
+        infoLog[length] = 0;
+
+        if (infoLog[0])
+        {
+            logging::message("%s\n", infoLog);
+        }
+
+        return program;
+    }
+
 #define MAX_INFOLOG_LENGTH 4096
     bool compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source)
     {
@@ -252,17 +293,17 @@ namespace resources
         delete [] p;
     }
 
-	GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height)
-	{
-		GLuint rbo;
-		glGenRenderbuffers(1, &rbo);
-		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-		glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height)
+    {
+        GLuint rbo;
+        glGenRenderbuffers(1, &rbo);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
         GLenum err = glGetError();
         assert(err==GL_NO_ERROR);
 
-		return rbo;
-	}
+        return rbo;
+    }
 }

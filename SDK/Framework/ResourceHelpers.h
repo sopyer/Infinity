@@ -11,6 +11,9 @@ namespace resources
 	GLuint createProgramFromFiles(const char* vertShaderPath, const char* fragShaderPath,
 								  size_t definesCount=0, const char** defines=0);
 	
+	GLuint createProgramFromFiles(const char* vertShaderPath, const char* geomShaderPath, const char* fragShaderPath,
+								  size_t definesCount=0, const char** defines=0);
+
 	bool	compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source);
 	GLuint	createProgram(GLenum type, const char* source);
 	GLuint	linkProgram(GLsizei shaderCount, ...);
