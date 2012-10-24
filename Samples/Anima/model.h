@@ -14,6 +14,7 @@ struct Skinning4PointShader
 	GLint uMVP;
 
 	void Create();
+	void bindUniforms();
 	void Destroy();
 };
 

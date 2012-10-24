@@ -680,12 +680,15 @@ void MD5Model::RenderSkeleton( DualQuatList& joints )
 
 void Skinning4PointShader::Create()
 {
+    program = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
+
+	bindUniforms();
 	assert(glGetError()==GL_NO_ERROR);
 
-    program = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");//CreateProgram("Resources/shaders/Skinning4.vert", "Resources/shaders/SHLighting.frag");
+}
 
-	assert(glGetError()==GL_NO_ERROR);
-
+void Skinning4PointShader::bindUniforms()
+{
 	uTexture       = glGetUniformLocation(program, "uTexture");
 	uBoneMatrix    = glGetUniformLocation(program, "uBoneMatrix");
 	uBoneDualQuat  = glGetUniformLocation(program, "uBoneDualQuat");

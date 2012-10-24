@@ -161,40 +161,6 @@ void CDLODTerrain::initialize()
 
 void CDLODTerrain::reset()
 {
-    GLint uniTerrain, uniPatch, uniView, uniGradient;
-    GLint uniHeightmap, uniMipTexture;
-
-    uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
-    uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-    uniGradient = glGetUniformBlockIndex(prgTerrain, "uniGradient");
-    uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
-
-    glUniformBlockBinding(prgTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-    glUniformBlockBinding(prgTerrain, uniView,     UNI_VIEW_BINDING);
-    glUniformBlockBinding(prgTerrain, uniPatch,    UNI_PATCH_BINDING);
-
-    uniHeightmap = glGetUniformLocation(prgTerrain, "uHeightmap");
-    uniMipTexture = glGetUniformLocation(prgTerrain, "uMipTexture");
-
-    glUseProgram(prgTerrain);
-    glUniform1i(uniHeightmap,  0);
-    glUniform1i(uniMipTexture, 1);
-    glUseProgram(0);
-
-    uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
-    uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
-    uniGradient = glGetUniformBlockIndex(prgInstancedTerrain, "uniGradient");
-
-    glUniformBlockBinding(prgInstancedTerrain, uniTerrain,  UNI_TERRAIN_BINDING);
-    glUniformBlockBinding(prgInstancedTerrain, uniView,     UNI_VIEW_BINDING);
-
-    uniHeightmap = glGetUniformLocation(prgInstancedTerrain, "uHeightmap");
-    uniMipTexture = glGetUniformLocation(prgInstancedTerrain, "uMipTexture");
-
-    glUseProgram(prgInstancedTerrain);
-    glUniform1i(uniHeightmap,  0);
-    glUniform1i(uniMipTexture, 1);
-    glUseProgram(0);
 }
 
 

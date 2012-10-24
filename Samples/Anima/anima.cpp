@@ -52,6 +52,8 @@ public:
             .setSize(300, 70)
             );
 
+		addPrograms(1, &model.skin4PointShader.program);
+
         FILE* cam = fopen("cameras.txt", "r");
         if (cam)
         {
@@ -86,6 +88,7 @@ public:
 protected:
     void onShaderRecompile()
     {
+		model.skin4PointShader.bindUniforms();
     }
 
     std::vector<glm::__quatGTX> savedCamOrient;
