@@ -1,3 +1,5 @@
+#define _SCL_SECURE_NO_WARNINGS
+
 #include <framework.h>
 
 #include "VGExp.h"
@@ -5,6 +7,7 @@
 #include <VG/impl/Math.h>
 #include <VG/impl/Rasterizer.h>
 #include <VG/VG.h>
+#include <utils.h>
 //float w1 = -0.35f;
 //float w2 = -0.35f;
 //glm::vec3	controlPts[4] = {glm::vec3(0, 0, 1), glm::vec3(10*w1, 10*w1, w1), glm::vec3(0*w2, 10*w2, w2), glm::vec3(10, 0, 1)};
@@ -340,7 +343,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 
 #include "Path.h"
 
-	void meshAddBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	void meshAddBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 	{
 		glm::vec2	ctrlPt[4*2] = {cp0, cp1, cp2, cp3};
 		glm::vec3	klm[4*2];
@@ -366,7 +369,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 
 			//Carefully, we changed places of subdivided curves,
 			//that's why suitable points are 0 and 7
-			u16 idx = geom.shapeAddVertex(ctrlPt[0]);
+			uint16_t idx = geom.shapeAddVertex(ctrlPt[0]);
 			geom.shapeAddTri(prevIdx, idx, curIdx);
 			prevIdx = idx;
 		}
@@ -378,7 +381,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 	static const float hw = 0.1f;
 
 	//TODOD: Move subdivision logic into main func, and stroke creation logic for single curve retain here 
-	void meshStrokeSubdivideBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	void meshStrokeSubdivideBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 	{
 		glm::vec2 cps[8] = {cp0, cp1, cp2, cp3};
 		float l0 = glm::length(cp3-cp0), l1=glm::length(cp1-cp0), l2=glm::length(cp2-cp1), l3=glm::length(cp3-cp2), l=l1+l2+l3;
@@ -402,10 +405,10 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 			glm::vec2 p1neg = cps[5]-n1*hw;
 			glm::vec2 p2neg = cps[6]-n2*hw;
 			glm::vec2 p3neg = cps[7]-n3*hw;
-			u16 i0 = geom.shapeAddVertex(p0pos);
-			u16 i1 = geom.shapeAddVertex(p0neg);
-			u16 i2 = geom.shapeAddVertex(p3pos);
-			u16 i3 = geom.shapeAddVertex(p3neg);
+			uint16_t i0 = geom.shapeAddVertex(p0pos);
+			uint16_t i1 = geom.shapeAddVertex(p0neg);
+			uint16_t i2 = geom.shapeAddVertex(p3pos);
+			uint16_t i3 = geom.shapeAddVertex(p3neg);
 			meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
 			meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
 			geom.shapeAddTri(i0, i2, i1);
@@ -423,17 +426,17 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 		glm::vec2 p1neg = cps[1]-n1*hw;
 		glm::vec2 p2neg = cps[2]-n2*hw;
 		glm::vec2 p3neg = cps[3]-n3*hw;
-		u16 i0 = geom.shapeAddVertex(p0pos);
-		u16 i1 = geom.shapeAddVertex(p0neg);
-		u16 i2 = geom.shapeAddVertex(p3pos);
-		u16 i3 = geom.shapeAddVertex(p3neg);
+		uint16_t i0 = geom.shapeAddVertex(p0pos);
+		uint16_t i1 = geom.shapeAddVertex(p0neg);
+		uint16_t i2 = geom.shapeAddVertex(p3pos);
+		uint16_t i3 = geom.shapeAddVertex(p3neg);
 		meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
 		meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
 		geom.shapeAddTri(i0, i2, i1);
 		geom.shapeAddTri(i1, i2, i3);
 	}
 
-	void meshStrokeBezier3(impl::Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+	void meshStrokeBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 	{
 		glm::vec3	klmT[4*2];
 		int			count, countT;
@@ -508,11 +511,11 @@ class VGTest: public ui::Stage
 				glm::vec2( 20.0f,  0.0f),
 			};
 
-			u16 prevIdx, curIdx;
+			uint16_t prevIdx, curIdx;
 			prevIdx = 0;
 			curIdx = testPath.shapeAddVertex(cps[0]);
 
-			u16 prevIdx2, curIdx2;
+			uint16_t prevIdx2, curIdx2;
 			prevIdx2 = testPathOff.shapeAddVertex(cps[0]);
 			curIdx2 = testPathOff.shapeAddVertex(cps[3]);
 

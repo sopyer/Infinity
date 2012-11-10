@@ -12,8 +12,6 @@ class Anima: public ui::Stage
 private:
     SpectatorCamera     camera;
 
-    VFS				mVFS;
-
     glm::mat4	mProj;
 
     mt::Task                mUpdateTask;
@@ -29,11 +27,6 @@ public:
     {
         lastTimeMark = timerAbsoluteTime();
 
-        VFS::mount("AppData");
-        VFS::mount("../AppData");
-        VFS::mount("../../AppData");
-
-        model.skin4PointShader.Create();
         model.LoadModel("boblampclean.md5mesh");
         model.LoadAnim ("boblampclean.md5anim");
 
@@ -52,7 +45,7 @@ public:
             .setSize(300, 70)
             );
 
-		addPrograms(1, &model.skin4PointShader.program);
+        addPrograms(1, &model.program);
 
         FILE* cam = fopen("cameras.txt", "r");
         if (cam)
@@ -71,7 +64,6 @@ public:
 
     ~Anima()
     {
-        model.skin4PointShader.Destroy();
         FILE* cam = fopen("cameras.txt", "w");
         if (cam)
         {
@@ -88,7 +80,7 @@ public:
 protected:
     void onShaderRecompile()
     {
-		model.skin4PointShader.bindUniforms();
+        model.resetUniforms();
     }
 
     std::vector<glm::__quatGTX> savedCamOrient;
@@ -98,7 +90,7 @@ protected:
     void onKeyUp(const KeyEvent& event)
     {
         if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
-             event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
+            event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
         {
             releaseMouse();
         }
@@ -159,15 +151,15 @@ protected:
 
         static const float maxTimeStep = 0.03333f;
         static float       prevTime    = std::clock() / (float)CLOCKS_PER_SEC;
-        
+
         float curTime   = std::clock() / (float)CLOCKS_PER_SEC;
         float deltaTime = curTime - prevTime;
-        
+
         prevTime  = curTime;
         deltaTime = std::min( deltaTime, maxTimeStep );
 
         model.Update(deltaTime);
-        
+
         double cpuTime = cpuTimer.elapsed();
         cpuTimer.stop();
 
@@ -255,8 +247,16 @@ protected:
 
 int main(int argc, char** argv)
 {
-    Anima app;
-    app.run();
+    VFS	vfs;
+
+    VFS::mount("AppData");
+    VFS::mount("../AppData");
+    VFS::mount("../../AppData");
+
+    {
+        Anima app;
+        app.run();
+    }
 
     return 0;
 }

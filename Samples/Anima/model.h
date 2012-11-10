@@ -2,84 +2,55 @@
 
 #include <ml.h>
 #include <opengl.h>
-#include <vector>
 
-struct Skinning4PointShader
-{
-	GLuint program;
-
-	GLint uTexture;
-	GLint uBoneMatrix;
-    GLint uBoneDualQuat;
-	GLint uMVP;
-
-	void Create();
-	void bindUniforms();
-	void Destroy();
-};
-
-struct Mesh
-{
-	GLuint			vbo;
-	GLuint          ibo;
-	GLuint          texture;
-	GLsizei			numIndices;
-};
-
-typedef std::vector<Mesh>           MeshList;
-typedef std::vector<int>            Hierarchy;
-typedef std::vector<ml::dual_quat>  DualQuatList;
-typedef std::vector<DualQuatList>   AnimPosesList;
-typedef std::vector<std::string>    StringList;
+struct Mesh;
 
 class MD5Model
 {
 public:
-    // Resources
-	Skinning4PointShader skin4PointShader;
-
-public:
 	MD5Model();
     ~MD5Model();
 
-    bool LoadModel( const char* name );
-    bool LoadAnim ( const char *name );
+    bool LoadModel(const char* name);
+    bool LoadAnim (const char *name);
 
-    void Update( float fDeltaTime );
+    void Update(float fDeltaTime);
     void Render(float* MVP);
 
-protected:
-    void RenderMesh    ( Mesh& mesh );
-    void RenderSkeleton( DualQuatList& joints );
+	void resetUniforms();
+
+public:
+   	GLuint program;
+
+private:
+    void RenderMesh    (Mesh& mesh);
 
 private:
     bool                mHasAnimation;
 
-    // ------------------
-    // --- Model data ---
-    // ------------------
+    // mesh data
     int                 mNumMeshes;
-    MeshList            mMeshes;
+    Mesh*               mMeshes;
     
-    // Skeleton data
+    // skeleton data
     int                 mNumJoints;
-    Hierarchy           mBoneHierarchy;
-    
-    // Precalculated data used for animation
-    DualQuatList        mBindPoseDQ;
-    DualQuatList        mInvBindPoseDQ;
+    int*                mBoneHierarchy;
+    ml::dual_quat*      mBindPose;
+    ml::dual_quat*      mInvBindPose;
 
-    // ----------------------
-    // --- Animation data ---
-    // ----------------------
+    // animetion data
     int                 mNumFrames;
     int                 mFrameRate;
-    AnimPosesList       mFramePoses;        // Skeleton animation frames
+    ml::dual_quat*      mFramePoses;
     
-    // -------------------
-    // --- Working set ---
-    // -------------------
+    // working set
     float               mAnimTime;          // Animation time converted to frames
-    DualQuatList        mBoneTransformDQ;
-    DualQuatList        mPoseDQ;            // Current pose, atm used to visualize skeleton
+    ml::dual_quat*      mBoneTransform;
+    ml::dual_quat*      mPose;              // Current pose, atm used to visualize skeleton
+
+    // uniform locations
+	GLint uTexture;
+	GLint uBoneMatrix;
+    GLint uBoneDualQuat;
+	GLint uMVP;
 };

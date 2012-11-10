@@ -287,7 +287,7 @@ namespace resources
 
         GLint x = vp[0], y = vp[1], w = vp[2], h = vp[3];
 
-        u8* p = new u8[w*h*4];
+        uint8_t* p = new uint8_t[w*h*4];
         glReadPixels (x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
         SOIL_save_image(imageName, SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
         delete [] p;

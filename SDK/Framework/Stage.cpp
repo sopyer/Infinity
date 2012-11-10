@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <opengl.h>
 #include <SOIL.h> // remove later
-#include <opengl.h>
 #include <SDL.h>
 #include <SDL_syswm.h>
+#include <utils.h>
 #include <vg/vg.h>
 #include <vg/impl/SharedResources.h>
 #include <ShaderEditOverlay.h>
@@ -13,7 +13,6 @@
 #include <profiler.h>
 #include "UI.h"
 #include "Framework.h"
-#include "UI.h"
 
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
@@ -58,7 +57,7 @@ namespace ui
         mWidth = 1280;
         mHeight = 720;
 
-        u32 flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
+        uint32_t flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
 
         if (mFullscreen)		
         {
@@ -154,7 +153,7 @@ namespace ui
 
         enterPhase(PHASE_EVENT_HANDLING);
         SDL_Event	E;
-        u32 i = 0;
+        uint32_t i = 0;
         while (SDL_PollEvent(&E) && i<10)
         {
             switch(E.type)
@@ -193,7 +192,7 @@ namespace ui
             case SDL_MOUSEMOTION:
                 if (mState==STATE_DEFAULT)
                 {
-                    Actor* actor = doPick((u32)E.button.x, (u32)E.button.y);
+                    Actor* actor = doPick((uint32_t)E.button.x, (uint32_t)E.button.y);
 
                     if (!(actor==(Actor*)this && SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF))
                         processMotion(E.motion);
@@ -356,7 +355,7 @@ namespace ui
 
     void Stage::processTouch(const ButtonEvent& event)
     {
-        Actor* actor = doPick((u32)event.x, (u32)event.y);
+        Actor* actor = doPick((uint32_t)event.x, (uint32_t)event.y);
 
         if (actor)
             actor->onTouch(event);
@@ -364,7 +363,7 @@ namespace ui
 
     void Stage::processUntouch(const ButtonEvent& event)
     {
-        Actor* actor = doPick((u32)event.x, (u32)event.y);
+        Actor* actor = doPick((uint32_t)event.x, (uint32_t)event.y);
 
         if (actor)
             actor->onUntouch(event);
@@ -400,7 +399,7 @@ namespace ui
         mLastVisited = actor;
     }
 
-    Actor* Stage::doPick(u32 x, u32 y)
+    Actor* Stage::doPick(uint32_t x, uint32_t y)
     {
         GLuint id;
         GLenum err;
@@ -527,7 +526,7 @@ namespace ui
         {
             GLuint w = (GLuint)mWidth;
             GLuint h = (GLuint)mHeight;
-            u8* p = new u8[w*h*4];
+            uint8_t* p = new uint8_t[w*h*4];
             glBindFramebuffer(GL_READ_FRAMEBUFFER, mPickFBO);
             glReadPixels (0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, p);
             glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);

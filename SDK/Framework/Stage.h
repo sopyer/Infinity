@@ -3,7 +3,6 @@
 
 #	include <Scheduler.h>
 #	include <queue>
-#   include <utils.h>
 #   include <Events.h>
 
 struct SDL_Surface;
@@ -58,7 +57,7 @@ namespace ui
 
         void enterPhase(Phase nextPhase);// {mPhase = nextPhase;}
 
-        Actor* doPick(u32 x, u32 y);
+        Actor* doPick(uint32_t x, uint32_t y);
 
     protected:
         bool	mFullscreen;

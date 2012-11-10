@@ -1,4 +1,5 @@
 #include <framework.h>
+#include <utils.h>
 
 float	cubeVertices[][3] = {
 		//Top plane
@@ -30,7 +31,7 @@ float	cubeNormals[][3] = {
 		{ 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1},
 	};
 
-u32		cubeIndices[] = {
+uint32_t cubeIndices[] = {
 		 0,  1,  2,  0,  2,  3,
 		 4,  5,  6,  4,  6,  7,
 		 8,  9, 10,  8, 10, 11,
@@ -39,17 +40,17 @@ u32		cubeIndices[] = {
 		20, 21, 22, 20, 22, 23,
 	};
 
-float	planeVertices[][3] = {{-1, 0, -1}, {1, 0, -1}, {1, 0, 1}, {-1, 0, 1}};
-float	planeNormals[][3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
-u32		planeIndices[] = {0, 1, 2, 0, 2, 3};
+float	    planeVertices[][3] = {{-1, 0, -1}, {1, 0, -1}, {1, 0, 1}, {-1, 0, 1}};
+float	    planeNormals[][3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
+uint32_t	planeIndices[] = {0, 1, 2, 0, 2, 3};
 
 struct Mesh
 {
-	u32				numVertices;
+	uint32_t		numVertices;
 	const float*	vertices;
 	const float*	normals;
-	u32				numIndices;
-	u32*			indices;
+	uint32_t		numIndices;
+	uint32_t*		indices;
 
 	//In debug should have vertex declaration && buffers in release should use VAO
 	//Should have some helper to parse current VAO
@@ -119,9 +120,9 @@ class AOSample: public ui::Stage
 	protected:
 		void genVoxelLookupTexture()
 		{
-			u32 textureData[VOXEL_DIM_Z];
+			uint32_t textureData[VOXEL_DIM_Z];
 
-			for (u32 i=0; i<VOXEL_DIM_Z; ++i)
+			for (uint32_t i=0; i<VOXEL_DIM_Z; ++i)
 				textureData[i] = 1L<<i;
 
 			mVoxelLookupTexture = resources::createSpecialTexture1D(

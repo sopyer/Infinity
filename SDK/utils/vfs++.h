@@ -3,8 +3,6 @@
 
 #	include <physfs/physfs.h>
 
-#include <Singleton.h>
-
 class File
 {
 public:
@@ -32,7 +30,7 @@ public:
 	PHYSFS_file*	mHandle;
 };
 
-class VFS: public Singleton<VFS>
+class VFS
 {
 public:
 	VFS()  {PHYSFS_init(0);}

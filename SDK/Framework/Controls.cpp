@@ -51,7 +51,7 @@ namespace ui
 
 	void Edit::onKeyDown(const KeyEvent& event/*u32 key*/)
 	{
-		u32 key = event.keysym.sym;
+		uint32_t key = event.keysym.sym;
 		// filter for special keys
 		// Enter, quit edition
 		if (key == SDLK_RETURN/*GLFW_KEY_ENTER*/)

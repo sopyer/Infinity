@@ -3,6 +3,7 @@
 #include <VG\VG.h>
 #include <VG\impl\Rasterizer.h>
 #include <VG\impl\SharedResources.h>
+#include <utils.h>
 
 #include "HourHandData.h"
 #include "MinuteHandData.h"

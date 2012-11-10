@@ -4,11 +4,10 @@
 #include <sigslot.h>
 #include <opengl.h>
 
-#include <..\vfs++\vfs++.h>
+#include <utils/vfs++.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
 #include <VG\VG.h>
-#include <utils.h>
 #include <Timer.h>
 
 #include <Events.h>

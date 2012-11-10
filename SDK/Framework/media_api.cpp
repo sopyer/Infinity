@@ -5,8 +5,6 @@
 #include <al/al.h>
 #include <al/alc.h>
 
-#include <utils.h>
-
 extern "C"
 {
 #include <avformat.h>

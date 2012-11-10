@@ -5,6 +5,7 @@
 #include <cassert>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
+#include <utils.h>
 #include <SpectatorCamera.h>
 #include "DebugDraw.h"
 #include "MeshLoaderObj.h"

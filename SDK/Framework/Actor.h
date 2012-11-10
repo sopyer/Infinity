@@ -1,7 +1,6 @@
 #ifndef __ACTOR_H_INCLUDED__
 #	define __ACTOR_H_INCLUDED__
 
-#	include <utils.h>
 #	include <glm\glm.h>
 
 class Actor;
@@ -17,7 +16,7 @@ namespace ui
 {
 	struct Color
 	{
-		u8	red, green, blue, alpha;
+		uint8_t	red, green, blue, alpha;
 	};
 
 	//Determine relayout points, take Clutter as reference
@@ -84,15 +83,15 @@ namespace ui
 			bool		isVisible() {return mVisible;}
 
 		protected:
-			virtual void onTouch(const ButtonEvent& event) {UNUSED(event);}
-			virtual void onUntouch(const ButtonEvent& event) {UNUSED(event);}
+			virtual void onTouch(const ButtonEvent& /*event*/) {}
+			virtual void onUntouch(const ButtonEvent& /*event*/) {}
 
-			virtual void onMotion(const MotionEvent& event) {UNUSED(event);}
+			virtual void onMotion(const MotionEvent& /*event*/) {}
 
 			virtual void onScroll() {}
 
-			virtual void onKeyDown(const KeyEvent& event) {UNUSED(event);}
-			virtual void onKeyUp(const KeyEvent& event) {UNUSED(event);}
+			virtual void onKeyDown(const KeyEvent& /*event*/) {}
+			virtual void onKeyUp(const KeyEvent& /*event*/) {}
 			
 			virtual void onEnter() {}
 			virtual void onLeave() {}

@@ -1,5 +1,6 @@
 #include <framework.h>
 #include <time.h>
+#include <utils.h>
 
 #include "ResourceHelpers.h"
 

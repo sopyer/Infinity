@@ -2,10 +2,10 @@
 
 #include <framework.h>
 #include <glm\glmext.h>
-#include <cassert>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
 #include <SpectatorCamera.h>
+#include <utils.h>
 
 #include "CDLODTerrain.h"
 
