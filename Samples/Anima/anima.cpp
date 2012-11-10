@@ -2,7 +2,7 @@
 
 #include <framework.h>
 #include <glm\glmext.h>
-#include <cassert>
+#include <utils.h>
 #include <SpectatorCamera.h>
 
 #include "model.h"
