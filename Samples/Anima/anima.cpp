@@ -35,9 +35,6 @@ public:
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
 
-        glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
-        glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
-
         mt::addTimedTask<Anima, &Anima::handleInput>(this, 20);
 
         add(mStatsBox
@@ -193,8 +190,6 @@ protected:
         glm::vec3 direction;
         float heading = 0.0f, pitch = 0.0f;
         uint8_t *keystate = SDL_GetKeyState(NULL);
-        if (keystate[SDLK_ESCAPE])
-            close();
         if (keystate[SDLK_w])
         {
             camera.velocity.z = moveFwd?camera.velocity.z:0.0f;

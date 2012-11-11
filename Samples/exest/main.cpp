@@ -310,8 +310,6 @@ protected:
         glm::vec3 direction;
         float heading = 0.0f, pitch = 0.0f;
         uint8_t *keystate = SDL_GetKeyState(NULL);
-        if (keystate[SDLK_ESCAPE])
-            close();
         if (keystate[SDLK_w])
         {
             camera.velocity.z = moveFwd?camera.velocity.z:0.0f;

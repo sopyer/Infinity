@@ -177,16 +177,20 @@ namespace ui
                 }
                 break;
             case SDL_KEYUP:		
-                if (E.key.keysym.sym==SDLK_F5)
+                if (E.key.keysym.sym==SDLK_ESCAPE)
+                {
+                    close();
+                }
+                else if (E.key.keysym.sym==SDLK_F5)
                 {
                     mState = mState==STATE_SHADER_EDIT?STATE_DEFAULT:STATE_SHADER_EDIT;
                     if (mState==STATE_SHADER_EDIT) mShaderEditOverlay->reset();
                 }
-                if (E.key.keysym.sym==SDLK_F4)
+                else if (E.key.keysym.sym==SDLK_F4)
                 {
                     mState = mState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
                 }
-                if (mState==STATE_DEFAULT)
+                else if (mState==STATE_DEFAULT)
                     processKeyUp(E.key);
                 break;
             case SDL_MOUSEMOTION:
