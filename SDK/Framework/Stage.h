@@ -31,6 +31,8 @@ namespace ui
         void run();
         void close();
 
+        bool isMouseCaptured();
+
     protected:
         enum Phase
         {

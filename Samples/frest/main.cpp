@@ -212,20 +212,16 @@ class Exest: public ui::Stage
 private:
     SpectatorCamera     camera;
 
-    VFS				mVFS;
+    VFS         mVFS;
 
-    glm::mat4	mProj, VP;
+    glm::mat4	mProj;
 
-    float vertAngle, horzAngle;
-
-    mt::Task                mUpdateTask;
     ui::ProfileStatsBox     mStatsBox;
-    GLuint colorTex;
 
 	rcMeshLoaderObj* m_geom;
 
 public:
-    Exest():moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false), loc(0)
+    Exest():loc(0)
     {
         lastTimeMark = timerAbsoluteTime();
 
@@ -237,19 +233,8 @@ public:
 
         camera.acceleration = glm::vec3(15, 15, 15);
         camera.maxVelocity  = glm::vec3(6, 6, 6);
-        //camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
-        //    0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
-        //    -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,
-        //    0.0f,          0.0f,              0.0f,          1.0f);
-        //camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
-
-        glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
-        glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
-
-        VP = proj*lookAt;
 
         mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
-        colorTex = resources::createTexture2D("debugTexture.png");
 
         add(mStatsBox.add(mSelectTimeLabel)
             .add(mDrawTimeLabel)
@@ -297,7 +282,6 @@ public:
             }
             fclose(cam);
         }
-        glDeleteTextures(1, &colorTex);
     }
 
 protected:
@@ -402,64 +386,14 @@ protected:
         //mGeomStatLabel.setText(str);
     }
 
-    bool moveFwd, moveBwd, moveLeft, moveRight;
     __int64 lastTimeMark;
-
-    void onMotion(const MotionEvent& event)
-    {
-        camera.rotateSmoothly((float)-event.xrel, (float)-event.yrel);
-    }
 
     void handleInput()
     {
-        glm::vec3 direction;
-        float heading = 0.0f, pitch = 0.0f;
-        uint8_t *keystate = SDL_GetKeyState(NULL);
-        if (keystate[SDLK_w])
-        {
-            camera.velocity.z = moveFwd?camera.velocity.z:0.0f;
-            moveFwd = true;
-            direction.z += 1.0f;
-        }
-        else
-            moveFwd = false;
-        if (keystate[SDLK_s])
-        {
-            camera.velocity.z = moveBwd?camera.velocity.z:0.0f;
-            moveBwd = true;
-            direction.z -= 1.0f;
-        }
-        else
-            moveBwd = false;
-        if (keystate[SDLK_a])
-        {
-            camera.velocity.x = moveLeft?camera.velocity.x:0.0f;
-            moveLeft = true;
-            direction.x -= 1.0f;
-        }
-        else
-            moveLeft = false;
-        if (keystate[SDLK_d])
-        {
-            camera.velocity.x = moveRight?camera.velocity.x:0.0f;
-            moveRight = true;
-            direction.x += 1.0f;
-        }
-        else
-            moveRight = false;
-        if (keystate[SDLK_KP8])
-            pitch += 1.50f;
-        if (keystate[SDLK_KP5])
-            pitch += -1.50f;
-        if (keystate[SDLK_KP4])
-            heading += 1.50f;
-        if (keystate[SDLK_KP6])
-            heading += -1.50f;
-
-        _int64 time = timerAbsoluteTime();
-
-        camera.rotateSmoothly(heading, pitch);
-        camera.updatePosition(direction, (time-lastTimeMark)*0.000001f);
+       _int64 time = timerAbsoluteTime();
+       
+       if (isMouseCaptured())
+            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
 
         lastTimeMark = time;
     }

@@ -14,19 +14,17 @@ class Exest: public ui::Stage
 private:
     SpectatorCamera     camera;
 
-    VFS				mVFS;
+    VFS	        mVFS;
 
     glm::mat4	mProj, VP;
 
-    float vertAngle, horzAngle;
     CDLODTerrain terrain;
 
     mt::Task                mUpdateTask;
     ui::ProfileStatsBox     mStatsBox;
-    GLuint colorTex;
 
 public:
-    Exest(): fixedMode(false), moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false), loc(0)
+    Exest(): fixedMode(false), loc(0)
     {
         lastTimeMark = timerAbsoluteTime();
 
@@ -52,7 +50,7 @@ public:
         VP = proj*lookAt;
 
         mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
-        colorTex = resources::createTexture2D("debugTexture.png");
+
         File	src = VFS::openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system
         //assert(src.size()<SIZE_MAX);
@@ -125,7 +123,6 @@ public:
             }
             fclose(cam);
         }
-        glDeleteTextures(1, &colorTex);
         terrain.cleanup();
     }
 
@@ -182,7 +179,7 @@ protected:
     void onKeyUp(const KeyEvent& event)
     {
         if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
-             event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
+            event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
         {
             releaseMouse();
         }
@@ -297,67 +294,18 @@ protected:
     bool fixedMode;
     glm::vec3 VPpp;
     uint8_t prevKeystate[SDLK_LAST];
-    bool moveFwd, moveBwd, moveLeft, moveRight;
     __int64 lastTimeMark;
-
-    void onMotion(const MotionEvent& event)
-    {
-        camera.rotateSmoothly((float)-event.xrel, (float)-event.yrel);
-    }
 
     void handleInput()
     {
-        glm::vec3 direction;
-        float heading = 0.0f, pitch = 0.0f;
-        uint8_t *keystate = SDL_GetKeyState(NULL);
-        if (keystate[SDLK_w])
-        {
-            camera.velocity.z = moveFwd?camera.velocity.z:0.0f;
-            moveFwd = true;
-            direction.z += 1.0f;
-        }
-        else
-            moveFwd = false;
-        if (keystate[SDLK_s])
-        {
-            camera.velocity.z = moveBwd?camera.velocity.z:0.0f;
-            moveBwd = true;
-            direction.z -= 1.0f;
-        }
-        else
-            moveBwd = false;
-        if (keystate[SDLK_a])
-        {
-            camera.velocity.x = moveLeft?camera.velocity.x:0.0f;
-            moveLeft = true;
-            direction.x -= 1.0f;
-        }
-        else
-            moveLeft = false;
-        if (keystate[SDLK_d])
-        {
-            camera.velocity.x = moveRight?camera.velocity.x:0.0f;
-            moveRight = true;
-            direction.x += 1.0f;
-        }
-        else
-            moveRight = false;
-        if (keystate[SDLK_KP8])
-            pitch += 1.50f;
-        if (keystate[SDLK_KP5])
-            pitch += -1.50f;
-        if (keystate[SDLK_KP4])
-            heading += 1.50f;
-        if (keystate[SDLK_KP6])
-            heading += -1.50f;
-
         _int64 time = timerAbsoluteTime();
 
-        camera.rotateSmoothly(heading, pitch);
-        camera.updatePosition(direction, (time-lastTimeMark)*0.000001f);
+        if (isMouseCaptured())
+            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
 
         lastTimeMark = time;
 
+        uint8_t *keystate = SDL_GetKeyState(NULL);
         bool lockView = false;
         if (keystate[SDLK_l]&&!prevKeystate[SDLK_l])
         {

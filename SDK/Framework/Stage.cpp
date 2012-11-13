@@ -147,6 +147,11 @@ namespace ui
         return *this;
     }
 
+    bool Stage::isMouseCaptured()
+    {
+        return SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON;
+    }
+
     void Stage::handleInput()
     {
         PROFILER_CPU_BLOCK("handleInput");
@@ -220,6 +225,8 @@ namespace ui
     void Stage::frameStep()
     {
         profilerBeginFrame();
+
+        ui::update();
 
         handleInput();
         handleRender();

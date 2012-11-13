@@ -23,7 +23,7 @@ private:
     GPUTimer	gpuTimer;
 
 public:
-    Anima(): moveFwd(false), moveBwd(false), moveLeft(false), moveRight(false), loc(0)
+    Anima(): loc(0)
     {
         lastTimeMark = timerAbsoluteTime();
 
@@ -177,64 +177,14 @@ protected:
         assert(err==GL_NO_ERROR);
     }
 
-    bool moveFwd, moveBwd, moveLeft, moveRight;
     __int64 lastTimeMark;
-
-    void onMotion(const MotionEvent& event)
-    {
-        camera.rotateSmoothly((float)-event.xrel, (float)-event.yrel);
-    }
 
     void handleInput()
     {
-        glm::vec3 direction;
-        float heading = 0.0f, pitch = 0.0f;
-        uint8_t *keystate = SDL_GetKeyState(NULL);
-        if (keystate[SDLK_w])
-        {
-            camera.velocity.z = moveFwd?camera.velocity.z:0.0f;
-            moveFwd = true;
-            direction.z += 1.0f;
-        }
-        else
-            moveFwd = false;
-        if (keystate[SDLK_s])
-        {
-            camera.velocity.z = moveBwd?camera.velocity.z:0.0f;
-            moveBwd = true;
-            direction.z -= 1.0f;
-        }
-        else
-            moveBwd = false;
-        if (keystate[SDLK_a])
-        {
-            camera.velocity.x = moveLeft?camera.velocity.x:0.0f;
-            moveLeft = true;
-            direction.x -= 1.0f;
-        }
-        else
-            moveLeft = false;
-        if (keystate[SDLK_d])
-        {
-            camera.velocity.x = moveRight?camera.velocity.x:0.0f;
-            moveRight = true;
-            direction.x += 1.0f;
-        }
-        else
-            moveRight = false;
-        if (keystate[SDLK_KP8])
-            pitch += 1.50f;
-        if (keystate[SDLK_KP5])
-            pitch += -1.50f;
-        if (keystate[SDLK_KP4])
-            heading += 1.50f;
-        if (keystate[SDLK_KP6])
-            heading += -1.50f;
-
-        _int64 time = timerAbsoluteTime();
-
-        camera.rotateSmoothly(heading, pitch);
-        camera.updatePosition(direction, (time-lastTimeMark)*0.000001f);
+       _int64 time = timerAbsoluteTime();
+       
+       if (isMouseCaptured())
+            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
 
         lastTimeMark = time;
     }

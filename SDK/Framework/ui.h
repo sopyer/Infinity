@@ -15,7 +15,13 @@
 namespace ui
 {
 	void init();
+    void update();
 	void cleanup();
+
+    bool keyIsPressed  (int key);
+    bool keyWasPressed (int key);
+    bool keyIsReleased (int key);
+    bool keyWasReleased(int key);
 }
 
 namespace ui
