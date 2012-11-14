@@ -56,7 +56,7 @@ namespace ui
     bool keyIsPressed  (int key)
     {
         assert(key<SDLK_LAST);
-        return keyStateCur[key];
+        return keyStateCur[key] != 0;
     }
 
     bool keyWasPressed (int key)

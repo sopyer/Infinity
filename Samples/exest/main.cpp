@@ -12,22 +12,24 @@
 class Exest: public ui::Stage
 {
 private:
-    SpectatorCamera     camera;
+    SpectatorCamera camera;
 
-    VFS	        mVFS;
+    VFS	mVFS;
 
-    glm::mat4	mProj, VP;
+    glm::mat4 mProj;
+    
+    bool      fixedMode;
+    glm::vec3 VPpp;
+    glm::mat4 VP;
 
     CDLODTerrain terrain;
 
-    mt::Task                mUpdateTask;
-    ui::ProfileStatsBox     mStatsBox;
+    mt::Task            mUpdateTask;
+    ui::ProfileStatsBox mStatsBox;
 
 public:
     Exest(): fixedMode(false), loc(0)
     {
-        lastTimeMark = timerAbsoluteTime();
-
         VFS::mount("AppData");
         VFS::mount("../AppData");
         VFS::mount("../../AppData");
@@ -48,8 +50,6 @@ public:
         glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
 
         VP = proj*lookAt;
-
-        mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
 
         File	src = VFS::openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system
@@ -77,16 +77,12 @@ public:
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
 
-        memset(prevKeystate, 0, SDLK_LAST);
-
         add(mStatsBox.add(mSelectTimeLabel)
             .add(mDrawTimeLabel)
             .add(mGeomStatLabel)
             .setPos(10, 10)
             .setSize(300, 140)
             );
-
-        mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
 
         GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
         addPrograms(2, prgs);
@@ -277,48 +273,24 @@ protected:
         assert(err==GL_NO_ERROR);
     }
 
-    void onUpdateStats()
+    void onUpdate(float dt)
     {
-        mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
-        wchar_t str[256];
-        _snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
-        mSelectTimeLabel.setText(str);
-        _snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
-        mDrawTimeLabel.setText(str);
-        int patches = terrain.patchCount;
-        int vtx = patches*terrain.patchDim*terrain.patchDim;
-        _snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
-        mGeomStatLabel.setText(str);
-    }
-
-    bool fixedMode;
-    glm::vec3 VPpp;
-    uint8_t prevKeystate[SDLK_LAST];
-    __int64 lastTimeMark;
-
-    void handleInput()
-    {
-        _int64 time = timerAbsoluteTime();
-
         if (isMouseCaptured())
-            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
+            processCameraInput(&camera, dt);
 
-        lastTimeMark = time;
-
-        uint8_t *keystate = SDL_GetKeyState(NULL);
         bool lockView = false;
-        if (keystate[SDLK_l]&&!prevKeystate[SDLK_l])
+        if (ui::keyWasReleased(SDLK_l))
         {
             fixedMode = !fixedMode;
             lockView  = fixedMode==true;
         }
 
-        if (keystate[SDLK_f]&&!prevKeystate[SDLK_f])
+        if (ui::keyWasReleased(SDLK_f))
         {
             terrain.drawWireframe = !terrain.drawWireframe;
         }
 
-        if (keystate[SDLK_i]&&!prevKeystate[SDLK_i])
+        if (ui::keyWasReleased(SDLK_i))
         {
             terrain.useInstancing = !terrain.useInstancing;
         }
@@ -331,7 +303,16 @@ protected:
             VPpp = camera.getPosition();
         }
 
-        memcpy(prevKeystate, keystate, SDLK_LAST);
+        mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
+        wchar_t str[256];
+        _snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
+        mSelectTimeLabel.setText(str);
+        _snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
+        mDrawTimeLabel.setText(str);
+        int patches = terrain.patchCount;
+        int vtx = patches*terrain.patchDim*terrain.patchDim;
+        _snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
+        mGeomStatLabel.setText(str);
     }
 };
 

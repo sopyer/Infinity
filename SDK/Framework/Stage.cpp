@@ -13,6 +13,7 @@
 #include <profiler.h>
 #include "UI.h"
 #include "Framework.h"
+#include "Timer.h"
 
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
@@ -112,6 +113,8 @@ namespace ui
         mShaderEditOverlay->addPrograms(ARRAY_SIZE(programs), programs);
 
         mFocused = this;
+
+        mPrevTime = timerAbsoluteTime();
     }
 
     Stage::~Stage()
@@ -227,8 +230,14 @@ namespace ui
         profilerBeginFrame();
 
         ui::update();
-
         handleInput();
+        
+        uint64_t time;
+
+        time = timerAbsoluteTime();
+        onUpdate((time-mPrevTime)*0.000001f);
+        mPrevTime = time;
+
         handleRender();
 
         profilerEndFrame();

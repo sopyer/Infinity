@@ -25,8 +25,6 @@ private:
 public:
     Anima(): loc(0)
     {
-        lastTimeMark = timerAbsoluteTime();
-
         model.LoadModel("boblampclean.md5mesh");
         model.LoadAnim ("boblampclean.md5anim");
 
@@ -34,8 +32,6 @@ public:
 
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
-
-        mt::addTimedTask<Anima, &Anima::handleInput>(this, 20);
 
         add(mStatsBox
             .setPos(10, 10)
@@ -144,27 +140,9 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        cpuTimer.start();
-
-        static const float maxTimeStep = 0.03333f;
-        static float       prevTime    = std::clock() / (float)CLOCKS_PER_SEC;
-
-        float curTime   = std::clock() / (float)CLOCKS_PER_SEC;
-        float deltaTime = curTime - prevTime;
-
-        prevTime  = curTime;
-        deltaTime = std::min( deltaTime, maxTimeStep );
-
-        model.Update(deltaTime);
-
-        double cpuTime = cpuTimer.elapsed();
-        cpuTimer.stop();
-
         gpuTimer.start();
         model.Render(mProj*vm);
         gpuTimer.stop();
-
-        mStatsBox.setStats((float)cpuTime, (float)gpuTimer.getResult());
 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
@@ -177,16 +155,21 @@ protected:
         assert(err==GL_NO_ERROR);
     }
 
-    __int64 lastTimeMark;
-
-    void handleInput()
+    void onUpdate(float dt)
     {
-       _int64 time = timerAbsoluteTime();
-       
-       if (isMouseCaptured())
-            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
+        static const float maxTimeStep = 0.03333f;
 
-        lastTimeMark = time;
+        cpuTimer.start();
+
+        model.Update(std::min(dt, maxTimeStep));
+
+        double cpuTime = cpuTimer.elapsed();
+        cpuTimer.stop();
+
+        mStatsBox.setStats((float)cpuTime, (float)gpuTimer.getResult());
+
+        if (isMouseCaptured())
+            processCameraInput(&camera, dt);
     }
 };
 

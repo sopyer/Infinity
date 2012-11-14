@@ -223,8 +223,6 @@ private:
 public:
     Exest():loc(0)
     {
-        lastTimeMark = timerAbsoluteTime();
-
         VFS::mount("AppData");
         VFS::mount("../AppData");
         VFS::mount("../../AppData");
@@ -234,16 +232,12 @@ public:
         camera.acceleration = glm::vec3(15, 15, 15);
         camera.maxVelocity  = glm::vec3(6, 6, 6);
 
-        mt::addTimedTask<Exest, &Exest::handleInput>(this, 20);
-
         add(mStatsBox.add(mSelectTimeLabel)
             .add(mDrawTimeLabel)
             .add(mGeomStatLabel)
             .setPos(10, 10)
             .setSize(300, 140)
             );
-
-        mt::addTimedTask<Exest, &Exest::onUpdateStats>(this, 250);
 
         FILE* cam = fopen("cameras.txt", "r");
         if (cam)
@@ -372,30 +366,10 @@ protected:
         assert(err==GL_NO_ERROR);
     }
 
-    void onUpdateStats()
+    void onUpdate(float dt)
     {
-        //mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
-        //wchar_t str[256];
-        //_snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
-        //mSelectTimeLabel.setText(str);
-        //_snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
-        //mDrawTimeLabel.setText(str);
-        //int patches = terrain.patchCount;
-        //int vtx = patches*terrain.patchDim*terrain.patchDim;
-        //_snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
-        //mGeomStatLabel.setText(str);
-    }
-
-    __int64 lastTimeMark;
-
-    void handleInput()
-    {
-       _int64 time = timerAbsoluteTime();
-       
        if (isMouseCaptured())
-            processCameraInput(&camera, (time-lastTimeMark)*0.000001f);
-
-        lastTimeMark = time;
+            processCameraInput(&camera, dt);
     }
 };
 

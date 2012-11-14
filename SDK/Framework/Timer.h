@@ -2,6 +2,7 @@
 #	define _TIMER_H_INCLUDED_
 
 #include <windows.h>
+#include <utils.h>
 #include <opengl.h>
 
 struct CPUTimer
@@ -60,7 +61,7 @@ struct GPUTimer
         GLenum err = glGetError();
         if (err!=GL_NO_ERROR) __asm int 3; 
 
-        if (skipFrames>1)
+        if (skipFrames)
         {
             --skipFrames;
             return 0.0f;
@@ -79,7 +80,7 @@ struct GPUTimer
     size_t skipFrames;
 };
 
-__int64 timerAbsoluteTime();
+uint64_t timerAbsoluteTime();
 
 
 #include <Scheduler.h>

@@ -46,7 +46,9 @@ namespace ui
     protected:
         //Debug functions and callbacks
         void addPrograms(size_t count, GLuint* programs);
+
         virtual void onShaderRecompile() {}
+        virtual void onUpdate(float dt) {}
 
         void createGLResources();
         void destroyGLResources();
@@ -101,6 +103,8 @@ namespace ui
 #endif
 
         size_t				mState;
+
+        uint64_t            mPrevTime;
 
         ShaderEditOverlay*	mShaderEditOverlay;
         ProfilerOverlay*	mProfilerOverlay;
