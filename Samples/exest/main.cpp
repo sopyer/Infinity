@@ -5,6 +5,7 @@
 #include <ResourceHelpers.h>
 #include <SOIL.h>
 #include <SpectatorCamera.h>
+#include <CameraDirector.h>
 #include <utils.h>
 
 #include "CDLODTerrain.h"
@@ -26,6 +27,8 @@ private:
 
     mt::Task            mUpdateTask;
     ui::ProfileStatsBox mStatsBox;
+
+    CameraDirector camDirector;
 
 public:
     Exest(): fixedMode(false), loc(0)
@@ -86,20 +89,6 @@ public:
 
         GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
         addPrograms(2, prgs);
-
-        FILE* cam = fopen("cameras.txt", "r");
-        if (cam)
-        {
-            while(!feof(cam))
-            {
-                glm::__quatGTX  q;
-                glm::vec3       p;
-                fscanf(cam, "%f %f %f %f %f %f %f\n", &q.x, &q.y, &q.z, &q.w, &p.x, &p.y, &p.z);
-                savedCamOrient.push_back(q);
-                savedCamPos.push_back(p);
-            }
-            fclose(cam);
-        }
     }
 
     ui::Label	mDrawTimeLabel;
@@ -108,17 +97,6 @@ public:
 
     ~Exest()
     {
-        FILE* cam = fopen("cameras.txt", "w");
-        if (cam)
-        {
-            for (size_t i=0; i<savedCamOrient.size(); ++i)
-            {
-                glm::__quatGTX  q=savedCamOrient[i];
-                glm::vec3       p=savedCamPos[i];
-                fprintf(cam, "%f %f %f %f %f %f %f\n", q.x, q.y, q.z, q.w, p.x, p.y, p.z);
-            }
-            fclose(cam);
-        }
         terrain.cleanup();
     }
 
@@ -191,23 +169,6 @@ protected:
         {
             terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
         }
-        if (event.keysym.sym==SDLK_0)
-        {
-            savedCamOrient.push_back(camera.getOrientation());
-            savedCamPos.push_back(camera.getPosition());
-        }
-        if (event.keysym.sym==SDLK_PERIOD && savedCamOrient.size())
-        {
-            loc=(loc+1)%savedCamOrient.size();
-            camera.setOrientation(savedCamOrient[loc]);
-            camera.setPosition(savedCamPos[loc]);
-        }
-        if (event.keysym.sym==SDLK_COMMA && savedCamOrient.size())
-        {
-            loc=(loc-1)%savedCamOrient.size();
-            camera.setOrientation(savedCamOrient[loc]);
-            camera.setPosition(savedCamPos[loc]);
-        }
     }
 
     void onTouch(const ButtonEvent& event)
@@ -275,10 +236,15 @@ protected:
 
     void onUpdate(float dt)
     {
-        if (isMouseCaptured())
-            processCameraInput(&camera, dt);
-
         bool lockView = false;
+
+        if (isMouseCaptured())
+        {
+            processCameraInput(&camera, dt);
+        }
+
+        processCameraDirectorInput(&camDirector, &camera);
+
         if (ui::keyWasReleased(SDLK_l))
         {
             fixedMode = !fixedMode;

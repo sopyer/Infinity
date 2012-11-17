@@ -12,7 +12,7 @@ extern "C"
 #include <swscale.h>
 }
 
-__int64 timerAbsoluteTime();
+uint64_t timerAbsoluteTime();
 
 #define NUM_BUFFERS 3
 

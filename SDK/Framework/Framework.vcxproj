@@ -82,6 +82,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CameraDirector.cpp" />
     <ClCompile Include="Controls.cpp" />
     <ClCompile Include="media_api.cpp" />
     <ClCompile Include="profiler.cpp" />
@@ -105,6 +106,7 @@
     <ClCompile Include="DefaultFontData.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CameraDirector.h" />
     <ClInclude Include="FirstPersonCamera.h" />
     <ClInclude Include="media_api.h" />
     <ClInclude Include="profiler.h" />

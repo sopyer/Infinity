@@ -239,20 +239,6 @@ public:
             .setSize(300, 140)
             );
 
-        FILE* cam = fopen("cameras.txt", "r");
-        if (cam)
-        {
-            while(!feof(cam))
-            {
-                glm::__quatGTX  q;
-                glm::vec3       p;
-                fscanf(cam, "%f %f %f %f %f %f %f\n", &q.x, &q.y, &q.z, &q.w, &p.x, &p.y, &p.z);
-                savedCamOrient.push_back(q);
-                savedCamPos.push_back(p);
-            }
-            fclose(cam);
-        }
-
         m_geom = new rcMeshLoaderObj();
         m_geom->load("k:\\projects\\graphics\\Infinity\\AppData\\dungeon.obj");
 
@@ -265,17 +251,6 @@ public:
     ~Exest()
     {
         delete m_geom;
-        FILE* cam = fopen("cameras.txt", "w");
-        if (cam)
-        {
-            for (size_t i=0; i<savedCamOrient.size(); ++i)
-            {
-                glm::__quatGTX  q=savedCamOrient[i];
-                glm::vec3       p=savedCamPos[i];
-                fprintf(cam, "%f %f %f %f %f %f %f\n", q.x, q.y, q.z, q.w, p.x, p.y, p.z);
-            }
-            fclose(cam);
-        }
     }
 
 protected:
@@ -283,33 +258,12 @@ protected:
     {
     }
 
-    std::vector<glm::__quatGTX> savedCamOrient;
-    std::vector<glm::vec3>      savedCamPos;
-    int                         loc;
-
     void onKeyUp(const KeyEvent& event)
     {
         if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
              event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
         {
             releaseMouse();
-        }
-        if (event.keysym.sym==SDLK_0)
-        {
-            savedCamOrient.push_back(camera.getOrientation());
-            savedCamPos.push_back(camera.getPosition());
-        }
-        if (event.keysym.sym==SDLK_PERIOD && savedCamOrient.size())
-        {
-            loc=(loc+1)%savedCamOrient.size();
-            camera.setOrientation(savedCamOrient[loc]);
-            camera.setPosition(savedCamPos[loc]);
-        }
-        if (event.keysym.sym==SDLK_COMMA && savedCamOrient.size())
-        {
-            loc=(loc-1)%savedCamOrient.size();
-            camera.setOrientation(savedCamOrient[loc]);
-            camera.setPosition(savedCamPos[loc]);
         }
     }
 
