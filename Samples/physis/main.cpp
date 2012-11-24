@@ -1,4 +1,5 @@
 #include <framework.h>
+#include <vg/VG.h>
 
 #include "Perlin.h"
 
@@ -521,39 +522,6 @@ class PhysisDemo: public ui::Stage
 			return brightnessMatrix*contrastMatrix;
 		}
 
-		void drawImage(float x, float y, TextureNames id)
-		{
-			drawImage(x, y, mTextures[id]);
-		}
-
-		void drawImage(float x, float y, GLuint texture)
-		{
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-			glPushMatrix();
-			glTranslatef(x, y, -10);
-			
-			glUseProgram(0);
-			glColor4f(1, 1, 1, 1);
-			glActiveTexture(GL_TEXTURE0);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, texture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glBegin(GL_QUADS);
-				glTexCoord2f(0, 1);
-				glVertex2f(-1,  1);
-				glTexCoord2f(1, 1);
-				glVertex2f( 1,  1);
-				glTexCoord2f(1, 0);
-				glVertex2f( 1, -1);
-				glTexCoord2f(0, 0);
-				glVertex2f(-1, -1);
-			glEnd();
-			glDisable(GL_TEXTURE_2D);
-			glPopMatrix();
-		}
-
 		virtual void onPaint()
 		{
 			mCPUTimer.start();
@@ -593,19 +561,27 @@ class PhysisDemo: public ui::Stage
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(vp[0], vp[1], vp[2], vp[3]);
-			drawImage( -8,  2, PERLIN0);
-			drawImage( -5,  2, PERLIN1);
-			drawImage( -2,  2, PERLIN2);
-			drawImage(  1,  2, PERLIN3);
-			drawImage(  4,  2, PERLIN4);
-			drawImage(  7,  2, PERLIN5);
 
-			drawImage( -8, -1, PERLIN6);
-			drawImage( -5, -1, PERLIN7);
-			drawImage( -2, -1, COMBINED0);
-			drawImage(  1, -1, blurTex[4]);
-			drawImage(  4, -1, blurTex[5]);
-			drawImage(  7, -1, blurTex[6]);
+            glMatrixMode(GL_MODELVIEW);
+		    glLoadIdentity();
+		    glPushMatrix();
+			glTranslatef(0, 0, -10);
+
+            vg::drawImage( -8,  2, -6,  0, mTextures[PERLIN0]);
+            vg::drawImage( -5,  2, -3,  0, mTextures[PERLIN1]);
+            vg::drawImage( -2,  2,  0,  0, mTextures[PERLIN2]);
+            vg::drawImage(  1,  2,  3,  0, mTextures[PERLIN3]);
+            vg::drawImage(  4,  2,  6,  0, mTextures[PERLIN4]);
+            vg::drawImage(  7,  2,  9,  0, mTextures[PERLIN5]);
+
+            vg::drawImage( -8, -1, -6, -3, mTextures[PERLIN6]);
+            vg::drawImage( -5, -1, -3, -3, mTextures[PERLIN7]);
+            vg::drawImage( -2, -1,  0, -3, mTextures[COMBINED0]);
+            vg::drawImage(  1, -1,  3, -3, blurTex[4]);
+            vg::drawImage(  4, -1,  6, -3, blurTex[5]);
+            vg::drawImage(  7, -1,  9, -3, blurTex[6]);
+
+            glPopMatrix();
 		}
 
 	private:

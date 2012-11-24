@@ -1,5 +1,6 @@
 #pragma once
 
+#include <opengl.h>
 #include <vg/openvg.h>
 
 namespace impl
@@ -82,6 +83,7 @@ namespace vg
 	void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor);
     void drawRoundedRect(float x0, float y0, float x1, float y1, float cx, float cy, VGuint fillColor, VGuint borderColor);
 	void drawRoundedRectOutline(float x0, float y0, float x1, float y1, float cx, float cy, VGuint borderColor);
+    void drawImage(float x0, float y0, float x1, float y1, GLuint texture);
 
- //   void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
+    //void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
 }

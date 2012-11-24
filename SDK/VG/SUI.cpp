@@ -228,4 +228,26 @@ namespace vg
     }
 
     //   void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
+
+    void drawImage(float x0, float y0, float x1, float y1, GLuint texture)
+	{
+		glUseProgram(0);
+		glColor4f(1, 1, 1, 1);
+		glActiveTexture(GL_TEXTURE0);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glBegin(GL_QUADS);
+			glTexCoord2f(0, 1);
+			glVertex2f(x0, y0);
+			glTexCoord2f(1, 1);
+			glVertex2f(x1, y0);
+			glTexCoord2f(1, 0);
+			glVertex2f(x1, y1);
+			glTexCoord2f(0, 0);
+			glVertex2f(x0, y1);
+		glEnd();
+		glDisable(GL_TEXTURE_2D);
+	}
 }
