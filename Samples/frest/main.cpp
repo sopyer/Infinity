@@ -207,7 +207,7 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
 	dd->texture(false);
 }
 
-class Exest: public ui::Stage
+class Frest: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
@@ -221,7 +221,7 @@ private:
 	rcMeshLoaderObj* m_geom;
 
 public:
-    Exest():loc(0)
+    Frest()
     {
         VFS::mount("AppData");
         VFS::mount("../AppData");
@@ -248,7 +248,7 @@ public:
     ui::Label	mSelectTimeLabel;
     ui::Label	mGeomStatLabel;
 
-    ~Exest()
+    ~Frest()
     {
         delete m_geom;
     }
@@ -329,7 +329,7 @@ protected:
 
 int main(int argc, char** argv)
 {
-    Exest app;
+    Frest app;
     app.run();
 
     return 0;

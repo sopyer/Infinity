@@ -23,7 +23,7 @@ private:
     GPUTimer	gpuTimer;
 
 public:
-    Anima(): loc(0)
+    Anima()
     {
         model.LoadModel("boblampclean.md5mesh");
         model.LoadAnim ("boblampclean.md5anim");
