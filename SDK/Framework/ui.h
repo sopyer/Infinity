@@ -12,6 +12,9 @@
 
 #include <Events.h>
 
+class  SpectatorCamera;
+struct CameraDirector;
+
 namespace ui
 {
 	void init();
@@ -22,6 +25,13 @@ namespace ui
     bool keyWasPressed (int key);
     bool keyIsReleased (int key);
     bool keyWasReleased(int key);
+
+    void processCameraInput(SpectatorCamera* camera, float dt);
+    void processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);
+
+    void displayStats(float x, float y, float w, float h, float cpuTime, float gpuTime);
+
+	extern vg::Font defaultFont;
 }
 
 namespace ui
@@ -29,8 +39,6 @@ namespace ui
 	class Actor;
 	class Container;
 	class Stage;
-
-	extern vg::Font defaultFont;
 }
 
 #	include <Actor.h>

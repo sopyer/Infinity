@@ -14,8 +14,4 @@ namespace logging
 	void message(const char *s,...);
 }
 
-class SpectatorCamera;
-
-void processCameraInput(SpectatorCamera* camera, float dt);
-
 #endif

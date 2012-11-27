@@ -29,12 +29,6 @@ namespace ui
 			GLuint		mTexture;
 	};
 
-	class Rectangle: public ui::Actor
-	{
-		protected:
-			virtual void onPaint();
-	};
-
 	class Label: public ui::Actor
 	{
 		public:
@@ -245,42 +239,5 @@ namespace ui
 			Button	mButton;
 			Edit	mEdit;
 			HGroup	mListBox;
-	};
-
-	class VBox: public ui::Container
-	{
-		public:
-			enum Align {Left, Center, Right};
-		
-		public:
-			VBox():mSpacing(0), mHMargin(0), mVMargin(0), mAlign(Left)
-			{}
-
-			VBox& setSpacing(float spacing) {mSpacing = spacing; return *this;}
-			VBox& setHMargin(float hmargin) {mHMargin = hmargin; return *this;}
-			VBox& setVMargin(float vmargin) {mVMargin = vmargin; return *this;}
-			VBox& setAlign(Align align) {mAlign = align; return *this;}
-
-		protected:
-			virtual void onAllocate();
-			virtual void onPaint();
-
-		private:
-			float	mSpacing, mHMargin, mVMargin;
-			Align	mAlign;
-	};
-
-	class ProfileStatsBox: public VBox
-	{
-		public:
-			ProfileStatsBox();
-
-			ProfileStatsBox& setFont(vg::Font font);
-			ProfileStatsBox& setStats(float cpuTime, float gpuTime);
-
-		private:
-			ui::Label	mVCNameLabel;
-			ui::Label	mCPUTimeLabel;
-			ui::Label	mGPUTimeLabel;
 	};
 }

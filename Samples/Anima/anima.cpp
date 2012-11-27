@@ -15,7 +15,6 @@ private:
     glm::mat4	mProj;
 
     mt::Task                mUpdateTask;
-    ui::ProfileStatsBox     mStatsBox;
 
     MD5Model model;
 
@@ -32,11 +31,6 @@ public:
 
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
-
-        add(mStatsBox
-            .setPos(10, 10)
-            .setSize(300, 70)
-            );
 
         addPrograms(1, &model.program);
     }
@@ -105,9 +99,13 @@ protected:
 
         glDisable(GL_BLEND);
 
+        ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, cpuTime, gpuTime);
+
         err = glGetError();
         assert(err==GL_NO_ERROR);
     }
+
+    float cpuTime, gpuTime;
 
     void onUpdate(float dt)
     {
@@ -117,13 +115,13 @@ protected:
 
         model.Update(std::min(dt, maxTimeStep));
 
-        double cpuTime = cpuTimer.elapsed();
+        cpuTime = (float)cpuTimer.elapsed();
         cpuTimer.stop();
 
-        mStatsBox.setStats((float)cpuTime, (float)gpuTimer.getResult());
+        gpuTime = (float)gpuTimer.getResult();
 
         if (isMouseCaptured())
-            processCameraInput(&camera, dt);
+            ui::processCameraInput(&camera, dt);
     }
 };
 

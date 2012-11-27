@@ -10,6 +10,7 @@ namespace vg
     void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor)
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -39,6 +40,7 @@ namespace vg
     void drawRoundedRect(float x0, float y0, float x1, float y1, float cx, float cy, VGuint fillColor, VGuint borderColor)
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -134,6 +136,7 @@ namespace vg
     void drawRoundedRectOutline(float x0, float y0, float x1, float y1, float cx, float cy, VGuint borderColor)
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_CULL_FACE);
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

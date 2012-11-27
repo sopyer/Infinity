@@ -26,7 +26,6 @@ private:
     CDLODTerrain terrain;
 
     mt::Task            mUpdateTask;
-    ui::ProfileStatsBox mStatsBox;
 
     CameraDirector camDirector;
 
@@ -79,13 +78,6 @@ public:
 
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
-
-        add(mStatsBox.add(mSelectTimeLabel)
-            .add(mDrawTimeLabel)
-            .add(mGeomStatLabel)
-            .setPos(10, 10)
-            .setSize(300, 140)
-            );
 
         GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
         addPrograms(2, prgs);
@@ -230,6 +222,22 @@ protected:
 
         glDisable(GL_BLEND);
 
+        //Draw ui
+        ui::displayStats(10.0f, 10.0f, 300.0f, 120.0f, terrain.getCPUTime(), terrain.getGPUTime());
+
+        char str[256];
+        
+        _snprintf(str, 256, "CPU select time - %f ms", terrain.getCPUSelectTime());
+        vg::drawString(ui::defaultFont, 25.0f, 83.0f, str, strlen(str));
+        
+        _snprintf(str, 256, "CPU draw time - %f ms", terrain.getCPUDrawTime());
+        vg::drawString(ui::defaultFont, 25.0f, 101.0f, str, strlen(str));
+        
+        int patches = terrain.patchCount;
+        int vtx = patches*terrain.patchDim*terrain.patchDim;
+        _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
+        vg::drawString(ui::defaultFont, 25.0f, 119.0f, str, strlen(str));
+
         err = glGetError();
         assert(err==GL_NO_ERROR);
     }
@@ -240,10 +248,10 @@ protected:
 
         if (isMouseCaptured())
         {
-            processCameraInput(&camera, dt);
+            ui::processCameraInput(&camera, dt);
         }
 
-        processCameraDirectorInput(&camDirector, &camera);
+        ui::processCameraDirectorInput(&camDirector, &camera);
 
         if (ui::keyWasReleased(SDLK_l))
         {
@@ -268,17 +276,6 @@ protected:
             VP = mProj*vm;
             VPpp = camera.getPosition();
         }
-
-        mStatsBox.setStats(terrain.getCPUTime(), terrain.getGPUTime());
-        wchar_t str[256];
-        _snwprintf(str, 256, L"CPU select time - %f ms", terrain.getCPUSelectTime());
-        mSelectTimeLabel.setText(str);
-        _snwprintf(str, 256, L"CPU draw time - %f ms", terrain.getCPUDrawTime());
-        mDrawTimeLabel.setText(str);
-        int patches = terrain.patchCount;
-        int vtx = patches*terrain.patchDim*terrain.patchDim;
-        _snwprintf(str, 256, L"Patches: %d, Vtx: %d", patches, vtx);
-        mGeomStatLabel.setText(str);
     }
 };
 

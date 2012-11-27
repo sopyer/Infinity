@@ -30,12 +30,6 @@ namespace ui
 		glDisable(GL_TEXTURE_2D);
 	}
 
-	void Rectangle::onPaint()
-	{
-		float w = getWidth(), h = getHeight(), x = 0, y = 0;
-		vg::drawRoundedRect(x, y, x+w, x+h, 5, 5, 0xFFAAAAAA, 0xFFFFFFFF);
-	}
-
 	void Label::onPaint()
 	{
 		glColor4fv(mColor);
@@ -198,79 +192,5 @@ namespace ui
 		float y = vg::getTextAscender(mFont)+vg::getTextDescender(mFont);
 		y = (16+y)/2;
 		vg::drawString(mFont, x, y, mText.c_str(), mText.length());
-	}
-
-	void VBox::onAllocate()
-	{
-		//update childs extents;
-		Container::onAllocate();
-
-		float x = 0, y = mVMargin, w = getWidth();
-		ChildsVector::iterator	it  = mChilds.begin(),
-								end = mChilds.end();
-
-		for (; it != end; ++it)
-		{
-			Actor&	actor = *(*it);
-					
-			switch (mAlign)
-			{
-				case Left:
-					x = mHMargin;
-					break;
-				case Center:
-					x = (w-actor.getWidth())/2.0f-mHMargin;
-					break;
-				case Right:
-					x = w-mHMargin-actor.getWidth();
-					break;
-			}
-
-			actor.setPos(x, y);
-			y += actor.getHeight()+mSpacing;
-		}
-	}
-
-	void VBox::onPaint()
-	{
-		float w = getWidth(), h = getHeight(), x = 0, y = 0;
-		vg::drawRoundedRect(x, y, w, h, 5, 5, 0xC0000000/*0xB2595959*/, /*0xFFC0E0E0*/0xFF00FF32);
-	}
-
-	ProfileStatsBox::ProfileStatsBox()
-	{
-		setSpacing(4);
-		setHMargin(15);
-		setVMargin(7);
-		setAlign(ui::VBox::Left);
-		add(mVCNameLabel);
-		add(mCPUTimeLabel);
-		add(mGPUTimeLabel);
-				
-		wchar_t str[256];
-		mbstowcs(str, (char*)glGetString(GL_RENDERER), 256);
-		mVCNameLabel.setText(str);
-
-		setStats(0, 0);
-	}
-
-	ProfileStatsBox& ProfileStatsBox::setFont(vg::Font font)
-	{
-		mVCNameLabel.setFont(font);
-		mCPUTimeLabel.setFont(font);
-		mGPUTimeLabel.setFont(font);
-
-		return *this;
-	}
-
-	ProfileStatsBox& ProfileStatsBox::setStats(float cpuTime, float gpuTime)
-	{
-		wchar_t str[256];
-		_snwprintf(str, 256, L"CPU time - %f ms", cpuTime);
-		mCPUTimeLabel.setText(str);
-		_snwprintf(str, 256, L"GPU time - %f ms", gpuTime);
-		mGPUTimeLabel.setText(str);
-
-		return * this;
 	}
 }

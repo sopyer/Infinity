@@ -14,8 +14,4 @@ struct CameraDirector
     int                         index;
 };
 
-class SpectatorCamera;
-
-void processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);
-
 #endif
