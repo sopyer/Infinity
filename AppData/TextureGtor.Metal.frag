@@ -1,13 +1,11 @@
-uniform sampler2D samInput0;
-uniform sampler2D samInput1;
-uniform sampler2D samInput2;
-uniform sampler2D samInput3;
-uniform sampler2D samInput4;
-uniform sampler2D samInput5;
-uniform sampler2D samInput6;
-uniform sampler2D samInput7;
-
-//uniform mat4 uHSCB;
+layout(binding = 0) uniform sampler2D samInput0;
+layout(binding = 1) uniform sampler2D samInput1;
+layout(binding = 2) uniform sampler2D samInput2;
+layout(binding = 3) uniform sampler2D samInput3;
+layout(binding = 4) uniform sampler2D samInput4;
+layout(binding = 5) uniform sampler2D samInput5;
+layout(binding = 6) uniform sampler2D samInput6;
+layout(binding = 7) uniform sampler2D samInput7;
 
 vec3 saturate(vec3 v)
 {

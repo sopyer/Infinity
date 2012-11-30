@@ -51,11 +51,7 @@ class PhysisDemo: public ui::Stage
 
     GLuint permTex[9], gradTex;
 
-    GLint uniSamplerGrad, uniSamplerPerm, uniInvTexDim;
-
-    GLint uniSamplerInput1;
-    GLint uniSamplerInput2;
-    GLint uniHSCB;
+    GLint uniInvTexDim;
 
     GLint	uniOctaves;
     GLint	uniAmp;
@@ -115,9 +111,7 @@ public:
             assert(err==GL_NO_ERROR);
         }
 
-        uniSamplerGrad = glGetUniformLocation(perlinGtorProg, "samplerGrad");
-        uniSamplerPerm = glGetUniformLocation(perlinGtorProg, "samplerPerm");
-        uniInvTexDim   = glGetUniformLocation(perlinGtorProg, "invTexDim");
+        uniInvTexDim    = glGetUniformLocation(perlinGtorProg, "invTexDim");
         uniOctaves		= glGetUniformLocation(perlinGtorProg, "uOctaves");
         uniAmp			= glGetUniformLocation(perlinGtorProg, "uAmp");
         uniAmpScale		= glGetUniformLocation(perlinGtorProg, "uAmpScale");
@@ -131,8 +125,6 @@ public:
         }
 
         glUseProgram(perlinGtorProg);
-        glUniform1i(uniSamplerPerm, 0);
-        glUniform1i(uniSamplerGrad, 1);
         glUniform1f(uniInvTexDim, 1.0f/PERMUTATION_DIM);
         glUseProgram(0);
 
@@ -178,58 +170,13 @@ public:
 
         glLinkProgram(texGtorProg);
 
-        //uniSamplerInput1 = glGetUniformLocation(texGtorProg, "samInput1");
-        //uniSamplerInput2 = glGetUniformLocation(texGtorProg, "samInput2");
-        //uniHSCB = glGetUniformLocation(texGtorProg, "uHSCB");
-
-        glUseProgram(texGtorProg);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput0"), 0);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput1"), 1);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput2"), 2);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput3"), 3);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput4"), 4);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput5"), 5);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput6"), 6);
-        glUniform1i(glGetUniformLocation(texGtorProg, "samInput7"), 7);
-        glUniform1i(uniSamplerInput2, 1);
-        glUseProgram(0);
-
         {
             GLenum err = glGetError();
             assert(err==GL_NO_ERROR);
         }
     }
 
-    GLuint srtGtorProg;
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
-    void CreateSRTGtor()
-    {
-        GLuint shader;
-        srtGtorProg = glCreateProgram();
-
-        shader = resources::createShaderFromFile(GL_VERTEX_SHADER, "FF.Copy.PosUV.vert");
-        glAttachShader(texGtorProg, shader);
-        glDeleteShader(shader);
-        shader = resources::createShaderFromFile(GL_FRAGMENT_SHADER, "TextureGtor.Metal.frag");
-        glAttachShader(texGtorProg, shader);
-        glDeleteShader(shader);
-
-        glLinkProgram(texGtorProg);
-
-        uniSamplerInput1 = glGetUniformLocation(texGtorProg, "samInput");
-        uniSamplerInput2 = glGetUniformLocation(texGtorProg, "samInput2");
-        uniHSCB = glGetUniformLocation(texGtorProg, "uHSCB");
-
-        glUseProgram(texGtorProg);
-        glUniform1i(uniSamplerInput1, 0);
-        glUniform1i(uniSamplerInput2, 1);
-        glUseProgram(0);
-
-        {
-            GLenum err = glGetError();
-            assert(err==GL_NO_ERROR);
-        }
-    }
 
     PhysisDemo()
     {
@@ -280,11 +227,6 @@ public:
 
     double mCPUTime;
     double mGPUTime;
-
-    //void onUpdateStats()
-    //{
-    //	mStatsBox.setStats((float)mCPUTime, (float)mGPUTime);
-    //}
 
     ~PhysisDemo()
     {
@@ -370,29 +312,10 @@ protected:
 
     void generatePerlin(TextureNames dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale, float gamma)
     {
-        //{
-        //	GLenum err = glGetError();
-        //	assert(err==GL_NO_ERROR);
-        //}
-
-        //glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-        //glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[dest], 0);
-        //
         {
             GLenum err = glGetError();
             assert(err==GL_NO_ERROR);
         }
-
-        //glViewport(0, 0, texSize, texSize);
-
-        //glClearColor(0, 0, 0, 1);
-
-        //glMatrixMode(GL_PROJECTION);
-        //glPushMatrix();
-        //glLoadIdentity();
-        //glMatrixMode(GL_MODELVIEW);
-        //glPushMatrix();
-        //glLoadIdentity();
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_1D, permTex[seed%9]);
@@ -420,27 +343,13 @@ protected:
         }
 
         generateTexture(mTextures[dest], texSize);
-        //glBegin(GL_QUADS);
-        //	glTexCoord2f(0, 1);
-        //	glVertex2f(-1,  1);
-        //	glTexCoord2f(1, 1);
-        //	glVertex2f( 1,  1);
-        //	glTexCoord2f(1, 0);
-        //	glVertex2f( 1, -1);
-        //	glTexCoord2f(0, 0);
-        //	glVertex2f(-1, -1);
-        //glEnd();
+
         glUseProgram(0);
 
         {
             GLenum err = glGetError();
             assert(err==GL_NO_ERROR);
         }
-        //glPopMatrix();
-        //glMatrixMode(GL_PROJECTION);
-        //glPopMatrix();
-
-        //glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void downsample(GLuint tex, GLuint dest, GLuint dim)
@@ -469,17 +378,6 @@ protected:
         glColor4f(1, 1, 1, 1);
         glUseProgram(0);
         generateTexture(dest, dim);
-        //glBegin(GL_QUADS);
-        //	glTexCoord2f(0, 1);
-        //	glVertex2f(-1,  1);
-        //	glTexCoord2f(1, 1);
-        //	glVertex2f( 1,  1);
-        //	glTexCoord2f(1, 0);
-        //	glVertex2f( 1, -1);
-        //	glTexCoord2f(0, 0);
-        //	glVertex2f(-1, -1);
-        //glEnd();
-        //glDisable(GL_TEXTURE_2D);
 
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);

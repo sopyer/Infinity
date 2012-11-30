@@ -1,17 +1,18 @@
 #version 330
 
-uniform sampler1D samplerPerm;
-uniform sampler1D samplerGrad;
+layout(binding=0) uniform sampler1D samPerm;
+layout(binding=1) uniform sampler1D samGrad;
+
 uniform float     invTexDim;
 
 float perm(float x)
 {
-	return texture1D(samplerPerm, x).r;
+	return texture1D(samPerm, x).r;
 }
 
 float grad(float x, vec2 p)
 {
-	return dot(texture1D(samplerGrad, x*8).rg, p);
+	return dot(texture1D(samGrad, x*8).rg, p);
 }
 
 vec2 fade(vec2 x)
@@ -23,7 +24,7 @@ vec2 fade(vec2 x)
 float perlin2D(vec2 P)
 {
 	vec2 Pi = floor(P)*invTexDim; // Integer part for permutation, divide by texture size for proper sampling
-	vec2 Pf = fract(P); // Fractional part for interpolation
+	vec2 Pf = fract(P);               // Fractional part for interpolation
 	
 	float AA = perm(perm(Pi.x)+Pi.y);
 	float AB = perm(perm(Pi.x)+Pi.y+invTexDim);
@@ -33,7 +34,7 @@ float perlin2D(vec2 P)
 	vec2 f = fade(Pf);
 	
 	float noise = mix(
-		mix(grad(AA, Pf),              grad(BA, Pf+vec2(-1,  0)), f.x),
+		mix(grad(AA, Pf),                   grad(BA, Pf+vec2(-1,  0)), f.x),
 		mix(grad(AB, Pf+vec2(0, -1)),  grad(BB, Pf+vec2(-1, -1)), f.x),
 		f.y
 	);
