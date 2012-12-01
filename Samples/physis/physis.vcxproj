@@ -86,7 +86,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="physis.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\AppData\Perlin.Noise.frag" />

@@ -1,3 +1,5 @@
+in vec2 vUV;
+
 layout(binding = 0) uniform sampler2D samInput0;
 layout(binding = 1) uniform sampler2D samInput1;
 layout(binding = 2) uniform sampler2D samInput2;
@@ -38,16 +40,16 @@ vec3 Subroutine0(vec3 color1, vec3 color2)
 
 void main(void)
 {
-	vec3 color = 0.5*texture2D(samInput1, gl_TexCoord[0].st).xyz;
+	vec3 color = 0.5*texture2D(samInput1, vUV).xyz;
 
 	color += Subroutine0(
-			texture2D(samInput2, gl_TexCoord[0].st).xyz,
-			texture2D(samInput3, gl_TexCoord[0].st).xyz
+			texture2D(samInput2, vUV).xyz,
+			texture2D(samInput3, vUV).xyz
 		);
 
 	color += 0.15*Subroutine0(
-			texture2D(samInput4, gl_TexCoord[0].st).xyz,
-			texture2D(samInput5, gl_TexCoord[0].st).xyz
+			texture2D(samInput4, vUV).xyz,
+			texture2D(samInput5, vUV).xyz
 		);
 	
 	//color *=10;
@@ -55,8 +57,8 @@ void main(void)
 	//color = mix(vec3(20.0/255.0, 22.0/255.0, 21.0/255.0), vec3(86.0/255.0, 88.0/255.0, 87.0/255.0), saturate(color));
 	
 	float ca = cos(-0.63), sa = sin(-0.63);
-	float x = ca*gl_TexCoord[0].s - sa*gl_TexCoord[0].t;
-	float y = sa*gl_TexCoord[0].s + ca*gl_TexCoord[0].t;
+	float x = ca*vUV.x - sa*vUV.y;
+	float y = sa*vUV.x + ca*vUV.y;
 
 	//x = x*0.312+0.5;
 	//y = y*0.312+0.5;
@@ -67,12 +69,12 @@ void main(void)
 	color1 = mix(vec3(0.0/255.0, 0.0/255.0, 0.0/255.0), vec3(209.0/255.0, 224.0/255.0, 96.0/255.0), color1);
 	color1 = AdjustCB(color1, 1.128, 0.380);
 	
-	vec3 color2 = texture2D(samInput6, gl_TexCoord[0].st).xyz;
+	vec3 color2 = texture2D(samInput6, vUV).xyz;
 	color2 = mix(vec3(48.0/255.0, 0.0/255.0, 11.0/255.0), vec3(134.0/255.0, 55.0/255.0, 32.0/255.0), color2);
 	color2 = AdjustCB(color2, 1.272, 0.872);
 	color2 = saturate(color2)+saturate(color1);
 	
-	vec3 colorM = texture2D(samInput0, gl_TexCoord[0].st).xyz;
+	vec3 colorM = texture2D(samInput0, vUV).xyz;
 	colorM = saturate(AdjustCB(colorM, 20.52, 0.14));
 
 	gl_FragColor = vec4(mix(color, color2, colorM), 1);

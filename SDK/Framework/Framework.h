@@ -14,4 +14,10 @@ namespace logging
 	void message(const char *s,...);
 }
 
+#define CHECK_GL_ERROR()                \
+    {                                   \
+        GLenum err = glGetError();      \
+        assert(err==GL_NO_ERROR);       \
+    }
+
 #endif
