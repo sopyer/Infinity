@@ -48,6 +48,8 @@ class PhysisDemo: public ui::Stage
     GLint	uniFreq;
     GLint	uniFreqScale;
 
+    GLuint  prgConvertToLum;
+
 public:
     void allocTextures()
     {
@@ -121,6 +123,8 @@ public:
 
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
 
+    GLuint texSource;
+
     PhysisDemo()
     {
         VFS::mount("AppData");
@@ -133,7 +137,16 @@ public:
 
         glGetIntegerv(GL_VIEWPORT, vp);
 
-        texGtorProg = resources::createProgramFromFiles("PP.common.vert", "TextureGtor.Metal.frag");
+        texGtorProg     = resources::createProgramFromFiles(
+                              "PP.common.vert",
+                              "TextureGtor.Metal.frag"
+                          );
+        prgConvertToLum = resources::createProgramFromFiles(
+                              "PP.common.vert",
+                              "PP.ConvertToLuminance.frag"
+                          );
+
+        texSource = resources::createTexture2D("debugTexture.png");
 
         CHECK_GL_ERROR();
 
@@ -152,8 +165,10 @@ public:
     {
         freeTextures();
         glDeleteProgram(texGtorProg);
+        glDeleteProgram(prgConvertToLum);
         glDeleteProgram(perlinGtorProg);
         glDeleteFramebuffers(1, &fbo);
+        glDeleteTextures(1, &texSource);
         glDeleteTextures(9, permTex);
         glDeleteTextures(1, &gradTex);
     }
@@ -282,6 +297,8 @@ protected:
         vg::drawImage( -2, -1,  0, -3, mTextures[COMBINED0]);
 
         glPopMatrix();
+
+        vg::drawImage(350.0f, 000.0f, 606.0f, 256.0f, texSource);
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
     }
