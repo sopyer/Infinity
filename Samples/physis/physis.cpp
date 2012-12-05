@@ -68,6 +68,18 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    GLuint allocTexture(GLsizei w, GLsizei h)
+    {
+        GLuint tex;
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        return tex;
+    }
+
     void freeTextures()
     {
         glDeleteTextures(TEXTURE_NAMES_COUNT, mTextures);
@@ -124,6 +136,12 @@ public:
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
 
     GLuint texSource;
+    GLuint texLum;
+
+    GLuint texTmp0;
+    GLuint texBlurred;
+
+    GLuint prgBoxFilter;
 
     PhysisDemo()
     {
@@ -145,8 +163,15 @@ public:
                               "PP.common.vert",
                               "PP.ConvertToLuminance.frag"
                           );
+        prgBoxFilter    = resources::createProgramFromFiles(
+                              "PP.common.vert",
+                              "PP.BoxFilter.Pass1D.frag"
+                          );
 
-        texSource = resources::createTexture2D("debugTexture.png");
+        texLum     = allocTexture(256, 256);
+        texBlurred = allocTexture(256, 256);
+        texTmp0    = allocTexture(256, 256);
+        texSource  = resources::createTexture2D("coin.dds");
 
         CHECK_GL_ERROR();
 
@@ -166,8 +191,12 @@ public:
         freeTextures();
         glDeleteProgram(texGtorProg);
         glDeleteProgram(prgConvertToLum);
+        glDeleteProgram(prgBoxFilter);
         glDeleteProgram(perlinGtorProg);
         glDeleteFramebuffers(1, &fbo);
+        glDeleteTextures(1, &texLum);
+        glDeleteTextures(1, &texTmp0);
+        glDeleteTextures(1, &texBlurred);
         glDeleteTextures(1, &texSource);
         glDeleteTextures(9, permTex);
         glDeleteTextures(1, &gradTex);
@@ -247,6 +276,20 @@ protected:
         return brightnessMatrix*contrastMatrix;
     }
 
+    void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h)
+    {
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
+
+        glUseProgram(prgConvertToLum);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
+        glViewport(0, 0, w, h);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        CHECK_GL_ERROR();
+    }
+
     virtual void onPaint()
     {
         mCPUTimer.start();
@@ -267,6 +310,8 @@ protected:
         generatePerlin(PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f);
 
         generateTextureCombined(COMBINED0);
+
+        convertToLuminance(texLum, texSource, 256, 256);
 
         glDisableVertexAttribArray(0);
 
@@ -298,7 +343,8 @@ protected:
 
         glPopMatrix();
 
-        vg::drawImage(350.0f, 000.0f, 606.0f, 256.0f, texSource);
+        vg::drawImage(350.0f, 000.0f, 350.0f+256.0f, 256.0f, texSource);
+        vg::drawImage(650.0f, 000.0f, 650.0f+256.0f, 256.0f, texLum);
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
     }
