@@ -165,7 +165,7 @@ public:
                           );
         prgBoxFilter    = resources::createProgramFromFiles(
                               "PP.common.vert",
-                              "PP.BoxFilter.Pass1D.frag"
+                              "PP.Filter.frag"
                           );
 
         texLum     = allocTexture(256, 256);
