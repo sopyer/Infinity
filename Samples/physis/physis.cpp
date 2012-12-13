@@ -1,5 +1,6 @@
 #include <framework.h>
 #include <vg/VG.h>
+#include <vi.h>
 
 #include "Perlin.h"
 
@@ -40,7 +41,7 @@ class PhysisDemo: public ui::Stage
 
     GLuint permTex[9], gradTex;
 
-    GLint uniInvTexDim;
+    GLint  uniInvTexDim;
 
     GLint	uniOctaves;
     GLint	uniAmp;
@@ -141,7 +142,21 @@ public:
     GLuint texTmp0;
     GLuint texBlurred;
 
-    GLuint prgBoxFilter;
+    GLuint prgFilter;
+
+    GLuint ibo;
+
+    GLint  iboAlignment;
+
+    static const size_t MAX_SAMPLE_COUNT = 64;
+
+    struct FilterDesc
+    {
+    	int   sampleCount;
+        int   pad[3];
+	    v128  weights[MAX_SAMPLE_COUNT];
+	    v128  offsets[MAX_SAMPLE_COUNT];
+    };
 
     PhysisDemo()
     {
@@ -150,6 +165,13 @@ public:
         VFS::mount("..\\..\\AppData");
 
         glGenFramebuffers(1, &fbo);
+    
+        // Assumption - align is power of 2
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &iboAlignment);
+        --iboAlignment;
+
+
+        glGenBuffers(1, &ibo);
 
         allocTextures();
 
@@ -163,10 +185,18 @@ public:
                               "PP.common.vert",
                               "PP.ConvertToLuminance.frag"
                           );
-        prgBoxFilter    = resources::createProgramFromFiles(
+        prgFilter       = resources::createProgramFromFiles(
                               "PP.common.vert",
                               "PP.Filter.frag"
                           );
+
+        GLint structSize;
+        GLint uniFilterDesc;
+  
+        uniFilterDesc  = glGetUniformBlockIndex(prgFilter, "uniFilterDesc");
+ 
+        glGetActiveUniformBlockiv(prgFilter, uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==sizeof(FilterDesc));
 
         texLum     = allocTexture(256, 256);
         texBlurred = allocTexture(256, 256);
@@ -189,9 +219,10 @@ public:
     ~PhysisDemo()
     {
         freeTextures();
+        glDeleteBuffers(1, &ibo);
         glDeleteProgram(texGtorProg);
         glDeleteProgram(prgConvertToLum);
-        glDeleteProgram(prgBoxFilter);
+        glDeleteProgram(prgFilter);
         glDeleteProgram(perlinGtorProg);
         glDeleteFramebuffers(1, &fbo);
         glDeleteTextures(1, &texLum);
