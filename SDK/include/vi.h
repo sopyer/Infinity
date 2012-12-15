@@ -50,6 +50,7 @@ inline v128 vi_select (v128 mask, v128 a, v128 b);
 
 //load/store functions
 inline v128 vi_set         (float x, float y, float z, float w);
+inline v128 vi_set_x000    (float x);
 inline v128 vi_set_xxxx    (float x);
 inline v128 vi_set_xxxx_i32(int x);
 inline v128 vi_set_x000_i32(int x);

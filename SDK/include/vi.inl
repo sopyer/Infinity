@@ -52,6 +52,11 @@ __forceinline v128 vi_set(float x, float y, float z, float w)
 	return _mm_set_ps(w, z, y, x);
 }
 
+__forceinline v128 vi_set_x000(float x)
+{
+	return _mm_load_ss(&x);
+}
+
 __forceinline v128 vi_set_xxxx(float x)
 {
 	return _mm_set_ps1(x);

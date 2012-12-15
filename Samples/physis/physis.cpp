@@ -1,6 +1,7 @@
 #include <framework.h>
 #include <vg/VG.h>
-#include <vi.h>
+#include <ml.h>
+#include <utils.h>
 
 #include "Perlin.h"
 
@@ -8,31 +9,93 @@ static const float quadVertices[6] = {
     -1,  1, 3,  1, -1, -3,
 };
 
+static const int texSize = 1024;
+
+enum TextureIDs
+{
+    TEX_PERLIN0 = 0,
+    TEX_PERLIN1,
+    TEX_PERLIN2,
+    TEX_PERLIN3,
+    TEX_PERLIN4,
+    TEX_PERLIN5,
+    TEX_PERLIN6,
+    TEX_PERLIN7,
+    TEX_TEXTURE_SRT,
+    TEX_COMBINED0,
+    TEX_COMBINED1,
+    TEX_COMBINED2,
+    TEX_COMBINED3,
+    TEX_COMBINED4,
+    TEX_LUMINANCE,
+    TEX_TMP0,
+    TEX_TMP1,
+    TEX_TMP2,
+    TEX_GUIDED_RESULT,
+
+    TEX_ID_COUNT
+};
+
+enum ProgramIDs
+{
+    PRG_LUM,
+    PRG_FILTER,
+    PRG_GUIDED_PACK,
+
+    PRG_ID_COUNT
+};
+
+struct ProgramDesc
+{
+    GLuint      id;
+    const char* srcPath; 
+};
+
+struct RTDesc
+{
+    GLuint  id;
+    GLsizei width;
+    GLsizei height;
+    GLenum  internalFmt;
+    GLenum  channels;
+    GLenum  type;
+};
+
+const RTDesc rtDesc[] = 
+{
+    {TEX_PERLIN0,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN1,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN2,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN3,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN4,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN5,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN6,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_PERLIN7,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_TEXTURE_SRT,   texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_COMBINED0,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_COMBINED1,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_COMBINED2,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_COMBINED3,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_COMBINED4,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_LUMINANCE,         256,     256, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_GUIDED_RESULT,     256,     256, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_TMP0,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP1,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP2,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+};
+
+const ProgramDesc prgDesc[] = 
+{
+    {PRG_LUM,         "PP.Luminance.frag"        },
+    {PRG_FILTER,      "PP.Filter.frag"           },
+    {PRG_GUIDED_PACK, "PP.GuidedFilter.Pack.frag"},
+};
+
 class PhysisDemo: public ui::Stage
 {
-    enum TextureNames
-    {
-        PERLIN0 = 0,
-        PERLIN1,
-        PERLIN2,
-        PERLIN3,
-        PERLIN4,
-        PERLIN5,
-        PERLIN6,
-        PERLIN7,
-        TEXTURE_SRT,
-        COMBINED0,
-        COMBINED1,
-        COMBINED2,
-        COMBINED3,
-        COMBINED4,
 
-        TEXTURE_NAMES_COUNT
-    };
-
-    GLuint mTextures[TEXTURE_NAMES_COUNT];
-
-    static const int texSize = 1024;
+    GLuint textures[TEX_ID_COUNT];
+    GLuint programs[PRG_ID_COUNT];
     GLuint fbo;
 
     GLint vp[4];
@@ -49,42 +112,43 @@ class PhysisDemo: public ui::Stage
     GLint	uniFreq;
     GLint	uniFreqScale;
 
-    GLuint  prgConvertToLum;
-
 public:
     void allocTextures()
     {
-        glGenTextures(TEXTURE_NAMES_COUNT, mTextures);
+        glGenTextures(TEX_ID_COUNT, textures);
 
-        for (size_t i=0; i<TEXTURE_NAMES_COUNT; ++i)
+        for (size_t i=0; i<ARRAY_SIZE(rtDesc); ++i)
         {
-            glBindTexture(GL_TEXTURE_2D, mTextures[i]);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, texSize, texSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+            const RTDesc&  desc = rtDesc[i];
+
+            glBindTexture(GL_TEXTURE_2D, textures[desc.id]);
+            glTexImage2D(GL_TEXTURE_2D, 0, desc.internalFmt,
+                         desc.width, desc.height, 0,
+                         desc.channels, desc.type, 0);
+            CHECK_GL_ERROR();
         }
 
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    GLuint allocTexture(GLsizei w, GLsizei h)
+    void createPrograms()
     {
-        GLuint tex;
+        GLuint vert = resources::createShaderFromFile(GL_VERTEX_SHADER, "PP.common.vert");
 
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        for (size_t i=0; i<ARRAY_SIZE(prgDesc); ++i)
+        {
+            const  ProgramDesc&  desc = prgDesc[i];
+            GLuint frag;
+            
+            frag              = resources::createShaderFromFile(GL_FRAGMENT_SHADER, desc.srcPath);
+            programs[desc.id] = resources::linkProgram(2, vert, frag);
+            glDeleteShader(frag);
 
-        return tex;
-    }
+            CHECK_GL_ERROR();
+        }
 
-    void freeTextures()
-    {
-        glDeleteTextures(TEXTURE_NAMES_COUNT, mTextures);
-    }
+        glDeleteShader(vert);
+    };
 
     void CreatePerlinNoiseGtor()
     {
@@ -137,16 +201,10 @@ public:
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
 
     GLuint texSource;
-    GLuint texLum;
 
-    GLuint texTmp0;
-    GLuint texBlurred;
+    GLuint ubo;
 
-    GLuint prgFilter;
-
-    GLuint ibo;
-
-    GLint  iboAlignment;
+    GLint  uboAlignment;
 
     static const size_t MAX_SAMPLE_COUNT = 64;
 
@@ -167,11 +225,15 @@ public:
         glGenFramebuffers(1, &fbo);
     
         // Assumption - align is power of 2
-        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &iboAlignment);
-        --iboAlignment;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uboAlignment);
+        --uboAlignment;
 
 
-        glGenBuffers(1, &ibo);
+        glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, 
+                     (sizeof(FilterDesc)|uboAlignment)+1,
+                     0, GL_DYNAMIC_DRAW);
 
         allocTextures();
 
@@ -181,26 +243,17 @@ public:
                               "PP.common.vert",
                               "TextureGtor.Metal.frag"
                           );
-        prgConvertToLum = resources::createProgramFromFiles(
-                              "PP.common.vert",
-                              "PP.ConvertToLuminance.frag"
-                          );
-        prgFilter       = resources::createProgramFromFiles(
-                              "PP.common.vert",
-                              "PP.Filter.frag"
-                          );
+
+        createPrograms();
 
         GLint structSize;
         GLint uniFilterDesc;
   
-        uniFilterDesc  = glGetUniformBlockIndex(prgFilter, "uniFilterDesc");
+        uniFilterDesc  = glGetUniformBlockIndex(programs[PRG_FILTER], "uniFilterDesc");
  
-        glGetActiveUniformBlockiv(prgFilter, uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        glGetActiveUniformBlockiv(programs[PRG_FILTER], uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(FilterDesc));
 
-        texLum     = allocTexture(256, 256);
-        texBlurred = allocTexture(256, 256);
-        texTmp0    = allocTexture(256, 256);
         texSource  = resources::createTexture2D("coin.dds");
 
         CHECK_GL_ERROR();
@@ -218,52 +271,52 @@ public:
 
     ~PhysisDemo()
     {
-        freeTextures();
-        glDeleteBuffers(1, &ibo);
+        glDeleteTextures(TEX_ID_COUNT, textures);
+        for (size_t i=0; i<PRG_ID_COUNT; ++i)
+            glDeleteProgram(programs[i]);
+        glDeleteBuffers(1, &ubo);
         glDeleteProgram(texGtorProg);
-        glDeleteProgram(prgConvertToLum);
-        glDeleteProgram(prgFilter);
         glDeleteProgram(perlinGtorProg);
         glDeleteFramebuffers(1, &fbo);
-        glDeleteTextures(1, &texLum);
-        glDeleteTextures(1, &texTmp0);
-        glDeleteTextures(1, &texBlurred);
         glDeleteTextures(1, &texSource);
         glDeleteTextures(9, permTex);
         glDeleteTextures(1, &gradTex);
     }
 
 protected:
-    void generateTextureCombined(TextureNames dest)
+    void generateTextureCombined(TextureIDs dest)
     {
         CHECK_GL_ERROR();
 
-        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN0]);
-        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN1]);
-        glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN2]);
-        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN3]);
-        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN4]);
-        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN5]);
-        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN6]);
-        glActiveTexture(GL_TEXTURE7); glBindTexture(GL_TEXTURE_2D, mTextures[PERLIN7]);
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN0]);
+        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN1]);
+        glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN2]);
+        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN3]);
+        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN4]);
+        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN5]);
+        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN6]);
+        glActiveTexture(GL_TEXTURE7); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN7]);
 
         glUseProgram(texGtorProg);
         //glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
 
-        generateTexture(mTextures[dest], texSize);
+        generateTexture(textures[dest], texSize);
 
         CHECK_GL_ERROR();
     }
 
     void generateTexture(GLuint texID, GLsizei texSize)
     {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
         glViewport(0, 0, texSize, texSize);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
-    void generatePerlin(TextureNames dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale)
+    void generatePerlin(TextureIDs dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale)
     {
         glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_1D, permTex[seed%9]);
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_1D, gradTex);
@@ -276,7 +329,7 @@ protected:
         glUniform1f(uniFreq,      freq);
         glUniform1f(uniFreqScale, freqScale);
 
-        generateTexture(mTextures[dest], texSize);
+        generateTexture(textures[dest], texSize);
 
         CHECK_GL_ERROR();
     }
@@ -309,11 +362,90 @@ protected:
 
     void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h)
     {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
         glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
 
-        glUseProgram(prgConvertToLum);
+        glUseProgram(programs[PRG_LUM]);
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glViewport(0, 0, w, h);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        CHECK_GL_ERROR();
+    }
+
+    //Optimize!!!!!!!!!!!!!!!
+    //Create 2 pass version!!!!!!!!!!!!!!!
+    //Generate weights for even kernels as well!!!!!!!!!!!
+    void generateSinglePassBoxFilter(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
+    {
+        assert(kernelWidth%2==1);
+        desc->sampleCount = kernelWidth*kernelWidth;
+        
+        v128 weight = vi_set_x000(1.0f/kernelWidth/kernelWidth);
+        for(int i=0; i<kernelWidth*kernelWidth; ++i)
+        {
+            vi_store(desc->weights+i, weight);
+        }
+        
+        float left  = -(float)(kernelWidth/2);
+        float right =  (float)(kernelWidth/2+1);
+
+        ml::vec2 iter;
+        ml::vec2 texelSize        = {texelSizeU, texelSizeV};
+        v128     vecTexelSize     = ml::load_vec2(&texelSize);
+        v128*    data             = desc->offsets;
+        for(iter.y = left; iter.y < right; iter.y += 1.0f)
+        {
+            for(iter.x = left; iter.x < right; iter.x += 1.0f)
+            {
+                v128 offset = vi_mul(ml::load_vec2(&iter), vecTexelSize);
+                vi_store(data++, offset);
+            }
+        }
+    }
+
+    void boxFilter(GLuint dst, GLuint src, GLsizei w, GLsizei h)
+    {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        FilterDesc* desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+        
+        generateSinglePassBoxFilter(desc, 7, 1.0f/w, 1.0f/h);
+                
+        glUnmapBuffer(GL_UNIFORM_BUFFER);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, sizeof(FilterDesc));
+
+        glUseProgram(programs[PRG_FILTER]);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glViewport(0, 0, w, h);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        CHECK_GL_ERROR();
+    }
+
+    void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[3], GLsizei w, GLsizei h)
+    {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src  );
+        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, guide);
+
+        glUseProgram(programs[PRG_GUIDED_PACK]);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp[0], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tmp[1], 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
         glViewport(0, 0, w, h);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -331,18 +463,22 @@ protected:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quadVertices);
 
-        generatePerlin(PERLIN0, 8, 6, 1.86f, 0.75f,   4.0f, 2.0f);
-        generatePerlin(PERLIN1, 1, 5, 0.50f, 0.32f,   4.0f, 2.0f);
-        generatePerlin(PERLIN2, 5, 6, 1.86f, 0.75f,   4.0f, 2.0f);
-        generatePerlin(PERLIN3, 5, 1, 1.86f, 0.75f,   4.0f, 2.0f);
-        generatePerlin(PERLIN4, 5, 6, 1.36f, 0.75f,   4.0f, 2.0f);
-        generatePerlin(PERLIN5, 5, 1, 1.36f, 0.75f,   4.0f, 2.0f);
-        generatePerlin(PERLIN6, 0, 6, 0.68f, 1.00f,   8.0f, 2.0f);
-        generatePerlin(PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f);
+        //generatePerlin(PERLIN0, 8, 6, 1.86f, 0.75f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN1, 1, 5, 0.50f, 0.32f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN2, 5, 6, 1.86f, 0.75f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN3, 5, 1, 1.86f, 0.75f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN4, 5, 6, 1.36f, 0.75f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN5, 5, 1, 1.36f, 0.75f,   4.0f, 2.0f);
+        //generatePerlin(PERLIN6, 0, 6, 0.68f, 1.00f,   8.0f, 2.0f);
+        //generatePerlin(PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f);
 
-        generateTextureCombined(COMBINED0);
+        //generateTextureCombined(COMBINED0);
 
-        convertToLuminance(texLum, texSource, 256, 256);
+        convertToLuminance(textures[TEX_LUMINANCE], texSource, 256, 256);
+
+        boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
+        GLuint tmp[3] = {textures[TEX_TMP0], textures[TEX_TMP1], textures[TEX_TMP2]};
+        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 256, 256);
 
         glDisableVertexAttribArray(0);
 
@@ -361,21 +497,31 @@ protected:
         glLoadIdentity();
         glTranslatef(0, 0, -10);
 
-        vg::drawImage( -8,  2, -6,  0, mTextures[PERLIN0]);
-        vg::drawImage( -5,  2, -3,  0, mTextures[PERLIN1]);
-        vg::drawImage( -2,  2,  0,  0, mTextures[PERLIN2]);
-        vg::drawImage(  1,  2,  3,  0, mTextures[PERLIN3]);
-        vg::drawImage(  4,  2,  6,  0, mTextures[PERLIN4]);
-        vg::drawImage(  7,  2,  9,  0, mTextures[PERLIN5]);
+        vg::drawImage( -8,  2, -6,  0, textures[TEX_PERLIN0]);
+        vg::drawImage( -5,  2, -3,  0, textures[TEX_PERLIN1]);
+        vg::drawImage( -2,  2,  0,  0, textures[TEX_PERLIN2]);
+        vg::drawImage(  1,  2,  3,  0, textures[TEX_PERLIN3]);
+        vg::drawImage(  4,  2,  6,  0, textures[TEX_PERLIN4]);
+        vg::drawImage(  7,  2,  9,  0, textures[TEX_PERLIN5]);
 
-        vg::drawImage( -8, -1, -6, -3, mTextures[PERLIN6]);
-        vg::drawImage( -5, -1, -3, -3, mTextures[PERLIN7]);
-        vg::drawImage( -2, -1,  0, -3, mTextures[COMBINED0]);
+        vg::drawImage( -8, -1, -6, -3, textures[TEX_PERLIN6]);
+        vg::drawImage( -5, -1, -3, -3, textures[TEX_PERLIN7]);
+        vg::drawImage( -2, -1,  0, -3, textures[TEX_COMBINED0]);
 
         glPopMatrix();
 
-        vg::drawImage(350.0f, 000.0f, 350.0f+256.0f, 256.0f, texSource);
-        vg::drawImage(650.0f, 000.0f, 650.0f+256.0f, 256.0f, texLum);
+        GLint swizzleAAA1[4] = {GL_ALPHA, GL_ALPHA, GL_ALPHA, GL_ONE};
+        GLint swizzleRGBA[4] = {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA};
+
+        vg::drawImage(  0.0f, 000.0f,   0.0f+256.0f, 256.0f, texSource);
+        vg::drawImage(300.0f, 000.0f, 300.0f+256.0f, 256.0f, textures[TEX_LUMINANCE]);
+        vg::drawImage(600.0f, 000.0f, 600.0f+256.0f, 256.0f, textures[TEX_TMP2]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
+        vg::drawImage(900.0f, 000.0f, 900.0f+256.0f, 256.0f, textures[TEX_TMP1]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+
+        CHECK_GL_ERROR();
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
     }

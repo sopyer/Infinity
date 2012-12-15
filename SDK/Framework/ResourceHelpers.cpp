@@ -176,25 +176,29 @@ namespace resources
         GLuint program;
         va_list arg;
 
-        va_start(arg, shaderCount);
         program = glCreateProgram();
 
+        va_start(arg, shaderCount);
         while (shaderCount--)
         {
             GLuint shader = va_arg(arg, GLuint);
             glAttachShader(program, shader);
         }
+        va_end(arg);
 
         glLinkProgram(program);
 
-#ifdef _DEBUG
-        GLint	status;
-        char output[8096];
-        glGetProgramiv(program, GL_LINK_STATUS, &status);
-        glGetProgramInfoLog(program, 8096, &status, output);
-        assert(status);
-#endif
-        va_end(arg);
+        const size_t	LOG_STR_LEN = 1024;
+        char			infoLog[LOG_STR_LEN] = {0};
+        GLsizei			length;
+
+        glGetProgramInfoLog(program, LOG_STR_LEN-1, &length, infoLog);
+        infoLog[length] = 0;
+
+        if (infoLog[0])
+        {
+            logging::message("%s\n", infoLog);
+        }
 
         return program;
     }

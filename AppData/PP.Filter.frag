@@ -1,6 +1,6 @@
 #define MAX_SAMPLE_COUNT 64
 
-uniform sampler2D samSource;
+layout(binding = 0) uniform sampler2D samSource;
 
 layout(binding = 0) uniform uniFilterDesc
 {
