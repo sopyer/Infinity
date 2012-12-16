@@ -31,6 +31,11 @@ enum TextureIDs
     TEX_TMP0,
     TEX_TMP1,
     TEX_TMP2,
+    TEX_TMP3,
+    TEX_TMP4,
+    TEX_TMP5,
+    TEX_TMP6,
+    TEX_TMP7,
     TEX_GUIDED_RESULT,
 
     TEX_ID_COUNT
@@ -41,6 +46,8 @@ enum ProgramIDs
     PRG_LUM,
     PRG_FILTER,
     PRG_GUIDED_PACK,
+    PRG_GUIDED_AB,
+    PRG_GUIDED_AI_B,
 
     PRG_ID_COUNT
 };
@@ -82,6 +89,11 @@ const RTDesc rtDesc[] =
     {TEX_TMP0,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
     {TEX_TMP1,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
     {TEX_TMP2,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP3,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP4,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP5,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP6,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP7,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
 };
 
 const ProgramDesc prgDesc[] = 
@@ -89,6 +101,8 @@ const ProgramDesc prgDesc[] =
     {PRG_LUM,         "PP.Luminance.frag"        },
     {PRG_FILTER,      "PP.Filter.frag"           },
     {PRG_GUIDED_PACK, "PP.GuidedFilter.Pack.frag"},
+    {PRG_GUIDED_AB,   "PP.GuidedFilter.ab.frag"},
+    {PRG_GUIDED_AI_B, "PP.GuidedFilter.aI+b.frag"},
 };
 
 class PhysisDemo: public ui::Stage
@@ -111,6 +125,8 @@ class PhysisDemo: public ui::Stage
     GLint	uniAmpScale;
     GLint	uniFreq;
     GLint	uniFreqScale;
+
+    GLint   uniEPS;
 
 public:
     void allocTextures()
@@ -216,7 +232,11 @@ public:
 	    v128  offsets[MAX_SAMPLE_COUNT];
     };
 
-    PhysisDemo()
+    PhysisDemo():
+          mOffsetX(0.0f),
+          mOffsetY(0.0f),
+          mScale(1.0f),
+          mIsDragging(false)
     {
         VFS::mount("AppData");
         VFS::mount("..\\AppData");
@@ -249,8 +269,9 @@ public:
         GLint structSize;
         GLint uniFilterDesc;
   
-        uniFilterDesc  = glGetUniformBlockIndex(programs[PRG_FILTER], "uniFilterDesc");
- 
+        uniFilterDesc  = glGetUniformBlockIndex(programs[PRG_FILTER], "uFilterDesc");
+        uniEPS         = glGetUniformLocation(programs[PRG_GUIDED_AB], "uEPS");
+
         glGetActiveUniformBlockiv(programs[PRG_FILTER], uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(FilterDesc));
 
@@ -434,7 +455,7 @@ protected:
         CHECK_GL_ERROR();
     }
 
-    void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[3], GLsizei w, GLsizei h)
+    void guidedFilterPack(GLuint pI, GLuint pIII, GLuint src, GLuint guide, GLsizei w, GLsizei h)
     {
 		GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 
@@ -443,12 +464,62 @@ protected:
 
         glUseProgram(programs[PRG_GUIDED_PACK]);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp[0], 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tmp[1], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pI,   0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, pIII, 0);
 		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
         glViewport(0, 0, w, h);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+    }
+
+    void guidedFilterAB(GLuint A, GLuint B, GLuint src, GLuint guide, float eps, GLsizei w, GLsizei h)
+    {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src  );
+        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, guide);
+
+        glUseProgram(programs[PRG_GUIDED_AB]);
+        glUniform1f(uniEPS, eps);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, A, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, B, 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glViewport(0, 0, w, h);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
+    }
+
+    void guidedFilterAI_B(GLuint res, GLuint A, GLuint B, GLuint guide, GLsizei w, GLsizei h)
+    {
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+
+        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, A    );
+        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, B    );
+        glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, guide);
+
+        glUseProgram(programs[PRG_GUIDED_AI_B]);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res, 0);
+		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glViewport(0, 0, w, h);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
+
+    void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[8], float eps, GLsizei w, GLsizei h)
+    {
+        guidedFilterPack(tmp[0], tmp[1], src, guide, w, h);
+        boxFilter(tmp[2], tmp[0], 256, 256);
+        boxFilter(tmp[3], tmp[1], 256, 256);
+        guidedFilterAB(tmp[4], tmp[5], tmp[2], tmp[3], eps, w, h);
+        boxFilter(tmp[6], tmp[4], 256, 256);
+        boxFilter(tmp[7], tmp[5], 256, 256);
+        guidedFilterAI_B(dst, tmp[6], tmp[7], guide, w, h);
 
         CHECK_GL_ERROR();
     }
@@ -477,8 +548,13 @@ protected:
         convertToLuminance(textures[TEX_LUMINANCE], texSource, 256, 256);
 
         boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
-        GLuint tmp[3] = {textures[TEX_TMP0], textures[TEX_TMP1], textures[TEX_TMP2]};
-        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 256, 256);
+        GLuint tmp[8] = {
+            textures[TEX_TMP0], textures[TEX_TMP1],
+            textures[TEX_TMP2], textures[TEX_TMP3],
+            textures[TEX_TMP4], textures[TEX_TMP5],
+            textures[TEX_TMP6], textures[TEX_TMP7],
+        };
+        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 0.16f, 256, 256);
 
         glDisableVertexAttribArray(0);
 
@@ -510,23 +586,102 @@ protected:
 
         glPopMatrix();
 
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glTranslatef(mOffsetX, mOffsetY, 0);
+        glScalef(mScale, mScale, 1);
+
         GLint swizzleAAA1[4] = {GL_ALPHA, GL_ALPHA, GL_ALPHA, GL_ONE};
         GLint swizzleRGBA[4] = {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA};
 
-        vg::drawImage(  0.0f, 000.0f,   0.0f+256.0f, 256.0f, texSource);
-        vg::drawImage(300.0f, 000.0f, 300.0f+256.0f, 256.0f, textures[TEX_LUMINANCE]);
-        vg::drawImage(600.0f, 000.0f, 600.0f+256.0f, 256.0f, textures[TEX_TMP2]);
+        vg::drawImage(  0.0f,   0.0f,   0.0f+256.0f, 256.0f, textures[TEX_TMP0]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
+        vg::drawImage(300.0f,   0.0f, 300.0f+256.0f, 256.0f, textures[TEX_TMP0]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+
+        vg::drawImage(600.0f, 0.0f, 600.0f+256.0f, 256.0f, textures[TEX_TMP1]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage(900.0f, 000.0f, 900.0f+256.0f, 256.0f, textures[TEX_TMP1]);
+        vg::drawImage(900.0f, 0.0f, 900.0f+256.0f, 256.0f, textures[TEX_TMP1]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+
+        vg::drawImage(  0.0f, 300.0f,   0.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP2]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
+        vg::drawImage(300.0f, 300.0f, 300.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP2]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+
+        vg::drawImage(600.0f, 300.0f, 600.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP3]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
+        vg::drawImage(900.0f, 300.0f, 900.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP3]);
+        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+
+        vg::drawImage(  0.0f, 600.0f,   0.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP4]);
+        vg::drawImage(300.0f, 600.0f, 300.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP5]);
+
+        vg::drawImage(  0.0f, 900.0f,   0.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP6]);
+        vg::drawImage(300.0f, 900.0f, 300.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP7]);
+
+        vg::drawImage(600.0f, 600.0f, 600.0f+256.0f, 600.0f+256.0f, texSource                  );
+        vg::drawImage(600.0f, 900.0f, 600.0f+256.0f, 900.0f+256.0f, textures[TEX_GUIDED_RESULT]);
+
+        glPopMatrix();
 
         CHECK_GL_ERROR();
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
     }
 
+    void onUpdate(float dt)
+    {
+        if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
+        {
+            int dx, dy;
+
+            ui::mouseRelOffset(&dx, &dy);
+            mOffsetX += dx;
+            mOffsetY += dy;
+        }
+    }
+
+    void onTouch(const ButtonEvent& event)
+    {
+        if (event.button == SDL_BUTTON_WHEELUP)
+        {
+            mScale *= 1.2f;
+            mOffsetX -= (event.x-mOffsetX)*(1.2f - 1);
+            mOffsetY -= (event.y-mOffsetY)*(1.2f - 1);
+        }
+        else if (event.button == SDL_BUTTON_WHEELDOWN)
+        {
+            mScale /= 1.2f;
+            if (mScale<1.0f)
+            {
+                //fix it a bit
+                mOffsetX -= (event.x-mOffsetX)*(1/mScale/1.2f - 1);
+                mOffsetY -= (event.y-mOffsetY)*(1/mScale/1.2f - 1);
+                mScale = 1.0f;
+            }
+            else
+            {
+                mOffsetX -= (event.x-mOffsetX)*(1/1.2f - 1);
+                mOffsetY -= (event.y-mOffsetY)*(1/1.2f - 1);
+            }
+        }
+    }
+
 private:
+    bool		mIsDragging;
+    float		mOffsetX;
+    float		mOffsetY;
+    float		mScale;
+
     VFS				mVFS;
 };
 

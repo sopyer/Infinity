@@ -26,6 +26,14 @@ namespace ui
     bool keyIsReleased (int key);
     bool keyWasReleased(int key);
 
+    bool mouseIsPressed  (int button);
+    bool mouseWasPressed (int button);
+    bool mouseIsReleased (int button);
+    bool mouseWasReleased(int button);
+
+    void mouseRelOffset(int* dx, int* dy);
+    void mouseAbsOffset(int*  x, int*  y);
+
     void processCameraInput(SpectatorCamera* camera, float dt);
     void processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);
 

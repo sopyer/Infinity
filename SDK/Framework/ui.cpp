@@ -78,6 +78,38 @@ namespace ui
         return keyStatePrev[key] && !keyStateCur[key];
     }
 
+    bool mouseIsPressed  (int button)
+    {
+        return (mouseStateCur&SDL_BUTTON(button)) != 0;
+    }
+
+    bool mouseWasPressed (int button)
+    {
+        return !(mouseStatePrev&SDL_BUTTON(button)) && (mouseStateCur&SDL_BUTTON(button));
+    }
+
+    bool mouseIsReleased (int button)
+    {
+        return !(mouseStateCur&SDL_BUTTON(button));
+    }
+
+    bool mouseWasReleased(int button)
+    {
+        return (mouseStatePrev&SDL_BUTTON(button)) && !(mouseStateCur&SDL_BUTTON(button));
+    }
+
+    void mouseRelOffset(int* dx, int* dy)
+    {
+        if (dx) *dx = deltaX;
+        if (dy) *dy = deltaY;
+    }
+
+    void mouseAbsOffset(int* x, int* y)
+    {
+        if (x) *x = mouseX;
+        if (y) *y = mouseY;
+    }
+
     void processCameraInput(SpectatorCamera* camera, float dt)
     {
         glm::vec3   direction(0.0f, 0.0f, 0.0f);

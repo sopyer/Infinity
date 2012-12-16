@@ -2,7 +2,7 @@
 
 layout(binding = 0) uniform sampler2D samSource;
 
-layout(binding = 0) uniform uniFilterDesc
+layout(binding = 0) uniform uFilterDesc
 {
 	int   sampleCount;
 	float weights[MAX_SAMPLE_COUNT];
