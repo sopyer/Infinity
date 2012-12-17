@@ -628,8 +628,9 @@ protected:
         vg::drawImage(  0.0f, 900.0f,   0.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP6]);
         vg::drawImage(300.0f, 900.0f, 300.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP7]);
 
-        vg::drawImage(600.0f, 600.0f, 600.0f+256.0f, 600.0f+256.0f, texSource                  );
-        vg::drawImage(600.0f, 900.0f, 600.0f+256.0f, 900.0f+256.0f, textures[TEX_GUIDED_RESULT]);
+        vg::drawImage( 600.0f, 900.0f,  600.0f+256.0f, 900.0f+256.0f, texSource                  );
+        vg::drawImage(1200.0f, 900.0f, 1200.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP2]);
+        vg::drawImage( 900.0f, 900.0f,  900.0f+256.0f, 900.0f+256.0f, textures[TEX_GUIDED_RESULT]);
 
         glPopMatrix();
 
