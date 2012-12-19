@@ -128,6 +128,8 @@ class PhysisDemo: public ui::Stage
 
     GLint   uniEPS;
 
+    GLuint samLinearClamp;
+
 public:
     void allocTextures()
     {
@@ -281,6 +283,12 @@ public:
 
         CreatePerlinNoiseGtor();
 
+        glGenSamplers(1, &samLinearClamp);
+        glSamplerParameteri(samLinearClamp, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
+        glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
+
         CHECK_GL_ERROR();
     }
 
@@ -292,6 +300,7 @@ public:
 
     ~PhysisDemo()
     {
+        glDeleteSamplers(1, &samLinearClamp);
         glDeleteTextures(TEX_ID_COUNT, textures);
         for (size_t i=0; i<PRG_ID_COUNT; ++i)
             glDeleteProgram(programs[i]);
@@ -529,10 +538,17 @@ protected:
         mCPUTimer.start();
         mGPUTimer.start();
 
+        //Init PP
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quadVertices);
+
+        glBindSampler(0, samLinearClamp);
+        glBindSampler(1, samLinearClamp);
+        glBindSampler(2, samLinearClamp);
+        glBindSampler(3, samLinearClamp);
+        ////////////////////////////////////
 
         //generatePerlin(PERLIN0, 8, 6, 1.86f, 0.75f,   4.0f, 2.0f);
         //generatePerlin(PERLIN1, 1, 5, 0.50f, 0.32f,   4.0f, 2.0f);
@@ -554,9 +570,16 @@ protected:
             textures[TEX_TMP4], textures[TEX_TMP5],
             textures[TEX_TMP6], textures[TEX_TMP7],
         };
-        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 0.16f, 256, 256);
+        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 0.04f, 256, 256);
+
+        //Fini PP
+        glBindSampler(0, 0);
+        glBindSampler(1, 0);
+        glBindSampler(2, 0);
+        glBindSampler(3, 0);
 
         glDisableVertexAttribArray(0);
+        ////////////////////
 
         mGPUTimer.stop();
         mCPUTime = mCPUTimer.elapsed();
@@ -594,43 +617,43 @@ protected:
         GLint swizzleAAA1[4] = {GL_ALPHA, GL_ALPHA, GL_ALPHA, GL_ONE};
         GLint swizzleRGBA[4] = {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA};
 
-        vg::drawImage(  0.0f,   0.0f,   0.0f+256.0f, 256.0f, textures[TEX_TMP0]);
+        vg::drawImage( 450.0f, 0.0f,  450.0f+256.0f, 0.0f+256.0f, texSource                  );
+        vg::drawImage( 750.0f, 0.0f,  750.0f+256.0f, 0.0f+256.0f, textures[TEX_GUIDED_RESULT]);
+        vg::drawImage(1050.0f, 0.0f, 1050.0f+256.0f, 0.0f+256.0f, textures[TEX_TMP2]);
+
+        vg::drawImage(   0.0f, 300.0f,    0.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP0]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage(300.0f,   0.0f, 300.0f+256.0f, 256.0f, textures[TEX_TMP0]);
+        vg::drawImage( 300.0f, 300.0f,  300.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP0]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
 
-        vg::drawImage(600.0f, 0.0f, 600.0f+256.0f, 256.0f, textures[TEX_TMP1]);
+        vg::drawImage( 600.0f, 300.0f,  600.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP1]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage(900.0f, 0.0f, 900.0f+256.0f, 256.0f, textures[TEX_TMP1]);
+        vg::drawImage( 900.0f, 300.0f,  900.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP1]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
 
-        vg::drawImage(  0.0f, 300.0f,   0.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP2]);
+        vg::drawImage(1200.0f, 300.0f, 1200.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP4]);
+        vg::drawImage(1500.0f, 300.0f, 1500.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP5]);
+
+        vg::drawImage(   0.0f, 600.0f,    0.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP2]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage(300.0f, 300.0f, 300.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP2]);
+        vg::drawImage( 300.0f, 600.0f,  300.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP2]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
 
-        vg::drawImage(600.0f, 300.0f, 600.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP3]);
+        vg::drawImage( 600.0f, 600.0f,  600.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP3]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage(900.0f, 300.0f, 900.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP3]);
+        vg::drawImage( 900.0f, 600.0f,  900.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP3]);
         glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
 
-        vg::drawImage(  0.0f, 600.0f,   0.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP4]);
-        vg::drawImage(300.0f, 600.0f, 300.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP5]);
-
-        vg::drawImage(  0.0f, 900.0f,   0.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP6]);
-        vg::drawImage(300.0f, 900.0f, 300.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP7]);
-
-        vg::drawImage( 600.0f, 900.0f,  600.0f+256.0f, 900.0f+256.0f, texSource                  );
-        vg::drawImage(1200.0f, 900.0f, 1200.0f+256.0f, 900.0f+256.0f, textures[TEX_TMP2]);
-        vg::drawImage( 900.0f, 900.0f,  900.0f+256.0f, 900.0f+256.0f, textures[TEX_GUIDED_RESULT]);
+        vg::drawImage(1200.0f, 600.0f, 1200.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP6]);
+        vg::drawImage(1500.0f, 600.0f, 1500.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP7]);
 
         glPopMatrix();
 
