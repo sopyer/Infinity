@@ -15,6 +15,11 @@ namespace ml
         float x, y, z;
     };
 
+    struct vec4
+    {
+        float x, y, z, w;
+    };
+
     struct quat
     {
         float x, y, z, w;
@@ -45,6 +50,7 @@ namespace ml
     // loading math types to sse registers
     v128 load_vec2(vec2* v2);
     v128 load_vec3(vec3* v3);
+    v128 load_vec4(vec4* v4);
     v128 load_quat(quat* q);
 
     // storing sse registers into math types

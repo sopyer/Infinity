@@ -21,6 +21,11 @@ namespace ml
         return _mm_xor_ps(r0, r1);
     }
 
+    v128 load_vec4(vec4* v4)
+    {
+        return vi_loadu(v4);
+    }
+
     v128 load_quat(quat* q)
     {
         return vi_loadu(q);

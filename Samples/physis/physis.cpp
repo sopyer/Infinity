@@ -409,7 +409,7 @@ protected:
     //Optimize!!!!!!!!!!!!!!!
     //Create 2 pass version!!!!!!!!!!!!!!!
     //Generate weights for even kernels as well!!!!!!!!!!!
-    void generateSinglePassBoxFilter(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
+    void generateSinglePassBoxFilterBruteForce(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
     {
         assert(kernelWidth%2==1);
         desc->sampleCount = kernelWidth*kernelWidth;
@@ -435,6 +435,74 @@ protected:
                 vi_store(data++, offset);
             }
         }
+    }
+
+    void generateSinglePassBoxFilter(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
+    {
+        assert(kernelWidth%2 == 1);
+        assert(kernelWidth > 0);
+
+        int   kernelWidthM1 = kernelWidth - 1;
+        int   samples4      = kernelWidthM1 * kernelWidthM1 / 4;
+        int   samples2      = kernelWidthM1;
+
+        desc->sampleCount = samples4 + samples2 +1;
+
+        // Calculate kernel weights
+        v128* weightPtr = desc->weights;
+
+        v128 weight4 = vi_set_x000(4.0f/kernelWidth/kernelWidth);
+        for(int i=0; i<samples4; ++i, ++weightPtr)
+        {
+            vi_store(weightPtr, weight4);
+        }
+
+        v128 weight2 = vi_set_x000(2.0f/kernelWidth/kernelWidth);
+        for (int i=0; i<samples2; ++i, ++weightPtr)
+        {
+            vi_store(weightPtr, weight2);
+        }
+        
+        v128 weight1 = vi_set_x000(1.0f/kernelWidth/kernelWidth);
+        vi_store(weightPtr, weight1);
+        
+
+        // Calculate bilinear sampling offsets
+        ml::vec2 iter;
+        ml::vec2 texelSize    = {texelSizeU, texelSizeV};
+        v128     vecTexelSize = ml::load_vec2(&texelSize);
+
+        float left  = -(float)(kernelWidth / 2);
+        float right =  (float)(kernelWidth / 2);
+
+        v128* offsetPtr = desc->offsets;
+
+        v128 sampleOffset4 = vi_set(0.5f*texelSizeU, 0.5f*texelSizeV, 0.0f, 0.0f);
+        for(iter.y = left; iter.y < right; iter.y += 2.0f)
+        {
+            for(iter.x = left; iter.x < right; iter.x += 2.0f)
+            {
+                v128 offset4 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset4);
+                vi_store(offsetPtr++, offset4);
+            }
+        }
+        
+        v128 sampleOffset2y = vi_set(0.0f, 0.5f*texelSizeV, 0.0f, 0.0f);
+        for(iter.y = left; iter.y < right; iter.y += 2.0f)
+        {
+            v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2y);
+            vi_store(offsetPtr++, offset2);
+        }
+
+        v128 sampleOffset2x = vi_set(0.5f*texelSizeU, 0.0f, 0.0f, 0.0f);
+        for(iter.x = left; iter.x < right; iter.x += 2.0f)
+        {
+            v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2x);
+            vi_store(offsetPtr++, offset2);
+        }
+
+        v128 offset1 = vi_mul(ml::load_vec2(&iter), vecTexelSize);
+        vi_store(offsetPtr++, offset1);
     }
 
     void boxFilter(GLuint dst, GLuint src, GLsizei w, GLsizei h)
