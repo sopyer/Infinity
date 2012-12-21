@@ -69,7 +69,7 @@ struct RTDesc
     GLenum  type;
 };
 
-const RTDesc rtDesc[] = 
+RTDesc rtDesc[] = 
 {
     {TEX_PERLIN0,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_PERLIN1,       texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
@@ -85,17 +85,17 @@ const RTDesc rtDesc[] =
     {TEX_COMBINED2,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_COMBINED3,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_COMBINED4,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_LUMINANCE,         256,     256, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_GUIDED_RESULT,     256,     256, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_TMP0,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP1,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP2,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP3,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP4,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP5,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP6,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP7,              256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP_BOXF,          256,     256, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_LUMINANCE,           0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_GUIDED_RESULT,       0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_TMP0,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP1,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP2,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP3,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP4,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP5,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP6,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP7,                0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP_BOXF,            0,       0, GL_RGBA16,       GL_RGBA, GL_UNSIGNED_SHORT},
 };
 
 const ProgramDesc prgDesc[] = 
@@ -132,6 +132,7 @@ class PhysisDemo: public ui::Stage
 
     GLuint samLinearClamp;
 
+    GLint imgWidth, imgHeight;
 public:
     void allocTextures()
     {
@@ -140,6 +141,8 @@ public:
         for (size_t i=0; i<ARRAY_SIZE(rtDesc); ++i)
         {
             const RTDesc&  desc = rtDesc[i];
+
+            assert(desc.width!=0 && desc.height!=0);
 
             glBindTexture(GL_TEXTURE_2D, textures[desc.id]);
             glTexImage2D(GL_TEXTURE_2D, 0, desc.internalFmt,
@@ -259,6 +262,15 @@ public:
                      (sizeof(FilterDesc)|uboAlignment)+1,
                      0, GL_DYNAMIC_DRAW);
 
+        texSource  = resources::createTexture2D("coin.dds", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
+
+        assert(rtDesc[14].id == TEX_LUMINANCE);
+        for (size_t i = 14; i < ARRAY_SIZE(rtDesc); ++i)
+        {
+            rtDesc[i].width  = imgWidth;
+            rtDesc[i].height = imgHeight;
+        }
+
         allocTextures();
 
         glGetIntegerv(GL_VIEWPORT, vp);
@@ -278,8 +290,6 @@ public:
 
         glGetActiveUniformBlockiv(programs[PRG_FILTER], uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(FilterDesc));
-
-        texSource  = resources::createTexture2D("coin.dds");
 
         CHECK_GL_ERROR();
 
@@ -408,9 +418,6 @@ protected:
         CHECK_GL_ERROR();
     }
 
-    //Optimize!!!!!!!!!!!!!!!
-    //Create 2 pass version!!!!!!!!!!!!!!!
-    //Generate weights for even kernels as well!!!!!!!!!!!
     void generateSinglePassBoxFilterBruteForce(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
     {
         assert(kernelWidth%2==1);
@@ -719,21 +726,23 @@ protected:
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
+    //Try to optimize guided filter splitting image into n separate parts!!!!!!!!!!!!!!!!!!!!!
+    //Time for 1280x1024 is 18 ms instead of expected 6-8 ms on Radeon 6670
     void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[9], int kernelWidth, float eps, GLsizei w, GLsizei h)
     {
         guidedFilterPack(tmp[0], tmp[1], src, guide, w, h);
         
-        boxFilter1Pass(tmp[2], tmp[0], kernelWidth, 256, 256);
-        boxFilter1Pass(tmp[3], tmp[1], kernelWidth, 256, 256);
-        //boxFilter2Pass(tmp[2], tmp[0], tmp[8], kernelWidth, 256, 256);
-        //boxFilter2Pass(tmp[3], tmp[1], tmp[8], kernelWidth, 256, 256);
+        //boxFilter1Pass(tmp[2], tmp[0], kernelWidth, w, h);
+        //boxFilter1Pass(tmp[3], tmp[1], kernelWidth, w, h);
+        boxFilter2Pass(tmp[2], tmp[0], tmp[8], kernelWidth, w, h);
+        boxFilter2Pass(tmp[3], tmp[1], tmp[8], kernelWidth, w, h);
         
         guidedFilterAB(tmp[4], tmp[5], tmp[2], tmp[3], eps, w, h);
         
-        boxFilter1Pass(tmp[6], tmp[4], kernelWidth, 256, 256);
-        boxFilter1Pass(tmp[7], tmp[5], kernelWidth, 256, 256);
-        //boxFilter2Pass(tmp[6], tmp[4], tmp[8], kernelWidth, 256, 256);
-        //boxFilter2Pass(tmp[7], tmp[5], tmp[8], kernelWidth, 256, 256);
+        //boxFilter1Pass(tmp[6], tmp[4], kernelWidth, w, h);
+        //boxFilter1Pass(tmp[7], tmp[5], kernelWidth, w, h);
+        boxFilter2Pass(tmp[6], tmp[4], tmp[8], kernelWidth, w, h);
+        boxFilter2Pass(tmp[7], tmp[5], tmp[8], kernelWidth, w, h);
         
         guidedFilterAI_B(dst, tmp[6], tmp[7], guide, w, h);
 
@@ -768,7 +777,7 @@ protected:
 
         //generateTextureCombined(COMBINED0);
 
-        convertToLuminance(textures[TEX_LUMINANCE], texSource, 256, 256);
+        convertToLuminance(textures[TEX_LUMINANCE], texSource, imgWidth, imgHeight);
 
         //boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
         //boxFilter2Pass(textures[TEX_TMP1], textures[TEX_LUMINANCE], textures[TEX_TMP0], 7, 256, 256);
@@ -780,7 +789,7 @@ protected:
             textures[TEX_TMP6], textures[TEX_TMP7],
             textures[TEX_TMP_BOXF]
         };
-        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 7, 0.04f, 256, 256);
+        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 7, 0.04f, imgWidth, imgHeight);
 
         //Fini PP
         glBindSampler(0, 0);

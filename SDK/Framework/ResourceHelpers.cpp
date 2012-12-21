@@ -212,7 +212,7 @@ namespace resources
         }
     }
 
-    GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap)
+    GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
     {
         File	src = VFS::openRead(name);
 
@@ -242,6 +242,9 @@ namespace resources
         SOIL_free_image_data(pixelsPtr);
 
         delete [] data;
+
+        if (width)  *width  = imgWidth;
+        if (height) *height = imgHeight;
 
         return texture;
     }

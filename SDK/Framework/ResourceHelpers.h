@@ -20,9 +20,11 @@ namespace resources
 	void	getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms);
 
 	GLuint createTexture2D(const char* name,
-		GLint minFilter=GL_LINEAR_MIPMAP_LINEAR,
-		GLint magFilter=GL_LINEAR,
-		GLint genMipmap=GL_TRUE);
+		GLint  minFilter=GL_LINEAR_MIPMAP_LINEAR,
+		GLint  magFilter=GL_LINEAR,
+		GLint  genMipmap=GL_TRUE,
+        GLint* width = 0,
+        GLint* height = 0);
 
 	GLuint createSpecialTexture1D(GLint internalformat, GLsizei width,
 								  GLenum format, GLenum type, const GLvoid *pixels);
