@@ -726,8 +726,6 @@ protected:
         glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
-    //Try to optimize guided filter splitting image into n separate parts!!!!!!!!!!!!!!!!!!!!!
-    //Time for 1280x1024 is 18 ms instead of expected 6-8 ms on Radeon 6670
     void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[9], int kernelWidth, float eps, GLsizei w, GLsizei h)
     {
         guidedFilterPack(tmp[0], tmp[1], src, guide, w, h);
