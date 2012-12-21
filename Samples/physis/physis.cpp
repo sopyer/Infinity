@@ -723,17 +723,17 @@ protected:
     {
         guidedFilterPack(tmp[0], tmp[1], src, guide, w, h);
         
-        //boxFilter1Pass(tmp[2], tmp[0], kernelWidth, 256, 256);
-        //boxFilter1Pass(tmp[3], tmp[1], kernelWidth, 256, 256);
-        boxFilter2Pass(tmp[2], tmp[0], tmp[8], kernelWidth, 256, 256);
-        boxFilter2Pass(tmp[3], tmp[1], tmp[8], kernelWidth, 256, 256);
+        boxFilter1Pass(tmp[2], tmp[0], kernelWidth, 256, 256);
+        boxFilter1Pass(tmp[3], tmp[1], kernelWidth, 256, 256);
+        //boxFilter2Pass(tmp[2], tmp[0], tmp[8], kernelWidth, 256, 256);
+        //boxFilter2Pass(tmp[3], tmp[1], tmp[8], kernelWidth, 256, 256);
         
         guidedFilterAB(tmp[4], tmp[5], tmp[2], tmp[3], eps, w, h);
         
-        //boxFilter1Pass(tmp[6], tmp[4], kernelWidth, 256, 256);
-        //boxFilter1Pass(tmp[7], tmp[5], kernelWidth, 256, 256);
-        boxFilter2Pass(tmp[6], tmp[4], tmp[8], kernelWidth, 256, 256);
-        boxFilter2Pass(tmp[7], tmp[5], tmp[8], kernelWidth, 256, 256);
+        boxFilter1Pass(tmp[6], tmp[4], kernelWidth, 256, 256);
+        boxFilter1Pass(tmp[7], tmp[5], kernelWidth, 256, 256);
+        //boxFilter2Pass(tmp[6], tmp[4], tmp[8], kernelWidth, 256, 256);
+        //boxFilter2Pass(tmp[7], tmp[5], tmp[8], kernelWidth, 256, 256);
         
         guidedFilterAI_B(dst, tmp[6], tmp[7], guide, w, h);
 
@@ -824,46 +824,85 @@ protected:
         glTranslatef(mOffsetX, mOffsetY, 0);
         glScalef(mScale, mScale, 1);
 
+        //Draw image descriptions
+        struct TextDesc
+        {
+            float x;
+            float y;
+            const char* text;
+        };
+
+        TextDesc strings[] = {
+            { 450.0f, -10.0f, "source"              },
+            { 750.0f, -10.0f, "guided filter result"},
+            {1050.0f, -10.0f, "box filter result"   },
+            {   0.0f, 290.0f, "p(source)"           },
+            { 300.0f, 290.0f, "I(guide)"            },
+            { 600.0f, 290.0f, "p*I"                 },
+            { 900.0f, 290.0f, "I*I"                 },
+            {1200.0f, 290.0f, "a"                   },
+            {1500.0f, 290.0f, "b"                   },
+            {   0.0f, 590.0f, "filtered p"          },
+            { 300.0f, 590.0f, "filtered I"          },
+            { 600.0f, 590.0f, "filtered p*I"        },
+            { 900.0f, 590.0f, "filtered I*I"        },
+            {1200.0f, 590.0f, "filtered a"          },
+            {1500.0f, 590.0f, "filtered b"          },
+        };
+
+        for (size_t i = 0; i < ARRAY_SIZE(strings); ++i)
+        {
+            vg::drawString(ui::defaultFont, strings[i].x, strings[i].y,
+                           strings[i].text, strlen(strings[i].text));
+        }
+
+        //Draw images
         GLint swizzleAAA1[4] = {GL_ALPHA, GL_ALPHA, GL_ALPHA, GL_ONE};
         GLint swizzleRGBA[4] = {GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA};
 
-        vg::drawImage( 450.0f, 0.0f,  450.0f+256.0f, 0.0f+256.0f, texSource                  );
-        vg::drawImage( 750.0f, 0.0f,  750.0f+256.0f, 0.0f+256.0f, textures[TEX_GUIDED_RESULT]);
-        vg::drawImage(1050.0f, 0.0f, 1050.0f+256.0f, 0.0f+256.0f, textures[TEX_TMP2]);
+        struct ImageDesc
+        {
+            float  x;
+            float  y;
+            float  w;
+            float  h;
+            GLuint tex;
+            GLint* swizzle;
+        };
 
-        vg::drawImage(   0.0f, 300.0f,    0.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP0]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage( 300.0f, 300.0f,  300.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP0]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP0]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+        ImageDesc images[] = {
+            { 450.0f,   0.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
+            { 750.0f,   0.0f, 256.0f, 256.0f, textures[TEX_GUIDED_RESULT], swizzleRGBA},
+            {1050.0f,   0.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
+            {   0.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleRGBA},
+            { 300.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleAAA1},
+            { 600.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleRGBA},
+            { 900.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleAAA1},
+            {1200.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzleRGBA},
+            {1500.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
+            {   0.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
+            { 300.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleAAA1},
+            { 600.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleRGBA},
+            { 900.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleAAA1},
+            {1200.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP6],          swizzleRGBA},
+            {1500.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP7],          swizzleRGBA},
+        };
 
-        vg::drawImage( 600.0f, 300.0f,  600.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP1]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage( 900.0f, 300.0f,  900.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP1]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP1]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+        for (size_t i = 0; i < ARRAY_SIZE(images); ++i)
+        {
+            glBindTexture(GL_TEXTURE_2D, images[i].tex);
+            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
 
-        vg::drawImage(1200.0f, 300.0f, 1200.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP4]);
-        vg::drawImage(1500.0f, 300.0f, 1500.0f+256.0f, 300.0f+256.0f, textures[TEX_TMP5]);
+            vg::drawImage(
+                images[i].x, images[i].y,
+                images[i].x + images[i].w,
+                images[i].y + images[i].h,
+                images[i].tex
+            );
 
-        vg::drawImage(   0.0f, 600.0f,    0.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP2]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage( 300.0f, 600.0f,  300.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP2]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP2]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
-
-        vg::drawImage( 600.0f, 600.0f,  600.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP3]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleAAA1);
-        vg::drawImage( 900.0f, 600.0f,  900.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP3]);
-        glBindTexture(GL_TEXTURE_2D, textures[TEX_TMP3]);
-        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
-
-        vg::drawImage(1200.0f, 600.0f, 1200.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP6]);
-        vg::drawImage(1500.0f, 600.0f, 1500.0f+256.0f, 600.0f+256.0f, textures[TEX_TMP7]);
+            glBindTexture(GL_TEXTURE_2D, images[i].tex);
+            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+        }
 
         glPopMatrix();
 
