@@ -17,7 +17,13 @@ struct CameraDirector;
 
 namespace ui
 {
-	void init();
+    struct Area
+    {
+        GLfloat x0, y0, x1, y1;
+    };
+
+    //TODO: Refactor!!!!!!
+	void init(GLsizei width, GLsizei height); //Refactor later to add support for resolution change!!!!
     void update();
 	void cleanup();
 
@@ -33,6 +39,16 @@ namespace ui
 
     void mouseRelOffset(int* dx, int* dy);
     void mouseAbsOffset(int*  x, int*  y);
+
+    void addSelector(int* value, size_t count, Area* areas);
+
+    void   beginPickOutline();
+    void   addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id);
+    void   endPickOutline();
+    GLuint pickID(GLuint x, GLuint y);
+#if defined(DEBUG) || defined(_DEBUG)
+    void   readPickBuffer(GLsizei sz, void* data);
+#endif
 
     void processCameraInput(SpectatorCamera* camera, float dt);
     void processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);

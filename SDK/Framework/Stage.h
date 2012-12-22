@@ -50,9 +50,6 @@ namespace ui
         virtual void onShaderRecompile() {}
         virtual void onUpdate(float dt) {}
 
-        void createGLResources();
-        void destroyGLResources();
-
         void processKeyDown(const KeyEvent& event);
         void processKeyUp(const KeyEvent& event);
         void processTouch(const ButtonEvent& event);
@@ -82,12 +79,6 @@ namespace ui
         void frameStep();
 
     private:
-        GLuint  mPickFBO;
-        GLuint  mPickIDRB;
-        GLuint  mPickZRB;
-        GLuint  mPickProgram;
-        GLint   mColorLoc;
-
         bool	mDoAllocate;
         Phase	mPhase;
 

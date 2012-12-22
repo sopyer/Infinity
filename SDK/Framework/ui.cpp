@@ -3,10 +3,15 @@
 #include "DefaultFontData.h"
 #include "SpectatorCamera.h"
 #include "CameraDirector.h"
+#include "ResourceHelpers.h"
+#include "Framework.h"
 
 namespace ui
 {
     vg::Font defaultFont;
+
+    int width;
+    int height;
 
     int   mouseX;
     int   mouseY;
@@ -17,8 +22,46 @@ namespace ui
     uint8_t mouseStatePrev;
     uint8_t mouseStateCur;
 
-    void init()
+    GLuint  fboPick;
+    GLuint  rbPickID;
+    GLuint  rbPickZ;
+    GLuint  prgWriteID;
+    GLint   locID;
+
+    static const size_t MAX_SELECTORS = 16;
+    static const size_t MAX_AREAS     = 256;
+    static const size_t SELECTOR_ID       = 0xAA000000;
+    static const size_t TYPE_ID_MASK      = 0xFF000000;
+    static const size_t CONTROL_ID_MASK   = 0x007FF000;
+    static const size_t CONTROL_ID_OFFSET = 12;
+    static const size_t OPTION_ID_MASK    = 0x00000FFF;
+
+    size_t selectorCount;
+    int*   selectorValues[MAX_SELECTORS];
+    size_t areaCount;
+    Area   areas[MAX_AREAS];
+    GLuint ids[MAX_AREAS];
+
+    static const char pickFragmentSource[] = 
+        "#version 330                                       \n"
+        "uniform uint ID;                                   \n"
+        "layout(location = 0) out uint rtVal;               \n"
+        "                                                   \n"
+        "void main()                                        \n"
+        "{                                                  \n"
+        "	rtVal = ID;                                     \n"
+        "}                                                  \n";
+
+    static const GLuint emptyPickValue = 0xFF7FFFFF;
+
+    void init(GLsizei w, GLsizei h)
     {
+        selectorCount = 0;
+        areaCount     = 0;
+
+        width  = w;
+        height = h;
+
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
 
         memcpy(keyStateCur,  SDL_GetKeyState(NULL), SDLK_LAST);
@@ -28,6 +71,23 @@ namespace ui
         mouseStateCur  = SDL_GetRelativeMouseState(&deltaX, &deltaY);
         deltaX = 0;
         deltaY = 0;
+
+        //init pick resources
+        rbPickID = resources::createRenderbuffer(GL_R32UI, width, height);
+        rbPickZ = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, width, height);
+
+        glGenFramebuffers(1, &fboPick);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbPickID);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, rbPickZ );
+
+        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+        assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        prgWriteID = resources::createProgram(GL_FRAGMENT_SHADER, pickFragmentSource);
+        locID      = glGetUniformLocation(prgWriteID, "ID");
     }
 
     void update()
@@ -38,6 +98,16 @@ namespace ui
         mouseStatePrev = mouseStateCur;
         mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
+
+        GLuint id = pickID(mouseX, mouseY);
+        if ((id&TYPE_ID_MASK)==SELECTOR_ID && mouseWasReleased(SDL_BUTTON(SDL_BUTTON_LEFT)))
+        {
+            size_t selector = (id&CONTROL_ID_MASK)>>CONTROL_ID_OFFSET;
+            size_t option   = id&OPTION_ID_MASK;
+            assert(selector<selectorCount);
+            int* value = selectorValues[selector];
+            if (value) *value = option;
+        }
     }
 
     void cleanup()
@@ -52,6 +122,105 @@ namespace ui
 
         deltaX = 0;
         deltaY = 0;
+        
+        //fini pick resources
+        glDeleteProgram(prgWriteID);
+        glDeleteFramebuffers(1, &fboPick);
+        glDeleteRenderbuffers(1, &rbPickID);
+        glDeleteRenderbuffers(1, &rbPickZ);
+    }
+
+    void beginPickOutline()
+    {
+        GLuint  clearColor[4] = {0, 0, 0, 0};
+        GLfloat depth1 = 1.0f;
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
+        glClearBufferuiv(GL_COLOR, 0, clearColor);
+        glClearBufferfv (GL_DEPTH, 0, &depth1);
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_MULTISAMPLE);
+        glDepthMask(GL_TRUE);
+        glStencilMask(0xFF);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+        glUseProgram(prgWriteID);
+    }
+
+    void addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id)
+    {
+        glUniform1ui(locID, id);
+        glBegin(GL_QUADS);
+        glVertex2f(x,     y    );
+        glVertex2f(x + w, y    );
+        glVertex2f(x,     y + h);
+        glVertex2f(x + w, y + h);
+        glEnd();
+    }
+
+    void endPickOutline()
+    {
+        //TODO: probably should be moved to another location
+        for (size_t i = 0; i < areaCount; ++i)
+        {
+            glUniform1ui(locID, ids[i]);
+            glBegin(GL_QUADS);
+            glVertex2f(areas[i].x0, areas[i].y0);
+            glVertex2f(areas[i].x1, areas[i].y0);
+            glVertex2f(areas[i].x1, areas[i].y1);
+            glVertex2f(areas[i].x0, areas[i].y1);
+            glEnd();
+        }
+
+        glPopAttrib();
+        
+        CHECK_GL_ERROR();
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
+
+    GLuint pickID(GLuint x, GLuint y)
+    {
+        GLuint id;
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
+        glReadPixels (x, height-y-1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &id);
+
+        CHECK_GL_ERROR();
+
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+        return id;
+    }
+
+    void readPickBuffer(GLsizei sz, void* data)
+    {
+        assert(sz>=width*height*4);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
+        glReadPixels (0, 0, width, height, GL_RED_INTEGER, GL_UNSIGNED_INT, data);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    }
+
+    void addSelector(int* value, size_t count, Area* regions)
+    {
+        assert(selectorCount<MAX_SELECTORS);
+        assert(areaCount+count<=MAX_AREAS);
+        assert(value);
+
+        memcpy(areas+areaCount, regions, sizeof(Area)*count);
+
+        for (size_t i = 0; i < count; ++i, ++areaCount)
+        {
+            ids[areaCount] = SELECTOR_ID |
+                             ((selectorCount&CONTROL_ID_MASK)<<CONTROL_ID_OFFSET) |
+                             (i&OPTION_ID_MASK);
+        }
+
+        selectorValues[selectorCount++] = value;
+
     }
 
     bool keyIsPressed  (int key)

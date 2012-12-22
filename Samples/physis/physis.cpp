@@ -131,6 +131,7 @@ class PhysisDemo: public ui::Stage
     GLint   uniEPS;
 
     GLuint samLinearClamp;
+    GLuint samNearestRepeat;
 
     GLint imgWidth, imgHeight;
 public:
@@ -203,19 +204,11 @@ public:
         for (size_t i=0; i<9; ++i)
         {
             glBindTexture(GL_TEXTURE_1D, permTex[i]);
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, PERMUTATION_DIM, 0, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
         }
 
         glGenTextures(1, &gradTex);
         glBindTexture(GL_TEXTURE_1D, gradTex);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
 
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -301,8 +294,25 @@ public:
         glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
         glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
 
+        glGenSamplers(1, &samNearestRepeat);
+        glSamplerParameteri(samNearestRepeat, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glSamplerParameteri(samNearestRepeat, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_S,     GL_REPEAT );
+        glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_T,     GL_REPEAT );
+
         CHECK_GL_ERROR();
+
+        ui::Area areas[3] = 
+        {
+            {492.0f, 4.0f, 588.0f, 36.0f},
+            {592.0f, 4.0f, 688.0f, 36.0f},
+            {692.0f, 4.0f, 788.0f, 36.0f},
+        };
+        ui::addSelector(&currentTab, 3, areas);
+        currentTab = 1;
     }
+
+    int currentTab;
 
     CPUTimer	mCPUTimer;
     GPUTimer	mGPUTimer;
@@ -313,6 +323,7 @@ public:
     ~PhysisDemo()
     {
         glDeleteSamplers(1, &samLinearClamp);
+        glDeleteSamplers(1, &samNearestRepeat);
         glDeleteTextures(TEX_ID_COUNT, textures);
         for (size_t i=0; i<PRG_ID_COUNT; ++i)
             glDeleteProgram(programs[i]);
@@ -360,6 +371,9 @@ protected:
 
     void generatePerlin(TextureIDs dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale)
     {
+        glBindSampler(0, samNearestRepeat);
+        glBindSampler(1, samNearestRepeat);
+        CHECK_GL_ERROR();
         glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_1D, permTex[seed%9]);
         glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_1D, gradTex);
 
@@ -747,34 +761,22 @@ protected:
         CHECK_GL_ERROR();
     }
 
-    virtual void onPaint()
+    void generateTexture()
     {
-        mCPUTimer.start();
-        mGPUTimer.start();
+        generatePerlin(TEX_PERLIN0, 8, 6, 1.86f, 0.75f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN1, 1, 5, 0.50f, 0.32f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN2, 5, 6, 1.86f, 0.75f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN3, 5, 1, 1.86f, 0.75f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN4, 5, 6, 1.36f, 0.75f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN5, 5, 1, 1.36f, 0.75f,   4.0f, 2.0f);
+        generatePerlin(TEX_PERLIN6, 0, 6, 0.68f, 1.00f,   8.0f, 2.0f);
+        generatePerlin(TEX_PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f);
 
-        //Init PP
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        generateTextureCombined(TEX_COMBINED0);
+    }
 
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quadVertices);
-
-        glBindSampler(0, samLinearClamp);
-        glBindSampler(1, samLinearClamp);
-        glBindSampler(2, samLinearClamp);
-        glBindSampler(3, samLinearClamp);
-        ////////////////////////////////////
-
-        //generatePerlin(PERLIN0, 8, 6, 1.86f, 0.75f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN1, 1, 5, 0.50f, 0.32f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN2, 5, 6, 1.86f, 0.75f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN3, 5, 1, 1.86f, 0.75f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN4, 5, 6, 1.36f, 0.75f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN5, 5, 1, 1.36f, 0.75f,   4.0f, 2.0f);
-        //generatePerlin(PERLIN6, 0, 6, 0.68f, 1.00f,   8.0f, 2.0f);
-        //generatePerlin(PERLIN7, 0, 2, 1.00f, 1.00f, 128.0f, 2.0f);
-
-        //generateTextureCombined(COMBINED0);
-
+    void generateGuided1()
+    {
         convertToLuminance(textures[TEX_LUMINANCE], texSource, imgWidth, imgHeight);
 
         //boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
@@ -788,44 +790,10 @@ protected:
             textures[TEX_TMP_BOXF]
         };
         guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 7, 0.04f, imgWidth, imgHeight);
+    }
 
-        //Fini PP
-        glBindSampler(0, 0);
-        glBindSampler(1, 0);
-        glBindSampler(2, 0);
-        glBindSampler(3, 0);
-
-        glDisableVertexAttribArray(0);
-        ////////////////////
-
-        mGPUTimer.stop();
-        mCPUTime = mCPUTimer.elapsed();
-        mGPUTime = mGPUTimer.getResult();
-        mCPUTimer.stop();
-
-        CHECK_GL_ERROR();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(vp[0], vp[1], vp[2], vp[3]);
-
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-        glTranslatef(0, 0, -10);
-
-        vg::drawImage( -8,  2, -6,  0, textures[TEX_PERLIN0]);
-        vg::drawImage( -5,  2, -3,  0, textures[TEX_PERLIN1]);
-        vg::drawImage( -2,  2,  0,  0, textures[TEX_PERLIN2]);
-        vg::drawImage(  1,  2,  3,  0, textures[TEX_PERLIN3]);
-        vg::drawImage(  4,  2,  6,  0, textures[TEX_PERLIN4]);
-        vg::drawImage(  7,  2,  9,  0, textures[TEX_PERLIN5]);
-
-        vg::drawImage( -8, -1, -6, -3, textures[TEX_PERLIN6]);
-        vg::drawImage( -5, -1, -3, -3, textures[TEX_PERLIN7]);
-        vg::drawImage( -2, -1,  0, -3, textures[TEX_COMBINED0]);
-
-        glPopMatrix();
-
+    void visualizeGuided1()
+    {
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glTranslatef(mOffsetX, mOffsetY, 0);
@@ -840,21 +808,21 @@ protected:
         };
 
         TextDesc strings[] = {
-            { 450.0f, -10.0f, "source"              },
-            { 750.0f, -10.0f, "guided filter result"},
-            {1050.0f, -10.0f, "box filter result"   },
-            {   0.0f, 290.0f, "p(source)"           },
-            { 300.0f, 290.0f, "I(guide)"            },
-            { 600.0f, 290.0f, "p*I"                 },
-            { 900.0f, 290.0f, "I*I"                 },
-            {1200.0f, 290.0f, "a"                   },
-            {1500.0f, 290.0f, "b"                   },
-            {   0.0f, 590.0f, "filtered p"          },
-            { 300.0f, 590.0f, "filtered I"          },
-            { 600.0f, 590.0f, "filtered p*I"        },
-            { 900.0f, 590.0f, "filtered I*I"        },
-            {1200.0f, 590.0f, "filtered a"          },
-            {1500.0f, 590.0f, "filtered b"          },
+            { 450.0f,  15.0f, "source"              },
+            { 750.0f,  15.0f, "guided filter result"},
+            {1050.0f,  15.0f, "box filter result"   },
+            {   0.0f, 315.0f, "p(source)"           },
+            { 300.0f, 315.0f, "I(guide)"            },
+            { 600.0f, 315.0f, "p*I"                 },
+            { 900.0f, 315.0f, "I*I"                 },
+            {1200.0f, 315.0f, "a"                   },
+            {1500.0f, 315.0f, "b"                   },
+            {   0.0f, 615.0f, "filtered p"          },
+            { 300.0f, 615.0f, "filtered I"          },
+            { 600.0f, 615.0f, "filtered p*I"        },
+            { 900.0f, 615.0f, "filtered I*I"        },
+            {1200.0f, 615.0f, "filtered a"          },
+            {1500.0f, 615.0f, "filtered b"          },
         };
 
         for (size_t i = 0; i < ARRAY_SIZE(strings); ++i)
@@ -878,21 +846,21 @@ protected:
         };
 
         ImageDesc images[] = {
-            { 450.0f,   0.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
-            { 750.0f,   0.0f, 256.0f, 256.0f, textures[TEX_GUIDED_RESULT], swizzleRGBA},
-            {1050.0f,   0.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
-            {   0.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleRGBA},
-            { 300.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleAAA1},
-            { 600.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleRGBA},
-            { 900.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleAAA1},
-            {1200.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzleRGBA},
-            {1500.0f, 300.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
-            {   0.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
-            { 300.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleAAA1},
-            { 600.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleRGBA},
-            { 900.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleAAA1},
-            {1200.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP6],          swizzleRGBA},
-            {1500.0f, 600.0f, 256.0f, 256.0f, textures[TEX_TMP7],          swizzleRGBA},
+            { 450.0f,  25.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
+            { 750.0f,  25.0f, 256.0f, 256.0f, textures[TEX_GUIDED_RESULT], swizzleRGBA},
+            {1050.0f,  25.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
+            {   0.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleRGBA},
+            { 300.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleAAA1},
+            { 600.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleRGBA},
+            { 900.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleAAA1},
+            {1200.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzleRGBA},
+            {1500.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
+            {   0.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
+            { 300.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleAAA1},
+            { 600.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleRGBA},
+            { 900.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleAAA1},
+            {1200.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP6],          swizzleRGBA},
+            {1500.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP7],          swizzleRGBA},
         };
 
         for (size_t i = 0; i < ARRAY_SIZE(images); ++i)
@@ -912,6 +880,99 @@ protected:
         }
 
         glPopMatrix();
+    }
+
+    void visualizeTexture()
+    {
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+        glTranslatef(0, 0, -10);
+
+        vg::drawImage( -8,  2, -6,  0, textures[TEX_PERLIN0]);
+        vg::drawImage( -5,  2, -3,  0, textures[TEX_PERLIN1]);
+        vg::drawImage( -2,  2,  0,  0, textures[TEX_PERLIN2]);
+        vg::drawImage(  1,  2,  3,  0, textures[TEX_PERLIN3]);
+        vg::drawImage(  4,  2,  6,  0, textures[TEX_PERLIN4]);
+        vg::drawImage(  7,  2,  9,  0, textures[TEX_PERLIN5]);
+
+        vg::drawImage( -8, -1, -6, -3, textures[TEX_PERLIN6]);
+        vg::drawImage( -5, -1, -3, -3, textures[TEX_PERLIN7]);
+        vg::drawImage( -2, -1,  0, -3, textures[TEX_COMBINED0]);
+
+        glPopMatrix();
+    }
+
+    virtual void onPaint()
+    {
+        mCPUTimer.start();
+        mGPUTimer.start();
+
+        //Init PP
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quadVertices);
+
+        glBindSampler(0, samLinearClamp);
+        glBindSampler(1, samLinearClamp);
+        glBindSampler(2, samLinearClamp);
+        glBindSampler(3, samLinearClamp);
+
+        switch (currentTab)
+        {
+            case 0:
+                generateTexture();
+                break;
+            case 1:
+                generateGuided1();
+                break;
+        }
+
+        //Fini PP
+        glBindSampler(0, 0);
+        glBindSampler(1, 0);
+        glBindSampler(2, 0);
+        glBindSampler(3, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glDisableVertexAttribArray(0);
+        ////////////////////
+
+        mGPUTimer.stop();
+        mCPUTime = mCPUTimer.elapsed();
+        mGPUTime = mGPUTimer.getResult();
+        mCPUTimer.stop();
+
+        CHECK_GL_ERROR();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(vp[0], vp[1], vp[2], vp[3]);
+
+        vg::drawRect(3.0f, 3.0f, 1277.0f, 37.0f, 0xFF3E3E3E, 0xFF3E3E3E);
+
+        vg::drawRect(589.0f, 10.0f, 591.0f, 30.0f, 0xFF585858, 0xFF585858);
+        vg::drawRect(689.0f, 10.0f, 691.0f, 30.0f, 0xFF585858, 0xFF585858);
+
+        vg::drawRect(492.0f, 34.0f-(currentTab==0?3.0f:0.0f), 588.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
+        vg::drawRect(592.0f, 34.0f-(currentTab==1?3.0f:0.0f), 688.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
+        vg::drawRect(692.0f, 34.0f-(currentTab==2?3.0f:0.0f), 788.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
+
+        vg::drawString(ui::defaultFont, 525.0f, 25.0f, "PHYSIS", 6);
+        vg::drawString(ui::defaultFont, 600.0f, 25.0f, "GUIDED 1CH", 9);
+        vg::drawString(ui::defaultFont, 700.0f, 25.0f, "GUIDED 3CH", 9);
+
+        glViewport(vp[0], vp[1], vp[2], vp[3]-40);
+
+        switch (currentTab)
+        {
+            case 0:
+                visualizeTexture();
+                break;
+            case 1:
+                visualizeGuided1();
+                break;
+        }
 
         CHECK_GL_ERROR();
 
@@ -920,7 +981,9 @@ protected:
 
     void onUpdate(float dt)
     {
-        if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
+        int mouseX, mouseY;
+        ui::mouseAbsOffset(&mouseX, &mouseY);
+        if (ui::mouseIsPressed(SDL_BUTTON_LEFT) && mouseY>40)
         {
             int dx, dy;
 

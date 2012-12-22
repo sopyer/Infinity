@@ -18,18 +18,6 @@
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
 
-static const char pickFragmentSource[] = 
-    "#version 330                                       \n"
-    "uniform uint ID;                                  \n"
-    "layout(location = 0) out uint rtVal;              \n"
-    "                                                   \n"
-    "void main()                                        \n"
-    "{                                                  \n"
-    "	rtVal = ID;                                     \n"
-    "}                                                  \n";
-
-static const GLuint emptyPickValue = 0xFF7FFFFF;
-
 enum
 {
     STATE_DEFAULT,
@@ -91,13 +79,11 @@ namespace ui
 
         mt::init();
         vg::init();
-        ui::init();
+        ui::init((GLsizei)mWidth, (GLsizei)mHeight);
 
         SDL_SysWMinfo info = {{0, 0}, 0, 0};
         SDL_GetWMInfo(&info);
         Platform_Initialise(info.window);
-
-        createGLResources();
 
         mShaderEditOverlay = new ShaderEditOverlay;
         mShaderEditOverlay->initialise(mWidth, mHeight);
@@ -119,8 +105,6 @@ namespace ui
 
     Stage::~Stage()
     {
-        destroyGLResources();
-
         delete mShaderEditOverlay;
         delete mProfilerOverlay;
         Platform_Finalise();
@@ -229,8 +213,10 @@ namespace ui
     {
         profilerBeginFrame();
 
-        ui::update();
+        glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
+
         handleInput();
+        ui::update();
         
         uint64_t time;
 
@@ -321,33 +307,6 @@ namespace ui
         return *this;
     }
     
-    void Stage::createGLResources()
-    {
-        mPickIDRB = resources::createRenderbuffer(GL_R32UI, (GLsizei)mWidth, (GLsizei)mHeight);
-        mPickZRB  = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, (GLsizei)mWidth, (GLsizei)mHeight);
-
-        glGenFramebuffers(1, &mPickFBO);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mPickFBO);
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, mPickIDRB);
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, mPickZRB);
-
-        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-        assert(status == GL_FRAMEBUFFER_COMPLETE);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-        mPickProgram = resources::createProgram(GL_FRAGMENT_SHADER, pickFragmentSource);
-        mColorLoc = glGetUniformLocation(mPickProgram, "ID");
-    }
-
-    void Stage::destroyGLResources()
-    {
-        glDeleteProgram(mPickProgram);
-        glDeleteFramebuffers(1, &mPickFBO);
-        glDeleteRenderbuffers(1, &mPickIDRB);
-        glDeleteRenderbuffers(1, &mPickZRB);
-    }
-
     void Stage::processKeyDown(const KeyEvent& event)
     {
         //Also here should be and hotkeys handling
@@ -421,19 +380,15 @@ namespace ui
 
     Actor* Stage::doPick(uint32_t x, uint32_t y)
     {
-        GLuint id;
-        GLenum err;
-        GLint  viewport[4];
+        GLuint id = ui::pickID(x, y);
 
-        glGetIntegerv(GL_VIEWPORT, viewport);
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, mPickFBO);
-        glReadPixels (x, viewport[3]-y-1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &id);
-        err = glGetError(); assert(err==GL_NO_ERROR);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-        if (id == emptyPickValue)
+        if (id == 0)
             return this;
+
+        if (id>0x007FFFFF)
+            return 0;
+
+        --id;
 
         assert(id < mRenderQueue.size());
 
@@ -496,24 +451,8 @@ namespace ui
 
     void Stage::outlineActors()
     {
-        GLenum err;
+        beginPickOutline();
 
-        GLuint  clearColor[4] = {emptyPickValue, 0, 0, 0};
-        GLfloat depth1 = 1.0f;
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, mPickFBO);
-        glClearBufferfv(GL_COLOR, 0, (float*)clearColor);
-        glClearBufferfv(GL_DEPTH, 0, &depth1);
-
-        glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
-        glDisable(GL_BLEND);
-        glDisable(GL_TEXTURE_2D);
-        glDisable(GL_MULTISAMPLE);
-        glDepthMask(GL_TRUE);
-        glStencilMask(0xFF);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-        glUseProgram(mPickProgram);
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixf(mProjection);
         glMatrixMode(GL_MODELVIEW);
@@ -524,22 +463,11 @@ namespace ui
             glPushMatrix();
             glMultMatrixf(mRenderQueue[i].transform);
             Actor* actor = mRenderQueue[i].actor;
-            GLuint color = i;
-            glUniform1ui(mColorLoc, color);
-            glBegin(GL_QUADS);
-            glVertex2f(0,0);
-            glVertex2f(actor->mWidth,0);
-            glVertex2f(actor->mWidth,actor->mHeight);
-            glVertex2f(0,actor->mHeight);
-            glEnd();
+            addPickOutlineRect(0, 0, actor->mWidth, actor->mHeight, i+1);
             glPopMatrix();
         }
-        glPopAttrib();
-
-        err = glGetError();
-        assert(err==GL_NO_ERROR);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        
+        endPickOutline();
 
 #if defined(DEBUG) || defined(_DEBUG)
         if (dumpPickImage)
@@ -547,11 +475,10 @@ namespace ui
             GLuint w = (GLuint)mWidth;
             GLuint h = (GLuint)mHeight;
             uint8_t* p = new uint8_t[w*h*4];
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, mPickFBO);
-            glReadPixels (0, 0, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, p);
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+            ui::readPickBuffer(w*h*4, p);
             SOIL_save_image("pick.tga", SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
             delete [] p;
+            dumpPickImage = 0;
         }
 #endif
     }
