@@ -27,17 +27,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGResearch", "Samples\VGRes
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GUISample", "Samples\GUISample\GUISample.vcxproj", "{512DE626-21F2-4593-B3EE-34DE8385D93F}"
-	ProjectSection(ProjectDependencies) = postProject
-		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
-		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
-		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "frest", "Samples\frest\frest.vcxproj", "{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
@@ -158,10 +147,6 @@ Global
 		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Debug|Win32.Build.0 = Debug|Win32
 		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Release|Win32.ActiveCfg = Release|Win32
 		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Release|Win32.Build.0 = Release|Win32
-		{512DE626-21F2-4593-B3EE-34DE8385D93F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{512DE626-21F2-4593-B3EE-34DE8385D93F}.Debug|Win32.Build.0 = Debug|Win32
-		{512DE626-21F2-4593-B3EE-34DE8385D93F}.Release|Win32.ActiveCfg = Release|Win32
-		{512DE626-21F2-4593-B3EE-34DE8385D93F}.Release|Win32.Build.0 = Release|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Debug|Win32.ActiveCfg = Debug|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Debug|Win32.Build.0 = Debug|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Release|Win32.ActiveCfg = Release|Win32

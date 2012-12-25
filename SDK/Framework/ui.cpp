@@ -132,6 +132,8 @@ namespace ui
 
     void beginPickOutline()
     {
+        CHECK_GL_ERROR();
+
         GLuint  clearColor[4] = {0, 0, 0, 0};
         GLfloat depth1 = 1.0f;
 
@@ -148,6 +150,8 @@ namespace ui
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
         glUseProgram(prgWriteID);
+
+        CHECK_GL_ERROR();
     }
 
     void addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id)
@@ -163,6 +167,8 @@ namespace ui
 
     void endPickOutline()
     {
+        CHECK_GL_ERROR();
+
         //TODO: probably should be moved to another location
         for (size_t i = 0; i < areaCount; ++i)
         {

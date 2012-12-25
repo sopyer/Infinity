@@ -9,26 +9,6 @@ namespace ui
 {
 	inline bool isSame(ui::Actor* sender, ui::Actor* actor) {return sender==actor;}
 	
-	class Group: public ui::Container
-	{
-	};
-
-	class Image: public ui::Actor
-	{
-		public:
-			Image()  {}
-			~Image() {}
-			
-			Image&	setTexture(GLuint texture) {mTexture = texture; return *this;}
-			GLuint	getTexture() {return mTexture;}
-
-		protected:
-			virtual void onPaint();
-
-		protected:
-			GLuint		mTexture;
-	};
-
 	class Label: public ui::Actor
 	{
 		public:
@@ -46,53 +26,6 @@ namespace ui
 			glm::vec4		mColor;
 			vg::Font		mFont;
 			std::wstring	mText;
-	};
-
-	class Edit: public Label, public sigslot::has_slots<>
-	{
-		public:
-			Edit(): mCaretPos(0), mShowCursor(false), mBlinkTask(0)
-			{
-			}
-		
-			~Edit()
-			{
-				hideCursor();
-			}
-
-		protected:
-			void onBlink()
-			{
-				mShowCursor = !mShowCursor;
-			}
-
-			virtual void onTouch(const ButtonEvent& event)
-			{
-				getStage()->captureFocus(this);
-			}
-			
-			virtual void onFocusIn()
-			{
-				showCursor();
-			}
-
-			virtual void onFocusOut()
-			{
-				hideCursor();
-			}
-
-			virtual void onKeyDown(const KeyEvent& event);
-			virtual void onPaint();
-
-			void showCursor();
-			void hideCursor();
-			void resetCursor();
-
-		private:
-			mt::Task	mBlinkTask;
-			
-			bool	mShowCursor;
-			int		mCaretPos;
 	};
 
 	class Button: public Label
@@ -139,105 +72,4 @@ namespace ui
 			bool		mIsChecked;
 	};
 
-	class HGroup: public ui::Container
-	{
-		public:
-			HGroup()
-			{
-				setSize(100, 30);
-
-				m1.setText(L"Menu1")
-					.setSize(100, 20);
-				m2.setText(L"Menu2")
-					.setSize(100, 20);
-				m3.setText(L"Menu3")
-					.setSize(100, 20);
-
-				add(m1).add(m2).add(m3);
-			}
-
-		protected:
-			void onAllocate()
-			{
-				float x = 0, y = 0, w = getWidth();
-				ChildsVector::iterator	it = mChilds.begin(),
-										end = mChilds.end();
-				for (; it != end; ++it)
-				{
-					Actor&	actor = *(*it);
-					actor.setPos(0, y)
-						.setWidth(w);
-					y += actor.getHeight();
-				}
-				setSize(w, y);
-			}
-
-		private:
-			Button	m1;
-			Button	m2;
-			Button	m3;
-	};
-
-	class Layout: public ui::Container, public sigslot::has_slots<>
-	{
-		public:
-			Layout()
-			{
-				setSize(100, 30);
-
-				add
-				(
-					mEdit.setText(L"Edit me!!!")
-						.setSize(80, 20)
-						.setPos(0,0)
-				)
-				.
-				add
-				(
-					mButton.setText(L"^")
-						.setSize(20, 20)
-						.setPos(80,0)
-				)
-				.
-				add
-				(
-					mListBox.setSize(100, 60)
-						.setPos(0,20)
-						.hide()
-				);
-
-				mButton.onClicked.connect(this, &Layout::expandCollapseList);
-			}
-
-			void expandCollapseList(Actor*)
-			{
-				if (mListBox.isVisible())
-				{
-					mListBox.hide();
-				}
-				else
-				{
-					mListBox.show();
-				}
-			}
-
-			void onAllocate()
-			{
-				float w = getWidth();
-				float h = getHeight();
-
-				mButton.setSize(h,h)
-					.setPos(w-h, 0);
-				mEdit.setSize(w-h, h);
-				mListBox.setWidth(w)
-					.setPos(0, h);
-
-				ui::Container::onAllocate();
-			}
-
-		private:
-			Button	mButton;
-			Edit	mEdit;
-			HGroup	mListBox;
-	};
 }

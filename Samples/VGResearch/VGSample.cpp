@@ -381,7 +381,7 @@ class VGSample: public ui::Stage
 		std::vector<CubicActor*>	mCubicsHolder;
 
 		CubicActor*		mActiveCubic;
-		ui::Group		mCubics;
+		ui::Container	mCubics;
 		ui::Label		mZoomLabel;
 		ui::Label		mCubicLabel;
 		ui::CheckBox	mRenderCubicCB;
