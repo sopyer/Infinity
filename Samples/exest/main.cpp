@@ -83,10 +83,6 @@ public:
         addPrograms(2, prgs);
     }
 
-    ui::Label	mDrawTimeLabel;
-    ui::Label	mSelectTimeLabel;
-    ui::Label	mGeomStatLabel;
-
     ~Exest()
     {
         terrain.cleanup();

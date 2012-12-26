@@ -69,6 +69,5 @@ namespace ui
 #	include <Actor.h>
 #	include <Container.h>
 #	include <Stage.h>
-#	include <Controls.h>
 
 #endif

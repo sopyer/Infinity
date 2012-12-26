@@ -83,7 +83,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CameraDirector.cpp" />
-    <ClCompile Include="Controls.cpp" />
     <ClCompile Include="media_api.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="ProfilerOverlay.cpp" />
@@ -125,7 +124,6 @@
     <ClInclude Include="SpectatorCamera.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="ui.h" />
-    <ClInclude Include="Controls.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />
