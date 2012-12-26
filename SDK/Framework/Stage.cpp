@@ -518,6 +518,8 @@ namespace ui
             }
         }
 
+        ui::render();
+
         glFlush();
     }
 

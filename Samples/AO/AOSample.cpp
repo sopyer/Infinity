@@ -96,10 +96,7 @@ public:
         mVoxelLookupTextureUniform = glGetUniformLocation(mVoxelizationProgram, "uVoxelLookupTexture");
         CHECK_GL_ERROR();
 
-        add(mRenderAsVoxelsCB.setChecked(false)
-            .setText(L"Render as voxels")
-            .setPos(5, 5)
-            .setSize(16, 16));
+        mRenderAsVoxels = ui::checkBoxAdd(5.0f, 5.0f, 21.0f, 21.0f, FALSE);
 
         createMRTObjects();
 
@@ -317,7 +314,7 @@ protected:
 
         renderFBO();
 
-        if (!mRenderAsVoxelsCB.isChecked())
+        if (!ui::checkBoxIsChecked(mRenderAsVoxels))
         {
             glUseProgram(mLightProgram);
             renderScene();
@@ -363,13 +360,16 @@ protected:
 
         CHECK_GL_ERROR();
 
+        glColor3f(1.0f, 1.0f, 1.0f);
+        vg::drawString(ui::defaultFont, 25.0, 18.0f, "Render as voxels", 16);
+
         vg::drawImage(0,  30, 160, 150, mPosTexture);
         vg::drawImage(0, 160, 160, 280, mNormalTexture);
 
     }
 
 private:
-    ui::CheckBox	mRenderAsVoxelsCB;
+    ui::CheckBoxID  mRenderAsVoxels;
     GLuint			mVoxelField[32][32];
     GLint			mVoxelLookupTextureUniform;
     GLuint			mVoxelLookupTexture;

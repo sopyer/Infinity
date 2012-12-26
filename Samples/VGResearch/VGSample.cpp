@@ -384,10 +384,6 @@ class VGSample: public ui::Stage
 		ui::Container	mCubics;
 		ui::Label		mZoomLabel;
 		ui::Label		mCubicLabel;
-		ui::CheckBox	mRenderCubicCB;
-		ui::CheckBox	mRenderTriCB;
-		ui::CheckBox	mRenderArcCB;
-		ui::CheckBox	mRenderQuadCB;
 		vg::Path	point;
 		vg::Paint	white;
 		bool doMove;

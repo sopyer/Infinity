@@ -8,6 +8,17 @@
 
 namespace ui
 {
+    struct Area
+    {
+        GLfloat x0, y0, x1, y1;
+    };
+
+    enum ControlID
+    {
+        ID_CHECKBOX = 0x01000000,
+        ID_MASK     = 0xFF000000
+    };
+
     vg::Font defaultFont;
 
     int width;
@@ -36,6 +47,19 @@ namespace ui
     Area   areas[MAX_AREAS];
     GLuint ids[MAX_AREAS];
 
+    struct CheckBox
+    {
+        float x0, y0, x1, y1;
+        uint32_t id:24;
+        int      checked:1;
+        int      hover:1;
+    };
+
+    static const size_t MAX_CHECKBOX_COUNT = 16;
+
+    size_t   checkBoxCount;
+    CheckBox checkBoxes[MAX_CHECKBOX_COUNT];
+
     static const char pickFragmentSource[] = 
         "#version 330                                       \n"
         "uniform uint ID;                                   \n"
@@ -46,11 +70,13 @@ namespace ui
         "	rtVal = ID;                                     \n"
         "}                                                  \n";
 
-    static const GLuint emptyPickValue = 0xFF7FFFFF;
+    void checkBoxUpdateAll();
+    void checkBoxRenderAll();
 
     void init(GLsizei w, GLsizei h)
     {
         areaCount     = 0;
+        checkBoxCount = 0;
 
         width  = w;
         height = h;
@@ -95,6 +121,13 @@ namespace ui
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
 
         mouseOverAreaID = pickID(mouseX, mouseY);
+
+        checkBoxUpdateAll();
+    }
+
+    void render()
+    {
+        checkBoxRenderAll();
     }
 
     void cleanup()
@@ -354,6 +387,74 @@ namespace ui
 
             camera->setOrientation(camDirector->savedCamRotation[camDirector->index]);
             camera->setPosition   (camDirector->savedCamLocation[camDirector->index]);
+        }
+    }
+
+    CheckBoxID checkBoxAdd(float x0, float y0, float x1, float y1, int checked)
+    {
+        assert(checkBoxCount<MAX_CHECKBOX_COUNT);
+
+        CheckBoxID id = checkBoxCount;
+
+        checkBoxes[id].x0 = x0;
+        checkBoxes[id].y0 = y0;
+        checkBoxes[id].x1 = x1;
+        checkBoxes[id].y1 = y1;
+
+        checkBoxes[id].id      = id;
+        checkBoxes[id].checked = checked;
+
+        checkBoxCount++;
+
+        mouseAddEventArea(x0, y0, x1, y1, ID_CHECKBOX|id);
+
+        return id;
+    }
+
+    int checkBoxIsChecked(CheckBoxID id)
+    {
+        return checkBoxes[id].checked;
+    }
+
+    void checkBoxUpdateAll()
+    {
+        for (size_t i=0; i<checkBoxCount; ++i) //avoid cycle implement pre/post update
+        {
+            checkBoxes[i].hover = false;
+        }
+
+        uint32_t id = mouseOverAreaID;
+        if ((id&ID_MASK) == ID_CHECKBOX)
+        {
+            CheckBoxID cid = id&0x00FFFFFF;
+            assert(cid<checkBoxCount);
+
+            checkBoxes[cid].hover = true;
+            if (mouseWasReleased(SDL_BUTTON_LEFT))
+                checkBoxes[cid].checked = !checkBoxes[cid].checked;
+        }
+    }
+
+    void checkBoxRenderAll()
+    {
+        for (size_t i=0; i<checkBoxCount; ++i)
+        {
+		    static const uint32_t colors[] = {
+			    0xFF232563,
+			    0xFF4547A5,
+			    0xFF3CE484,
+			    0xFF7FFDA3,
+		    };
+
+            bool isChecked = checkBoxes[i].checked != 0;
+            bool isHover   = checkBoxes[i].hover   != 0;
+            
+            float x0 = checkBoxes[i].x0;
+            float y0 = checkBoxes[i].y0;
+            float x1 = checkBoxes[i].x1;
+            float y1 = checkBoxes[i].y1;
+            
+            vg::drawRoundedRect(x0, y0, x0+16.0f, y0+16.0f, 2.5f, 2.5f, colors[(isChecked<<1)+isHover], 0xFF00FF32);
         }
     }
 }

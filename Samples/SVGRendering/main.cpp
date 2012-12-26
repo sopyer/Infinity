@@ -35,17 +35,14 @@ public:
 
         svgDelete(plist);
 
-        add(mAAChoice.setChecked(false)
-            .setText(L"Enable AA")
-            .setPos(25.0f, 83.0f)
-            .setSize(60.0f, 18.0f));
+        mAAEnabled = ui::checkBoxAdd(25.0f, 83.0f, 41.0f, 99.0f, FALSE);
 
         glGenQueries(1, &mTimeQuery);
 
         SDL_WM_SetCaption("GPU accelerated SVG rendering", NULL);
     }
 
-    ui::CheckBox			mAAChoice;
+    ui::CheckBoxID mAAEnabled;
 
     ~SVGSample()
     {
@@ -119,7 +116,7 @@ protected:
         glTranslatef(mOffsetX, mOffsetY, 0);
         glScalef(mScale, mScale, 1);
 
-        if (mAAChoice.isChecked())
+        if (ui::checkBoxIsChecked(mAAEnabled))
         {
             for (size_t i=mPaths.size(); i!=0; i--)
                 vg::drawPathNZA2C(mPaths[i-1], mPaints[i-1]);
@@ -142,6 +139,9 @@ protected:
         mDrawTimeGPU = 0.8f*result/1000.0f/1000.0f+0.2f*mDrawTimeGPU;
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 100.0f, mDrawTimeCPU, mDrawTimeGPU);
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        vg::drawString(ui::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
     }
 
 private:
