@@ -302,13 +302,10 @@ public:
 
         CHECK_GL_ERROR();
 
-        ui::Area areas[3] = 
-        {
-            {492.0f, 4.0f, 588.0f, 36.0f},
-            {592.0f, 4.0f, 688.0f, 36.0f},
-            {692.0f, 4.0f, 788.0f, 36.0f},
-        };
-        ui::addSelector(&currentTab, 3, areas);
+        ui::mouseAddEventArea(492.0f, 4.0f, 588.0f, 36.0f, 0xFF000000);
+        ui::mouseAddEventArea(592.0f, 4.0f, 688.0f, 36.0f, 0xFF000001);
+        ui::mouseAddEventArea(692.0f, 4.0f, 788.0f, 36.0f, 0xFF000002);
+
         currentTab = 1;
     }
 
@@ -983,6 +980,7 @@ protected:
     {
         int mouseX, mouseY;
         ui::mouseAbsOffset(&mouseX, &mouseY);
+
         if (ui::mouseIsPressed(SDL_BUTTON_LEFT) && mouseY>40)
         {
             int dx, dy;
@@ -990,6 +988,14 @@ protected:
             ui::mouseRelOffset(&dx, &dy);
             mOffsetX += dx;
             mOffsetY += dy;
+        }
+
+        uint32_t id = ui::mouseOverID();
+        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && ((id&0xFF000000)==0xFF000000))
+        {
+            currentTab = id & 0x00FFFFFF;
+
+            assert(currentTab>=0 && currentTab<3);
         }
     }
 

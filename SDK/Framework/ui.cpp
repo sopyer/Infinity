@@ -22,22 +22,16 @@ namespace ui
     uint8_t mouseStatePrev;
     uint8_t mouseStateCur;
 
+    uint32_t mouseOverAreaID;
+
     GLuint  fboPick;
     GLuint  rbPickID;
     GLuint  rbPickZ;
     GLuint  prgWriteID;
     GLint   locID;
 
-    static const size_t MAX_SELECTORS = 16;
     static const size_t MAX_AREAS     = 256;
-    static const size_t SELECTOR_ID       = 0xAA000000;
-    static const size_t TYPE_ID_MASK      = 0xFF000000;
-    static const size_t CONTROL_ID_MASK   = 0x007FF000;
-    static const size_t CONTROL_ID_OFFSET = 12;
-    static const size_t OPTION_ID_MASK    = 0x00000FFF;
 
-    size_t selectorCount;
-    int*   selectorValues[MAX_SELECTORS];
     size_t areaCount;
     Area   areas[MAX_AREAS];
     GLuint ids[MAX_AREAS];
@@ -56,7 +50,6 @@ namespace ui
 
     void init(GLsizei w, GLsizei h)
     {
-        selectorCount = 0;
         areaCount     = 0;
 
         width  = w;
@@ -71,6 +64,8 @@ namespace ui
         mouseStateCur  = SDL_GetRelativeMouseState(&deltaX, &deltaY);
         deltaX = 0;
         deltaY = 0;
+
+        mouseOverAreaID = 0;
 
         //init pick resources
         rbPickID = resources::createRenderbuffer(GL_R32UI, width, height);
@@ -99,15 +94,7 @@ namespace ui
         mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
 
-        GLuint id = pickID(mouseX, mouseY);
-        if ((id&TYPE_ID_MASK)==SELECTOR_ID && mouseWasReleased(SDL_BUTTON(SDL_BUTTON_LEFT)))
-        {
-            size_t selector = (id&CONTROL_ID_MASK)>>CONTROL_ID_OFFSET;
-            size_t option   = id&OPTION_ID_MASK;
-            assert(selector<selectorCount);
-            int* value = selectorValues[selector];
-            if (value) *value = option;
-        }
+        mouseOverAreaID = pickID(mouseX, mouseY);
     }
 
     void cleanup()
@@ -210,23 +197,23 @@ namespace ui
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     }
 
-    void addSelector(int* value, size_t count, Area* regions)
+    uint32_t mouseOverID()
     {
-        assert(selectorCount<MAX_SELECTORS);
-        assert(areaCount+count<=MAX_AREAS);
-        assert(value);
+        return mouseOverAreaID;
+    }
 
-        memcpy(areas+areaCount, regions, sizeof(Area)*count);
+    void mouseAddEventArea(float x0, float y0, float x1, float y1, uint32_t id)
+    {
+        assert(areaCount<MAX_AREAS);
 
-        for (size_t i = 0; i < count; ++i, ++areaCount)
-        {
-            ids[areaCount] = SELECTOR_ID |
-                             ((selectorCount&CONTROL_ID_MASK)<<CONTROL_ID_OFFSET) |
-                             (i&OPTION_ID_MASK);
-        }
+        areas[areaCount].x0 = x0;
+        areas[areaCount].y0 = y0;
+        areas[areaCount].x1 = x1;
+        areas[areaCount].y1 = y1;
 
-        selectorValues[selectorCount++] = value;
+        ids[areaCount] = id;
 
+        areaCount++;
     }
 
     bool keyIsPressed  (int key)

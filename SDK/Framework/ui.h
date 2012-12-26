@@ -3,13 +3,12 @@
 
 #include <sigslot.h>
 #include <opengl.h>
-
+#include <utils/utils.h>
 #include <utils/vfs++.h>
 #include <Singleton.h>
 #include <FirstPersonCamera.h>
 #include <VG\VG.h>
 #include <Timer.h>
-
 #include <Events.h>
 
 class  SpectatorCamera;
@@ -37,10 +36,10 @@ namespace ui
     bool mouseIsReleased (int button);
     bool mouseWasReleased(int button);
 
-    void mouseRelOffset(int* dx, int* dy);
-    void mouseAbsOffset(int*  x, int*  y);
-
-    void addSelector(int* value, size_t count, Area* areas);
+    uint32_t mouseOverID();
+    void     mouseAddEventArea(float x0, float y0, float x1, float y1, uint32_t id);
+    void     mouseRelOffset(int* dx, int* dy);
+    void     mouseAbsOffset(int*  x, int*  y);
 
     void   beginPickOutline();
     void   addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id);
