@@ -4,8 +4,6 @@ layout(binding=0) uniform sampler2D samMeanA;
 layout(binding=1) uniform sampler2D samMeanB;
 layout(binding=2) uniform sampler2D samGuide;
 
-uniform float uEPS;
-
 void main(void)
 {
    vec3  meanA   = texture2D(samMeanA, vUV).rgb;

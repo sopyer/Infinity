@@ -18,6 +18,15 @@
     <ClCompile Include="physis.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="guided_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="color_guided_filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\AppData\Perlin.Noise.frag" />
@@ -26,6 +35,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Perlin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

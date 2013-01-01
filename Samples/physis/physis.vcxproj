@@ -88,7 +88,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="guided_filter.cpp" />
+    <ClCompile Include="color_guided_filter.cpp" />
     <ClCompile Include="physis.cpp" />
+    <ClCompile Include="pp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\AppData\Perlin.Noise.frag" />
@@ -97,6 +100,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Perlin.h" />
+    <ClInclude Include="pp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
