@@ -5,9 +5,9 @@
 #include <media_api.h>
 
 const char srcVideoOut[] = 
-    "uniform sampler2D samY;                                                                        \n"
-    "uniform sampler2D samU;                                                                        \n"
-    "uniform sampler2D samV;                                                                        \n"
+    "layout(binding = 0) uniform sampler2D samY;                                                                        \n"
+    "layout(binding = 1) uniform sampler2D samU;                                                                        \n"
+    "layout(binding = 2) uniform sampler2D samV;                                                                        \n"
     "                                                                                               \n"
     "void main()                                                                                    \n"
     "{                                                                                              \n"
@@ -39,18 +39,9 @@ class VideoSample: public ui::Stage
 			
 			alcMakeContextCurrent(mAudioContext);
 
-            player = mediaCreatePlayer("k:\\temp\\ShadowgroundsData\\Data\\Videos\\logo.wmv");
-
-            GLint uni;
+            player = mediaCreatePlayer("k:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
 
             progVideoOut = resources::createProgram(GL_FRAGMENT_SHADER, srcVideoOut);
-
-            glUseProgram(progVideoOut);
-            uni = glGetUniformLocation(progVideoOut, "samY"); glUniform1i(uni, 0);
-            uni = glGetUniformLocation(progVideoOut, "samU"); glUniform1i(uni, 1);
-            uni = glGetUniformLocation(progVideoOut, "samV"); glUniform1i(uni, 2);
-            glUseProgram(0);
-
         }
 		
 		ctx::Context	mBase, mCtx[2];

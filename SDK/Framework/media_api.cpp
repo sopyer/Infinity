@@ -63,20 +63,19 @@ struct media_player_data_t
     unsigned int     videoStream;
     unsigned int     audioStream;
     AVFrame*         pFrame; 
-    int     		 mAudioFormat;
-    char*	         mAudioData;
+    int              mAudioFormat;
     int              numBytes;
-    int				 width;
+    int              width;
     int              height;
-    PixelFormat		 srcFormat;
-    double			 timeBase;
+    PixelFormat      srcFormat;
+    AVRational       frameDuration;
     int              playback;
     int              streamEnd;
 
     AVPacketRingBuffer aPackets;
     AVPacketRingBuffer vPackets;
-    
-    __int64 baseTime, timeShift, timeOfNextFrame, frameTime;
+
+    __int64 baseTime, timeShift, timeOfNextFrame;
 
     __int64 FPS;
     __int64 vFrameTime;
@@ -226,7 +225,7 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
 
     resetAVPackets(&player->aPackets);
     resetAVPackets(&player->vPackets);
-    
+
     player->vFramesAva = 0;
 
     player->width     = videoContext->width;
@@ -369,8 +368,8 @@ static void decodeFrame(media_player_t player, __int64 time)
 
         if(frameDone)
         {
-            player->timeOfNextFrame = player->timeBase*pkt->dts*1000000;
-                
+            player->timeOfNextFrame = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
+
             size_t sizeY;
             size_t sizeU;
             size_t sizeV;
@@ -400,7 +399,7 @@ static void decodeFrame(media_player_t player, __int64 time)
             glBindTexture(GL_TEXTURE_2D, player->texY[1]);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
-   
+
             glBindTexture(GL_TEXTURE_2D, player->texU[1]);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetU);
@@ -516,8 +515,8 @@ media_player_t mediaCreatePlayer(const char* source)
         AVCodecContext* videoContext = streams[i]->codec;
         if(streams[i]->codec->codec_type==CODEC_TYPE_VIDEO && openVideoStream(player, videoContext))
         {
-            player->videoStream = i;
-            player->timeBase  = av_q2d(streams[i]->time_base);
+            player->videoStream   = i;
+            player->frameDuration = streams[i]->time_base;
             break;
         }
     }
