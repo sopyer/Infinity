@@ -1,7 +1,8 @@
 #ifndef __ACTOR_H_INCLUDED__
 #	define __ACTOR_H_INCLUDED__
 
-#	include <glm\glm.h>
+#	include <glm/glm.h>
+#   include <glm/glmext.h>
 
 class Actor;
 class VG;

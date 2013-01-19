@@ -212,8 +212,6 @@ class Frest: public ui::Stage
 private:
     SpectatorCamera     camera;
 
-    VFS         mVFS;
-
     glm::mat4	mProj;
 
     rcMeshLoaderObj* m_geom;
@@ -221,10 +219,6 @@ private:
 public:
     Frest()
     {
-        VFS::mount("AppData");
-        VFS::mount("../AppData");
-        VFS::mount("../../AppData");
-
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
         camera.acceleration = glm::vec3(15, 15, 15);
@@ -317,8 +311,18 @@ protected:
 
 int main(int argc, char** argv)
 {
-    Frest app;
-    app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        Frest app;
+        app.run();
+    }
+
+    PHYSFS_deinit();
 
     return 0;
 }

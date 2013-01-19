@@ -2,7 +2,6 @@
 
 #include <ResourceHelpers.h>
 #include <math.h>
-#include <vfs++.h>
 #include <utils.h>
 #include <algorithm>
 

@@ -223,10 +223,6 @@ public:
           mScale(1.0f),
           mIsDragging(false)
     {
-        VFS::mount("AppData");
-        VFS::mount("..\\AppData");
-        VFS::mount("..\\..\\AppData");
-
         ppInit();
  
         texSource  = resources::createTexture2D("coin.dds", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
@@ -736,14 +732,22 @@ private:
     float		mOffsetX;
     float		mOffsetY;
     float		mScale;
-
-    VFS				mVFS;
 };
 
 extern "C" int main(int argc, char** argv)
 {
-    PhysisDemo app;
-    app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        PhysisDemo app;
+        app.run();
+    }
+
+    PHYSFS_deinit();
 
     return 0;
 }

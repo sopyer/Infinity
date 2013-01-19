@@ -106,7 +106,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraDirector.h" />
-    <ClInclude Include="FirstPersonCamera.h" />
     <ClInclude Include="media_api.h" />
     <ClInclude Include="profiler.h" />
     <ClInclude Include="ProfilerOverlay.h" />

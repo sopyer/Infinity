@@ -130,9 +130,6 @@ class VideoSample: public ui::Stage
 
             glDisable(GL_BLEND);
         }
-
-	private:
-		VFS				mVFS;
 };
 
 extern "C" int main(int argc, char** argv)

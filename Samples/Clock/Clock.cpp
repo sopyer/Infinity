@@ -106,8 +106,6 @@ class ClockSample: public ui::Stage
 #endif
 			mIsDragging(false)
 		{
-			VFS::mount("../../AppData");
-			
 #ifdef	RASTER_ACTORS
 			glGenTextures(IMG_COUNT, mTextures);
 			
@@ -256,7 +254,6 @@ class ClockSample: public ui::Stage
 		}
 
 	private:
-		VFS			mVFS;
 		bool		mIsDragging;
 		float		mOffsetX;
 		float		mOffsetY;
@@ -282,8 +279,18 @@ class ClockSample: public ui::Stage
 
 int main(int argc, char** argv)
 {
-	ClockSample app;
-	app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+	    ClockSample app;
+	    app.run();
+    }
+
+    PHYSFS_deinit();
 
 	return 0;
 }

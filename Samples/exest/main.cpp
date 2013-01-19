@@ -15,8 +15,6 @@ class Exest: public ui::Stage
 private:
     SpectatorCamera camera;
 
-    VFS	mVFS;
-
     glm::mat4 mProj;
     
     bool      fixedMode;
@@ -32,10 +30,6 @@ private:
 public:
     Exest(): fixedMode(false), loc(0)
     {
-        VFS::mount("AppData");
-        VFS::mount("../AppData");
-        VFS::mount("../../AppData");
-
         terrain.initialize();
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
@@ -53,7 +47,7 @@ public:
 
         VP = proj*lookAt;
 
-        File	src = VFS::openRead("hm.raw");
+        PHYSFS_File*    src = PHYSFS_openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system
         //assert(src.size()<SIZE_MAX);
         ///size_t fileSize = (size_t)src.size();
@@ -73,7 +67,10 @@ public:
         uint32_t h = 4097;
 
         uint16_t* data = new uint16_t[w*h];
-        src.read(data, w*h*sizeof(uint16_t), 1);
+        
+        PHYSFS_read(src, data, w*h*sizeof(uint16_t), 1);
+        PHYSFS_close(src);
+
         terrain.setHeightmap(data, w, h);
 
         //SOIL_free_image_data(pixelsPtr);
@@ -277,8 +274,18 @@ protected:
 
 int main(int argc, char** argv)
 {
-    Exest app;
-    app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        Exest app;
+        app.run();
+    }
+
+    PHYSFS_deinit();
 
     return 0;
 }

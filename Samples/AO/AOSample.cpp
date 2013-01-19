@@ -81,9 +81,6 @@ public:
 public:
     AOSample()
     {
-        VFS::mount("AppData");
-        VFS::mount("../AppData");
-        VFS::mount("../../AppData");
         vg::init();
         genVoxelLookupTexture();
         CHECK_GL_ERROR();
@@ -376,13 +373,22 @@ private:
     GLuint			mLightProgram;
     GLuint			mGBufferProgram;
     GLuint			mVoxelizationProgram;
-    VFS				mVFS;
 };
 
 extern "C" int main(int argc, char** argv)
 {
-    AOSample app;
-    app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        AOSample app;
+        app.run();
+    }
+
+    PHYSFS_deinit();
 
     return 0;
 }

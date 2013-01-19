@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Cameras">
-      <UniqueIdentifier>{73a16ea1-aacd-4cb3-a73a-07ab4b58292b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="UI">
       <UniqueIdentifier>{7e05eaa5-338c-4aab-a833-b66b28dd1898}</UniqueIdentifier>
     </Filter>
@@ -60,9 +57,6 @@
     <ClCompile Include="CameraDirector.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FirstPersonCamera.h">
-      <Filter>Cameras</Filter>
-    </ClInclude>
     <ClInclude Include="SOIL\image_DXT.h">
       <Filter>SOIL</Filter>
     </ClInclude>

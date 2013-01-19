@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <stdarg.h>
 
+#include <physfs/physfs.h>
 #include "ResourceHelpers.h"
 #include "Framework.h"
 #include "SOIL.h"
@@ -11,19 +12,19 @@ namespace resources
 {
     GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t headerCount, const char** headers)
     {
-        File file = VFS::openRead(filePath);
+        PHYSFS_File* file = PHYSFS_openRead(filePath);
         if (file)
         {
             GLint lens   [MAX_DEFINES_TO_PROCESS+1];
             char* sources[MAX_DEFINES_TO_PROCESS+1];
 
-            GLint len = (GLint)file.size();
+            GLint len = (GLint)PHYSFS_fileLength(file);
 
             char* srcShader = new char[len+1];
-            file.read(srcShader, len, 1);
+            PHYSFS_read(file, srcShader, len, 1);
             srcShader[len]=0;
 
-            file.close();
+            PHYSFS_close(file);
 
             size_t sourceCount = std::min<size_t>(headerCount, MAX_DEFINES_TO_PROCESS);
             memcpy(sources, headers, sizeof(char*)*sourceCount);
@@ -214,15 +215,16 @@ namespace resources
 
     GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
     {
-        File	src = VFS::openRead(name);
+        PHYSFS_File*	src = PHYSFS_openRead(name);
 
         //explicit conversion to avoid warning on 32-bit system
-        assert(src.size()<SIZE_MAX);
-        size_t fileSize = (size_t)src.size();
+        assert(PHYSFS_fileLength(src)<SIZE_MAX);
+        size_t fileSize = (size_t)PHYSFS_fileLength(src);
 
         unsigned char* data = new unsigned char[fileSize+1];
 
-        src.read(data, fileSize, 1);
+        PHYSFS_read(src, data, fileSize, 1);
+        PHYSFS_close(src);
 
         GLuint texture;
 

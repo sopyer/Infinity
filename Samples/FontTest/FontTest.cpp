@@ -7,10 +7,6 @@ class FontTest: public ui::Stage
 	public:
 		FontTest()
 		{
-			VFS::mount("AppData");
-			VFS::mount("../AppData");
-			VFS::mount("../../AppData");
-
 			font = createFont("C:\\Windows\\Fonts\\times.ttf", 20);
 			prgGradient = resources::createProgramFromFiles(NULL, "Gradient.frag");
 
@@ -127,13 +123,22 @@ class FontTest: public ui::Stage
 		vg::Path		path;
 		Font			font;
 		GLuint			prgGradient;
-		VFS				mVFS;
 };
 
 extern "C" int main(int argc, char** argv)
 {
-	FontTest app;
-	app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        FontTest app;
+	    app.run();
+    }
+
+    PHYSFS_deinit();
 
 	return 0;
 }

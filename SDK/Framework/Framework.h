@@ -7,6 +7,7 @@
 #include <ResourceHelpers.h>
 #include <Context.h>
 #include <profiler.h>
+#include <physfs/physfs.h>
 
 //TODO: make shorter e.g. log
 namespace logging

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "utils.h"
-#include "VFS++.h"
+#include "physfs/physfs.h"
 
 bool marea(memory_t* mem, size_t size)
 {
@@ -14,20 +14,20 @@ bool marea(memory_t* mem, size_t size)
 
 bool mopen(memory_t* mem, const char* name)
 {
-    File	src = VFS::openRead(name);
+    PHYSFS_File* src = PHYSFS_openRead(name);
 
     if (!src) return false;
 
     //explicit conversion to avoid warning on 32-bit system
-    assert(src.size()<SIZE_MAX);
+    assert(PHYSFS_fileLength(src)<SIZE_MAX);
 
-    mem->size      = (size_t)src.size();
+    mem->size      = (size_t)PHYSFS_fileLength(src);
     mem->allocated = mem->size;
     mem->buffer    = (uint8_t*)malloc(mem->size+1);
 
-    src.read(mem->buffer, mem->size, 1);
+    PHYSFS_read(src, mem->buffer, mem->size, 1);
 
-    src.close();
+    PHYSFS_close(src);
 
     return true;
 }

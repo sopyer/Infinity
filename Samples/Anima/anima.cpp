@@ -127,16 +127,18 @@ protected:
 
 int main(int argc, char** argv)
 {
-    VFS	vfs;
+    PHYSFS_init(argv[0]);
 
-    VFS::mount("AppData");
-    VFS::mount("../AppData");
-    VFS::mount("../../AppData");
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
 
     {
         Anima app;
         app.run();
     }
+
+    PHYSFS_deinit();
 
     return 0;
 }

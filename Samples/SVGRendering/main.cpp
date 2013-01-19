@@ -15,7 +15,6 @@ public:
           mDrawTimeCPU(0.0f),
           mDrawTimeGPU(0.0f)
     {
-        VFS::mount("../../AppData");
 
         SVGPath* plist;
         plist = svgParseFromFile(svgFile);
@@ -146,7 +145,6 @@ protected:
 
 private:
     GLuint		mTimeQuery;
-    VFS			mVFS;
     bool		mIsDragging;
     float		mOffsetX;
     float		mOffsetY;
@@ -161,8 +159,18 @@ private:
 
 int main(int argc, char** argv)
 {
-    SVGSample app(argc==2?argv[1]:"butterfly.svg");
-    app.run();
+    PHYSFS_init(argv[0]);
+
+    PHYSFS_mount("AppData"        , 0, 1);
+    PHYSFS_mount("../AppData"    , 0, 1);
+    PHYSFS_mount("../../AppData", 0, 1);
+
+    {
+        SVGSample app(argc==2?argv[1]:"butterfly.svg");
+        app.run();
+    }
+
+    PHYSFS_deinit();
 
     return 0;
 }
