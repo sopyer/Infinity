@@ -274,18 +274,14 @@ protected:
 
 int main(int argc, char** argv)
 {
-    PHYSFS_init(argv[0]);
-
-    PHYSFS_mount("AppData"        , 0, 1);
-    PHYSFS_mount("../AppData"    , 0, 1);
-    PHYSFS_mount("../../AppData", 0, 1);
+    fwk::init(argv[0]);
 
     {
         Exest app;
         app.run();
     }
 
-    PHYSFS_deinit();
+    fwk::cleanup();
 
     return 0;
 }

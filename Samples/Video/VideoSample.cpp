@@ -134,8 +134,14 @@ class VideoSample: public ui::Stage
 
 extern "C" int main(int argc, char** argv)
 {
-	VideoSample app;
-	app.run();
+    fwk::init(argv[0]);
+
+    {
+	    VideoSample app;
+	    app.run();
+    }
+
+    fwk::cleanup();
 
 	return 0;
 }

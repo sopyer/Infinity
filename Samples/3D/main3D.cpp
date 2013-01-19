@@ -107,8 +107,14 @@ class Sample3D: public ui::Stage
 
 int main(int argc, char** argv)
 {
-	Sample3D app;
-	app.run();
+    fwk::init(argv[0]);
+
+    {
+	    Sample3D app;
+	    app.run();
+    }
+
+    fwk::cleanup();
 
 	return 0;
 }

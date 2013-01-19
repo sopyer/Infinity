@@ -23,6 +23,7 @@ namespace ui
 
     int width;
     int height;
+    int fullscreen;
 
     int   mouseX;
     int   mouseY;
@@ -73,13 +74,39 @@ namespace ui
     void checkBoxUpdateAll();
     void checkBoxRenderAll();
 
+    void createSurfaces()
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
+        rbPickID = resources::createRenderbuffer(GL_R32UI, width, height);
+        rbPickZ = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, width, height);
+
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbPickID);
+        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, rbPickZ );
+
+        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+        assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
+
+    void destroySurfaces()
+    {
+        glDeleteRenderbuffers(1, &rbPickID);
+        glDeleteRenderbuffers(1, &rbPickZ);
+    }
+
     void init(GLsizei w, GLsizei h)
     {
+        //!!!! Refactor
+        fullscreen = false;
+        width      = w;
+        height     = h;
+
+        SDL_EnableUNICODE(TRUE);
+        SDL_EnableKeyRepeat(40, 40);
+
         areaCount     = 0;
         checkBoxCount = 0;
-
-        width  = w;
-        height = h;
 
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
 
@@ -94,21 +121,32 @@ namespace ui
         mouseOverAreaID = 0;
 
         //init pick resources
-        rbPickID = resources::createRenderbuffer(GL_R32UI, width, height);
-        rbPickZ = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, width, height);
-
         glGenFramebuffers(1, &fboPick);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbPickID);
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, rbPickZ );
 
-        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-        assert(status == GL_FRAMEBUFFER_COMPLETE);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        createSurfaces();
 
         prgWriteID = resources::createProgram(GL_FRAGMENT_SHADER, pickFragmentSource);
         locID      = glGetUniformLocation(prgWriteID, "ID");
+    }
+
+    void cleanup()
+    {
+        vg::destroyFont(defaultFont);
+
+        memset(keyStateCur,  0, SDLK_LAST);
+        memset(keyStatePrev, 0, SDLK_LAST);
+
+        mouseStatePrev = 0;
+        mouseStateCur  = 0;
+
+        deltaX = 0;
+        deltaY = 0;
+        
+        //fini pick resources
+        glDeleteProgram(prgWriteID);
+        glDeleteFramebuffers(1, &fboPick);
+
+        destroySurfaces();
     }
 
     void update()
@@ -128,26 +166,6 @@ namespace ui
     void render()
     {
         checkBoxRenderAll();
-    }
-
-    void cleanup()
-    {
-        vg::destroyFont(defaultFont);
-
-        memset(keyStateCur,  0, SDLK_LAST);
-        memset(keyStatePrev, 0, SDLK_LAST);
-
-        mouseStatePrev = 0;
-        mouseStateCur  = 0;
-
-        deltaX = 0;
-        deltaY = 0;
-        
-        //fini pick resources
-        glDeleteProgram(prgWriteID);
-        glDeleteFramebuffers(1, &fboPick);
-        glDeleteRenderbuffers(1, &rbPickID);
-        glDeleteRenderbuffers(1, &rbPickZ);
     }
 
     void beginPickOutline()

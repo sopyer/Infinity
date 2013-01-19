@@ -15,6 +15,12 @@ namespace logging
 	void message(const char *s,...);
 }
 
+namespace fwk
+{
+    void init(const char* argv0);
+    void cleanup();
+}
+
 #define CHECK_GL_ERROR()                \
     {                                   \
         GLenum err = glGetError();      \

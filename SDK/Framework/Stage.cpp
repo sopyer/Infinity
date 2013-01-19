@@ -35,51 +35,12 @@ namespace ui
         ,dumpPickImage(0)
 #endif
     {
-        if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)											// Init The SDL Library, The VIDEO Subsystem
-        {
-            logging::message("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
-            exit(1);															// Get Out Of Here. Sorry.
-        }
-
-        //!!!! Refactor
+        ////!!!! Refactor
         mFullscreen = false;
         mWidth = 1280;
         mHeight = 720;
 
-        uint32_t flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
-
-        if (mFullscreen)		
-        {
-            flags |= SDL_FULLSCREEN;
-        }
-
-        SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );								// In order to use SDL_OPENGLBLIT we have to
-        SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );							// set GL attributes first
-        SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
-        SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
-        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
-        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
-        SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );
-
-        if(!(mScreen = SDL_SetVideoMode((int)mWidth, (int)mHeight, 32, flags)))
-        {
-            logging::message("Unable to open screen surface: %s\n", SDL_GetError() );		// If Something's Gone Wrong, Report
-            exit(1);															// And Exit
-        }
-
-        SDL_EnableUNICODE(TRUE);
-        SDL_EnableKeyRepeat(40, 40);
-
         setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
-
-        importOpenGL();
-
-        mt::init();
-        vg::init();
-        ui::init((GLsizei)mWidth, (GLsizei)mHeight);
 
         SDL_SysWMinfo info = {{0, 0}, 0, 0};
         SDL_GetWMInfo(&info);
@@ -108,10 +69,6 @@ namespace ui
         delete mShaderEditOverlay;
         delete mProfilerOverlay;
         Platform_Finalise();
-        ui::cleanup();
-        vg::cleanup();
-        mt::cleanup();
-        SDL_Quit();
     }
 
     void Stage::addPrograms(size_t count, GLuint* programs)
