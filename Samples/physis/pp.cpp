@@ -75,6 +75,19 @@ void ppInit()
 
     glDeleteShader(vert);
 
+    ppOnShaderReload();
+
+    glGenSamplers(1, &samLinearClamp);
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
+
+    CHECK_GL_ERROR();
+}
+
+void ppOnShaderReload()
+{
     GLint structSize;
     GLint uniFilterDesc;
   
@@ -84,14 +97,6 @@ void ppInit()
 
     glGetActiveUniformBlockiv(programs[PRG_FILTER], uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
     assert(structSize==sizeof(FilterDesc));
-
-    glGenSamplers(1, &samLinearClamp);
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
-
-    CHECK_GL_ERROR();
 }
 
 void ppFini()

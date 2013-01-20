@@ -130,6 +130,8 @@ RTDesc rtDesc[] =
     {TEX_TMP_BOXF,            0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
 };
 
+extern GLuint programs[PRG_ID_COUNT];
+
 class PhysisDemo: public ui::Stage
 {
 
@@ -211,6 +213,8 @@ public:
         glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
 
         glBindTexture(GL_TEXTURE_2D, 0);
+
+        addPrograms(PRG_ID_COUNT, programs);
     }
 
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
@@ -284,6 +288,11 @@ public:
     }
 
 protected:
+    void onShaderRecompile()
+    {
+        ppOnShaderReload();
+    }
+
     void generateTextureCombined(TextureIDs dest)
     {
         CHECK_GL_ERROR();

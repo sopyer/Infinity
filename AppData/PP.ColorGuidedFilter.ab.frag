@@ -18,10 +18,18 @@ void main(void)
     vec4  meanIg_g       = texture2D(samMeanIg_g,       vUV);
     vec4  meanIb_b       = texture2D(samMeanIb_b,       vUV);
     
+    float cov_xx = meanI_xx_yy_zz.x - meanI.x * meanI.x;
+    float cov_yy = meanI_xx_yy_zz.y - meanI.y * meanI.y;
+    float cov_zz = meanI_xx_yy_zz.z - meanI.z * meanI.z;
+
+    float cov_xy = meanI_xy_xz_yz.x - meanI.x * meanI.y;
+    float cov_xz = meanI_xy_xz_yz.y - meanI.x * meanI.z;
+    float cov_yz = meanI_xy_xz_yz.z - meanI.y * meanI.z;
+
     mat3x3 sigma = mat3x3(
-        meanI_xx_yy_zz.x+uEPS, meanI_xy_xz_yz.x,      meanI_xy_xz_yz.y,
-        meanI_xy_xz_yz.x,      meanI_xx_yy_zz.y+uEPS, meanI_xy_xz_yz.z,
-        meanI_xy_xz_yz.y,      meanI_xy_xz_yz.z,      meanI_xx_yy_zz.z+uEPS
+        cov_xx+uEPS, cov_xy,      cov_xz,
+        cov_xy,      cov_yy+uEPS, cov_yz,
+        cov_xz,      cov_yz,      cov_zz+uEPS
     );
   
     sigma = inverse(sigma);

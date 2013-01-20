@@ -26,6 +26,8 @@ void ppFini();
 void ppBegin();
 void ppEnd();
 
+void ppOnShaderReload();
+
 void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h);
 void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei h);
 void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei w, GLsizei h);

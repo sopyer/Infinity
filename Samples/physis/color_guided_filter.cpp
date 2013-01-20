@@ -111,7 +111,7 @@ void colorGuidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[19], int
     boxFilter2Pass(tmp[11], tmp[4], tmp[18], kernelWidth, w, h);
 
     colorGuidedFilterAB(tmp[12], tmp[13], tmp[14],
-                        guide,   tmp[7],  tmp[8],
+                        tmp[6],  tmp[7],  tmp[8],
                         tmp[9],  tmp[10], tmp[11],
                         eps, w, h);
 
