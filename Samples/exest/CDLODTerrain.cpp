@@ -181,9 +181,10 @@ void CDLODTerrain::cleanup()
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 {
+    // Attention! Column order is changed!
     sseVP.r0 = vi_loadu(mat[0]);
-    sseVP.r1 = vi_loadu(mat[1]);
-    sseVP.r2 = vi_loadu(mat[2]);
+    sseVP.r1 = vi_loadu(mat[2]);
+    sseVP.r2 = vi_loadu(mat[1]);
     sseVP.r3 = vi_loadu(mat[3]);
 }
 
@@ -208,11 +209,26 @@ void CDLODTerrain::addPatchToQueue(size_t level, float bx, float bz)
     }
 }
 
+inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radius)
+{
+    v128  vdist;
+    float d2;
+
+    vdist = ml::distanceToAABB(vmin, vmax, vcenter);
+    vdist = vi_dot2(vdist, vdist);
+
+    _mm_store_ss(&d2, vdist);
+
+    return d2<=radius*radius;
+}
+
 void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float patchSize, bool skipFrustumTest)
 {
     if (bx>=maxX || bz>=maxZ) return;
 
     ml::aabb AABB;
+
+    v128 vp = vi_set(viewPoint.x, viewPoint.z, 0.0f, 0.0f);
 
     float sizeX = std::min(patchSize, maxX-bx);
     float sizeZ = std::min(patchSize, maxZ-bz);
@@ -222,8 +238,8 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
     float maxX = minX+sizeX;
     float maxZ = minZ+sizeZ;
 
-    AABB.min = vi_set(minX, minY, minZ, 1.0f);
-    AABB.max = vi_set(maxX, maxY, maxZ, 1.0f);
+    AABB.min = vi_set(minX, minZ, minY, 1.0f);
+    AABB.max = vi_set(maxX, maxZ, maxY, 1.0f);
 
     if (!skipFrustumTest)
     {
@@ -234,39 +250,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
         skipFrustumTest = result==ml::IT_INSIDE;
     }
 
-    if (level==0 || vertDistToTerrain>LODRange[level])
-    {
-        addPatchToQueue(level, bx, bz);
-        return;
-    }
-
-    //Check whether patch intersects it's LOD sphere and thus require subdivision
-    glm::vec3 vp2d = viewPoint;
-    vp2d.y = 0.0f;
-    ml::aabb AABB2D = AABB;
-    AABB2D.min.m128_f32[1] = 0.0f;
-    AABB2D.max.m128_f32[1] = 0.0f;
-    v128 vp = vi_set(vp2d.x, vp2d.y, vp2d.z, 0.0);
-
-    v128 vdist;
-
-    vdist = ml::distanceToAABB(&AABB, vi_set(viewPoint.x, viewPoint.y, viewPoint.z, 0.0));
-    vdist = vi_shuffle<VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_Z, VI_B_X)>(vdist, vi_load_zero());
-    vdist = vi_dot3(vdist, vdist);
-
-    float d2;
-    _mm_store_ss(&d2, vdist);
-
-    bool intersect = d2<=LODRange[level]*LODRange[level];
-
-    assert(intersect == ml::sphereAABBTest(&AABB2D, vp, LODRange[level]));
-
-    if (!intersect
-        /*maxX-vp2d.x<-LODs[level].rangeStart ||
-        minX-vp2d.x>LODs[level].rangeStart ||
-        maxY-vp2d.z<-LODs[level].rangeStart ||
-        minY-vp2d.z>LODs[level].rangeStart*/
-        )
+    if (level==maxLevel || !patchIntersectsCircle(AABB.min, AABB.max, vp, LODRange[level]))
     {
         addPatchToQueue(level, bx, bz);
     }
@@ -357,6 +341,11 @@ void CDLODTerrain::drawTerrain()
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
+
+    maxLevel = 1;
+    while (maxLevel<LODCount && vertDistToTerrain>LODRange[maxLevel])
+        maxLevel++;
+    --maxLevel;
 
     {
         PROFILER_CPU_BLOCK("Select");

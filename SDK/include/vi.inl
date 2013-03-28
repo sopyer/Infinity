@@ -116,6 +116,13 @@ __forceinline v128 vi_dot4(v128 a, v128 b)
 
 #else
 
+__forceinline v128 vi_dot2(v128 a, v128 b)
+{
+	v128 res   = _mm_mul_ps(a, b);
+	v128 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_W, VI_Z)>(res);
+	return _mm_add_ps(res, shuff);
+}
+
 __forceinline v128 vi_dot4(v128 a, v128 b)
 {
 	v128 res   = _mm_mul_ps(a, b);

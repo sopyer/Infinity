@@ -65,6 +65,7 @@ inline void vi_storex      (void* m32,  v128 val);
 //math functions
 inline v128 vi_dot4  (v128 a, v128 b);
 inline v128 vi_dot3  (v128 a, v128 b);
+inline v128 vi_dot2  (v128 a, v128 b);
 inline v128 vi_cross3(v128 a, v128 b);
 inline v128 vi_mad   (v128 a, v128 b, v128 c);
 inline v128 vi_mul   (v128 a, v128 b);

@@ -101,15 +101,15 @@ namespace ml
     }
 
 
-    inline v128 distanceToAABB(aabb* AABB, v128 pt)
+    inline v128 distanceToAABB(v128 vmin, v128 vmax, v128 pt)
     {
 		v128  deltaMin, deltaMax;
         v128  maskMin,  maskMax;
         v128  vdist;
 
-        deltaMin = vi_sub(AABB->min, pt);
+        deltaMin = vi_sub(vmin, pt);
         maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
-		deltaMax = vi_sub(pt, AABB->max);
+		deltaMax = vi_sub(pt, vmax);
         maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
         vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
 

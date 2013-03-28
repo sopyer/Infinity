@@ -32,8 +32,9 @@ public:
 
     glm::vec4	viewDir;
     glm::vec3   viewPoint;
-    ml::mat4x4	sseVP;
+    ml::mat4x4	sseVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
     float       vertDistToTerrain;
+    size_t      maxLevel;
 
     PatchData*	instData;
     PatchData*	patchDataMem;
