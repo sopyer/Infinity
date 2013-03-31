@@ -16,7 +16,8 @@ namespace ui
     enum ControlID
     {
         ID_CHECKBOX = 0x01000000,
-        ID_MASK     = 0xFF000000
+        ID_MASK     = 0xFF000000,
+        ID_INVALID  = 0xFFFFFFFF
     };
 
     vg::Font defaultFont;
@@ -35,6 +36,7 @@ namespace ui
     uint8_t mouseStateCur;
 
     uint32_t mouseOverAreaID;
+    uint32_t mouseCaptureID;
 
     GLuint  fboPick;
     GLuint  rbPickID;
@@ -119,6 +121,7 @@ namespace ui
         deltaY = 0;
 
         mouseOverAreaID = 0;
+        mouseCaptureID  = ID_INVALID;
 
         //init pick resources
         glGenFramebuffers(1, &fboPick);
@@ -158,7 +161,7 @@ namespace ui
         mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
 
-        mouseOverAreaID = pickID(mouseX, mouseY);
+        mouseOverAreaID = (mouseCaptureID!=ID_INVALID) ? mouseCaptureID : pickID(mouseX, mouseY);
 
         checkBoxUpdateAll();
     }
@@ -240,6 +243,17 @@ namespace ui
         return id;
     }
 
+    void captureMouse(uint32_t ID)
+    {
+        mouseCaptureID = ID;
+    }
+
+    void releaseMouse()
+    {
+        mouseCaptureID = ID_INVALID;
+    }
+
+
     void readPickBuffer(GLsizei sz, void* data)
     {
         assert(sz>=width*height*4);
@@ -265,6 +279,51 @@ namespace ui
         ids[areaCount] = id;
 
         areaCount++;
+    }
+
+    int findAreaFromID(uint32_t id)
+    {
+        for (size_t i = 0; i < areaCount; ++i)
+        {
+            if (ids[i] = id)
+                return i;
+        }
+
+        return -1;
+    }
+
+    void mouseRemoveEventArea(uint32_t id)
+    {
+        int idx = findAreaFromID(id) + 1;
+
+        //idx would be zero if not found
+        if (idx)
+        {
+            memmove(ids+idx-1,   ids+idx,   sizeof(ids[0]  )*(areaCount-idx));
+            memmove(areas+idx-1, areas+idx, sizeof(areas[0])*(areaCount-idx));
+
+            --areaCount;
+        }
+    }
+
+    void mouseUpdateEventArea(uint32_t id, float x0, float y0, float x1, float y1)
+    {
+        int idx;
+
+        idx = findAreaFromID(id);
+        if (idx < 0)
+        {
+            idx      = areaCount++;
+            ids[idx] = id;
+        }
+
+        assert(idx<MAX_AREAS);
+
+        areas[idx].x0 = x0;
+        areas[idx].y0 = y0;
+        areas[idx].x1 = x1;
+        areas[idx].y1 = y1;
+
     }
 
     bool keyIsPressed  (int key)

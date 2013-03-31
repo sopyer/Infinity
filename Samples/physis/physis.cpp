@@ -262,7 +262,9 @@ public:
         ui::mouseAddEventArea(462.0f, 4.0f, 578.0f, 36.0f, 0xFF000000);
         ui::mouseAddEventArea(582.0f, 4.0f, 698.0f, 36.0f, 0xFF000001);
         ui::mouseAddEventArea(702.0f, 4.0f, 818.0f, 36.0f, 0xFF000002);
-
+        
+        ui::mouseAddEventArea(100.0f, 100.0f, 200.0f, 114.0f, 0xAA001000);
+        
         currentTab = 1;
     }
 
@@ -684,7 +686,40 @@ protected:
 
         CHECK_GL_ERROR();
 
+
+        vg::drawRect(90, 50, 210, 90, 0xFFFFFFFF, 0xFFFFFFFF);
+        vg::drawRoundedRect(100, 60, 200, 74, 7, 7, 0xFF595959, 0xFF3A3A3A);
+
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
+
+        uint32_t id = ui::mouseOverID();
+        static bool drag = false;
+
+        if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==0xAA001000)
+        {
+            ui::captureMouse(0xAA001000);
+            drag = true;
+        }
+
+        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==0xAA001000)
+        {
+            ui::releaseMouse();
+            drag = false;
+        }
+        
+        static float xo = 120;
+        if (drag)
+        {
+            int x, y;
+            ui::mouseAbsOffset(&x, &y);
+
+            x = std::max(x, 100+6);
+            x = std::min(x, 200-6);
+
+            xo = x-6;
+        }
+
+        vg::drawRoundedRect(xo, 61, xo+12, 73, 6, 6, 0xFF898989, 0xFF898989);
     }
 
     void onUpdate(float dt)

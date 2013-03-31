@@ -4,6 +4,7 @@
 #include <opengl.h>
 
 struct Mesh;
+struct Material;
 
 class MD5Model
 {
@@ -23,7 +24,7 @@ public:
    	GLuint program;
 
 private:
-    void RenderMesh    (Mesh& mesh);
+    void RenderMesh    (Mesh* mesh, Material* material);
 
 private:
     bool                mHasAnimation;
@@ -31,7 +32,9 @@ private:
     // mesh data
     int                 mNumMeshes;
     Mesh*               mMeshes;
-    
+    Material*           mMaterials;
+    Material*           mWireframe;
+
     // skeleton data
     int                 mNumJoints;
     int*                mBoneHierarchy;

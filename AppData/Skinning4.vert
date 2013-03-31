@@ -6,18 +6,17 @@
 
 layout(location=0) in vec3  aVertex;
 layout(location=1) in vec3  aNormal;
-layout(location=2) in vec2  aTexCoord;
+layout(location=2) in vec2  aTexCoord0;
 layout(location=3) in ivec4 aBoneIndices;
 layout(location=4) in vec4  aBoneWeights;
 
-uniform mat4 uMVP;
-uniform mat4 uBoneMatrix[MAX_BONES];
-
-out vec3 gaPosition;
-out vec3 gaNormal;
-out vec2 gaTexCoord0;
-
+uniform mat4   uMVP;
 uniform mat2x4 uBoneDualQuat[MAX_BONES];
+
+out vec3 vPosition;
+out vec3 vNormal;
+out vec2 vTexCoord0;
+
 
 void main()
 {
@@ -47,7 +46,7 @@ void main()
 	position += trans;
 
     gl_Position = uMVP * vec4(position, 1.0);
-    gaPosition  = position;
-    gaNormal    = normal;
-    gaTexCoord0 = aTexCoord;
+    vPosition  = position;
+    vNormal    = normal;
+    vTexCoord0 = aTexCoord0;
 }

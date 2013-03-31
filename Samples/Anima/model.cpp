@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "md5.h"
+#include "json.h"
 
 struct SkinnedVertex
 {
@@ -20,8 +21,16 @@ struct Mesh
 {
 	GLuint			vbo;
 	GLuint          ibo;
-	GLuint          texture;
+    GLenum          idxFormat;
+    GLsizei         idxOffset;
 	GLsizei			numIndices;
+};
+
+struct Material
+{
+    GLuint          program;
+    GLuint          diffuse;
+    GLuint          normal;
 };
 
 void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
@@ -33,6 +42,9 @@ void createMesh (Mesh* mesh,
                  size_t numIndices,  uint16_t*      indices);
 
 void destroyMesh(Mesh* mesh);
+
+bool loadMaterial(Material* mat, const char* name);
+void destroyMaterial(Material* mat);
 
 MD5Model::MD5Model()
 : mNumJoints(0)
@@ -49,7 +61,13 @@ MD5Model::MD5Model()
 , mBoneTransform(0)
 , mPose(0)
 {
-    program = resources::createProgramFromFiles("Skinning4.vert", "wireframe.geom", "SHLighting.frag");
+    program = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
+    
+    mWireframe = (Material*)malloc(sizeof(Material));
+    mWireframe->program = program;
+    mWireframe->diffuse = mWireframe->normal = 0;
+
+    program = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
 
     resetUniforms();
     assert(glGetError()==GL_NO_ERROR);
@@ -57,18 +75,26 @@ MD5Model::MD5Model()
 
 MD5Model::~MD5Model()
 {
+    glDeleteProgram(mWireframe->program);
     glDeleteProgram(program);
 
-    Mesh* mesh = mMeshes;
-    while (mNumMeshes--)
+    free(mWireframe);
+
+    for (int i=0; i<mNumMeshes; ++i)
     {
-        destroyMesh(mesh);
-        ++mesh;
+        destroyMesh(&mMeshes[i]);
+    }
+
+    for (int i=0; i<mNumMeshes; ++i)
+    {
+        destroyMaterial(&mMaterials[i]);
     }
 
     mNumJoints = 0;
+    mNumMeshes = 0;
 
     if (mMeshes)        free(mMeshes);
+    if (mMaterials)     free(mMaterials);
     if (mBoneHierarchy) free(mBoneHierarchy);
     if (mBindPose)      free(mBindPose);
     if (mInvBindPose)   free(mInvBindPose);
@@ -77,6 +103,7 @@ MD5Model::~MD5Model()
     if (mPose)          free(mPose);
 
     mMeshes        = 0;
+    mMaterials     = 0;
     mBoneHierarchy = 0;
     mBindPose      = 0;
     mInvBindPose   = 0;
@@ -102,6 +129,7 @@ bool MD5Model::LoadModel(const char* name)
         mNumJoints = model->numJoints;
 
         mMeshes        = (Mesh*)         malloc(mNumMeshes*sizeof(Mesh));
+        mMaterials     = (Material*)     malloc(mNumMeshes*sizeof(Material));
         mBoneHierarchy = (int*)          malloc(mNumJoints*sizeof(int));
         mBindPose      = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
         mInvBindPose   = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
@@ -122,6 +150,8 @@ bool MD5Model::LoadModel(const char* name)
                         mesh->numVertices, mesh->vertices,
                         mesh->numWeights,  mesh->weights,
                         mesh->numIndices,  mesh->indices);
+
+            loadMaterial(&mMaterials[i], mesh->shader);
 
             ++mesh;
         }
@@ -242,19 +272,19 @@ void MD5Model::Render(float* MVP)
     glUniformMatrix4fv(uMVP, 1, false, MVP);
     for (int i=0; i<mNumMeshes; ++i )
     {
-        RenderMesh( mMeshes[i] );
+        RenderMesh( &mMeshes[i], &mMaterials[i] );
     }
 
     glUseProgram(0);
     RenderSkeleton(mNumJoints, mBoneHierarchy, mPose);
 }
 
-void MD5Model::RenderMesh( Mesh& mesh )
+void MD5Model::RenderMesh(Mesh* mesh, Material* material)
 {
     glUniformMatrix2x4fv(uBoneDualQuat, mNumJoints, false, &mBoneTransform[0].real.x);
 
     // Position data
-    glBindBuffer( GL_ARRAY_BUFFER, mesh.vbo );
+    glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
 
     glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, px)));
     glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, nx)));
@@ -268,17 +298,19 @@ void MD5Model::RenderMesh( Mesh& mesh )
     glEnableVertexAttribArray(3);
     glEnableVertexAttribArray(4);
 
-    glActiveTexture( GL_TEXTURE0 );
-    glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, mesh.texture );
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, material->diffuse);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, material->normal);
 
     // Draw mesh from index buffer
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh.ibo);
-    glDrawElements( GL_TRIANGLES, mesh.numIndices, GL_UNSIGNED_SHORT, BUFFER_OFFSET(0) );
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
+    glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
 
-    glActiveTexture( GL_TEXTURE0 );
-    glDisable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, 0 );
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
@@ -286,8 +318,8 @@ void MD5Model::RenderMesh( Mesh& mesh )
     glDisableVertexAttribArray(3);
     glDisableVertexAttribArray(4);
 
-    glBindBuffer( GL_ARRAY_BUFFER, 0 );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     {
         GLenum err = glGetError();
@@ -392,6 +424,13 @@ void createMesh( Mesh*  mesh,
         ml::store_vec3((ml::vec3*)&vert.nx, n);
     }
 
+    // Copy texture coordinates
+    for ( unsigned int i = 0; i < numVertices; ++i )
+    {
+       vertices[i].u = md5Vertices[i].u;
+       vertices[i].v = md5Vertices[i].v;
+    }
+
     glGenBuffers(1, &mesh->vbo);
     glGenBuffers(1, &mesh->ibo);
 
@@ -405,6 +444,8 @@ void createMesh( Mesh*  mesh,
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
     mesh->numIndices = numIndices;
+    mesh->idxFormat  = GL_UNSIGNED_SHORT;
+    mesh->idxOffset  = 0;
 
     {
         GLuint err = glGetError();
@@ -421,15 +462,65 @@ void destroyMesh(Mesh* mesh)
         glDeleteBuffers(1, &mesh->vbo);
         mesh->vbo = 0;
     }
+
     if (mesh->ibo)
     {
         glDeleteBuffers(1, &mesh->ibo);
         mesh->ibo = 0;
     }
-    if (mesh->texture)
+}
+
+bool loadMaterial(Material* mat, const char* name)
+{
+    memory_t inText;
+    char     path[1024];
+
+    mat->diffuse = mat->normal = 0;
+    strcpy(path, name);
+    strcat(path, ".material");
+
+    if (mopen(&inText, path))
     {
-        glDeleteTextures(1, &mesh->texture);
-        mesh->texture = 0;
+        inText.buffer[inText.size] = 0;
+        json_value* topObject = json_parse((char*)inText.buffer);
+
+        assert(topObject->type == json_object);
+
+        for (unsigned int i = 0; i < topObject->u.object.length; ++i)
+        {
+            const char* name  = topObject->u.object.values[i].name;
+            json_value* value = topObject->u.object.values[i].value;
+
+            if (strcmp(name, "diffuse")==0 && value->type == json_string)
+            {
+                mat->diffuse = resources::createTexture2D(value->u.string.ptr);
+            }
+            else if (strcmp(name, "normal")==0 && value->type == json_string)
+            {
+                mat->normal = resources::createTexture2D(value->u.string.ptr);
+            }
+        }
+
+        json_value_free(topObject);
+
+        mfree( &inText );
+
+        return true;
+    }
+
+    return false;
+}
+
+void destroyMaterial(Material* mat)
+{
+    if (mat->diffuse)
+    {
+        glDeleteTextures(1, &mat->diffuse);
+    }
+
+    if (mat->normal)
+    {
+        glDeleteTextures(1, &mat->normal);
     }
 }
 

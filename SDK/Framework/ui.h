@@ -34,13 +34,19 @@ namespace ui
     bool     mouseWasReleased(int button);
 
     uint32_t mouseOverID();
+    void     captureMouse(uint32_t ID);
+    void     releaseMouse();
+
     void     mouseAddEventArea(float x0, float y0, float x1, float y1, uint32_t id);
+    void     mouseRemoveEventArea(uint32_t id);
+    void     mouseUpdateEventArea(uint32_t id, float x0, float y0, float x1, float y1);
     void     mouseRelOffset(int* dx, int* dy);
     void     mouseAbsOffset(int*  x, int*  y);
 
     void     beginPickOutline();
     void     addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id);
     void     endPickOutline();
+    
     uint32_t pickID(GLuint x, GLuint y);
 
 #if defined(DEBUG) || defined(_DEBUG)
