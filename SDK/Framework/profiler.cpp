@@ -3,83 +3,54 @@
 #include <windows.h>
 #include "profiler.h"
 
-#define MAX_PROFILER_BLOCKS     16384
-#define MAX_PROFILER_THREADS    64
+#define MAX_PROFILER_EVENTS     16384
 
 extern "C"
 {
-    static volatile long		numBlocks;
-    static profiler_block_t	    blocks[MAX_PROFILER_BLOCKS];
-    static size_t               threadCount;
-    static size_t               threadBlocksCount[MAX_PROFILER_THREADS];
-    static __int64              threadIDs[MAX_PROFILER_THREADS];
-    void profilerBeginFrame()
+    static volatile long		numEvents;
+    static profiler_event_t	    events[MAX_PROFILER_EVENTS];
+
+    void profilerBeginDataCollection()
     {
-        numBlocks = 0;
+        numEvents = 0;
     }
 
-    void profilerEndFrame()
+    void profilerEndDataCollection()
     {
+        __int64 ticksPerSecond;
+        QueryPerformanceFrequency((LARGE_INTEGER*)&ticksPerSecond);
 
-        //should use variation of arithmetic sort by thread, not std::sort.
-
-        __int64			ticksPerUs;
-        QueryPerformanceFrequency((LARGE_INTEGER*)&ticksPerUs);
-
-        threadCount = 0;
-        memset(threadBlocksCount, 0, sizeof(threadBlocksCount));
-        //calculated duration and thread histogram
-        for (long i=0; i<numBlocks; ++i)
+        // convert timestamps to microseconds
+        for (long i = 0; i < numEvents; ++i)
         {
-            profiler_block_t& b = blocks[i];
-            float dur = (b.end-b.start)*1000000/ticksPerUs/1000.0f;
-            b.duration = dur;//(b.duration!=0)?(0.1f*dur+0.9f*b.duration):dur;
-
-            size_t t=0;
-            for (; t<threadCount && threadIDs[t]!=b.threadID; ++t);
-            if (t==threadCount && threadCount<MAX_PROFILER_THREADS)
-            {
-                t = threadCount++;
-                threadIDs[t] = b.threadID;
-            }
-            if (t<MAX_PROFILER_THREADS)
-            {
-                ++threadBlocksCount[t];
-            }
+            events[i].timestamp = events[i].timestamp * 1000000 / ticksPerSecond;
         }
     }
 
-    size_t profilerStartCPUBlock(const char* name)
+    void profilerAddCPUEvent(size_t id, size_t eventPhase)
     {
-        size_t count = _InterlockedIncrement(&numBlocks);
-        if (count<=MAX_PROFILER_BLOCKS)
+        size_t count = _InterlockedIncrement(&numEvents);
+        if (count<=MAX_PROFILER_EVENTS)
         {
-            size_t              id    = count-1;
-            profiler_block_t&   block = blocks[id];
+            size_t              i     = count-1;
+            profiler_event_t&   event = events[i];
 
-            block.name = name;
-            block.threadID = GetCurrentThreadId();
-            QueryPerformanceCounter((LARGE_INTEGER*)&(block.start));
-
-            return id;
+            event.id       = id;
+            event.phase    = eventPhase;
+            event.threadID = GetCurrentThreadId();
+            QueryPerformanceCounter((LARGE_INTEGER*)&(event.timestamp));
         }
         else
-            _InterlockedDecrement(&numBlocks);
-
-        return MAX_PROFILER_BLOCKS;
-    }
-
-    void profilerEndCPUBlock(size_t id)
-    {
-        if (id!=MAX_PROFILER_BLOCKS)
         {
-            QueryPerformanceCounter((LARGE_INTEGER*)&(blocks[id].end));
+            _InterlockedDecrement(&numEvents);
+            assert(0);
         }
     }
 
-    void getProfilerData(size_t* numEntries, profiler_block_t** blockData)
+    void profilerGetData(size_t* numEvents, const profiler_event_t** events)
     {
-        *numEntries = numBlocks;
-        *blockData  = blocks;
+        *numEvents = ::numEvents;
+        *events    = ::events;
     }
+
 }

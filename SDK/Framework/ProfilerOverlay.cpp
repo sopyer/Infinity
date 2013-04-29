@@ -49,42 +49,55 @@ void ProfilerOverlay::initialise(int w, int h)
 
 void ProfilerOverlay::update()
 {
-    size_t              numBlocks;
-    profiler_block_t*   blocks;
+    static const size_t MAX_STACK_DEPTH = 8;
 
-    getProfilerData(&numBlocks, &blocks);
-    char* buf = (char*) malloc(numBlocks*100);
+    size_t                  numEvents;
+    const profiler_event_t* events;
 
-    memset(buf, ' ', numBlocks*100);
+    profilerGetData(&numEvents, &events);
 
-    char*	line=buf;
-    size_t	st[10];
-    size_t	nestLvl=0;
+    char* buf = (char*) malloc(numEvents*100);
+    char* line=buf;
+    memset(buf, ' ', numEvents*100);
 
-    st[nestLvl] = 0;
-
-    for (size_t i=0; i<numBlocks; ++i)
+    int     stackTop = -1;
+    struct
     {
-        size_t           prevID = st[nestLvl];
-        profiler_block_t prev   = blocks[prevID];
-        profiler_block_t block  = blocks[i];
+        size_t  id;
+        __int64 sliceBegin;
+    } stack[MAX_STACK_DEPTH];
 
-        while (nestLvl>0 && block.start>=blocks[st[nestLvl-1]].end)
-            --nestLvl;
+    for (size_t i=0; i<numEvents; ++i)
+    {
+        profiler_event_t event = events[i];
 
-        if (i>0 && block.start<prev.end && block.end<=prev.end)
-            ++nestLvl;
+        if (event.phase==PROF_EVENT_PHASE_BEGIN)
+        {
+            //Add event to stack
+            ++stackTop;
+            stack[stackTop].id         = event.id;
+            stack[stackTop].sliceBegin = event.timestamp;
+        }
+        else if (event.phase==PROF_EVENT_PHASE_END)
+        {
+            //remove item from stack and add entry
+            assert(stackTop>=0);
+            assert(stackTop<MAX_STACK_DEPTH);
 
-        st[nestLvl] = i;
+            assert (stack[stackTop].id == event.id); //implement backtracking end fixing later
+           
+            size_t offset = 44-stackTop*4;
+            memcpy(line+stackTop*4, (char*)event.id, min(offset, strlen((char*)event.id)));
+            line += 44;
+            line += _snprintf(line, 15, "%10.3f\n", (event.timestamp - stack[stackTop].sliceBegin) / 1000.0f);
+            *line = ' ';
 
-        assert(nestLvl<10);
-
-        size_t offset = 44-nestLvl*4;
-        memcpy(line+nestLvl*4, block.name, min(offset, strlen(block.name)));
-        line += 44;
-        line +=_snprintf(line, 15, "%10.3f\n", block.duration);
-        *line = ' ';
+            --stackTop;
+        }
     }
+
+    assert(stackTop==-1);
+
     *(line!=buf?line-1:line) = 0;
 
     GLint len = strlen(buf);
@@ -100,6 +113,8 @@ void ProfilerOverlay::update()
     mProfilerView.Command(SCI_EMPTYUNDOBUFFER);
     mProfilerView.Command(SCI_SETSAVEPOINT);
     mProfilerView.Command(SCI_GOTOLINE, (WPARAM)lin);
+
+    free(buf);
 }
 
 void ProfilerOverlay::renderFullscreen()

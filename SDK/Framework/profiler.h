@@ -6,38 +6,45 @@ extern "C"
 {
 #   endif
 
-struct profiler_block_t
+enum EventPhase
 {
-    __int64		start;
-    __int64		end;
-    __int64     threadID;
-    const char*	name;
-    float		duration;
+    PROF_EVENT_PHASE_BEGIN,
+    PROF_EVENT_PHASE_END,
+    PROF_EVENT_PHASE_MARKER,
+    PROF_EVENT_PHASE_COUNT
 };
 
-void profilerBeginFrame();
-void profilerEndFrame();
+struct profiler_event_t
+{
+    size_t  id;
+    size_t  phase;
+    __int64	timestamp;
+    __int64 threadID;
+};
 
-size_t profilerStartCPUBlock(const char* name);
-void   profilerEndCPUBlock(size_t id);
+struct profiler_desc_t
+{
+    const char* name;
+};
 
-//Return readonly info about profiler blocks
-void getProfilerData(size_t* numBlocks, profiler_block_t** blockData);
+void profilerBeginDataCollection ();
+void profilerEndDataCollection   ();
+void profilerAddCPUEvent         (size_t id, size_t eventPhase);
+void profilerGetData             (size_t* numEvents, const profiler_event_t** events);
 
 #   ifdef __cplusplus
 }
 
-struct ProfilerCPUAutoBlock 
+struct ProfilerCPUAutoTimeslice 
 {
     size_t id;
 
-    ProfilerCPUAutoBlock(const char* name) {id = profilerStartCPUBlock(name);}
-    ~ProfilerCPUAutoBlock() {profilerEndCPUBlock(id);}
+     ProfilerCPUAutoTimeslice(const char* name) { id = (size_t)name; profilerAddCPUEvent( id, PROF_EVENT_PHASE_BEGIN ); }
+    ~ProfilerCPUAutoTimeslice()                 { profilerAddCPUEvent( id, PROF_EVENT_PHASE_END ); }
 };
-#   endif
 
-#   ifdef __cplusplus
-#       define PROFILER_CPU_BLOCK(name) ProfilerCPUAutoBlock __PROFILER_AUTO_VAR_ ## __LINE__(name)
+#       define PROFILER_CPU_TIMESLICE(name) ProfilerCPUAutoTimeslice __PROFILER_AUTO_TS_VAR_##__LINE__(name)
+
 #   endif
 
 #endif

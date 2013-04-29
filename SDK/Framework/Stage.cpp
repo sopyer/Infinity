@@ -98,7 +98,7 @@ namespace ui
 
     void Stage::handleInput()
     {
-        PROFILER_CPU_BLOCK("handleInput");
+        PROFILER_CPU_TIMESLICE("handleInput");
 
         enterPhase(PHASE_EVENT_HANDLING);
         SDL_Event	E;
@@ -168,7 +168,10 @@ namespace ui
 
     void Stage::frameStep()
     {
-        profilerBeginFrame();
+        static const char* strFrame = "Frame";
+
+        profilerBeginDataCollection();
+        profilerAddCPUEvent((size_t)strFrame, PROF_EVENT_PHASE_BEGIN);
 
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
@@ -183,7 +186,8 @@ namespace ui
 
         handleRender();
 
-        profilerEndFrame();
+        profilerAddCPUEvent((size_t)strFrame, PROF_EVENT_PHASE_END);
+        profilerEndDataCollection();
 
         if (mState==STATE_PROFILER)
         {
@@ -204,15 +208,15 @@ namespace ui
         }
 
         {
-            PROFILER_CPU_BLOCK("STAGE PHASE ALLOCATE");
+            PROFILER_CPU_TIMESLICE("STAGE PHASE ALLOCATE");
             enterPhase(PHASE_ALLOCATE);
         }
         {
-            PROFILER_CPU_BLOCK("STAGE PHASE RENDERING");
+            PROFILER_CPU_TIMESLICE("STAGE PHASE RENDERING");
             enterPhase(PHASE_RENDERING);
         }
         {
-            PROFILER_CPU_BLOCK("STAGE PHASE DEFAULT");
+            PROFILER_CPU_TIMESLICE("STAGE PHASE DEFAULT");
             enterPhase(PHASE_DEFAULT);
         }
     }
@@ -358,7 +362,7 @@ namespace ui
         {
         case PHASE_EVENT_HANDLING:
             {
-                PROFILER_CPU_BLOCK("outlineActors");
+                PROFILER_CPU_TIMESLICE("outlineActors");
                 outlineActors();
             }
             break;
@@ -376,7 +380,7 @@ namespace ui
 
         case PHASE_RENDERING:
             {
-                PROFILER_CPU_BLOCK("renderActors");
+                PROFILER_CPU_TIMESLICE("renderActors");
 
                 renderActors();
                 glFlush();

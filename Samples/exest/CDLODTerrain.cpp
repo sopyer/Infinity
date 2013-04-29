@@ -324,7 +324,7 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
 
 void CDLODTerrain::drawTerrain()
 {
-    PROFILER_CPU_BLOCK("CDLODTerrain");
+    PROFILER_CPU_TIMESLICE("CDLODTerrain");
     cpuTimer.start();
 
     if (useInstancing)
@@ -348,7 +348,7 @@ void CDLODTerrain::drawTerrain()
     --maxLevel;
 
     {
-        PROFILER_CPU_BLOCK("Select");
+        PROFILER_CPU_TIMESLICE("Select");
         cpuSelectTimer.start();
         patchCount = 0;
         size_t level = LODCount-1;
@@ -371,7 +371,7 @@ void CDLODTerrain::drawTerrain()
     patchCount = std::min(patchCount, maxPatchCount);
     if (patchCount)
     {
-        PROFILER_CPU_BLOCK("Render");
+        PROFILER_CPU_TIMESLICE("Render");
 
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
