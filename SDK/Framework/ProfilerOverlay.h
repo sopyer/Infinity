@@ -38,6 +38,11 @@
 #include <scintilla/Editor.h>
 #include <scintilla/UniConversion.h>
 
+struct Vertex
+{
+    float x, y;
+};
+
 class ProfilerOverlay
 {
 public:
@@ -52,7 +57,8 @@ private:
 
 private:
     Editor  mProfilerView;
-
+    
+    std::vector<Vertex> drawData;
     float mWidth;
     float mHeight;
 };

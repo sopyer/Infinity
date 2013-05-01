@@ -94,7 +94,6 @@
     <ClCompile Include="SOIL\image_helper.c" />
     <ClCompile Include="SOIL\SOIL.c" />
     <ClCompile Include="SOIL\stb_image_aug.c" />
-    <ClCompile Include="Actor.cpp" />
     <ClCompile Include="SpectatorCamera.cpp" />
     <ClCompile Include="Stage.cpp" />
     <ClCompile Include="Timer.cpp" />
@@ -117,8 +116,6 @@
     <ClInclude Include="SOIL\stb_image_aug.h" />
     <ClInclude Include="SOIL\stbi_DDS_aug.h" />
     <ClInclude Include="SOIL\stbi_DDS_aug_c.h" />
-    <ClInclude Include="Actor.h" />
-    <ClInclude Include="Container.h" />
     <ClInclude Include="Events.h" />
     <ClInclude Include="SpectatorCamera.h" />
     <ClInclude Include="Stage.h" />

@@ -4,6 +4,8 @@
 #	include <Scheduler.h>
 #	include <queue>
 #   include <Events.h>
+#   include <glm/glm.h>
+#   include <glm/glmext.h>
 
 struct SDL_Surface;
 
@@ -12,19 +14,14 @@ class  ProfilerOverlay;
 
 namespace ui
 {
-    class Stage: public Container, public sigslot::has_slots<>
+    class Stage
     {
     public:
         Stage();
         ~Stage();
 
-        Stage& queueRelayout();
-
         Stage& captureMouse();
         Stage& releaseMouse();
-
-        Stage& captureFocus(Actor* focused);
-        Stage& releaseFocus();
 
         Stage& setProjection(float* mat4x4);
 
@@ -34,73 +31,43 @@ namespace ui
         bool isMouseCaptured();
 
     protected:
-        enum Phase
-        {
-            PHASE_DEFAULT,
-            PHASE_ALLOCATE,
-            PHASE_EVENT_HANDLING,
-            PHASE_EVENT_HANDLING_PICK,
-            PHASE_RENDERING,
-        };
-
-    protected:
         //Debug functions and callbacks
         void addPrograms(size_t count, GLuint* programs);
 
         virtual void onShaderRecompile() {}
         virtual void onUpdate(float dt) {}
-
-        void processKeyDown(const KeyEvent& event);
-        void processKeyUp(const KeyEvent& event);
-        void processTouch(const ButtonEvent& event);
-        void processUntouch(const ButtonEvent& event);
-        void processMotion(const MotionEvent& event);
-
-        void enterPhase(Phase nextPhase);// {mPhase = nextPhase;}
-
-        Actor* doPick(uint32_t x, uint32_t y);
+        virtual void onPaint() {}
+        virtual void onTouch(const ButtonEvent& /*event*/) {}
+        virtual void onUntouch(const ButtonEvent& /*event*/) {}
+        virtual void onMotion(const MotionEvent& /*event*/) {}
+        virtual void onKeyDown(const KeyEvent& /*event*/) {}
+        virtual void onKeyUp(const KeyEvent& /*event*/) {}
 
     protected:
         bool	mFullscreen;
-
-    private:
-        struct RenderItem
-        {
-            glm::mat4	transform;
-            Actor*		actor;
-        };
+		float   mWidth, mHeight;
 
     private:
         void outlineActors();
         void renderActors();
-        void updateRenderQueue(Container* container, const glm::mat4& parentTransform);
         void handleInput();
-        void handleRender();
         void frameStep();
 
     private:
-        bool	mDoAllocate;
-        Phase	mPhase;
-
-        Actor*	mLastVisited;
-        Actor*	mFocused;
-
-        glm::mat4	mProjection;
-
-        std::vector<RenderItem>		mRenderQueue;
+        glm::mat4   mProjection;
 
 #if defined(DEBUG) || defined(_DEBUG)
-        int		dumpPickImage:1;
+        int dumpPickImage:1;
 #endif
 
-        size_t				mState;
+        size_t              mState;
 
         uint64_t            mPrevTime;
 
-        ShaderEditOverlay*	mShaderEditOverlay;
-        ProfilerOverlay*	mProfilerOverlay;
+        ShaderEditOverlay*  mShaderEditOverlay;
+        ProfilerOverlay*    mProfilerOverlay;
 
-        SDL_Surface			*mScreen;
+        SDL_Surface         *mScreen;
     };
 }
 

@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <cstdlib>
 #include "Framework.h"
+#include <SDL.h>
+#include "scheduler.h"
 
 namespace logging
 {

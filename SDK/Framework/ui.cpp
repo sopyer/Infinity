@@ -1,5 +1,6 @@
 #include "UI.h"
 
+#include <SDL.h>
 #include "DefaultFontData.h"
 #include "SpectatorCamera.h"
 #include "CameraDirector.h"

@@ -8,6 +8,8 @@
 #include <Context.h>
 #include <profiler.h>
 #include <physfs/physfs.h>
+#include <Stage.h>
+#include <Timer.h>
 
 //TODO: make shorter e.g. log
 namespace logging

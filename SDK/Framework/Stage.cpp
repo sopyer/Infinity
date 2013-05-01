@@ -14,6 +14,7 @@
 #include "UI.h"
 #include "Framework.h"
 #include "Timer.h"
+#include "Stage.h"
 
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
@@ -27,9 +28,7 @@ enum
 
 namespace ui
 {
-    Stage::Stage():	mDoAllocate(true),
-        mLastVisited(0),
-        mPhase(PHASE_DEFAULT),
+    Stage::Stage():
         mState(STATE_DEFAULT)
 #if defined(DEBUG) || defined(_DEBUG)
         ,dumpPickImage(0)
@@ -59,8 +58,6 @@ namespace ui
 
         mShaderEditOverlay->addPrograms(ARRAY_SIZE(programs), programs);
 
-        mFocused = this;
-
         mPrevTime = timerAbsoluteTime();
     }
 
@@ -80,7 +77,6 @@ namespace ui
     {
         SDL_ShowCursor(FALSE);
         SDL_WM_GrabInput(SDL_GRAB_ON);
-        captureFocus(this);
         return *this;
     }
 
@@ -100,7 +96,6 @@ namespace ui
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
-        enterPhase(PHASE_EVENT_HANDLING);
         SDL_Event	E;
         uint32_t i = 0;
         while (SDL_PollEvent(&E) && i<10)
@@ -115,7 +110,7 @@ namespace ui
                 switch (mState)
                 {
                 case STATE_DEFAULT:
-                    processKeyDown(E.key);
+                    onKeyDown(E.key);
                     break;
                 case STATE_SHADER_EDIT:
                     mShaderEditOverlay->handleKeyDown(E.key);
@@ -140,26 +135,24 @@ namespace ui
                     mState = mState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
                 }
                 else if (mState==STATE_DEFAULT)
-                    processKeyUp(E.key);
+                    onKeyUp(E.key);
                 break;
             case SDL_MOUSEMOTION:
                 if (mState==STATE_DEFAULT)
                 {
-                    Actor* actor = doPick((uint32_t)E.button.x, (uint32_t)E.button.y);
-
-                    if (!(actor==(Actor*)this && SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF))
-                        processMotion(E.motion);
+                    if (!SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF)
+                        onMotion(E.motion);
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 if (mState==STATE_DEFAULT)
                 {
-                    processTouch(E.button);
+                    onTouch(E.button);
                 }
                 break;
             case SDL_MOUSEBUTTONUP:
                 if (mState==STATE_DEFAULT)
-                    processUntouch(E.button);
+                    onUntouch(E.button);
                 break;
             }
             ++i;
@@ -175,6 +168,7 @@ namespace ui
 
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
+        outlineActors();
         handleInput();
         ui::update();
         
@@ -184,7 +178,13 @@ namespace ui
         onUpdate((time-mPrevTime)*0.000001f);
         mPrevTime = time;
 
-        handleRender();
+        if (mShaderEditOverlay->requireReset())
+        {
+            impl::readyProgramsForUse();
+            onShaderRecompile();
+        }
+
+        renderActors();
 
         profilerAddCPUEvent((size_t)strFrame, PROF_EVENT_PHASE_END);
         profilerEndDataCollection();
@@ -199,28 +199,6 @@ namespace ui
         SDL_GL_SwapBuffers();
     }
 
-    void Stage::handleRender()
-    {
-        if (mShaderEditOverlay->requireReset())
-        {
-            impl::readyProgramsForUse();
-            onShaderRecompile();
-        }
-
-        {
-            PROFILER_CPU_TIMESLICE("STAGE PHASE ALLOCATE");
-            enterPhase(PHASE_ALLOCATE);
-        }
-        {
-            PROFILER_CPU_TIMESLICE("STAGE PHASE RENDERING");
-            enterPhase(PHASE_RENDERING);
-        }
-        {
-            PROFILER_CPU_TIMESLICE("STAGE PHASE DEFAULT");
-            enterPhase(PHASE_DEFAULT);
-        }
-    }
-
     void Stage::close()
     {
         mt::terminateLoop();
@@ -228,34 +206,10 @@ namespace ui
 
     void Stage::run()
     {
-        //mt::addTimedTask<SDLStage, &SDLStage::handleInput>(this, 33);
         mt::addFrameTask<Stage, &Stage::frameStep>(this);
 
         mt::mainLoop();
     }
-
-    Stage& Stage::queueRelayout()
-    {
-        if (mPhase != PHASE_ALLOCATE) {mDoAllocate = true;}	return *this;
-    }
-
-    Stage& Stage::captureFocus(Actor* focused)
-    {
-        if (mFocused != focused)
-        {
-            if (mFocused) mFocused->onFocusOut();
-            mFocused = focused;
-            if (mFocused) mFocused->onFocusIn();
-        }
-        return *this;
-    }
-
-    Stage& Stage::releaseFocus()
-    {
-        if (mFocused) mFocused->onFocusOut();
-        mFocused = 0; return *this;
-    }
-
 
     Stage& Stage::setProjection(float* mat4x4)
     {
@@ -268,135 +222,6 @@ namespace ui
         return *this;
     }
     
-    void Stage::processKeyDown(const KeyEvent& event)
-    {
-        //Also here should be and hotkeys handling
-#if defined(DEBUG) || defined(_DEBUG)
-        if (event.keysym.sym == SDLK_p && event.type==SDL_KEYDOWN &&
-            ((event.keysym.mod&KMOD_LALT) || (event.keysym.mod&KMOD_RALT)))
-        {
-            dumpPickImage = TRUE;
-            return;
-        }
-#endif
-        if (mFocused)
-            mFocused->onKeyDown(event);
-
-        //No do not sent any event to childs
-    }
-
-    void Stage::processKeyUp(const KeyEvent& event)
-    {
-        if (mFocused)
-            mFocused->onKeyUp(event);
-
-        //No do not sent any event to childs
-    }
-
-    void Stage::processTouch(const ButtonEvent& event)
-    {
-        Actor* actor = doPick((uint32_t)event.x, (uint32_t)event.y);
-
-        if (actor)
-            actor->onTouch(event);
-    }
-
-    void Stage::processUntouch(const ButtonEvent& event)
-    {
-        Actor* actor = doPick((uint32_t)event.x, (uint32_t)event.y);
-
-        if (actor)
-            actor->onUntouch(event);
-    }
-
-    void Stage::processMotion(const MotionEvent& event)
-    {
-        Actor* actor = doPick(event.x, event.y);
-
-        if (mLastVisited != actor)
-        {
-            if (mLastVisited)
-                mLastVisited->onLeave();
-
-            if (actor)
-            {
-                actor->onEnter();
-                //for (int button = 0; button < MouseButtons::Count; ++button)
-                //{
-                //	int	curState = mPrevButtonState[button];
-
-                //	ButtonEvent evtTouch = {button, mModifiers, x, y};
-
-                //	if (curState == InputState::Pressed)
-                //		actor->onTouch(evtTouch);
-                //}
-            }
-        }
-
-        if (actor)
-            actor->onMotion(event);
-
-        mLastVisited = actor;
-    }
-
-    Actor* Stage::doPick(uint32_t x, uint32_t y)
-    {
-        GLuint id = ui::pickID(x, y);
-
-        if (id == 0)
-            return this;
-
-        if (id>0x007FFFFF)
-            return 0;
-
-        --id;
-
-        assert(id < mRenderQueue.size());
-
-        return mRenderQueue[id].actor;
-    }
-
-    void Stage::enterPhase(Phase nextPhase)
-    {
-        switch (nextPhase)
-        {
-        case PHASE_EVENT_HANDLING:
-            {
-                PROFILER_CPU_TIMESLICE("outlineActors");
-                outlineActors();
-            }
-            break;
-
-        case PHASE_ALLOCATE:
-            if (mDoAllocate)
-            {
-                mDoAllocate = false;
-                onAllocate();
-
-                mRenderQueue.clear();
-                updateRenderQueue(this, getTransformMatrix());
-            }
-            break;
-
-        case PHASE_RENDERING:
-            {
-                PROFILER_CPU_TIMESLICE("renderActors");
-
-                renderActors();
-                glFlush();
-            }
-            break;
-
-        case PHASE_DEFAULT:
-            break;
-
-        default:
-            assert(0);
-        }
-
-        mPhase = nextPhase;
-    }
-
     //!!!!!!!!!!!Refactor
     void setupUIViewMatrix(const glm::mat4& proj, float width, float height)
     {
@@ -412,6 +237,7 @@ namespace ui
 
     void Stage::outlineActors()
     {
+        PROFILER_CPU_TIMESLICE("outlineActors");
         beginPickOutline();
 
         glMatrixMode(GL_PROJECTION);
@@ -419,15 +245,6 @@ namespace ui
         glMatrixMode(GL_MODELVIEW);
         setupUIViewMatrix(mProjection, mWidth, mHeight);
 
-        for(size_t i = 0; i < mRenderQueue.size(); ++i)
-        {
-            glPushMatrix();
-            glMultMatrixf(mRenderQueue[i].transform);
-            Actor* actor = mRenderQueue[i].actor;
-            addPickOutlineRect(0, 0, actor->mWidth, actor->mHeight, i+1);
-            glPopMatrix();
-        }
-        
         endPickOutline();
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -446,6 +263,7 @@ namespace ui
 
     void Stage::renderActors()
     {
+        PROFILER_CPU_TIMESLICE("renderActors");
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClearDepth(1.0);
         glClearStencil(0);
@@ -454,9 +272,6 @@ namespace ui
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
-
-        std::vector<RenderItem>::iterator	it  = mRenderQueue.begin(),
-            end = mRenderQueue.end();
 
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f)/*mProjection*/);
@@ -468,42 +283,8 @@ namespace ui
         onPaint();
         glPopMatrix();
 
-        for (; it != end; ++it)
-        {
-            if ((*it).actor->isVisible())
-            {
-                glPushMatrix();
-                glMultMatrixf((*it).transform);
-                (*it).actor->onPaint();
-                glPopMatrix();
-            }
-        }
-
         ui::render();
 
         glFlush();
     }
-
-    void Stage::updateRenderQueue(Container* container, const glm::mat4& parentTransform)
-    {
-        ChildsVector::iterator	it  = container->mChilds.begin(),
-            end = container->mChilds.end();
-        for (; it != end; ++it)
-        {
-            Actor* child = *it;
-
-            //if (child->isVisible())
-            {
-                glm::mat4	actorTransform = parentTransform*child->getTransformMatrix();
-                RenderItem	item = {actorTransform, child};
-
-                mRenderQueue.push_back(item);
-
-                Container* childAsContainer = dynamic_cast<Container*>(child);
-                if (childAsContainer)
-                    updateRenderQueue(childAsContainer, actorTransform);
-            }
-        }
-    }
-
 }

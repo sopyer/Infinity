@@ -56,9 +56,16 @@ void ProfilerOverlay::update()
 
     profilerGetData(&numEvents, &events);
 
-    char* buf = (char*) malloc(numEvents*100);
-    char* line=buf;
-    memset(buf, ' ', numEvents*100);
+    drawData.resize(numEvents * 4);
+
+    __int64 minTime = events[0].timestamp,
+            maxTime = events[0].timestamp;
+
+    for (size_t i = 1; i < numEvents; ++i)
+    {
+        minTime = min(minTime, events[i].timestamp);
+        maxTime = max(maxTime, events[i].timestamp);
+    }
 
     int     stackTop = -1;
     struct
@@ -66,6 +73,8 @@ void ProfilerOverlay::update()
         size_t  id;
         __int64 sliceBegin;
     } stack[MAX_STACK_DEPTH];
+
+    float scale = (mWidth-60.0f) / float(maxTime-minTime);
 
     for (size_t i=0; i<numEvents; ++i)
     {
@@ -86,35 +95,26 @@ void ProfilerOverlay::update()
 
             assert (stack[stackTop].id == event.id); //implement backtracking end fixing later
            
-            size_t offset = 44-stackTop*4;
-            memcpy(line+stackTop*4, (char*)event.id, min(offset, strlen((char*)event.id)));
-            line += 44;
-            line += _snprintf(line, 15, "%10.3f\n", (event.timestamp - stack[stackTop].sliceBegin) / 1000.0f);
-            *line = ' ';
+            float xstart = (stack[stackTop].sliceBegin-minTime) * scale ;
+            float xend   = (event.timestamp-minTime) * scale;
+            float ystart = 20.0f+stackTop*20;
+            float yend   = 20.0f+stackTop*20+15;
+            Vertex vtx[4] = 
+            {
+                {xstart, ystart},
+                {xend,   ystart},
+                {xend,   yend},
+                {xstart, yend},
+            };
+
+            drawData.push_back(vtx[0]);
+            drawData.push_back(vtx[1]);
+            drawData.push_back(vtx[2]);
+            drawData.push_back(vtx[3]);
 
             --stackTop;
         }
     }
-
-    assert(stackTop==-1);
-
-    *(line!=buf?line-1:line) = 0;
-
-    GLint len = strlen(buf);
-
-    int pos = (int)mProfilerView.Command(SCI_GETCURRENTPOS);
-    int lin = (int)mProfilerView.Command(SCI_LINEFROMPOSITION, (WPARAM)pos);
-
-    mProfilerView.Command(SCI_CANCEL);
-    mProfilerView.Command(SCI_CLEARALL);
-    mProfilerView.Command(SCI_SETUNDOCOLLECTION, 0);
-    mProfilerView.Command(SCI_ADDTEXT, len, reinterpret_cast<LPARAM>(buf));
-    mProfilerView.Command(SCI_SETUNDOCOLLECTION, 1);
-    mProfilerView.Command(SCI_EMPTYUNDOBUFFER);
-    mProfilerView.Command(SCI_SETSAVEPOINT);
-    mProfilerView.Command(SCI_GOTOLINE, (WPARAM)lin);
-
-    free(buf);
 }
 
 void ProfilerOverlay::renderFullscreen()
@@ -142,8 +142,28 @@ void ProfilerOverlay::renderFullscreen()
 
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    glTranslatef(30, 30, 0);
-    mProfilerView.Paint();
+    //mProfilerView.Paint();
+
+    glUseProgram(0);
+    
+    // Background
+    glColor4f(0.1f, 0.1f, 0.1f, 0.93f);
+    glBegin(GL_QUADS);
+    glVertex3f(30.0f, 30.0f, 0.0f);
+    glVertex3f(mWidth-30.0f, 30.0f, 0.0f);
+    glVertex3f(mWidth-30.0f, mHeight-30.0f, 0.0f);
+    glVertex3f(30.0f, mHeight-30.0f, 0.0f);
+    glEnd();
+
+    glTranslatef(30.0f, 30.0f, 0.0f);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glBegin(GL_QUADS);
+    for (size_t i = 0; i < drawData.size(); ++i)
+    {
+        glVertex2fv(&drawData[i].x);
+    }
+    glEnd();
 
     glPopAttrib();
 }
