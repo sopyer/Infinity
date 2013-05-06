@@ -68,6 +68,8 @@ namespace ui
         ProfilerOverlay*    mProfilerOverlay;
 
         SDL_Surface         *mScreen;
+
+        bool switchCapture;
     };
 }
 

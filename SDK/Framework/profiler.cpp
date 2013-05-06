@@ -7,16 +7,20 @@
 
 extern "C"
 {
-    static volatile long		numEvents;
+    static volatile long		numEvents = 0;
     static profiler_event_t	    events[MAX_PROFILER_EVENTS];
+    static volatile long        captureInProgress = FALSE;
 
-    void profilerBeginDataCollection()
+    void profilerBeginDataCapture()
     {
-        numEvents = 0;
+        numEvents         = 0;
+        captureInProgress = TRUE;
     }
 
-    void profilerEndDataCollection()
+    void profilerEndDataCapture()
     {
+        captureInProgress = FALSE;
+
         __int64 ticksPerSecond;
         QueryPerformanceFrequency((LARGE_INTEGER*)&ticksPerSecond);
 
@@ -27,8 +31,15 @@ extern "C"
         }
     }
 
+    int profilerIsCaptureInProgress ()
+    {
+        return captureInProgress;
+    }
+
     void profilerAddCPUEvent(size_t id, size_t eventPhase)
     {
+        if (!captureInProgress) return;
+
         size_t count = _InterlockedIncrement(&numEvents);
         if (count<=MAX_PROFILER_EVENTS)
         {

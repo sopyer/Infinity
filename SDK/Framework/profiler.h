@@ -27,8 +27,9 @@ struct profiler_desc_t
     const char* name;
 };
 
-void profilerBeginDataCollection ();
-void profilerEndDataCollection   ();
+void profilerBeginDataCapture    ();
+void profilerEndDataCapture      ();
+int  profilerIsCaptureInProgress ();
 void profilerAddCPUEvent         (size_t id, size_t eventPhase);
 void profilerGetData             (size_t* numEvents, const profiler_event_t** events);
 

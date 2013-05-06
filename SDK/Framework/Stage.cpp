@@ -29,7 +29,8 @@ enum
 namespace ui
 {
     Stage::Stage():
-        mState(STATE_DEFAULT)
+        mState(STATE_DEFAULT),
+        switchCapture(false)
 #if defined(DEBUG) || defined(_DEBUG)
         ,dumpPickImage(0)
 #endif
@@ -96,6 +97,11 @@ namespace ui
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
+        if (ui::keyIsPressed(SDLK_BACKQUOTE) && ui::keyWasReleased(SDLK_p))
+        {
+            switchCapture = true;
+        }
+        
         SDL_Event	E;
         uint32_t i = 0;
         while (SDL_PollEvent(&E) && i<10)
@@ -163,14 +169,24 @@ namespace ui
     {
         static const char* strFrame = "Frame";
 
-        profilerBeginDataCollection();
-        profilerAddCPUEvent((size_t)strFrame, PROF_EVENT_PHASE_BEGIN);
+        if (switchCapture)
+        {
+            if (profilerIsCaptureInProgress())
+                profilerEndDataCapture();
+            else
+                profilerBeginDataCapture();
+            
+            switchCapture = false;
+        }
+
+        PROFILER_CPU_TIMESLICE("Frame");
 
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
+        //TODO: Merge all tree
         outlineActors();
-        handleInput();
         ui::update();
+        handleInput();
         
         uint64_t time;
 
@@ -185,9 +201,6 @@ namespace ui
         }
 
         renderActors();
-
-        profilerAddCPUEvent((size_t)strFrame, PROF_EVENT_PHASE_END);
-        profilerEndDataCollection();
 
         if (mState==STATE_PROFILER)
         {
