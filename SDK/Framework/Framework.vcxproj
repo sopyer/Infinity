@@ -108,6 +108,7 @@
     <ClInclude Include="media_api.h" />
     <ClInclude Include="profiler.h" />
     <ClInclude Include="ProfilerOverlay.h" />
+    <ClInclude Include="RainbowTables.h" />
     <ClInclude Include="ShaderEditOverlay.h" />
     <ClInclude Include="ResourceHelpers.h" />
     <ClInclude Include="SOIL\image_DXT.h" />

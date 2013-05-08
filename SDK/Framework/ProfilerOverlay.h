@@ -40,7 +40,8 @@
 
 struct Vertex
 {
-    float x, y;
+    float    x, y;
+    uint32_t color;
 };
 
 class ProfilerOverlay

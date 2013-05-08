@@ -12,7 +12,10 @@ namespace ui
 {
     typedef uint32_t CheckBoxID;
 
-	extern vg::Font defaultFont;
+	extern vg::Font       defaultFont;
+
+    static const size_t   RAINBOW_TABLE_L_SIZE = 533;
+    extern const uint32_t rainbowTableL[RAINBOW_TABLE_L_SIZE];
 
     //TODO: Refactor!!!!!!
 	void     init(GLsizei width, GLsizei height); //Refactor later to add support for resolution change!!!!

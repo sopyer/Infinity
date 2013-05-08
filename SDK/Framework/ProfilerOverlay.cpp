@@ -5,6 +5,10 @@
 #include "ProfilerOverlay.h"
 #include "profiler.h"
 
+#include "ui.h"
+
+#include <map>
+
 //HACK: already defined in shader overlay!!!!
 void SetAStyle(Editor& ed, int style, Colour fore, Colour back=0xFFFFFFFF, int size=-1, const char *face=0);
 //{
@@ -74,7 +78,10 @@ void ProfilerOverlay::update()
         __int64 sliceBegin;
     } stack[MAX_STACK_DEPTH];
 
-    float scale = (mWidth-60.0f) / float(maxTime-minTime);
+    float scale = (mWidth-70.0f) / float(maxTime-minTime);
+
+    std::map<size_t, uint32_t> colorMap;
+    size_t colorIndex = 0;
 
     for (size_t i=0; i<numEvents; ++i)
     {
@@ -95,16 +102,26 @@ void ProfilerOverlay::update()
 
             assert (stack[stackTop].id == event.id); //implement backtracking end fixing later
            
-            float xstart = (stack[stackTop].sliceBegin-minTime) * scale ;
-            float xend   = (event.timestamp-minTime) * scale;
+            float xstart = (stack[stackTop].sliceBegin-minTime) * scale + 5.0f;
+            float xend   = (event.timestamp-minTime) * scale + 5.0f;
             float ystart = 20.0f+stackTop*20;
             float yend   = 20.0f+stackTop*20+15;
+
+            uint32_t color = colorMap[event.id];
+            
+            if (color == 0)
+            {
+                color = colorIndex>=ui::RAINBOW_TABLE_L_SIZE ? 0xFFFFFFFF : ui::rainbowTableL[colorIndex];
+                if  (colorIndex<ui::RAINBOW_TABLE_L_SIZE) ++colorIndex;
+                colorMap[event.id] = color;
+            }
+
             Vertex vtx[4] = 
             {
-                {xstart, ystart},
-                {xend,   ystart},
-                {xend,   yend},
-                {xstart, yend},
+                {xstart, ystart, color},
+                {xend,   ystart, color},
+                {xend,   yend,   color},
+                {xstart, yend,   color},
             };
 
             drawData.push_back(vtx[0]);
@@ -161,6 +178,7 @@ void ProfilerOverlay::renderFullscreen()
     glBegin(GL_QUADS);
     for (size_t i = 0; i < drawData.size(); ++i)
     {
+        glColor4ubv((GLubyte*)&drawData[i].color);
         glVertex2fv(&drawData[i].x);
     }
     glEnd();

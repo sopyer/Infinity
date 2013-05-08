@@ -41,7 +41,7 @@ unsigned int usedAVPackets(AVPacketRingBuffer* rbuf)
 
 AVPacket* allocAVPacket(AVPacketRingBuffer* rbuf)
 {
-    return (usedAVPackets(rbuf) < PACKET_BUFFER_SIZE) ? (rbuf->buf + rbuf->head++%PACKET_BUFFER_SIZE) : 0;
+    return (usedAVPackets(rbuf) < PACKET_BUFFER_SIZE) ? rbuf->buf + (rbuf->head++%PACKET_BUFFER_SIZE) : 0;
 }
 
 AVPacket* frontAVPacket(AVPacketRingBuffer* rbuf)

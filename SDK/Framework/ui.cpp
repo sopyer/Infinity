@@ -9,6 +9,8 @@
 
 namespace ui
 {
+#include "RainbowTables.h"
+
     struct Area
     {
         GLfloat x0, y0, x1, y1;

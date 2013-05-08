@@ -99,5 +99,8 @@
     <ClInclude Include="media_api.h" />
     <ClInclude Include="SpectatorCamera.h" />
     <ClInclude Include="CameraDirector.h" />
+    <ClInclude Include="RainbowTables.h">
+      <Filter>UI\Misc</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

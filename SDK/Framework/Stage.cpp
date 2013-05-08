@@ -172,7 +172,10 @@ namespace ui
         if (switchCapture)
         {
             if (profilerIsCaptureInProgress())
+            {
                 profilerEndDataCapture();
+                mProfilerOverlay->update();
+            }
             else
                 profilerBeginDataCapture();
             
@@ -204,7 +207,6 @@ namespace ui
 
         if (mState==STATE_PROFILER)
         {
-            mProfilerOverlay->update();
             mProfilerOverlay->renderFullscreen();
         }
         if (mState==STATE_SHADER_EDIT)
