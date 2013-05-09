@@ -44,11 +44,19 @@ struct Vertex
     uint32_t color;
 };
 
+struct Interval
+{
+    const char* name;
+    float       duration;
+    float       xmin, ymin;
+    float       xmax, ymax;
+};
+
 class ProfilerOverlay
 {
 public:
     void initialise(int w, int h);
-    void update();
+    void loadProfilerData();
 
     void handleKeyDown(SDL_KeyboardEvent& event);
     void renderFullscreen();
@@ -60,6 +68,7 @@ private:
     Editor  mProfilerView;
     
     std::vector<Vertex> drawData;
+    std::vector<Interval> intervals;
     float mWidth;
     float mHeight;
 };

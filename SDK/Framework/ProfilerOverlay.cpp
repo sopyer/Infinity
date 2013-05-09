@@ -6,6 +6,7 @@
 #include "profiler.h"
 
 #include "ui.h"
+#include <vg/vg.h>
 
 #include <map>
 
@@ -51,7 +52,7 @@ void ProfilerOverlay::initialise(int w, int h)
     mProfilerView.SetSize(w1, h1);
 }
 
-void ProfilerOverlay::update()
+void ProfilerOverlay::loadProfilerData()
 {
     static const size_t MAX_STACK_DEPTH = 8;
 
@@ -82,6 +83,9 @@ void ProfilerOverlay::update()
 
     std::map<size_t, uint32_t> colorMap;
     size_t colorIndex = 0;
+
+    drawData.clear();
+    intervals.clear();
 
     for (size_t i=0; i<numEvents; ++i)
     {
@@ -129,6 +133,16 @@ void ProfilerOverlay::update()
             drawData.push_back(vtx[2]);
             drawData.push_back(vtx[3]);
 
+            Interval inter = 
+            {
+                (const char*) event.id,
+                (event.timestamp-stack[stackTop].sliceBegin) / 1000.0f,
+                xstart, ystart,
+                xend, yend
+            };
+
+            intervals.push_back(inter);
+
             --stackTop;
         }
     }
@@ -159,7 +173,58 @@ void ProfilerOverlay::renderFullscreen()
 
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    //mProfilerView.Paint();
+    static bool drag = false;
+    static float dx = 0.0f;
+    static float scale = 1.0f;
+    int offx;
+    static int idx = -1;
+
+    static const float scaleUp   = 1.25;
+    static const float scaleDown = 1.0f / 1.25f;
+
+    static const uint32_t profilerIntervalMask = 0xFEDC0000;
+
+    for (size_t i = 0; i < intervals.size(); ++i)
+    {
+        ui::mouseUpdateEventArea(i|profilerIntervalMask,
+            intervals[i].xmin+30.0f, intervals[i].ymin+30.0f,
+            intervals[i].xmax+30.0f, intervals[i].ymax+30.0f);
+    }
+
+    uint32_t id = ui::mouseOverID();
+    if (((id & profilerIntervalMask) == profilerIntervalMask) && ui::mouseWasReleased(SDL_BUTTON_LEFT))
+    {
+        idx = id & 0xFFFF;
+    }
+
+    if (ui::keyWasReleased(SDLK_EQUALS))
+    {
+        ui::mouseAbsOffset(&offx, NULL);
+        scale*=scaleUp;
+        offx -= 30;
+        dx = (1.0f-scaleUp) * offx + scaleUp * dx;
+    }
+    if (ui::keyWasReleased(SDLK_MINUS))
+    {
+        ui::mouseAbsOffset(&offx, NULL);
+        scale*=scaleDown;
+        offx -= 30;
+        dx = (1.0f-scaleDown) * offx + scaleDown * dx;
+    }
+
+    if (ui::mouseWasPressed(SDL_BUTTON_LEFT))
+    {
+        drag = true;
+    }
+    if (drag)
+    {
+        ui::mouseRelOffset(&offx, NULL);
+        dx += offx;
+    }
+    if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && drag)
+    {
+        drag = false;
+    }
 
     glUseProgram(0);
     
@@ -172,16 +237,40 @@ void ProfilerOverlay::renderFullscreen()
     glVertex3f(30.0f, mHeight-30.0f, 0.0f);
     glEnd();
 
-    glTranslatef(30.0f, 30.0f, 0.0f);
+    glPushMatrix();
+    glTranslatef(30.0f+dx, 30.0f, 0.0f);
+    glScalef(scale, 1.0f, 1.0f);
 
-    glColor3f(1.0f, 1.0f, 1.0f);
-    glBegin(GL_QUADS);
-    for (size_t i = 0; i < drawData.size(); ++i)
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
+
+    if (!drawData.empty())
     {
-        glColor4ubv((GLubyte*)&drawData[i].color);
-        glVertex2fv(&drawData[i].x);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+
+        glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &drawData[0].x);
+        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), &drawData[0].color);
+
+        glDrawArrays(GL_QUADS, 0, drawData.size());
+
+        glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
     }
-    glEnd();
+    glPopMatrix();
+
+    if (idx >= 0 && idx < intervals.size())
+    {
+        char str[256];
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+
+        _snprintf(str, 256, "name     : %s", intervals[idx].name);
+        vg::drawString(ui::defaultFont, 50, 150, str, strlen(str));
+
+        _snprintf(str, 256, "duration : %.2f", intervals[idx].duration);
+        vg::drawString(ui::defaultFont, 50, 165, str, strlen(str));
+    }
 
     glPopAttrib();
 }

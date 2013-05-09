@@ -288,7 +288,7 @@ namespace ui
     {
         for (size_t i = 0; i < areaCount; ++i)
         {
-            if (ids[i] = id)
+            if (ids[i] == id)
                 return i;
         }
 

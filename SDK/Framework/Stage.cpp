@@ -174,12 +174,11 @@ namespace ui
             if (profilerIsCaptureInProgress())
             {
                 profilerEndDataCapture();
-                mProfilerOverlay->update();
+                mProfilerOverlay->loadProfilerData();
+                switchCapture = false;
             }
             else
                 profilerBeginDataCapture();
-            
-            switchCapture = false;
         }
 
         PROFILER_CPU_TIMESLICE("Frame");
