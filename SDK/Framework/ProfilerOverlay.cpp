@@ -10,46 +10,18 @@
 
 #include <map>
 
-//HACK: already defined in shader overlay!!!!
-void SetAStyle(Editor& ed, int style, Colour fore, Colour back=0xFFFFFFFF, int size=-1, const char *face=0);
-//{
-//	ed.Command(SCI_STYLESETFORE, style, fore);
-//	ed.Command(SCI_STYLESETBACK, style, back);
-//	if (size >= 1)
-//		ed.Command(SCI_STYLESETSIZE, style, size);
-//	if (face) 
-//		ed.Command(SCI_STYLESETFONT, style, reinterpret_cast<sptr_t>(face));
-//}
-
-void ProfilerOverlay::initialiseView() {
-    mProfilerView.Command(SCI_SETSTYLEBITS, 7);
-
-    // Set up the global default style. These attributes are used wherever no explicit choices are made.
-    SetAStyle(mProfilerView, STYLE_DEFAULT, 0xFF00FF00, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
-    mProfilerView.Command(SCI_STYLECLEARALL);	// Copies global style to all others
-    mProfilerView.Command(SCI_SETMARGINWIDTHN, 1, 0);//Calculate correct width
-
-    mProfilerView.Command(SCI_SETUSETABS, 1);
-    mProfilerView.Command(SCI_SETTABWIDTH, 4);
-
-    mProfilerView.Command(SCI_SETSELBACK,            1, 0xD0CC9966);
-    mProfilerView.Command(SCI_SETCARETFORE,          0x00FFFFFF, 0);
-    mProfilerView.Command(SCI_SETCARETLINEVISIBLE,   1);
-    mProfilerView.Command(SCI_SETCARETLINEBACK,      0xFFFFFFFF);
-    mProfilerView.Command(SCI_SETCARETLINEBACKALPHA, 0x20);
-
-    mProfilerView.Command(SCI_SETFOCUS, true);
-}
+static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
 void ProfilerOverlay::initialise(int w, int h)
 {
-    initialiseView();
-
     mWidth = (float)w; mHeight=(float)h;
 
     float w1=mWidth-60.0f, h1=mHeight-60.0f;/*60=30+30*/
 
-    mProfilerView.SetSize(w1, h1);
+    mSelection = -1;
+    mScale = 1.0f;
+    mDoDrag = false;
+    mOffsetX = 0.0f;
 }
 
 void ProfilerOverlay::loadProfilerData()
@@ -86,6 +58,8 @@ void ProfilerOverlay::loadProfilerData()
 
     drawData.clear();
     intervals.clear();
+    colors.clear();
+    ids.clear();
 
     for (size_t i=0; i<numEvents; ++i)
     {
@@ -120,12 +94,22 @@ void ProfilerOverlay::loadProfilerData()
                 colorMap[event.id] = color;
             }
 
+            colors.push_back(color);
+            colors.push_back(color);
+            colors.push_back(color);
+            colors.push_back(color);
+
+            ids.push_back(intervals.size()|profilerIntervalMask);
+            ids.push_back(intervals.size()|profilerIntervalMask);
+            ids.push_back(intervals.size()|profilerIntervalMask);
+            ids.push_back(intervals.size()|profilerIntervalMask);
+
             Vertex vtx[4] = 
             {
-                {xstart, ystart, color},
-                {xend,   ystart, color},
-                {xend,   yend,   color},
-                {xstart, yend,   color},
+                {xstart, ystart},
+                {xend,   ystart},
+                {xend,   yend  },
+                {xstart, yend  },
             };
 
             drawData.push_back(vtx[0]);
@@ -145,6 +129,79 @@ void ProfilerOverlay::loadProfilerData()
 
             --stackTop;
         }
+    }
+}
+
+void ProfilerOverlay::drawBars(uint32_t* colorArray)
+{
+    float w1=mWidth-80.0f, h1=mHeight-80.0f;
+
+    glPushMatrix();
+    glTranslatef(30.0f+mOffsetX, 30.0f, 0.0f);
+    glScalef(mScale, 1.0f, 1.0f);
+
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
+
+    glUseProgram(0);
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &drawData[0].x);
+    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(uint32_t), colorArray);
+
+    glDrawArrays(GL_QUADS, 0, drawData.size());
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    glPopMatrix();
+}
+
+void ProfilerOverlay::updateUI()
+{
+    int offx;
+
+    static const float scaleUp   = 1.25;
+    static const float scaleDown = 1.0f / 1.25f;
+
+    if (!drawData.empty())
+        drawBars(&ids[0]);
+
+    uint32_t id = ui::mouseOverID();
+    if (((id & profilerIntervalMask) == profilerIntervalMask) && ui::mouseWasReleased(SDL_BUTTON_LEFT))
+    {
+        mSelection = id & 0xFFFF;
+    }
+
+    if (ui::keyWasReleased(SDLK_EQUALS))
+    {
+        ui::mouseAbsOffset(&offx, NULL);
+        mScale*=scaleUp;
+        offx -= 30;
+        mOffsetX = (1.0f-scaleUp) * offx + scaleUp * mOffsetX;
+    }
+    if (ui::keyWasReleased(SDLK_MINUS))
+    {
+        ui::mouseAbsOffset(&offx, NULL);
+        mScale*=scaleDown;
+        offx -= 30;
+        mOffsetX = (1.0f-scaleDown) * offx + scaleDown * mOffsetX;
+    }
+
+    if (ui::mouseWasPressed(SDL_BUTTON_LEFT))
+    {
+        mDoDrag = true;
+    }
+    if (mDoDrag)
+    {
+        ui::mouseRelOffset(&offx, NULL);
+        mOffsetX += offx;
+    }
+    if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && mDoDrag)
+    {
+        mDoDrag = false;
     }
 }
 
@@ -173,59 +230,6 @@ void ProfilerOverlay::renderFullscreen()
 
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    static bool drag = false;
-    static float dx = 0.0f;
-    static float scale = 1.0f;
-    int offx;
-    static int idx = -1;
-
-    static const float scaleUp   = 1.25;
-    static const float scaleDown = 1.0f / 1.25f;
-
-    static const uint32_t profilerIntervalMask = 0xFEDC0000;
-
-    for (size_t i = 0; i < intervals.size(); ++i)
-    {
-        ui::mouseUpdateEventArea(i|profilerIntervalMask,
-            intervals[i].xmin+30.0f, intervals[i].ymin+30.0f,
-            intervals[i].xmax+30.0f, intervals[i].ymax+30.0f);
-    }
-
-    uint32_t id = ui::mouseOverID();
-    if (((id & profilerIntervalMask) == profilerIntervalMask) && ui::mouseWasReleased(SDL_BUTTON_LEFT))
-    {
-        idx = id & 0xFFFF;
-    }
-
-    if (ui::keyWasReleased(SDLK_EQUALS))
-    {
-        ui::mouseAbsOffset(&offx, NULL);
-        scale*=scaleUp;
-        offx -= 30;
-        dx = (1.0f-scaleUp) * offx + scaleUp * dx;
-    }
-    if (ui::keyWasReleased(SDLK_MINUS))
-    {
-        ui::mouseAbsOffset(&offx, NULL);
-        scale*=scaleDown;
-        offx -= 30;
-        dx = (1.0f-scaleDown) * offx + scaleDown * dx;
-    }
-
-    if (ui::mouseWasPressed(SDL_BUTTON_LEFT))
-    {
-        drag = true;
-    }
-    if (drag)
-    {
-        ui::mouseRelOffset(&offx, NULL);
-        dx += offx;
-    }
-    if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && drag)
-    {
-        drag = false;
-    }
-
     glUseProgram(0);
     
     // Background
@@ -237,53 +241,21 @@ void ProfilerOverlay::renderFullscreen()
     glVertex3f(30.0f, mHeight-30.0f, 0.0f);
     glEnd();
 
-    glPushMatrix();
-    glTranslatef(30.0f+dx, 30.0f, 0.0f);
-    glScalef(scale, 1.0f, 1.0f);
-
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
-
     if (!drawData.empty())
-    {
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
+        drawBars(&colors[0]);
 
-        glVertexPointer(2, GL_FLOAT, sizeof(Vertex), &drawData[0].x);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(Vertex), &drawData[0].color);
-
-        glDrawArrays(GL_QUADS, 0, drawData.size());
-
-        glDisableClientState(GL_COLOR_ARRAY);
-        glDisableClientState(GL_VERTEX_ARRAY);
-    }
-    glPopMatrix();
-
-    if (idx >= 0 && idx < intervals.size())
+    if (mSelection >= 0 && mSelection < intervals.size())
     {
         char str[256];
 
         glColor3f(1.0f, 1.0f, 1.0f);
 
-        _snprintf(str, 256, "name     : %s", intervals[idx].name);
+        _snprintf(str, 256, "name     : %s", intervals[mSelection].name);
         vg::drawString(ui::defaultFont, 50, 150, str, strlen(str));
 
-        _snprintf(str, 256, "duration : %.2f", intervals[idx].duration);
+        _snprintf(str, 256, "duration : %.2f", intervals[mSelection].duration);
         vg::drawString(ui::defaultFont, 50, 165, str, strlen(str));
     }
 
     glPopAttrib();
-}
-
-void ProfilerOverlay::handleKeyDown(SDL_KeyboardEvent& event)
-{
-    switch (event.keysym.sym)
-    {
-    case SDLK_UP:
-        mProfilerView.Command(SCI_LINEUP);
-        break;
-    case SDLK_DOWN:
-        mProfilerView.Command(SCI_LINEDOWN);
-        break;
-    }
 }

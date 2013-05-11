@@ -14,34 +14,9 @@
 #include <SDL.h>
 #include <opengl.h>
 
-#include <scintilla/Platform.h>
-
-#include <scintilla/ILexer.h>
-#include <scintilla/Scintilla.h>
-#include <scintilla/SVector.h>
-#include <scintilla/SplitVector.h>
-#include <scintilla/Partitioning.h>
-#include <scintilla/RunStyles.h>
-#include <scintilla/ContractionState.h>
-#include <scintilla/CellBuffer.h>
-#include <scintilla/KeyMap.h>
-#include <scintilla/Indicator.h>
-#include <scintilla/XPM.h>
-#include <scintilla/LineMarker.h>
-#include <scintilla/Style.h>
-#include <scintilla/ViewStyle.h>
-#include <scintilla/Decoration.h>
-#include <scintilla/CharClassify.h>
-#include <scintilla/Document.h>
-#include <scintilla/Selection.h>
-#include <scintilla/PositionCache.h>
-#include <scintilla/Editor.h>
-#include <scintilla/UniConversion.h>
-
 struct Vertex
 {
     float    x, y;
-    uint32_t color;
 };
 
 struct Interval
@@ -58,17 +33,22 @@ public:
     void initialise(int w, int h);
     void loadProfilerData();
 
-    void handleKeyDown(SDL_KeyboardEvent& event);
     void renderFullscreen();
+    void updateUI();
 
 private:
-    void initialiseView();
+    void drawBars(uint32_t* colorArray);
 
 private:
-    Editor  mProfilerView;
-    
     std::vector<Vertex> drawData;
     std::vector<Interval> intervals;
+    std::vector<uint32_t> colors;
+    std::vector<uint32_t> ids;
     float mWidth;
     float mHeight;
+
+    int   mSelection;
+    float mScale;
+    bool  mDoDrag;
+    float mOffsetX;
 };

@@ -121,9 +121,6 @@ namespace ui
                 case STATE_SHADER_EDIT:
                     mShaderEditOverlay->handleKeyDown(E.key);
                     break;
-                case STATE_PROFILER:
-                    mProfilerOverlay->handleKeyDown(E.key);
-                    break;
                 }
                 break;
             case SDL_KEYUP:		
@@ -186,8 +183,8 @@ namespace ui
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
         //TODO: Merge all tree
-        outlineActors();
         ui::update();
+        outlineActors();
         handleInput();
         
         uint64_t time;
@@ -206,11 +203,19 @@ namespace ui
 
         if (mState==STATE_PROFILER)
         {
+            PROFILER_CPU_TIMESLICE("mProfilerOverlay->renderFullscreen");
             mProfilerOverlay->renderFullscreen();
         }
         if (mState==STATE_SHADER_EDIT)
+        {
+            PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
             mShaderEditOverlay->renderFullscreen();
-        SDL_GL_SwapBuffers();
+        }
+        
+        {
+            PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
+            SDL_GL_SwapBuffers();
+        }
     }
 
     void Stage::close()
@@ -258,6 +263,11 @@ namespace ui
         glLoadMatrixf(mProjection);
         glMatrixMode(GL_MODELVIEW);
         setupUIViewMatrix(mProjection, mWidth, mHeight);
+
+        if (mState==STATE_PROFILER)
+        {
+            mProfilerOverlay->updateUI();
+        }
 
         endPickOutline();
 

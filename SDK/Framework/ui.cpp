@@ -82,7 +82,7 @@ namespace ui
     void createSurfaces()
     {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
-        rbPickID = resources::createRenderbuffer(GL_R32UI, width, height);
+        rbPickID = resources::createRenderbuffer(GL_RGBA8, width, height);
         rbPickZ = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, width, height);
 
         glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbPickID);
@@ -90,6 +90,9 @@ namespace ui
 
         GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
         assert(status == GL_FRAMEBUFFER_COMPLETE);
+
+        GLuint  clearColor[4] = {0, 0, 0, 0};
+        glClearBufferuiv(GL_COLOR, 0, clearColor);
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
@@ -157,6 +160,8 @@ namespace ui
 
     void update()
     {
+        PROFILER_CPU_TIMESLICE("ui->update");
+
         memcpy(keyStatePrev, keyStateCur,           SDLK_LAST);
         memcpy(keyStateCur,  SDL_GetKeyState(NULL), SDLK_LAST);
 
@@ -193,7 +198,7 @@ namespace ui
         glStencilMask(0xFF);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-        glUseProgram(prgWriteID);
+        glUseProgram(0);
 
         CHECK_GL_ERROR();
     }
@@ -216,7 +221,7 @@ namespace ui
         //TODO: probably should be moved to another location
         for (size_t i = 0; i < areaCount; ++i)
         {
-            glUniform1ui(locID, ids[i]);
+            glColor4ubv((GLubyte*)&ids[i]);
             glBegin(GL_QUADS);
             glVertex2f(areas[i].x0, areas[i].y0);
             glVertex2f(areas[i].x1, areas[i].y0);
@@ -234,10 +239,12 @@ namespace ui
 
     GLuint pickID(GLuint x, GLuint y)
     {
+        PROFILER_CPU_TIMESLICE("ui->pickID");
+
         GLuint id;
 
         glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
-        glReadPixels (x, height-y-1, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, &id);
+        glReadPixels (x, height-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &id);
 
         CHECK_GL_ERROR();
 
@@ -261,7 +268,7 @@ namespace ui
     {
         assert(sz>=width*height*4);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
-        glReadPixels (0, 0, width, height, GL_RED_INTEGER, GL_UNSIGNED_INT, data);
+        glReadPixels (0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &data);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     }
 
