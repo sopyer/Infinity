@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <cstdlib>
 #include "Framework.h"
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include "scheduler.h"
 
 namespace logging
@@ -21,7 +21,8 @@ namespace logging
 
 namespace fwk
 {
-    static SDL_Surface* screen;
+    SDL_Window*      window;
+    SDL_GLContext    context;
 
     void init(const char* argv0)
     {
@@ -31,37 +32,34 @@ namespace fwk
         PHYSFS_mount("../AppData"    , 0, 1);
         PHYSFS_mount("../../AppData", 0, 1);
 
-        if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)											// Init The SDL Library, The VIDEO Subsystem
+        if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)
         {
-            logging::message("Unable to open SDL: %s\n", SDL_GetError() );					// If SDL Can't Be Initialized
-            exit(1);															// Get Out Of Here. Sorry.
+            logging::message("Unable to open SDL: %s\n", SDL_GetError() );
+            exit(1);
         }
 
-        uint32_t flags = SDL_HWSURFACE|SDL_OPENGLBLIT;									// We Want A Hardware Surface And Special OpenGLBlit Mode
-
-        bool fullscreen = false;
-
-        if (fullscreen)		
-        {
-            flags |= SDL_FULLSCREEN;
-        }
-
-        SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );								// In order to use SDL_OPENGLBLIT we have to
-        SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );							// set GL attributes first
+        SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+        SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
         SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
         SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
         SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
         SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );							// colors and doublebuffering
+        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
-        SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 1 );
+        
+        window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                  1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
-        if(!(screen = SDL_SetVideoMode(1280, 720, 32, flags)))
+        if(!window)
         {
-            logging::message("Unable to open screen surface: %s\n", SDL_GetError() );		// If Something's Gone Wrong, Report
-            exit(1);															// And Exit
+            logging::message("Unable to create window: %s\n", SDL_GetError() );
+            exit(1);
         }
+
+        context = SDL_GL_CreateContext(window);
+
+        SDL_GL_SetSwapInterval(1);
 
         importOpenGL();
 
@@ -76,6 +74,8 @@ namespace fwk
         ui::cleanup();
         vg::cleanup();
 
+        SDL_GL_DeleteContext(context);
+        SDL_DestroyWindow(window);
         SDL_Quit();
 
         PHYSFS_deinit();

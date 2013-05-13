@@ -1,7 +1,7 @@
 #ifndef __EVENTS_H_INCLUDED__
 #	define __EVENTS_H_INCLUDED__
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 struct SDL_MouseButtonEvent;
 struct SDL_MouseMotionEvent;

@@ -67,8 +67,6 @@ namespace ui
         ShaderEditOverlay*  mShaderEditOverlay;
         ProfilerOverlay*    mProfilerOverlay;
 
-        SDL_Surface         *mScreen;
-
         bool switchCapture;
     };
 }

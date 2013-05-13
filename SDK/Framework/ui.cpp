@@ -1,6 +1,6 @@
 #include "UI.h"
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 #include "DefaultFontData.h"
 #include "SpectatorCamera.h"
 #include "CameraDirector.h"
@@ -33,8 +33,8 @@ namespace ui
     int   mouseY;
     int   deltaX;
     int   deltaY;
-    uint8_t keyStatePrev[SDLK_LAST];
-    uint8_t keyStateCur[SDLK_LAST];
+    uint8_t keyStatePrev[SDL_NUM_SCANCODES];
+    uint8_t keyStateCur[SDL_NUM_SCANCODES];
     uint8_t mouseStatePrev;
     uint8_t mouseStateCur;
 
@@ -110,16 +110,13 @@ namespace ui
         width      = w;
         height     = h;
 
-        SDL_EnableUNICODE(TRUE);
-        SDL_EnableKeyRepeat(40, 40);
-
         areaCount     = 0;
         checkBoxCount = 0;
 
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
 
-        memcpy(keyStateCur,  SDL_GetKeyState(NULL), SDLK_LAST);
-        memcpy(keyStatePrev, keyStateCur,           SDLK_LAST);
+        memcpy(keyStateCur,  SDL_GetKeyboardState(NULL), SDL_NUM_SCANCODES);
+        memcpy(keyStatePrev, keyStateCur,                SDL_NUM_SCANCODES);
 
         mouseStatePrev = SDL_GetMouseState(&mouseX, &mouseY);
         mouseStateCur  = SDL_GetRelativeMouseState(&deltaX, &deltaY);
@@ -142,8 +139,8 @@ namespace ui
     {
         vg::destroyFont(defaultFont);
 
-        memset(keyStateCur,  0, SDLK_LAST);
-        memset(keyStatePrev, 0, SDLK_LAST);
+        memset(keyStateCur,  0, SDL_NUM_SCANCODES);
+        memset(keyStatePrev, 0, SDL_NUM_SCANCODES);
 
         mouseStatePrev = 0;
         mouseStateCur  = 0;
@@ -162,8 +159,8 @@ namespace ui
     {
         PROFILER_CPU_TIMESLICE("ui->update");
 
-        memcpy(keyStatePrev, keyStateCur,           SDLK_LAST);
-        memcpy(keyStateCur,  SDL_GetKeyState(NULL), SDLK_LAST);
+        memcpy(keyStatePrev, keyStateCur,                SDL_NUM_SCANCODES);
+        memcpy(keyStateCur,  SDL_GetKeyboardState(NULL), SDL_NUM_SCANCODES);
 
         mouseStatePrev = mouseStateCur;
         mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
@@ -338,25 +335,25 @@ namespace ui
 
     bool keyIsPressed  (int key)
     {
-        assert(key<SDLK_LAST);
+        assert(key<SDL_NUM_SCANCODES);
         return keyStateCur[key] != 0;
     }
 
     bool keyWasPressed (int key)
     {
-        assert(key<SDLK_LAST);
+        assert(key<SDL_NUM_SCANCODES);
         return !keyStatePrev[key] && keyStateCur[key];
     }
 
     bool keyIsReleased (int key)
     {
-        assert(key<SDLK_LAST);
+        assert(key<SDL_NUM_SCANCODES);
         return !keyStateCur[key];
     }
 
     bool keyWasReleased(int key)
     {
-        assert(key<SDLK_LAST);
+        assert(key<SDL_NUM_SCANCODES);
         return keyStatePrev[key] && !keyStateCur[key];
     }
 
@@ -398,17 +395,17 @@ namespace ui
         float       heading = 0.0f;
         float       pitch   = 0.0f;
 
-        uint8_t *keystate = SDL_GetKeyState(NULL);
+        uint8_t *keystate = SDL_GetKeyboardState(NULL);
 
-        direction.z += ui::keyStateCur[SDLK_w]?1.0f:0.0f;
-        direction.z -= ui::keyStateCur[SDLK_s]?1.0f:0.0f;
-        direction.x -= ui::keyStateCur[SDLK_a]?1.0f:0.0f;
-        direction.x += ui::keyStateCur[SDLK_d]?1.0f:0.0f;
+        direction.z += ui::keyStateCur[SDL_SCANCODE_W]?1.0f:0.0f;
+        direction.z -= ui::keyStateCur[SDL_SCANCODE_S]?1.0f:0.0f;
+        direction.x -= ui::keyStateCur[SDL_SCANCODE_A]?1.0f:0.0f;
+        direction.x += ui::keyStateCur[SDL_SCANCODE_D]?1.0f:0.0f;
 
-        pitch   += ui::keyStateCur[SDLK_KP8]?1.50f:0.0f;
-        pitch   -= ui::keyStateCur[SDLK_KP5]?1.50f:0.0f;
-        heading += ui::keyStateCur[SDLK_KP4]?1.50f:0.0f;
-        heading -= ui::keyStateCur[SDLK_KP6]?1.50f:0.0f;
+        pitch   += ui::keyStateCur[SDL_SCANCODE_KP_8]?1.50f:0.0f;
+        pitch   -= ui::keyStateCur[SDL_SCANCODE_KP_5]?1.50f:0.0f;
+        heading += ui::keyStateCur[SDL_SCANCODE_KP_4]?1.50f:0.0f;
+        heading -= ui::keyStateCur[SDL_SCANCODE_KP_6]?1.50f:0.0f;
 
         camera->rotateSmoothly(heading, pitch);
         camera->rotateSmoothly((float)-ui::deltaX, (float)-ui::deltaY);
@@ -438,14 +435,14 @@ namespace ui
     {
         assert(camDirector && camera);
 
-        if (ui::keyWasReleased(SDLK_0))
+        if (ui::keyWasReleased(SDL_SCANCODE_0))
         {
             camDirector->savedCamRotation.push_back(camera->getOrientation());
             camDirector->savedCamLocation.push_back(camera->getPosition());
         }
 
-        if (ui::keyWasReleased(SDLK_EQUALS) &&
-            ui::keyIsPressed(SDLK_LALT)     &&
+        if (ui::keyWasReleased(SDL_SCANCODE_EQUALS) &&
+            ui::keyIsPressed(SDL_SCANCODE_LALT)     &&
             camDirector->savedCamRotation.size())
         {
             int max = camDirector->savedCamRotation.size() - 1;
@@ -460,8 +457,8 @@ namespace ui
             camera->setPosition   (camDirector->savedCamLocation[camDirector->index]);
         }
 
-        if (ui::keyWasReleased(SDLK_MINUS) &&
-            ui::keyIsPressed(SDLK_LALT)    &&
+        if (ui::keyWasReleased(SDL_SCANCODE_MINUS) &&
+            ui::keyIsPressed(SDL_SCANCODE_LALT)    &&
             camDirector->savedCamRotation.size())
         {
             int max = camDirector->savedCamRotation.size() - 1;

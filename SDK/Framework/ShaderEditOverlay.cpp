@@ -666,8 +666,8 @@ void ShaderEditOverlay::handleKeyDown(SDL_KeyboardEvent& event)
 			case SDLK_KP_PLUS:			sciKey = SCK_ADD;	        break;
 			case SDLK_KP_MINUS:			sciKey = SCK_SUBTRACT;      break;
 			case SDLK_KP_DIVIDE:		sciKey = SCK_DIVIDE;        break;
-			case SDLK_LSUPER:			sciKey = SCK_WIN;	        break;
-			case SDLK_RSUPER:			sciKey = SCK_RWIN;	        break;
+			case SDLK_LGUI: 			sciKey = SCK_WIN;	        break;
+			case SDLK_RGUI: 			sciKey = SCK_RWIN;	        break;
 			case SDLK_MENU:				sciKey = SCK_MENU;	        break;
 			case SDLK_SLASH:			sciKey = '/';		        break;
 			case SDLK_ASTERISK:			sciKey = '`';		        break;

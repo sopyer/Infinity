@@ -1,6 +1,7 @@
 #ifndef _FRAMEWORK_H_INCLUDED_
 #	define _FRAMEWORK_H_INCLUDED_
 
+#include <SDL2/SDL.h>
 #include <opengl.h>
 
 #include <UI.h>
@@ -19,6 +20,9 @@ namespace logging
 
 namespace fwk
 {
+    extern SDL_Window*      window;
+    extern SDL_GLContext    context;
+
     void init(const char* argv0);
     void cleanup();
 }

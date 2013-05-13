@@ -3,8 +3,8 @@
 #include <cstdlib>
 #include <opengl.h>
 #include <SOIL.h> // remove later
-#include <SDL.h>
-#include <SDL_syswm.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 #include <utils.h>
 #include <vg/vg.h>
 #include <vg/impl/SharedResources.h>
@@ -42,9 +42,9 @@ namespace ui
 
         setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
 
-        SDL_SysWMinfo info = {{0, 0}, 0, 0};
-        SDL_GetWMInfo(&info);
-        Platform_Initialise(info.window);
+        SDL_SysWMinfo info = {0, SDL_SYSWM_UNKNOWN, {0}};
+        SDL_GetWindowWMInfo(fwk::window, &info);
+        Platform_Initialise(info.info.win.window);
 
         mShaderEditOverlay = new ShaderEditOverlay;
         mShaderEditOverlay->initialise(mWidth, mHeight);
@@ -77,27 +77,27 @@ namespace ui
     Stage& Stage::captureMouse()
     {
         SDL_ShowCursor(FALSE);
-        SDL_WM_GrabInput(SDL_GRAB_ON);
+        SDL_SetWindowGrab(fwk::window, SDL_TRUE);
         return *this;
     }
 
     Stage& Stage::releaseMouse()
     {
         SDL_ShowCursor(TRUE);
-        SDL_WM_GrabInput(SDL_GRAB_OFF);
+        SDL_SetWindowGrab(fwk::window, SDL_FALSE);
         return *this;
     }
 
     bool Stage::isMouseCaptured()
     {
-        return SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON;
+        return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
     }
 
     void Stage::handleInput()
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
-        if (ui::keyIsPressed(SDLK_BACKQUOTE) && ui::keyWasReleased(SDLK_p))
+        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_P))
         {
             switchCapture = true;
         }
@@ -143,7 +143,7 @@ namespace ui
             case SDL_MOUSEMOTION:
                 if (mState==STATE_DEFAULT)
                 {
-                    if (!SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_OFF)
+                    if (!SDL_GetWindowGrab(fwk::window))
                         onMotion(E.motion);
                 }
                 break;
@@ -214,7 +214,7 @@ namespace ui
         
         {
             PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
-            SDL_GL_SwapBuffers();
+            SDL_GL_SwapWindow(fwk::window);
         }
     }
 

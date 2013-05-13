@@ -246,18 +246,18 @@ protected:
 
         ui::processCameraDirectorInput(&camDirector, &camera);
 
-        if (ui::keyWasReleased(SDLK_l))
+        if (ui::keyWasReleased(SDL_SCANCODE_L))
         {
             fixedMode = !fixedMode;
             lockView  = fixedMode==true;
         }
 
-        if (ui::keyWasReleased(SDLK_f))
+        if (ui::keyWasReleased(SDL_SCANCODE_F))
         {
             terrain.drawWireframe = !terrain.drawWireframe;
         }
 
-        if (ui::keyWasReleased(SDLK_i))
+        if (ui::keyWasReleased(SDL_SCANCODE_I))
         {
             terrain.useInstancing = !terrain.useInstancing;
         }

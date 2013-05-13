@@ -5,7 +5,7 @@
 #include <windows.h>
 #include <list>
 #include <algorithm>
-#include <sdl.h>
+#include <SDL2/SDL.h>
 
 namespace mt
 {
@@ -269,7 +269,7 @@ namespace mt
 
 	Thread createThread(int (__cdecl *fn)(void *), void *data)
 	{
-		return SDL_CreateThread(fn, data);
+		return SDL_CreateThread(fn, "", data);
 	}
 
 	void waitThread(Thread thread, int *status)
