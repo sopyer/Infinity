@@ -37,6 +37,8 @@ namespace ui
     uint8_t keyStateCur[SDL_NUM_SCANCODES];
     uint8_t mouseStatePrev;
     uint8_t mouseStateCur;
+    bool    mouseWheelUp;
+    bool    mouseWheelDown;
 
     uint32_t mouseOverAreaID;
     uint32_t mouseCaptureID;
@@ -166,6 +168,8 @@ namespace ui
         mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
 
+        mouseWheelUp = mouseWheelDown = false;
+
         mouseOverAreaID = (mouseCaptureID!=ID_INVALID) ? mouseCaptureID : pickID(mouseX, mouseY);
 
         checkBoxUpdateAll();
@@ -250,6 +254,17 @@ namespace ui
         return id;
     }
 
+    void onSDLEvent(SDL_Event& event)
+    {
+        switch(event.type)
+        {
+            case SDL_MOUSEWHEEL:
+                mouseWheelUp   = event.wheel.y > 0;
+                mouseWheelDown = event.wheel.y < 0;
+                break;
+        }
+    }
+
     void captureMouse(uint32_t ID)
     {
         mouseCaptureID = ID;
@@ -265,7 +280,7 @@ namespace ui
     {
         assert(sz>=width*height*4);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
-        glReadPixels (0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &data);
+        glReadPixels (0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     }
 
@@ -331,6 +346,16 @@ namespace ui
         areas[idx].x1 = x1;
         areas[idx].y1 = y1;
 
+    }
+
+    bool mouseWasWheelUp()
+    {
+        return mouseWheelUp;
+    }
+
+    bool mouseWasWheelDown()
+    {
+        return mouseWheelDown;
     }
 
     bool keyIsPressed  (int key)
@@ -471,6 +496,50 @@ namespace ui
 
             camera->setOrientation(camDirector->savedCamRotation[camDirector->index]);
             camera->setPosition   (camDirector->savedCamLocation[camDirector->index]);
+        }
+    }
+
+    void processZoomAndPan(float& scale, float& transX, float& transY, bool& drag)
+    {
+        int x,  y;
+        int rx, ry;
+
+        ui::mouseAbsOffset(&x, &y);
+        ui::mouseRelOffset(&rx, &ry);
+        if (ui::mouseWasWheelUp())
+        {
+            scale *= 1.2f;
+            transX -= (x-transX)*(1.2f - 1);
+            transY -= (y-transY)*(1.2f - 1);
+        }
+        if (ui::mouseWasWheelDown())
+        {
+            scale /= 1.2f;
+            if (scale<1.0f)
+            {
+                //fix it a bit
+                transX -= (x-transX)*(1/scale/1.2f - 1);
+                transY -= (y-transY)*(1/scale/1.2f - 1);
+                scale = 1.0f;
+            }
+            else
+            {
+                transX -= (x-transX)*(1/1.2f - 1);
+                transY -= (y-transY)*(1/1.2f - 1);
+            }
+        }
+        if (ui::mouseWasPressed(SDL_BUTTON_LEFT))
+        {
+            drag = true;
+        }
+        if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+        {
+            drag = false;
+        }
+        if (drag)
+        {
+            transX += rx;
+            transY += ry;
         }
     }
 

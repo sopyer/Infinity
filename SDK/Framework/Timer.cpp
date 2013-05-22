@@ -1,12 +1,12 @@
-#include "Timer.h"
+#include <SDL2/SDL.h>
 #include <assert.h>
 
 uint64_t timerAbsoluteTime()
 {
-    LARGE_INTEGER freq, time;
-    QueryPerformanceCounter(&time);
-    QueryPerformanceFrequency(&freq);
-    uint64_t t1 = time.QuadPart*1000000;
-    uint64_t t2 = t1/freq.QuadPart;
-    return t2;
+    uint64_t freq, time;
+
+    time = SDL_GetPerformanceCounter();
+    freq = SDL_GetPerformanceFrequency();
+
+    return time * 1000000 / freq;
 }

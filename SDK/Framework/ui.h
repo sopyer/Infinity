@@ -32,6 +32,9 @@ namespace ui
     bool     mouseWasPressed (int button);
     bool     mouseIsReleased (int button);
     bool     mouseWasReleased(int button);
+    
+    bool     mouseWasWheelUp  ();
+    bool     mouseWasWheelDown();
 
     uint32_t mouseOverID();
     void     captureMouse(uint32_t ID);
@@ -55,6 +58,8 @@ namespace ui
 
     void     processCameraInput(SpectatorCamera* camera, float dt);
     void     processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);
+
+    void     processZoomAndPan(float& scale, float& transX, float& transY, bool& drag);
 
     void     displayStats(float x, float y, float w, float h, float cpuTime, float gpuTime);
 

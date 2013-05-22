@@ -89,46 +89,9 @@ public:
 protected:
     float bkgOffsetX, bkgOffsetY;
 
-    void onTouch(const ButtonEvent& event)
+    void onUpdate(float dt)
     {
-        if (event.button == SDL_BUTTON_WHEELUP)
-        {
-            mScale *= 1.2f;
-            mOffsetX -= (event.x-mOffsetX)*(1.2f - 1);
-            mOffsetY -= (event.y-mOffsetY)*(1.2f - 1);
-        }
-        else if (event.button == SDL_BUTTON_WHEELDOWN)
-        {
-            mScale /= 1.2f;
-            if (mScale<1.0f)
-            {
-                //fix it a bit
-                mOffsetX -= (event.x-mOffsetX)*(1/mScale/1.2f - 1);
-                mOffsetY -= (event.y-mOffsetY)*(1/mScale/1.2f - 1);
-                mScale = 1.0f;
-            }
-            else
-            {
-                mOffsetX -= (event.x-mOffsetX)*(1/1.2f - 1);
-                mOffsetY -= (event.y-mOffsetY)*(1/1.2f - 1);
-            }
-        }
-        else
-            mIsDragging = true;
-    }
-
-    void onUntouch(const ButtonEvent& event)
-    {
-        mIsDragging = false;
-    }
-
-    void onMotion(const MotionEvent& event)
-    {
-        if (mIsDragging)
-        {
-            mOffsetX += event.xrel;
-            mOffsetY += event.yrel;
-        }
+        ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
     }
 
     void onPaint()

@@ -9,74 +9,7 @@
 #include "MinuteHandData.h"
 #include "SecondHandData.h"
 
-GLchar buf[1024];
-GLsizei len;
-
-#define PRINT_SHADER_LOG(obj)	obj.getLog(1023, &len, buf);\
-	logMessage(#obj##" info\n%s", buf)
-
 float cubicData[] = {0, 0, 50, 50, 67, 20, 48, 30};
-
-class CubicActor: public ui::Actor
-{
-public:
-	CubicActor(const VGfloat* cp)
-	{
-		memcpy(&mControlPoints, cp, sizeof(VGfloat)*2*4);
-		VGubyte segments[3] = {VG_MOVE_TO, VG_CUBIC_TO, VG_CLOSE_PATH};
-		mCubic = vg::createPath(3, segments, cp);
-		//hide();
-	}
-
-	~CubicActor()
-	{
-		vg::destroyPath(mCubic);
-	}
-
-	CubicActor& setPaint(vg::Paint paint)
-	{
-		mPaint = paint; return *this;
-	}
-
-	float* getControlPoints()
-	{
-		return mControlPoints[0];
-	}
-
-	sigslot::signal1<CubicActor*> eventSelected;
-
-protected:
-	virtual void onTouch(const ButtonEvent& event)
-	{
-		if (event.button!=SDL_BUTTON_LEFT)
-			return;
-
-		if (isVisible())
-		{
-			hide();
-		}
-		else
-		{
-			show();
-			eventSelected(this);
-		}
-	}
-
-	virtual void onPaint()
-	{
-		vg::drawPath(mCubic, mPaint);
-	}
-
-	virtual void onPick(ui::Color color)
-	{
-		vg::drawPath(mCubic, color.red, color.green, color.blue, color.alpha);
-	}
-
-private:
-	vg::Path	mCubic;
-	vg::Paint	mPaint;
-	glm::vec3	mControlPoints[4];
-};
 
 //VGfloat hourHandData[] = {
 //	14.52016f, -0.22339926f, 14.52016f, -0.22339926f, 13.76016f, -0.18339926f, 12.52016f, 
@@ -145,6 +78,7 @@ private:
 //	VG_CUBIC_TO_ABS, VG_CUBIC_TO_ABS, VG_CUBIC_TO_ABS, VG_CUBIC_TO_ABS, VG_CUBIC_TO_ABS, VG_CUBIC_TO_ABS, VG_CLOSE_PATH, 
 //};
 
+const uint32_t CUBIC_MASK = 0xFF000000;
 
 class VGSample: public ui::Stage
 {
@@ -154,7 +88,7 @@ class VGSample: public ui::Stage
 			offsetX(mWidth/2),
 			offsetY(mHeight/2),
 			zoom(10),
-			mActiveCubic(0)
+            mSelection(CUBIC_MASK)
 		{
 			VGubyte segs[] = {VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_LINE_TO_ABS, VG_QUAD_TO_ABS, VG_CLOSE_PATH};
 			float data[] = {150, 100, 150, 0, 50, 100, 0, 0, 0, 50, 50, 0};
@@ -247,11 +181,10 @@ class VGSample: public ui::Stage
 			{
 				if (hourHandSegs[i]==VG_CUBIC_TO)
 				{
-					CubicActor* ca = new CubicActor(d-2);
-					ca->setPaint(white).hide();
-					ca->eventSelected.connect(this, &VGSample::handleCubicSelected);
-					mCubics.add(ca);
-					mCubicsHolder.push_back(ca);
+            		VGubyte  segments[3] = {VG_MOVE_TO, VG_CUBIC_TO, VG_CLOSE_PATH};
+                    vg::Path cubic = vg::createPath(3, segments, d-2);
+                    mCubics.push_back(cubic);
+                    mCPStart.push_back(d-2);
 				}
 
 				switch (hourHandSegs[i])
@@ -267,9 +200,6 @@ class VGSample: public ui::Stage
 				}
 			}
 			
-			add(mCubics);
-			updateCubics();
-
 			//impl::FillGeometryBuilder	fillBuilder;
 
 			Array<glm::vec2>	v;
@@ -357,19 +287,13 @@ class VGSample: public ui::Stage
 			//strokeBuilder.end(false);
 
 			//strokeBuilder.copyDataTo(stroke);
-
-			wchar_t zoomStr[256];
-			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
-			add(mZoomLabel.setText(zoomStr)
-				  .setPos(300, 10));
-			add(mCubicLabel.setPos(0, 540));
 		}
 
 		~VGSample()
 		{
-			struct {void operator ()(CubicActor* cubic) {delete cubic;}} deleter;
+            struct {void operator ()(vg::Path cubic) {vg::destroyPath(cubic);}} deleter;
 			
-			std::for_each(mCubicsHolder.begin(), mCubicsHolder.end(), deleter);
+			std::for_each(mCubics.begin(), mCubics.end(), deleter);
 
 			vg::destroyPath(point);
 			vg::destroyPath(path);
@@ -378,12 +302,9 @@ class VGSample: public ui::Stage
 		}
 		
 	protected:
-		std::vector<CubicActor*>	mCubicsHolder;
+        std::vector<vg::Path>   mCubics;
+        std::vector<float*>     mCPStart;
 
-		CubicActor*		mActiveCubic;
-		ui::Container	mCubics;
-		ui::Label		mZoomLabel;
-		ui::Label		mCubicLabel;
 		vg::Path	point;
 		vg::Paint	white;
 		bool doMove;
@@ -392,116 +313,80 @@ class VGSample: public ui::Stage
 		float zoom;
 		VGuint		mVisPrims;
 		
-		void handleCubicSelected(CubicActor* cubic)
-		{
-			if (cubic!=mActiveCubic)
-			{
-				const float* cp = cubic->getControlPoints();
-				wchar_t label[1024];
-				swprintf(label, 1024, L"CP: (%f, %f) (%f, %f) (%f, %f) (%f, %f)",
-					cp[0], cp[1], cp[2], cp[3], cp[4], cp[5], cp[6], cp[7]);
-				mCubicLabel.setText(label);
-			}
-			else
-				mCubicLabel.setText(L"");
-
-			if (mActiveCubic)
-			{
-				mActiveCubic->hide();
-			}
-			
-			mActiveCubic = (cubic!=mActiveCubic)?cubic:0;
-		}
-
-		void updateCubics()
-		{
-			mCubics.setScale(zoom, zoom).setPos(offsetX, offsetY);
-		}
-
-		void onTouch(const ButtonEvent& event)
-		{
-			if (event.button == SDL_BUTTON_WHEELUP)
-			{
-				zoom *= 1.2f;
-				offsetX -= (event.x-offsetX)*(1.2f - 1);
-				offsetY -= (event.y-offsetY)*(1.2f - 1);
-			}
-			else if (event.button == SDL_BUTTON_WHEELDOWN)
-			{
-				zoom /= 1.2f;
-				if (zoom<1.0f)
-				{
-					//fix it a bit
-					offsetX -= (event.x-offsetX)*(1/zoom/1.2f - 1);
-					offsetY -= (event.y-offsetY)*(1/zoom/1.2f - 1);
-					zoom = 1.0f;
-				}
-				else
-				{
-					offsetX -= (event.x-offsetX)*(1/1.2f - 1);
-					offsetY -= (event.y-offsetY)*(1/1.2f - 1);
-				}
-			}
-			else
-				doMove = true;
-
-			wchar_t zoomStr[256];
-			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
-			mZoomLabel.setText(zoomStr);
-			updateCubics();
-		}
-
-		void onUntouch(const ButtonEvent& event)
-		{
-			doMove = false;
-		}
-
-		void onMotion(const MotionEvent& event)
-		{
-			if (doMove)
-			{
-				offsetX += event.xrel/*/11.0f*/;
-				offsetY += event.yrel/*/11.0f*/;
-			}
-			updateCubics();
-			//mGroup.setPos(offsetX, 0/*offsetY*/);
-		}
+        void onUpdate(float dt)
+        {
+            ui::processZoomAndPan(zoom, offsetX, offsetY, doMove);
+            
+			glTranslatef(offsetX, offsetY, 0);
+			glScalef(zoom, zoom, 1);
+            assert(mCubics.size()<=256);
+            for (size_t i=0; i<mCubics.size(); ++i)
+            {
+                vg::drawPath(mCubics[i], i, 0, 0, 0xFF);
+            }
+        }
 
 		void onPaint()
 		{
-			//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			//glMatrixMode(GL_MODELVIEW);
-			//glLoadIdentity();
-			//glTranslatef(400.0f, 300.0f, -4.0f);
-			//glScalef(2, -2, 1);
-			//glPushMatrix();
+            PROFILER_CPU_TIMESLICE("onPaint");
+
+            glPushMatrix();
 			glTranslatef(offsetX, offsetY, 0);
 			glScalef(zoom, zoom, 1);
 			vg::drawPath(path, paint);
-			//glPopMatrix();
 			//Hack:) for correct result we should also parse segments
 			for (int i=0; i<ARRAY_SIZE(hourHandData); i+=2)
 			{
+                PROFILER_CPU_TIMESLICE("Path i");
 				glPushMatrix();
-				//glTranslatef(offsetX, offsetY, 0);
 				glTranslatef(hourHandData[i], hourHandData[i+1], 0);
 				glScalef(2/zoom, 2/zoom, 1);
 				vg::drawPath(point, white);
 				glPopMatrix();
 			}
+
+            uint32_t i = ui::mouseOverID();
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && ((i & CUBIC_MASK) == CUBIC_MASK))
+            {
+                uint32_t id = i & 0xFF;
+                assert(id < mCubics.size());
+                mSelection = mSelection != id ? id : CUBIC_MASK;
+            }
+            if (mSelection < mCubics.size())
+                vg::drawPath(mCubics[mSelection], white);
+
+			glPopMatrix();
+
+            glColor3f(1.0f, 1.0f, 1.0f);
+ 			char zoomStr[256];
+			_snprintf(zoomStr, 256, "Zoom level %f", zoom);
+            vg::drawString(ui::defaultFont, 550, 10, zoomStr, strlen(zoomStr));
+            if (mSelection < mCubics.size())
+            {
+                float* cp = mCPStart[mSelection];
+			    _snprintf(zoomStr, 256, "CP: (%f, %f) (%f, %f) (%f, %f) (%f, %f)",
+					      cp[0], cp[1], cp[2], cp[3], cp[4], cp[5], cp[6], cp[7]);
+                vg::drawString(ui::defaultFont, 10, 700, zoomStr, strlen(zoomStr));
+            }
+
 		}
 
 	private:
+        size_t                      mSelection;
 		vg::Path					path;
 		vg::Paint					paint;
-		//impl::FillGeometry			fill;
-		//impl::StrokeGeometry		stroke;
 };
 
 int main(int argc, char** argv)
 {
-	VGSample app;
-	app.run();
+    fwk::init(argv[0]);
+
+    {
+        VGSample app;
+    	app.run();
+    }
+
+    fwk::cleanup();
 
 	return 0;
 }

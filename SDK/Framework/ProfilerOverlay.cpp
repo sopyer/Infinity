@@ -175,14 +175,14 @@ void ProfilerOverlay::updateUI()
         mSelection = id & 0xFFFF;
     }
 
-    if (ui::keyWasReleased(SDL_SCANCODE_EQUALS))
+    if (ui::keyWasReleased(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
     {
         ui::mouseAbsOffset(&offx, NULL);
         mScale*=scaleUp;
         offx -= 30;
         mOffsetX = (1.0f-scaleUp) * offx + scaleUp * mOffsetX;
     }
-    if (ui::keyWasReleased(SDL_SCANCODE_MINUS))
+    if (ui::keyWasReleased(SDL_SCANCODE_MINUS) || ui::mouseWasWheelDown())
     {
         ui::mouseAbsOffset(&offx, NULL);
         mScale*=scaleDown;

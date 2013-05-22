@@ -686,55 +686,12 @@ protected:
 
         CHECK_GL_ERROR();
 
-
-        vg::drawRect(90, 50, 210, 90, 0xFFFFFFFF, 0xFFFFFFFF);
-        vg::drawRoundedRect(100, 60, 200, 74, 7, 7, 0xFF595959, 0xFF3A3A3A);
-
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
-
-        uint32_t id = ui::mouseOverID();
-        static bool drag = false;
-
-        if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==0xAA001000)
-        {
-            ui::captureMouse(0xAA001000);
-            drag = true;
-        }
-
-        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==0xAA001000)
-        {
-            ui::releaseMouse();
-            drag = false;
-        }
-        
-        static float xo = 120;
-        if (drag)
-        {
-            int x, y;
-            ui::mouseAbsOffset(&x, &y);
-
-            x = std::max(x, 100+6);
-            x = std::min(x, 200-6);
-
-            xo = x-6;
-        }
-
-        vg::drawRoundedRect(xo, 61, xo+12, 73, 6, 6, 0xFF898989, 0xFF898989);
     }
 
     void onUpdate(float dt)
     {
-        int mouseX, mouseY;
-        ui::mouseAbsOffset(&mouseX, &mouseY);
-
-        if (ui::mouseIsPressed(SDL_BUTTON_LEFT) && mouseY>40)
-        {
-            int dx, dy;
-
-            ui::mouseRelOffset(&dx, &dy);
-            mOffsetX += dx;
-            mOffsetY += dy;
-        }
+        ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
 
         uint32_t id = ui::mouseOverID();
         if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && ((id&0xFF000000)==0xFF000000))
@@ -742,32 +699,6 @@ protected:
             currentTab = id & 0x00FFFFFF;
 
             assert(currentTab>=0 && currentTab<3);
-        }
-    }
-
-    void onTouch(const ButtonEvent& event)
-    {
-        if (event.button == SDL_BUTTON_WHEELUP)
-        {
-            mScale *= 1.2f;
-            mOffsetX -= (event.x-mOffsetX)*(1.2f - 1);
-            mOffsetY -= (event.y-mOffsetY)*(1.2f - 1);
-        }
-        else if (event.button == SDL_BUTTON_WHEELDOWN)
-        {
-            mScale /= 1.2f;
-            if (mScale<1.0f)
-            {
-                //fix it a bit
-                mOffsetX -= (event.x-mOffsetX)*(1/mScale/1.2f - 1);
-                mOffsetY -= (event.y-mOffsetY)*(1/mScale/1.2f - 1);
-                mScale = 1.0f;
-            }
-            else
-            {
-                mOffsetX -= (event.x-mOffsetX)*(1/1.2f - 1);
-                mOffsetY -= (event.y-mOffsetY)*(1/1.2f - 1);
-            }
         }
     }
 

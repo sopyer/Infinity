@@ -93,15 +93,22 @@ namespace ui
         return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
     }
 
+    void onSDLEvent(SDL_Event& event);
+
     void Stage::handleInput()
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
-        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_P))
+        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_F))
         {
             switchCapture = true;
         }
-        
+#if defined(DEBUG) || defined(_DEBUG)
+        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_P))
+        {
+            dumpPickImage = true;
+        }
+#endif
         SDL_Event	E;
         uint32_t i = 0;
         while (SDL_PollEvent(&E) && i<10)
@@ -157,6 +164,8 @@ namespace ui
                 if (mState==STATE_DEFAULT)
                     onUntouch(E.button);
                 break;
+            default:
+                onSDLEvent(E);
             }
             ++i;
         }
@@ -184,15 +193,9 @@ namespace ui
 
         //TODO: Merge all tree
         ui::update();
-        outlineActors();
         handleInput();
+        outlineActors();
         
-        uint64_t time;
-
-        time = timerAbsoluteTime();
-        onUpdate((time-mPrevTime)*0.000001f);
-        mPrevTime = time;
-
         if (mShaderEditOverlay->requireReset())
         {
             impl::readyProgramsForUse();
@@ -221,6 +224,11 @@ namespace ui
     void Stage::close()
     {
         mt::terminateLoop();
+    }
+
+    void Stage::setCaption(const char* caption)
+    {
+        SDL_SetWindowTitle(fwk::window, caption);
     }
 
     void Stage::run()
@@ -267,6 +275,14 @@ namespace ui
         if (mState==STATE_PROFILER)
         {
             mProfilerOverlay->updateUI();
+        }
+        else if (mState==STATE_DEFAULT)
+        {
+            uint64_t time;
+
+            time = timerAbsoluteTime();
+            mPrevTime = time;
+            onUpdate((time-mPrevTime)*0.000001f);
         }
 
         endPickOutline();

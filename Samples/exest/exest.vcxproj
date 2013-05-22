@@ -87,7 +87,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>winmm.lib;scintilla.lib;utils.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;scintilla.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
     </Link>

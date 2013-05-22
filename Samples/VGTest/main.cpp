@@ -495,10 +495,6 @@ class VGTest: public ui::Stage
 			cp.assign(controlPts2, controlPts2+4);
 			addCubic(mRasterCubic, mTri, cp);
 
-			wchar_t zoomStr[256];
-			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
-			add(mZoomLabel.setText(zoomStr)
-				  .setPos(300, 10));
 			glClearStencil(0x80);
 			colorRB = createRenderbuffer(GL_RGBA8, 8, 800, 600);
 			depthRB = createRenderbuffer(GL_DEPTH24_STENCIL8, 8, 800, 600);
@@ -572,7 +568,6 @@ class VGTest: public ui::Stage
 		Geometry<CubicVertex>	mRasterCubic;
 		Geometry<glm::vec2>		mRationalCubic, mTri;
 		impl::Geometry			testPath, testPathOff;
-		ui::Label		mZoomLabel;
 		
 		bool doMove;
 		float offsetX;
@@ -603,6 +598,8 @@ class VGTest: public ui::Stage
 
 		void onPaint()
 		{
+            ui::processZoomAndPan(zoom, offsetX, offsetY, doMove);
+
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
 			glTranslatef(offsetX, offsetY, 0);
@@ -624,6 +621,7 @@ class VGTest: public ui::Stage
 			float vp[4];
 			glGetFloatv(GL_VIEWPORT, vp);
 			
+			glPushMatrix();
 			if (bool alphaAA = false)
 			{
 				glDisable(GL_STENCIL_TEST);
@@ -718,6 +716,7 @@ class VGTest: public ui::Stage
 				glEnable(GL_STENCIL_TEST);
 
 				glMatrixMode(GL_MODELVIEW);
+                glPushMatrix();
 				glTranslatef(offsetX, offsetY, 0);
 				glScalef(zoom, zoom, 1);
 
@@ -752,38 +751,12 @@ class VGTest: public ui::Stage
 				glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
 				glEnd();
 			}
-		}
+            glPopMatrix();
 
-		void onTouch(const ButtonEvent& event)
-		{
-			if (event.button == SDL_BUTTON_WHEELUP)
-			{
-				zoom *= 1.2f;
-				offsetX -= (event.x-offsetX)*(1.2f - 1);
-				offsetY -= (event.y-offsetY)*(1.2f - 1);
-			}
-			else if (event.button == SDL_BUTTON_WHEELDOWN)
-			{
-				zoom /= 1.2f;
-				if (zoom<1.0f)
-				{
-					//fix it a bit
-					offsetX -= (event.x-offsetX)*(1/zoom/1.2f - 1);
-					offsetY -= (event.y-offsetY)*(1/zoom/1.2f - 1);
-					zoom = 1.0f;
-				}
-				else
-				{
-					offsetX -= (event.x-offsetX)*(1/1.2f - 1);
-					offsetY -= (event.y-offsetY)*(1/1.2f - 1);
-				}
-			}
-			else
-				doMove = true;
-
-			wchar_t zoomStr[256];
-			swprintf(zoomStr, 256, L"Zoom level %f", zoom);
-			mZoomLabel.setText(zoomStr);
+            glColor3f(1.0f, 1.0f, 1.0f);
+ 			char zoomStr[256];
+			_snprintf(zoomStr, 256, "Zoom level %f", zoom);
+            vg::drawString(ui::defaultFont, 300, 10, zoomStr, strlen(zoomStr));
 		}
 
 		void onUntouch(const ButtonEvent& event)
@@ -803,8 +776,14 @@ class VGTest: public ui::Stage
 
 int main(int argc, char** argv)
 {
-	VGTest app;
-	app.run();
+    fwk::init(argv[0]);
 
-	return 0;
+    {
+	    VGTest app;
+	    app.run();
+    }
+
+    fwk::cleanup();
+
+    return 0;
 }

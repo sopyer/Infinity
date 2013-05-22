@@ -27,6 +27,7 @@ namespace ui
 
         void run();
         void close();
+        void setCaption(const char* caption);
 
         bool isMouseCaptured();
 
