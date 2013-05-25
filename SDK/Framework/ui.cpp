@@ -420,17 +420,15 @@ namespace ui
         float       heading = 0.0f;
         float       pitch   = 0.0f;
 
-        uint8_t *keystate = SDL_GetKeyboardState(NULL);
+        direction.z += ui::keyIsPressed(SDL_SCANCODE_W)?1.0f:0.0f;
+        direction.z -= ui::keyIsPressed(SDL_SCANCODE_S)?1.0f:0.0f;
+        direction.x -= ui::keyIsPressed(SDL_SCANCODE_A)?1.0f:0.0f;
+        direction.x += ui::keyIsPressed(SDL_SCANCODE_D)?1.0f:0.0f;
 
-        direction.z += ui::keyStateCur[SDL_SCANCODE_W]?1.0f:0.0f;
-        direction.z -= ui::keyStateCur[SDL_SCANCODE_S]?1.0f:0.0f;
-        direction.x -= ui::keyStateCur[SDL_SCANCODE_A]?1.0f:0.0f;
-        direction.x += ui::keyStateCur[SDL_SCANCODE_D]?1.0f:0.0f;
-
-        pitch   += ui::keyStateCur[SDL_SCANCODE_KP_8]?1.50f:0.0f;
-        pitch   -= ui::keyStateCur[SDL_SCANCODE_KP_5]?1.50f:0.0f;
-        heading += ui::keyStateCur[SDL_SCANCODE_KP_4]?1.50f:0.0f;
-        heading -= ui::keyStateCur[SDL_SCANCODE_KP_6]?1.50f:0.0f;
+        pitch   += ui::keyIsPressed(SDL_SCANCODE_KP_8)?1.50f:0.0f;
+        pitch   -= ui::keyIsPressed(SDL_SCANCODE_KP_5)?1.50f:0.0f;
+        heading += ui::keyIsPressed(SDL_SCANCODE_KP_4)?1.50f:0.0f;
+        heading -= ui::keyIsPressed(SDL_SCANCODE_KP_6)?1.50f:0.0f;
 
         camera->rotateSmoothly(heading, pitch);
         camera->rotateSmoothly((float)-ui::deltaX, (float)-ui::deltaY);

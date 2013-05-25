@@ -60,6 +60,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalDependencies>scintilla_d.lib;opengl32.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;sdl2_d.lib;sdl2main_d.lib;freetype_d.lib;physfs_d.lib;framework_d.lib;vg_d.lib;%(AdditionalDependencies)</AdditionalDependencies>

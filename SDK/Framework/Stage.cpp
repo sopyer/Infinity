@@ -281,8 +281,8 @@ namespace ui
             uint64_t time;
 
             time = timerAbsoluteTime();
-            mPrevTime = time;
             onUpdate((time-mPrevTime)*0.000001f);
+            mPrevTime = time;
         }
 
         endPickOutline();
