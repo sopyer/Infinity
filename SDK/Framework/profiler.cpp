@@ -1,3 +1,4 @@
+#include <SDL2/SDL.h>
 #include <algorithm>
 #include <assert.h>
 #include <windows.h>
@@ -21,8 +22,7 @@ extern "C"
     {
         captureInProgress = FALSE;
 
-        __int64 ticksPerSecond;
-        QueryPerformanceFrequency((LARGE_INTEGER*)&ticksPerSecond);
+        __int64 ticksPerSecond = SDL_GetPerformanceFrequency();
 
         // convert timestamps to microseconds
         for (long i = 0; i < numEvents; ++i)
@@ -46,10 +46,10 @@ extern "C"
             size_t              i     = count-1;
             profiler_event_t&   event = events[i];
 
-            event.id       = id;
-            event.phase    = eventPhase;
-            event.threadID = GetCurrentThreadId();
-            QueryPerformanceCounter((LARGE_INTEGER*)&(event.timestamp));
+            event.id        = id;
+            event.phase     = eventPhase;
+            event.threadID  = SDL_ThreadID();
+            event.timestamp = SDL_GetPerformanceCounter();
         }
         else
         {

@@ -68,7 +68,8 @@ namespace ui
         ShaderEditOverlay*  mShaderEditOverlay;
         ProfilerOverlay*    mProfilerOverlay;
 
-        bool switchCapture;
+        bool doFrameCapture;
+        bool doTimesliceCapture;
     };
 }
 

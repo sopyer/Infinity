@@ -1,70 +1,114 @@
-#include <cstdio>
-#include "Scheduler.h"
-#include <ctime>
-#include <windows.h>
+#define _CRT_SECURE_NO_WARNINGS
 
-int count = 100;
-clock_t t1 = 0;
+#include <framework.h>
+#include <utils.h>
+#include <SpectatorCamera.h>
 
-mt::Task handle;
-
-struct TestCPPBind
+extern "C"
 {
-	int count;
-	void func()
-	{
-		--count;
-		clock_t t2 = clock();
-		printf("1Times %d, elapsed %f s\n", count, float(t2-t1)*1000/CLOCKS_PER_SEC);
-		t1 = t2;
-		if (count==3)
-		{
-			mt::terminateTask(handle);
-			handle = mt::addTimedTask<TestCPPBind, &TestCPPBind::func2>(this, 20);
-		}
-	}
-
-	void func2()
-	{
-		--count;
-		clock_t t2 = clock();
-		printf("2Times %d, elapsed %f s\n", count, float(t2-t1)*1000/CLOCKS_PER_SEC);
-		t1 = t2;
-
-		if (!count)
-		{
-			mt::terminateLoop();
-		}
-	}
-} test = {10};
-
-void func(void* userData)
-{
-	--count;
-	clock_t t2 = clock();
-	printf("Times %d, elapsed %f s\n", count, float(t2-t1)*1000/CLOCKS_PER_SEC);
-	t1 = t2;
-	if (!count)
-	{
-		mt::terminateLoop();
-	}
+#include "threadpool.h"
 }
 
-int main()
+void task(void*)
 {
-	HANDLE h = GetCurrentThread();
-	SetThreadPriority(h, THREAD_PRIORITY_TIME_CRITICAL);
-	Sleep(1000);
+    PROFILER_CPU_TIMESLICE("TaskInWorker");
 
-	mt::init();
+    size_t n=100000;
+    while (n--);
+}
 
-	//scheduler::addTimedTask(func, 0, 20);
-	handle = mt::addTimedTask<TestCPPBind, &TestCPPBind::func>(&test, 20);
+class SchedulerTest: public ui::Stage
+{
+private:
+    threadpool_t*       pool;
+    SpectatorCamera     camera;
 
-	t1 = clock();
-	mt::mainLoop();
+    glm::mat4	mProj;
+public:
+    SchedulerTest()
+    {
+        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+        pool = threadpool_create(1, 128, 0);
+    }
 
-	mt::cleanup();
+    ~SchedulerTest()
+    {
+        threadpool_destroy(pool, 0);
+    }
 
-	return 0;
+protected:
+    void onKeyUp(const KeyEvent& event)
+    {
+        if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
+            event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
+        {
+            releaseMouse();
+        }
+    }
+
+    void onTouch(const ButtonEvent& event)
+    {
+        UNUSED(event);
+        captureMouse();
+    }
+
+    void onPaint()
+    {
+        GLenum err;
+
+        glClearDepth(1.0);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadMatrixf(mProj);
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+
+        glm::mat4 vm;
+        camera.getViewMatrix(vm);
+        glLoadMatrixf(vm);
+
+        glDisable(GL_CULL_FACE);
+
+        glUseProgram(0);
+        glBegin(GL_TRIANGLES);
+        glColor3f(1, 0, 0);
+        glVertex3f(-3, -1, -10);
+        glColor3f(0, 1, 0);
+        glVertex3f( 3, -1, -10);
+        glColor3f(0, 0, 1);
+        glVertex3f( 0, 4, -10);
+        glEnd();
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
+        glDisable(GL_BLEND);
+
+        ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, 0.0f, 0.0f);
+
+        err = glGetError();
+        assert(err==GL_NO_ERROR);
+    }
+
+    void onUpdate(float dt)
+    {
+        threadpool_add(pool, task, NULL, 0);
+    }
+};
+
+int main(int argc, char** argv)
+{
+    fwk::init(argv[0]);
+
+    {
+        SchedulerTest app;
+        app.run();
+    }
+
+    fwk::cleanup();
+
+    return 0;
 }

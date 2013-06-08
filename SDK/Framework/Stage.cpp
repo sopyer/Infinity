@@ -30,7 +30,8 @@ namespace ui
 {
     Stage::Stage():
         mState(STATE_DEFAULT),
-        switchCapture(false)
+        doFrameCapture(false),
+        doTimesliceCapture(false)
 #if defined(DEBUG) || defined(_DEBUG)
         ,dumpPickImage(0)
 #endif
@@ -50,7 +51,7 @@ namespace ui
         mShaderEditOverlay->initialise(mWidth, mHeight);
 
         mProfilerOverlay = new ProfilerOverlay;
-        mProfilerOverlay->initialise(mWidth, mHeight);
+        mProfilerOverlay->init(mWidth, mHeight);
 
         GLuint programs[] = {
             impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
@@ -65,6 +66,7 @@ namespace ui
     Stage::~Stage()
     {
         delete mShaderEditOverlay;
+        mProfilerOverlay->fini();
         delete mProfilerOverlay;
         Platform_Finalise();
     }
@@ -99,10 +101,15 @@ namespace ui
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
-        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_F))
+        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_T))
         {
-            switchCapture = true;
+            doTimesliceCapture = !doTimesliceCapture;
         }
+        else if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_F))
+        {
+            doFrameCapture = !doTimesliceCapture;
+        }
+
 #if defined(DEBUG) || defined(_DEBUG)
         if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_P))
         {
@@ -175,18 +182,25 @@ namespace ui
     {
         static const char* strFrame = "Frame";
 
-        if (switchCapture)
+        if (doFrameCapture && !profilerIsCaptureInProgress())
         {
-            if (profilerIsCaptureInProgress())
-            {
-                profilerEndDataCapture();
-                mProfilerOverlay->loadProfilerData();
-                switchCapture = false;
-            }
-            else
-                profilerBeginDataCapture();
+            profilerBeginDataCapture();
         }
-
+        if (doFrameCapture && profilerIsCaptureInProgress())
+        {
+            profilerEndDataCapture();
+            mProfilerOverlay->loadProfilerData();
+            doFrameCapture = false;
+        }
+        if (doTimesliceCapture && !profilerIsCaptureInProgress())
+        {
+            profilerBeginDataCapture();
+        }
+        if (!doTimesliceCapture && profilerIsCaptureInProgress())
+        {
+            profilerEndDataCapture();
+            mProfilerOverlay->loadProfilerData();
+        }
         PROFILER_CPU_TIMESLICE("Frame");
 
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);

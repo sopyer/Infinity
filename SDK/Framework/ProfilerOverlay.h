@@ -14,23 +14,18 @@
 #include <SDL2/SDL.h>
 #include <opengl.h>
 
-struct Vertex
-{
-    float    x, y;
-};
-
 struct Interval
 {
     const char* name;
     float       duration;
-    float       xmin, ymin;
-    float       xmax, ymax;
 };
 
 class ProfilerOverlay
 {
 public:
-    void initialise(int w, int h);
+    void init(int w, int h);
+    void fini();
+
     void loadProfilerData();
 
     void renderFullscreen();
@@ -40,7 +35,7 @@ private:
     void drawBars(uint32_t* colorArray);
 
 private:
-    std::vector<Vertex> drawData;
+    std::vector<float>    rectData;
     std::vector<Interval> intervals;
     std::vector<uint32_t> colors;
     std::vector<uint32_t> ids;
@@ -51,4 +46,8 @@ private:
     float mScale;
     bool  mDoDrag;
     float mOffsetX;
+
+    GLuint vboRectData;
+    GLuint vboColorData;
+    GLint  uniMVP;
 };

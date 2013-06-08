@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <assert.h>
+// switch to dlalloc and use mspaces
+#include <stdlib.h> 
 
 #define UNUSED(var)			((void)(var))
 #define ARRAY_SIZE(arr)		sizeof(arr)/sizeof(arr[0])
@@ -39,6 +41,81 @@ type* madvance(memory_t* mem)
     assert(mem->allocated<=mem->size);
 
     return (type*)var;
+}
+
+namespace ut
+{
+    //TODO: Handle resize!!!!!!!!!!!!!!!!
+    // maps uint32_t -> [0..N]
+    // should be used only for small indices N<256
+    struct _vindex32_t
+    {
+        uint32_t used;
+        uint32_t allocated;
+        uint32_t data[1];
+    };
+
+    typedef _vindex32_t* vindex32_t;
+
+    inline void vindex_create(vindex32_t* ptrIndexData, size_t keysPrealloc);
+    inline void vindex_destroy(vindex32_t indexData);
+    inline void vindex_get(vindex32_t* ptrIndexData, uint32_t key, uint32_t* retIndex);
+
+
+    inline void vindex_create(vindex32_t* ptrIndexData, size_t keysPrealloc)
+    {
+        size_t   dataSize;
+        vindex32_t indexData;
+
+        dataSize  = sizeof(_vindex32_t)+sizeof(uint32_t)*(keysPrealloc-1);
+        indexData = (vindex32_t)malloc(dataSize);
+
+        indexData->used      = 0;
+        indexData->allocated = keysPrealloc;
+
+        *ptrIndexData = indexData;
+    }
+
+    inline void vindex_destroy(vindex32_t indexData)
+    {
+        free(indexData);
+    }
+
+    // adds key to index
+    inline void vindex_get(vindex32_t* ptrIndexData, uint32_t key, uint32_t* retIndex)
+    {
+        size_t    idx, count;
+        uint32_t* keys;
+        vindex32_t  indexData;
+
+        indexData = *ptrIndexData;
+        idx   = 0;
+        count = indexData->used;
+        keys  = indexData->data;
+
+        for (; idx < count; ++idx)
+        {
+            if (keys[idx]==key)
+            {
+                goto result;
+            }
+        }
+
+        //if (idx>=indexData->allocated)
+        //{
+        //    assert(indexData->allocated < (1<<30)); // avoid overflow!!!
+        //    size_t newSize = sizeof(_vindex_t)+sizeof(uint32_t)*(indexData->allocated*2-1);
+        //    indexData = (vindex_t)realloc(indexData, newSize);
+        //    *ptrIndexData = indexData;
+        //}
+
+        assert(idx < indexData->allocated);
+        indexData->data[idx] = key;
+        ++indexData->used;
+    
+    result:
+        if (retIndex) *retIndex = idx;
+    }
 }
 
 #endif
