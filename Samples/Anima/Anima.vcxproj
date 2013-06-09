@@ -101,7 +101,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\AppData\SHLighting.frag" />
+    <None Include="..\..\AppData\SHLighting_wireframe.frag" />
     <None Include="..\..\AppData\Skinning4.vert" />
+    <None Include="..\..\AppData\Skinning4_wireframe.vert" />
     <None Include="..\..\AppData\wireframe.geom" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

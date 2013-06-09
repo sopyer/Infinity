@@ -18,10 +18,9 @@ public:
     void Update(float fDeltaTime);
     void Render(float* MVP);
 
-	void resetUniforms();
-
 public:
-   	GLuint program;
+   	GLuint prgLighting;
+    GLuint prgDefault;
 
 private:
     void RenderMesh    (Mesh* mesh, Material* material);
@@ -52,8 +51,8 @@ private:
     ml::dual_quat*      mPose;              // Current pose, atm used to visualize skeleton
 
     // uniform locations
-	GLint uTexture;
-	GLint uBoneMatrix;
-    GLint uBoneDualQuat;
-	GLint uMVP;
+    GLuint   ubo;
+    GLsizei  uboSize;
+    GLsizei  uniGlobal;
+    GLsizei  uniBones;
 };

@@ -9,7 +9,7 @@ in vec2 vTexCoord0;
 
 layout(location = 0, index = 0) out vec4 outColor;
 
-mat3 cotangentFrame( vec3 N, vec3 p, vec2 uv )
+mat3 cotangentFrame( vec3 p, vec3 N, vec2 uv )
 {
     // get edge vectors of the pixel triangle
     vec3 dp1 = dFdx( p );
@@ -33,7 +33,7 @@ void main()
     vec3 P = vPosition;
 	vec4 N = vec4(normalize(cross(dFdx(P), dFdy(P))), 1.0);
     
-    mat3 TBN = cotangentFrame(P, N.xyz, vTexCoord0);
+    mat3 TBN = cotangentFrame(P, vNormal, vTexCoord0);
     
     // Read normal map
     N.xyz = texture2D(samNormal, vTexCoord0).xyz;
@@ -67,7 +67,7 @@ void main()
     c.b = dot((b_sh_matrix * N), N);
     c.a = 1.0;
     
-    c = 2.0*texture2D(samDiffuse, vTexCoord0);
-
+    c = 4.0*c*texture2D(samDiffuse, vTexCoord0)+0.1;
+	
 	outColor = c;
 }

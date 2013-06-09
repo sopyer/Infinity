@@ -8,6 +8,11 @@
 #include "md5.h"
 #include "json.h"
 
+#define MAX_BONES 128
+
+#define UNI_GLOBAL  0
+#define UNI_BONES   1
+
 struct SkinnedVertex
 {
     float   px, py, pz;
@@ -54,6 +59,7 @@ MD5Model::MD5Model()
 , mFrameRate(0)
 , mAnimTime(0)
 , mMeshes(0)
+, mMaterials(0)
 , mBoneHierarchy(0)
 , mBindPose(0)
 , mInvBindPose(0)
@@ -61,22 +67,57 @@ MD5Model::MD5Model()
 , mBoneTransform(0)
 , mPose(0)
 {
-    program = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
+    prgDefault = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
     
     mWireframe = (Material*)malloc(sizeof(Material));
-    mWireframe->program = program;
+    mWireframe->program = prgDefault;
     mWireframe->diffuse = mWireframe->normal = 0;
 
-    program = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
+    prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
 
-    resetUniforms();
+    GLint align;
+    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
+    --align;
+
+    uboSize   = 0;
+    uniGlobal = uboSize; uboSize+=sizeof(float)*16;                uboSize += align; uboSize &=~align;
+    uniBones  = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat); uboSize += align; uboSize &=~align;
+
+    {
+        GLint structSize;
+        GLint uniGlobal, uniBones;
+
+        uniGlobal = glGetUniformBlockIndex(prgDefault, "uniGlobal");
+        uniBones  = glGetUniformBlockIndex(prgDefault, "uniBones");
+
+        glGetActiveUniformBlockiv(prgDefault, uniGlobal, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==16*sizeof(float));
+        glGetActiveUniformBlockiv(prgDefault, uniBones,  GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
+
+        uniGlobal = glGetUniformBlockIndex(prgLighting, "uniGlobal");
+        uniBones  = glGetUniformBlockIndex(prgLighting, "uniBones");
+
+        glGetActiveUniformBlockiv(prgLighting, uniGlobal, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==16*sizeof(float));
+        glGetActiveUniformBlockiv(prgLighting, uniBones,  GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
+    }
+
+    glGenBuffers(1, &ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferData(GL_UNIFORM_BUFFER, uboSize, 0, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
     assert(glGetError()==GL_NO_ERROR);
 }
 
 MD5Model::~MD5Model()
 {
-    glDeleteProgram(mWireframe->program);
-    glDeleteProgram(program);
+    glDeleteBuffers(1, &ubo);
+
+    glDeleteProgram(prgLighting);
+    glDeleteProgram(prgDefault);
 
     free(mWireframe);
 
@@ -114,8 +155,8 @@ MD5Model::~MD5Model()
 
 bool MD5Model::LoadModel(const char* name)
 {
-    memory_t inText;
-    memory_t outBinary;
+    memory_t inText    = {0, 0, 0};
+    memory_t outBinary = {0, 0, 0};
 
     if (marea(&outBinary, 4*1024*1024) &&
         mopen(&inText, name)           &&
@@ -151,7 +192,9 @@ bool MD5Model::LoadModel(const char* name)
                         mesh->numWeights,  mesh->weights,
                         mesh->numIndices,  mesh->indices);
 
+            mMaterials[i] = *mWireframe;
             loadMaterial(&mMaterials[i], mesh->shader);
+            if (mMaterials[i].diffuse && mMaterials[i].normal) mMaterials[i].program = prgLighting;
 
             ++mesh;
         }
@@ -268,20 +311,26 @@ void MD5Model::Update( float fDeltaTime )
 
 void MD5Model::Render(float* MVP)
 {
-    glUseProgram(program);
-    glUniformMatrix4fv(uMVP, 1, false, MVP);
+    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL, ubo, uniGlobal, 16*sizeof(float));
+    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,  ubo, uniBones,  MAX_BONES*sizeof(ml::dual_quat));
+
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, uniGlobal, 16*sizeof(float),                 MVP);
+    glBufferSubData(GL_UNIFORM_BUFFER, uniBones,  mNumJoints*sizeof(ml::dual_quat), &mBoneTransform[0].real.x);
+
     for (int i=0; i<mNumMeshes; ++i )
     {
         RenderMesh( &mMeshes[i], &mMaterials[i] );
     }
 
-    glUseProgram(0);
     RenderSkeleton(mNumJoints, mBoneHierarchy, mPose);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 void MD5Model::RenderMesh(Mesh* mesh, Material* material)
 {
-    glUniformMatrix2x4fv(uBoneDualQuat, mNumJoints, false, &mBoneTransform[0].real.x);
+    glUseProgram(material->program);
 
     // Position data
     glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
@@ -327,12 +376,52 @@ void MD5Model::RenderMesh(Mesh* mesh, Material* material)
     }
 }
 
-void MD5Model::resetUniforms()
+void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
 {
-    uTexture       = glGetUniformLocation(program, "uTexture");
-    uBoneMatrix    = glGetUniformLocation(program, "uBoneMatrix");
-    uBoneDualQuat  = glGetUniformLocation(program, "uBoneDualQuat");
-    uMVP           = glGetUniformLocation(program, "uMVP");
+    glUseProgram(0);
+
+    glPointSize( 5.0f );
+    glColor3f( 1.0f, 0.0f, 0.0f );
+
+    glPushAttrib( GL_ENABLE_BIT );
+
+    glDisable(GL_LIGHTING );
+    glDisable( GL_DEPTH_TEST );
+
+    // Draw the joint positions
+    glBegin( GL_POINTS );
+    {
+        for ( int i = 0; i < numJoints; ++i )
+        {
+            ml::vec3 pos;
+
+            ml::get_translation_from_dual_quat(&pos, &joints[i]);
+            glVertex3fv( &pos.x );
+        }
+    }
+    glEnd();
+
+    // Draw the bones
+    glColor3f( 0.0f, 1.0f, 0.0f );
+    glBegin( GL_LINES );
+    {
+        for ( int i = 0; i < numJoints; ++i )
+        {
+            ml::vec3 pos0, pos1;
+
+            ml::get_translation_from_dual_quat(&pos0, &joints[i]);
+            const int    parent = hierarchy[i];
+            if ( parent != -1 )
+            {
+                ml::get_translation_from_dual_quat(&pos1, &joints[parent]);
+                glVertex3fv( &pos0.x );
+                glVertex3fv( &pos1.x );
+            }
+        }
+    }
+    glEnd();
+
+    glPopAttrib();
 }
 
 void createMesh( Mesh*  mesh,
@@ -475,7 +564,6 @@ bool loadMaterial(Material* mat, const char* name)
     memory_t inText;
     char     path[1024];
 
-    mat->diffuse = mat->normal = 0;
     strcpy(path, name);
     strcat(path, ".material");
 
@@ -522,50 +610,4 @@ void destroyMaterial(Material* mat)
     {
         glDeleteTextures(1, &mat->normal);
     }
-}
-
-void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
-{
-    glPointSize( 5.0f );
-    glColor3f( 1.0f, 0.0f, 0.0f );
-
-    glPushAttrib( GL_ENABLE_BIT );
-
-    glDisable(GL_LIGHTING );
-    glDisable( GL_DEPTH_TEST );
-
-    // Draw the joint positions
-    glBegin( GL_POINTS );
-    {
-        for ( int i = 0; i < numJoints; ++i )
-        {
-            ml::vec3 pos;
-
-            ml::get_translation_from_dual_quat(&pos, &joints[i]);
-            glVertex3fv( &pos.x );
-        }
-    }
-    glEnd();
-
-    // Draw the bones
-    glColor3f( 0.0f, 1.0f, 0.0f );
-    glBegin( GL_LINES );
-    {
-        for ( int i = 0; i < numJoints; ++i )
-        {
-            ml::vec3 pos0, pos1;
-
-            ml::get_translation_from_dual_quat(&pos0, &joints[i]);
-            const int    parent = hierarchy[i];
-            if ( parent != -1 )
-            {
-                ml::get_translation_from_dual_quat(&pos1, &joints[parent]);
-                glVertex3fv( &pos0.x );
-                glVertex3fv( &pos1.x );
-            }
-        }
-    }
-    glEnd();
-
-    glPopAttrib();
 }

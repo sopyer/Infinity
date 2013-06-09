@@ -49,5 +49,11 @@
     <None Include="..\..\AppData\Skinning4.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\AppData\Skinning4_wireframe.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\AppData\SHLighting_wireframe.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

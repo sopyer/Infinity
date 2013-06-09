@@ -32,7 +32,8 @@ public:
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
 
-        addPrograms(1, &model.program);
+        addPrograms(1, &model.prgLighting);
+        addPrograms(1, &model.prgDefault);
     }
 
     ~Anima()
@@ -40,11 +41,6 @@ public:
     }
 
 protected:
-    void onShaderRecompile()
-    {
-        model.resetUniforms();
-    }
-
     void onKeyUp(const KeyEvent& event)
     {
         if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||

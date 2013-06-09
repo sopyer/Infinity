@@ -4,12 +4,24 @@
 #define MAX_BONES 128
 #endif 
 
+#define UNI_GLOBAL  0
+#define UNI_BONES   1
+
+layout(std140, column_major) uniform;
+
 layout(location=0) in vec3  aVertex;
 layout(location=3) in ivec4 aBoneIndices;
 layout(location=4) in vec4  aBoneWeights;
 
-uniform mat4   uMVP;
-uniform mat2x4 uBoneDualQuat[MAX_BONES];
+layout(binding = UNI_GLOBAL) uniform uniGlobal
+{
+	mat4 uMVP;
+};
+
+layout(binding = UNI_BONES) uniform uniBones
+{
+	vec4 uBoneDualQuat[2*MAX_BONES];
+};
 
 out vec3 gaPosition;
 
@@ -17,10 +29,10 @@ void main()
 {
     float finalWeight = 1.0f - ( aBoneWeights.x + aBoneWeights.y + aBoneWeights.z );
 
-	mat2x4 dq0 = uBoneDualQuat[aBoneIndices.x];
-	mat2x4 dq1 = uBoneDualQuat[aBoneIndices.y];
-	mat2x4 dq2 = uBoneDualQuat[aBoneIndices.z];
-	mat2x4 dq3 = uBoneDualQuat[aBoneIndices.w];
+	mat2x4 dq0 = mat2x4(uBoneDualQuat[2*aBoneIndices.x], uBoneDualQuat[2*aBoneIndices.x+1]);
+	mat2x4 dq1 = mat2x4(uBoneDualQuat[2*aBoneIndices.y], uBoneDualQuat[2*aBoneIndices.y+1]);
+	mat2x4 dq2 = mat2x4(uBoneDualQuat[2*aBoneIndices.z], uBoneDualQuat[2*aBoneIndices.z+1]);
+	mat2x4 dq3 = mat2x4(uBoneDualQuat[2*aBoneIndices.w], uBoneDualQuat[2*aBoneIndices.w+1]);
 
 	if (dot(dq0[0], dq1[0]) < 0.0) dq1 *= -1.0;
 	if (dot(dq0[0], dq2[0]) < 0.0) dq2 *= -1.0;	
