@@ -14,33 +14,29 @@
 static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
 const char vsQuadSource[] = 
-    "layout(location=0) in vec4  aRect;                         \n"
-    "layout(location=1) in vec4  aColor;                        \n"
-    "                                                           \n"
-    "uniform mat4 uMVP;                                         \n"
-    "                                                           \n"
-    "out vec4 vColor;                                           \n"
-    "                                                           \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "vec4 vertex;                                               \n"
-    "vertex.x = ((gl_VertexID & 1) != 0) ? aRect.x : aRect.z;   \n"
-    "vertex.y = ((gl_VertexID & 2) != 0) ? aRect.y : aRect.w;   \n"
-    "vertex.z = 0.0;                                            \n"
-    "vertex.w = 1.0;                                            \n"
-    "   gl_Position = gl_ModelViewProjectionMatrix * vertex;    \n"
-    "   vColor      = aColor;                                   \n"
-    "}                                                          \n";
+    "layout(location=0) in vec4  aRect;                                     \n"
+    "layout(location=1) in vec4  aColor;                                    \n"
+    "                                                                       \n"
+    "out vec4 vColor;                                                       \n"
+    "                                                                       \n"
+    "void main()                                                            \n"
+    "{                                                                      \n"
+    "   float x = ((gl_VertexID & 1) != 0) ? aRect.x : aRect.z;             \n"
+    "   float y = ((gl_VertexID & 2) != 0) ? aRect.y : aRect.w;             \n"
+    "                                                                       \n"
+    "   gl_Position = gl_ModelViewProjectionMatrix * vec4(x, y, 0, 1);      \n"
+    "   vColor      = aColor;                                               \n"
+    "}                                                                      \n";
 
 const char fsQuadSource[] = 
-    "in vec4 vColor;                                            \n"
-    "                                                           \n"
-    "layout(location = 0, index = 0) out vec4 outColor;         \n"
-    "                                                           \n"
-    "void main()                                                \n"
-    "{                                                          \n"
-    "   outColor = vColor;                                      \n"
-    "}                                                          \n";
+    "in vec4 vColor;                                                        \n"
+    "                                                                       \n"
+    "layout(location = 0, index = 0) out vec4 outColor;                     \n"
+    "                                                                       \n"
+    "void main()                                                            \n"
+    "{                                                                      \n"
+    "   outColor = vColor;                                                  \n"
+    "}                                                                      \n";
 
 GLuint prgQuad;
 

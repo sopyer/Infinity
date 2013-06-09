@@ -186,17 +186,17 @@ namespace ui
         {
             profilerBeginDataCapture();
         }
-        if (doFrameCapture && profilerIsCaptureInProgress())
+        else if (doFrameCapture && profilerIsCaptureInProgress())
         {
             profilerEndDataCapture();
             mProfilerOverlay->loadProfilerData();
             doFrameCapture = false;
         }
-        if (doTimesliceCapture && !profilerIsCaptureInProgress())
+        else if (doTimesliceCapture && !profilerIsCaptureInProgress())
         {
             profilerBeginDataCapture();
         }
-        if (!doTimesliceCapture && profilerIsCaptureInProgress())
+        else if (!doTimesliceCapture && profilerIsCaptureInProgress())
         {
             profilerEndDataCapture();
             mProfilerOverlay->loadProfilerData();
