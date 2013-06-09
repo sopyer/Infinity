@@ -101,9 +101,9 @@ typedef struct media_player_data_t* media_player_t;
 static int                        extAudioFormatsPresent;
 
 const char srcYUV2RGB[] = 
-    "uniform sampler2D samY;                                                                        \n"
-    "uniform sampler2D samU;                                                                        \n"
-    "uniform sampler2D samV;                                                                        \n"
+    "layout(binding = 0) uniform sampler2D samY;                                                    \n"
+    "layout(binding = 1) uniform sampler2D samU;                                                    \n"
+    "layout(binding = 2) uniform sampler2D samV;                                                    \n"
     "                                                                                               \n"
     "void main()                                                                                    \n"
     "{                                                                                              \n"
@@ -433,7 +433,6 @@ void mediaInit()
     const char* src;
     GLsizei     len, res;
     GLuint      fs;
-    GLuint      uni;
 
     // Register all formats and codecs
     av_register_all();
@@ -463,12 +462,6 @@ void mediaInit()
 #endif
 
     glDeleteShader(fs);
-
-    glUseProgram(progYUV2RGB);
-    uni = glGetUniformLocation(progYUV2RGB, "samY"); glUniform1i(uni, 0);
-    uni = glGetUniformLocation(progYUV2RGB, "samU"); glUniform1i(uni, 1);
-    uni = glGetUniformLocation(progYUV2RGB, "samV"); glUniform1i(uni, 2);
-    glUseProgram(0);
 
 #ifdef _DEBUG
     GLenum err = glGetError();
