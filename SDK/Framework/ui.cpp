@@ -46,8 +46,6 @@ namespace ui
     GLuint  fboPick;
     GLuint  rbPickID;
     GLuint  rbPickZ;
-    GLuint  prgWriteID;
-    GLint   locID;
 
     static const size_t MAX_AREAS     = 256;
 
@@ -67,16 +65,6 @@ namespace ui
 
     size_t   checkBoxCount;
     CheckBox checkBoxes[MAX_CHECKBOX_COUNT];
-
-    static const char pickFragmentSource[] = 
-        "#version 330                                       \n"
-        "uniform uint ID;                                   \n"
-        "layout(location = 0) out uint rtVal;               \n"
-        "                                                   \n"
-        "void main()                                        \n"
-        "{                                                  \n"
-        "	rtVal = ID;                                     \n"
-        "}                                                  \n";
 
     void checkBoxUpdateAll();
     void checkBoxRenderAll();
@@ -132,9 +120,6 @@ namespace ui
         glGenFramebuffers(1, &fboPick);
 
         createSurfaces();
-
-        prgWriteID = resources::createProgram(GL_FRAGMENT_SHADER, pickFragmentSource);
-        locID      = glGetUniformLocation(prgWriteID, "ID");
     }
 
     void cleanup()
@@ -151,7 +136,6 @@ namespace ui
         deltaY = 0;
         
         //fini pick resources
-        glDeleteProgram(prgWriteID);
         glDeleteFramebuffers(1, &fboPick);
 
         destroySurfaces();
@@ -206,7 +190,6 @@ namespace ui
 
     void addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id)
     {
-        glUniform1ui(locID, id);
         glBegin(GL_QUADS);
         glVertex2f(x,     y    );
         glVertex2f(x + w, y    );

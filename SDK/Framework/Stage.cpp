@@ -80,6 +80,7 @@ namespace ui
     {
         SDL_ShowCursor(FALSE);
         SDL_SetWindowGrab(fwk::window, SDL_TRUE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
         return *this;
     }
 
@@ -87,6 +88,7 @@ namespace ui
     {
         SDL_ShowCursor(TRUE);
         SDL_SetWindowGrab(fwk::window, SDL_FALSE);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
         return *this;
     }
 
