@@ -53,12 +53,15 @@ out vec2  vUV;
 
 void main()
 {
+	ivec2 ivertex = ivec2(gl_VertexID % 9, gl_VertexID / 9);
+	vec2  vertex  = vec2(ivertex);
+
 	float patchScale = uPatchScales[aLevel];
-	vec2  morphDir   = fract(aVertex*0.5)*2.0;
+	vec2  morphDir   = fract(vertex*0.5)*2*(vec2(2)-fract(vertex*0.25)*4);
 
 	vec3  vertexPos;
 
-	vertexPos.xz = aPatchBase + patchScale*aVertex;
+	vertexPos.xz = aPatchBase + patchScale*vertex;
 	vertexPos.xz = clamp(vertexPos.xz, uAABB.xy, uAABB.zw);
 	vertexPos.y  = 0.0;
 
@@ -78,6 +81,6 @@ void main()
 	vHeight     = h;
 	vPos        = vertexPos;
 	vColor      = uColors[aLevel.x];
-	vUV         = (aVertex + morphDir*morphK) / 8.0 * 64.0/8.0;
+	vUV         = (vertex + morphDir*morphK) / 8.0 * 64.0/8.0;
 }
 

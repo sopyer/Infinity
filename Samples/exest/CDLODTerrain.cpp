@@ -297,23 +297,39 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*vertexCount+(x))
 
-    size_t quadsInRow = vertexCount-1;
+    size_t quadsInRow = (vertexCount-1);
 
     idxCount = quadsInRow*quadsInRow*6;
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
     uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+    uint16_t vtx0 = 0;
+    uint16_t vtx1 = 1;
+    uint16_t vtx2 = vertexCount;
+    uint16_t vtx3 = vertexCount + 1;
     for (size_t y=0; y<quadsInRow; ++y)
     {
         for (size_t x=0; x<quadsInRow; ++x)
         {
-            *ptr2++ = INDEX_FOR_LOCATION(x,   y);
-            *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
-            *ptr2++ = INDEX_FOR_LOCATION(x+1, y);
-            *ptr2++ = INDEX_FOR_LOCATION(x+1, y);
-            *ptr2++ = INDEX_FOR_LOCATION(x,   y+1);
-            *ptr2++ = INDEX_FOR_LOCATION(x+1, y+1);
+            if ((x + y) % 2 == 0)
+            {
+                *ptr2++ = vtx0; *ptr2++ = vtx2; *ptr2++ = vtx1;
+                *ptr2++ = vtx1; *ptr2++ = vtx2; *ptr2++ = vtx3;
+            }
+            else
+            {
+                *ptr2++ = vtx2; *ptr2++ = vtx3; *ptr2++ = vtx0;
+                *ptr2++ = vtx0; *ptr2++ = vtx3; *ptr2++ = vtx1;
+            }
+            ++vtx0;
+            ++vtx1;
+            ++vtx2;
+            ++vtx3;
         }
+        ++vtx0;
+        ++vtx1;
+        ++vtx2;
+        ++vtx3;
     }
 
 #undef INDEX_FOR_LOCATION
