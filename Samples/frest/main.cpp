@@ -225,7 +225,7 @@ public:
         camera.maxVelocity  = glm::vec3(6, 6, 6);
 
         m_geom = new rcMeshLoaderObj();
-        m_geom->load("k:\\projects\\graphics\\Infinity\\AppData\\dungeon.obj");
+        m_geom->load("dungeon.obj");
 
     }
 

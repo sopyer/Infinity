@@ -22,6 +22,7 @@
 #include <string.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <utils/utils.h>
 
 rcMeshLoaderObj::rcMeshLoaderObj() :
 	m_verts(0),
@@ -139,24 +140,14 @@ static int parseFace(char* row, int* data, int n, int vcnt)
 
 bool rcMeshLoaderObj::load(const char* filename)
 {
-	char* buf = 0;
-	FILE* fp = fopen(filename, "rb");
-	if (!fp)
-		return false;
-	fseek(fp, 0, SEEK_END);
-	int bufSize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	buf = new char[bufSize];
-	if (!buf)
-	{
-		fclose(fp);
-		return false;
-	}
-	fread(buf, bufSize, 1, fp);
-	fclose(fp);
+    memory_t    mem = {0, 0, 0};
+    mopen(&mem, filename);
 
-	char* src = buf;
-	char* srcEnd = buf + bufSize;
+    if (!mem.buffer)
+        return false;
+
+    char* src = (char*)mem.buffer;
+    char* srcEnd = (char*)mem.buffer + mem.size;
 	char row[512];
 	int face[32];
 	float x,y,z;
@@ -193,8 +184,6 @@ bool rcMeshLoaderObj::load(const char* filename)
 		}
 	}
 
-	delete [] buf;
-
 	// Calculate normals.
 	m_normals = new float[m_triCount*3];
 	for (int i = 0; i < m_triCount*3; i += 3)
@@ -225,5 +214,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 	strncpy(m_filename, filename, sizeof(m_filename));
 	m_filename[sizeof(m_filename)-1] = '\0';
 	
+    mfree(&mem);
+
 	return true;
 }
