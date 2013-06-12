@@ -4,6 +4,7 @@
 #include <glm\glmext.h>
 #include <utils.h>
 #include <SpectatorCamera.h>
+#include <SOIL/SOIL.h>
 
 #include "model.h"
 
@@ -39,6 +40,8 @@ private:
     GPUTimer            gpuTimer;
 
     GLuint              prgSkybox;
+    GLuint              texSkyboxCubemap;
+    GLuint              smpSkybox;
 
 public:
     Anima()
@@ -56,21 +59,70 @@ public:
         addPrograms(1, &prgSkybox);
         addPrograms(1, &model.prgLighting);
         addPrograms(1, &model.prgDefault);
+
+        memory_t dataPosX = {0, 0, 0};
+        memory_t dataPosY = {0, 0, 0};
+        memory_t dataPosZ = {0, 0, 0};
+        memory_t dataNegX = {0, 0, 0};
+        memory_t dataNegY = {0, 0, 0};
+        memory_t dataNegZ = {0, 0, 0};
+
+        mopen(&dataPosX, "posx.jpg");
+        mopen(&dataPosY, "posy.jpg");
+        mopen(&dataPosZ, "posz.jpg");
+        mopen(&dataNegX, "negx.jpg");
+        mopen(&dataNegY, "negy.jpg");
+        mopen(&dataNegZ, "negz.jpg");
+
+        if (dataPosX.buffer && dataPosY.buffer && dataPosZ.buffer &&
+            dataNegX.buffer && dataNegY.buffer && dataNegZ.buffer)
+        {
+            texSkyboxCubemap = SOIL_load_OGL_cubemap_from_memory(
+                (unsigned char*)dataPosX.buffer, dataPosX.size,
+                (unsigned char*)dataNegX.buffer, dataNegX.size,
+                (unsigned char*)dataPosY.buffer, dataPosY.size,
+                (unsigned char*)dataNegY.buffer, dataNegY.size,
+                (unsigned char*)dataPosZ.buffer, dataPosZ.size,
+                (unsigned char*)dataNegZ.buffer, dataNegZ.size,
+                0, 0, 0);
+        }
+
+        mfree(&dataPosX);
+        mfree(&dataPosY);
+        mfree(&dataPosZ);
+        mfree(&dataNegX);
+        mfree(&dataNegY);
+        mfree(&dataNegZ);
+
+        glGenSamplers(1, &smpSkybox);
+        glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glSamplerParameteri(smpSkybox, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glSamplerParameteri(smpSkybox, GL_TEXTURE_MIN_FILTER, GL_LINEAR/*GL_LINEAR_MIPMAP_LINEAR*/);
+
+        CHECK_GL_ERROR();
     }
 
     ~Anima()
     {
+        glDeleteSamplers(1, &smpSkybox);
         glDeleteProgram(prgSkybox);
+        glDeleteTextures(1, &texSkyboxCubemap);
     }
 
 protected:
-    void drawSkybox()
+    void drawSkybox(GLuint cubemap)
     {
         glCullFace(GL_FRONT);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
 
         glUseProgram(prgSkybox);
+        
+        glBindSampler(0, smpSkybox);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 
         glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
 
@@ -132,7 +184,7 @@ protected:
         model.Render(mProj*vm);
         gpuTimer.stop();
 
-        drawSkybox();
+        drawSkybox(texSkyboxCubemap);
  
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
