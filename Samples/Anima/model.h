@@ -16,7 +16,7 @@ public:
     bool LoadAnim (const char *name);
 
     void Update(float fDeltaTime);
-    void Render(float* MVP);
+    void Render(float* MVP, float* matSHRed, float* matSHGreen, float* matSHBlue);
 
 public:
    	GLuint prgLighting;
@@ -55,4 +55,5 @@ private:
     GLsizei  uboSize;
     GLsizei  uniGlobal;
     GLsizei  uniBones;
+    GLsizei  uniLighting;
 };

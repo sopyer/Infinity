@@ -28,6 +28,27 @@ GLushort cubeIndices[6*2*3] =
     7, 4, 3, 7, 3, 6, 7, 6, 4,
 };
 
+float matSHRed[16] = {
+     0.09010f, -0.04719f,  0.24026f, -0.14838f,
+    -0.04719f, -0.09010f, -0.11155f,  0.19955f,
+     0.24026f, -0.11155f, -0.11890f, -0.17397f,
+    -0.14838f,  0.19955f, -0.17397f, -0.07239f,
+};
+
+float matSHGreen[16] = {
+    -0.02145f, -0.02145f,  0.09010f, -0.03070f,
+    -0.02145f,  0.02145f, -0.09439f,  0.17908f,
+     0.09010f, -0.09439f, -0.06688f, -0.09210f,
+    -0.03070f,  0.17908f, -0.09210f, -0.01280f,
+};
+
+float matSHBlue[16] = {
+    -0.12871f, -0.05149f,  0.06007f,  0.00512f,
+    -0.05149f,  0.12871f, -0.20165f,  0.30700f,
+     0.06007f, -0.20165f, -0.11147f, -0.13815f,
+     0.00512f,  0.30700f, -0.13815f, -0.03463f,
+};
+
 class Anima: public ui::Stage
 {
 private:
@@ -127,6 +148,7 @@ protected:
         glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
 
         glUseProgram(0);
+        glBindSampler(0, 0);
 
         glDisableVertexAttribArray(0);
         glCullFace(GL_BACK);
@@ -181,7 +203,7 @@ protected:
         glEnd();
 
         gpuTimer.start();
-        model.Render(mProj*vm);
+        model.Render(mProj*vm, matSHRed, matSHGreen, matSHBlue);
         gpuTimer.stop();
 
         drawSkybox(texSkyboxCubemap);
