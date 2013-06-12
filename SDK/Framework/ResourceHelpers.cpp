@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <stdarg.h>
 
-#include <physfs/physfs.h>
+#include <utils/utils.h>
 #include "ResourceHelpers.h"
 #include "Framework.h"
 #include "SOIL.h"
@@ -12,33 +12,27 @@ namespace resources
 {
     GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t headerCount, const char** headers)
     {
-        PHYSFS_File* file = PHYSFS_openRead(filePath);
-        if (file)
+        memory_t source = MEMORY_T_INITIALIZER;
+
+        mopen(&source, filePath);
+        if (source.buffer)
         {
             GLint lens   [MAX_DEFINES_TO_PROCESS+1];
             char* sources[MAX_DEFINES_TO_PROCESS+1];
-
-            GLint len = (GLint)PHYSFS_fileLength(file);
-
-            char* srcShader = new char[len+1];
-            PHYSFS_read(file, srcShader, len, 1);
-            srcShader[len]=0;
-
-            PHYSFS_close(file);
 
             size_t sourceCount = std::min<size_t>(headerCount, MAX_DEFINES_TO_PROCESS);
             memcpy(sources, headers, sizeof(char*)*sourceCount);
             for (size_t i=0; i<sourceCount; ++i)
                 lens[i] = strlen(sources[i]);
-            sources[sourceCount] = srcShader;
-            lens[sourceCount] = len;
+            sources[sourceCount] = (char*)source.buffer;
+            lens[sourceCount] = source.size;
             ++sourceCount;
 
             GLuint shader = glCreateShader(shaderType);
             glShaderSource(shader, sourceCount, (const GLchar**)sources, lens);
             glCompileShader(shader);
 
-            delete [] srcShader;
+            mfree(&source);
 
             const size_t	LOG_STR_LEN = 1024;
             char			infoLog[LOG_STR_LEN] = {0};
@@ -215,23 +209,15 @@ namespace resources
 
     GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
     {
-        PHYSFS_File*	src = PHYSFS_openRead(name);
-
-        //explicit conversion to avoid warning on 32-bit system
-        assert(PHYSFS_fileLength(src)<SIZE_MAX);
-        size_t fileSize = (size_t)PHYSFS_fileLength(src);
-
-        unsigned char* data = new unsigned char[fileSize+1];
-
-        PHYSFS_read(src, data, fileSize, 1);
-        PHYSFS_close(src);
+        memory_t texData = MEMORY_T_INITIALIZER;
 
         GLuint texture;
-
         glGenTextures(1, &texture);
 
+        mopen(&texData, name);
+
         int	imgWidth, imgHeight, imgChannels;
-        unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
+        unsigned char*	pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
             &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
 
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -243,7 +229,7 @@ namespace resources
 
         SOIL_free_image_data(pixelsPtr);
 
-        delete [] data;
+        mfree(&texData);
 
         if (width)  *width  = imgWidth;
         if (height) *height = imgHeight;

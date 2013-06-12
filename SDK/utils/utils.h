@@ -9,6 +9,7 @@
 #define UNUSED(var)			((void)(var))
 #define ARRAY_SIZE(arr)		sizeof(arr)/sizeof(arr[0])
 #define BUFFER_OFFSET(i)    ((char*)NULL + (i))
+#define MEMORY_T_INITIALIZER  {0, 0, 0}
 
 struct memory_t
 {

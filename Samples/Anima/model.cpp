@@ -162,8 +162,8 @@ MD5Model::~MD5Model()
 
 bool MD5Model::LoadModel(const char* name)
 {
-    memory_t inText    = {0, 0, 0};
-    memory_t outBinary = {0, 0, 0};
+    memory_t inText    = MEMORY_T_INITIALIZER;
+    memory_t outBinary = MEMORY_T_INITIALIZER;
 
     if (marea(&outBinary, 4*1024*1024) &&
         mopen(&inText, name)           &&
@@ -219,8 +219,8 @@ bool MD5Model::LoadModel(const char* name)
 
 bool MD5Model::LoadAnim( const char *name )
 {
-    memory_t inText;
-    memory_t outBinary;
+    memory_t inText    = MEMORY_T_INITIALIZER;
+    memory_t outBinary = MEMORY_T_INITIALIZER;
 
     if (mopen(&inText, name)            &&
         marea(&outBinary, 4*1024*1024)  &&
