@@ -7,19 +7,38 @@
 
 #include "model.h"
 
+GLfloat cubeVertices[8*3] =
+{
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+};
+
+GLushort cubeIndices[6*2*3] = 
+{
+    0, 1, 3, 0, 3, 4, 0, 4, 1,
+    2, 3, 1, 2, 1, 6, 2, 6, 3,
+    5, 6, 1, 5, 1, 4, 5, 4, 6,
+    7, 4, 3, 7, 3, 6, 7, 6, 4,
+};
+
 class Anima: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
+    glm::mat4           mProj;
 
-    glm::mat4	mProj;
+    MD5Model            model;
 
-    mt::Task                mUpdateTask;
+    CPUTimer            cpuTimer;
+    GPUTimer            gpuTimer;
 
-    MD5Model model;
-
-    CPUTimer	cpuTimer;
-    GPUTimer	gpuTimer;
+    GLuint              prgSkybox;
 
 public:
     Anima()
@@ -32,15 +51,36 @@ public:
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
 
+        prgSkybox = resources::createProgramFromFiles("skybox.vert", "skybox.frag");
+
+        addPrograms(1, &prgSkybox);
         addPrograms(1, &model.prgLighting);
         addPrograms(1, &model.prgDefault);
     }
 
     ~Anima()
     {
+        glDeleteProgram(prgSkybox);
     }
 
 protected:
+    void drawSkybox()
+    {
+        glCullFace(GL_FRONT);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
+
+        glUseProgram(prgSkybox);
+
+        glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
+
+        glUseProgram(0);
+
+        glDisableVertexAttribArray(0);
+        glCullFace(GL_BACK);
+
+    }
+
     void onKeyUp(const KeyEvent& event)
     {
         if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
@@ -61,6 +101,10 @@ protected:
         GLenum err;
 
         glClearDepth(1.0);
+
+        glFrontFace(GL_CCW);
+        glCullFace (GL_BACK);
+        glEnable   (GL_CULL_FACE);
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
@@ -88,6 +132,8 @@ protected:
         model.Render(mProj*vm);
         gpuTimer.stop();
 
+        drawSkybox();
+ 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
