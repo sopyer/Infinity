@@ -8,6 +8,8 @@
 
 #include "model.h"
 
+#define CP_PI 3.14159265358979323846f
+
 GLfloat cubeVertices[8*3] =
 {
     -1.0f, -1.0f, -1.0f,
@@ -48,6 +50,182 @@ float matSHBlue[16] = {
      0.06007f, -0.20165f, -0.11147f, -0.13815f,
      0.00512f,  0.30700f, -0.13815f, -0.03463f,
 };
+
+enum
+{
+	FACE_POS_X, FACE_NEG_X,
+	FACE_POS_Y, FACE_NEG_Y,
+	FACE_POS_Z, FACE_NEG_Z,
+	NUM_FACES
+};
+
+void xshEval3_Test(float x, float y, float z, float* sh)
+{
+	// Can be optimize by precomputing constant.
+	static const float SqrtPi = sqrt(CP_PI);
+
+	sh[0]  = 0.28209479177387814347f;
+
+	sh[1]  = -(sqrt(3.0f/CP_PI)*y)/2.0f;
+	sh[2]  =  (sqrt(3.0f/CP_PI)*z)/2.0f;
+	sh[3]  = -(sqrt(3.0f/CP_PI)*x)/2.0f;
+
+	sh[4]  =  (sqrt(15.0f/CP_PI)*x*y)/2.0f;
+	sh[5]  = -(sqrt(15.0f/CP_PI)*y*z)/2.0f;
+	sh[6]  =  (sqrt( 5.0f/CP_PI)*(3.0f*z*z - 1.0f))/4.0f;
+	sh[7]  = -(sqrt(15.0f/CP_PI)*x*z)/2.0f;
+	sh[8]  =   sqrt(15.0f/CP_PI)*(x*x - y*y)/4.0f;
+}
+
+void xshEval3(float x, float y, float z, float* sh)
+{
+	float t[3];
+	float c[2], s[2];
+	float z2 = z * z;
+
+	/* Y{l,0} */
+	sh[0] = 0.28209480643272400f;
+	sh[2] = 0.48860251903533936f * z;
+	sh[6] = 0.94617468118667603f * z2 + -0.31539157032966614f;
+
+	c[0] = x;
+	s[0] = y;
+
+	/* Y{l,1} */
+	t[0] = -0.48860251903533936f;
+	sh[3] = t[0] * c[0];
+	sh[1] = t[0] * s[0];
+	t[1] = -1.09254848957061770f * z;
+	sh[7] = t[1] * c[0];
+	sh[5] = t[1] * s[0];
+
+	c[1] = x * c[0] - y * s[0];
+	s[1] = x * s[0] + y * c[0];
+
+	/* Y{l,2} */
+	t[0] = 0.54627424478530884f;
+	sh[8] = t[0] * c[1];
+	sh[4] = t[0] * s[1];
+}
+
+static void cubemapTexelToVector(int face, float nu, float nv, float* nx, float* ny, float* nz)
+{
+	switch (face)
+    {
+	    case FACE_POS_X: *nx =  1;  *ny = -nv; *nz = -nu; break;
+	    case FACE_NEG_X: *nx = -1;  *ny = -nv; *nz =  nu; break;
+	    case FACE_POS_Y: *nx =  nu; *ny =  1;  *nz =  nv; break;
+	    case FACE_NEG_Y: *nx =  nu; *ny = -1;  *nz = -nv; break;
+	    case FACE_POS_Z: *nx =  nu; *ny = -nv; *nz =  1;  break;
+	    case FACE_NEG_Z: *nx = -nu; *ny = -nv; *nz = -1;  break;
+	}
+
+	// Normalize vector
+	float len = sqrtf((*nx) * (*nx) + (*ny) * (*ny) + (*nz) * (*nz));
+	
+    *nx /= len;	*ny /= len;	*nz /= len;
+}
+
+static float areaIntegral(float x, float y)
+{
+	return atan2(x * y, sqrt(x * x + y * y + 1));
+}
+
+static float cubemapTexelSolidAngle(float nu, float nv, float texelSize)
+{
+	// u and v are the -1..1 texture coordinate on the current face.
+	// Get projected area for this texel
+	float x0 = nu - texelSize;
+	float y0 = nv - texelSize;
+	float x1 = nu + texelSize;
+	float y1 = nv + texelSize;
+	float solidAngle = areaIntegral(x0, y0) - areaIntegral(x0, y1) - areaIntegral(x1, y0) + areaIntegral(x1, y1);
+
+	return solidAngle;
+}
+
+void xshProjectCubeMap3(int size, uint32_t* faces[NUM_FACES], float shRed[9], float shGreen[9], float shBlue[9])
+{
+	for (int i = 0; i < 9; ++i)
+    {
+		shRed  [i] = 0.0f;
+		shGreen[i] = 0.0f;
+		shBlue [i] = 0.0f;
+    }
+
+    float sphereArea = 0.0f;
+    float texelSize  = 1.0f / (float)size;
+
+	for (int face = 0; face < NUM_FACES; ++face)
+    {
+		const uint32_t* data = faces[face];
+
+        for (int y = 0; y < size; ++y)
+        {
+			for (int x = 0; x < size; ++x)
+            {
+				uint32_t texel = data[y*size+x];
+
+                //TODO: add gamma correction????
+                float r, g, b;
+                r = ((texel    ) & 0xFF) / 255.0f;
+                g = ((texel>>8 ) & 0xFF) / 255.0f;
+                b = ((texel>>16) & 0xFF) / 255.0f;
+
+	            float nu = (2.0f * texelSize * ((float)x + 0.5f)) - 1.0f;
+	            float nv = (2.0f * texelSize * ((float)y + 0.5f)) - 1.0f;
+
+                float solidAngle;
+
+                float shFunc[9];
+                float nx, ny, nz;
+				
+                solidAngle = cubemapTexelSolidAngle(nu, nv, texelSize);
+                cubemapTexelToVector(face, nu, nv, &nx, &ny, &nz);
+                xshEval3(nx, ny, nz, shFunc);
+                
+                for (int i = 0; i < 9; ++i)
+                {
+                    shRed  [i] += r * shFunc[i] * solidAngle;
+		            shGreen[i] += g * shFunc[i] * solidAngle;
+		            shBlue [i] += b * shFunc[i] * solidAngle;
+                }
+
+                sphereArea += solidAngle;
+			}
+		}
+	}
+}
+
+void xshBuildEnvMapMatrix(float sh[9], float chMat[16])
+{
+    /* Form the quadratic form matrix (see equations 11 and 12 in paper) */
+    float c1 = 0.429043f; 
+    float c2 = 0.511664f;
+    float c3 = 0.743125f;
+    float c4 = 0.886227f;
+    float c5 = 0.247708f;
+
+    chMat[0]  = c1*sh[8]; /* c1 L_{22}  */
+    chMat[1]  = c1*sh[4]; /* c1 L_{2-2} */
+    chMat[2]  = c1*sh[7]; /* c1 L_{21}  */
+    chMat[3]  = c2*sh[3]; /* c2 L_{11}  */
+
+    chMat[4]  =  c1*sh[4]; /* c1 L_{2-2} */
+    chMat[5]  = -c1*sh[8]; /*-c1 L_{22}  */
+    chMat[6]  =  c1*sh[5]; /* c1 L_{2-1} */
+    chMat[7]  =  c2*sh[1]; /* c2 L_{1-1} */
+
+    chMat[8]  = c1*sh[7]; /* c1 L_{21}  */
+    chMat[9]  = c1*sh[5]; /* c1 L_{2-1} */
+    chMat[10] = c3*sh[6]; /* c3 L_{20}  */
+    chMat[11] = c2*sh[2]; /* c2 L_{10}  */
+
+    chMat[12] = c2*sh[3]; /* c2 L_{11}  */
+    chMat[13] = c2*sh[1]; /* c2 L_{1-1} */
+    chMat[14] = c2*sh[2]; /* c2 L_{10}  */
+    chMat[15] = c4*sh[0] - c5*sh[6]; /* c4 L_{00} - c5 L_{20} */
+}
 
 class Anima: public ui::Stage
 {
@@ -106,6 +284,33 @@ public:
                 (unsigned char*)dataPosZ.buffer, dataPosZ.size,
                 (unsigned char*)dataNegZ.buffer, dataNegZ.size,
                 0, 0, 0);
+
+            int w, h, size;
+            uint32_t* faceData[NUM_FACES];
+            float shRed[9], shGreen[9], shBlue[9];
+
+            faceData[FACE_POS_X] = (uint32_t*)SOIL_load_image_from_memory(dataPosX.buffer, dataPosX.size, &size, &h, 0, 4);
+            assert(size == h);
+            faceData[FACE_NEG_X] = (uint32_t*)SOIL_load_image_from_memory(dataNegX.buffer, dataNegX.size, &w, &h, 0, 4);
+            assert(w == h && w==size);
+            faceData[FACE_POS_Y] = (uint32_t*)SOIL_load_image_from_memory(dataPosY.buffer, dataPosY.size, &w, &h, 0, 4);
+            assert(w == h && w==size);
+            faceData[FACE_NEG_Y] = (uint32_t*)SOIL_load_image_from_memory(dataNegY.buffer, dataNegY.size, &w, &h, 0, 4);
+            assert(w == h && w==size);
+            faceData[FACE_POS_Z] = (uint32_t*)SOIL_load_image_from_memory(dataPosZ.buffer, dataPosZ.size, &w, &h, 0, 4);
+            assert(w == h && w==size);
+            faceData[FACE_NEG_Z] = (uint32_t*)SOIL_load_image_from_memory(dataNegZ.buffer, dataNegZ.size, &w, &h, 0, 4);
+            assert(w == h && w==size);
+
+            xshProjectCubeMap3(size, faceData, shRed, shGreen, shBlue);
+            xshBuildEnvMapMatrix(shRed,   matSHRed  );
+            xshBuildEnvMapMatrix(shGreen, matSHGreen);
+            xshBuildEnvMapMatrix(shBlue,  matSHBlue );
+
+            for (int i = 0; i < NUM_FACES; ++i)
+            {
+                SOIL_free_image_data((uint8_t*)faceData[i]);
+            }
         }
 
         mfree(&dataPosX);

@@ -19,7 +19,7 @@ void main()
     vec3 P = vPosition;
 	vec4 N = vec4(normalize(cross(dFdx(P), dFdy(P))), 1.0);
 	vec4 c;
-
+	
     c.r = dot((uSHRed   * N), N);
     c.g = dot((uSHGreen * N), N);
     c.b = dot((uSHBlue  * N), N);
@@ -29,7 +29,7 @@ void main()
 	vec3  a3 = smoothstep(vec3(0.0), d*0.95, vABC);
 	float t  = min(min(a3.x, a3.y), a3.z);
     
-	c.xyz = mix(vec3(0.0), c.xyz+0.3, t);
+	c.xyz = mix(vec3(0.0), c.xyz, t);
 
 	outColor = c;
 }
