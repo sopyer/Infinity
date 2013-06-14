@@ -1,4 +1,4 @@
-in vec3 aVertex;
+layout(location=0) in vec3 aVertex;
 
 out vec3 vPos;
 

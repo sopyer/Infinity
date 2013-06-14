@@ -200,11 +200,11 @@ void xshProjectCubeMap3(int size, uint32_t* faces[NUM_FACES], float shRed[9], fl
 void xshBuildEnvMapMatrix(float sh[9], float chMat[16])
 {
     /* Form the quadratic form matrix (see equations 11 and 12 in paper) */
-    float c1 = 0.429043f; 
-    float c2 = 0.511664f;
-    float c3 = 0.743125f;
-    float c4 = 0.886227f;
-    float c5 = 0.247708f;
+    float c1 = 1.0f;//0.429043f/3.14f; 
+    float c2 = 1.0f;//0.511664f/3.14f;
+    float c3 = 1.0f;//0.743125f/3.14f;
+    float c4 = 1.0f;//0.886227f/3.14f;
+    float c5 = 1.0f;//0.247708f/3.14f;
 
     chMat[0]  = c1*sh[8]; /* c1 L_{22}  */
     chMat[1]  = c1*sh[4]; /* c1 L_{2-2} */
@@ -242,11 +242,14 @@ private:
     GLuint              texSkyboxCubemap;
     GLuint              smpSkybox;
 
+    GLuint              prgSH;
+    GLuint              ubo;
+
 public:
     Anima()
     {
         model.LoadModel("boblampclean.md5mesh");
-        model.LoadAnim ("boblampclean.md5anim");
+        //model.LoadAnim ("boblampclean.md5anim");
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
@@ -254,6 +257,7 @@ public:
         camera.maxVelocity  = glm::vec3(60, 60, 60);
 
         prgSkybox = resources::createProgramFromFiles("skybox.vert", "skybox.frag");
+        prgSH     = resources::createProgramFromFiles("box.vert", "wireframe.geom", "box.frag");
 
         addPrograms(1, &prgSkybox);
         addPrograms(1, &model.prgLighting);
@@ -307,6 +311,21 @@ public:
             xshBuildEnvMapMatrix(shGreen, matSHGreen);
             xshBuildEnvMapMatrix(shBlue,  matSHBlue );
 
+            float sh[9];
+            xshEval3(0, 0, -1, sh);
+
+            float vr = 0.0f;
+            float vg = 0.0f;
+            float vb = 0.0f;
+            for (int i=0; i<9; ++i)
+            {
+                vr += sh[i]*shRed[i];
+                vg += sh[i]*shGreen[i];
+                vb += sh[i]*shBlue[i];
+            }
+
+            //__asm int 3;
+
             for (int i = 0; i < NUM_FACES; ++i)
             {
                 SOIL_free_image_data((uint8_t*)faceData[i]);
@@ -319,6 +338,11 @@ public:
         mfree(&dataNegX);
         mfree(&dataNegY);
         mfree(&dataNegZ);
+
+        glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, 256, 0, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
         glGenSamplers(1, &smpSkybox);
         glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -334,15 +358,30 @@ public:
     {
         glDeleteSamplers(1, &smpSkybox);
         glDeleteProgram(prgSkybox);
+        glDeleteProgram(prgSH);
         glDeleteTextures(1, &texSkyboxCubemap);
+        glDeleteBuffers(1, &ubo);
     }
 
 protected:
+    void drawBox()
+    {
+        CHECK_GL_ERROR();
+        glEnableVertexAttribArray(0);
+        CHECK_GL_ERROR();
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
+        CHECK_GL_ERROR();
+
+        glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
+        CHECK_GL_ERROR();
+
+        glDisableVertexAttribArray(0);
+        CHECK_GL_ERROR();
+    }
+
     void drawSkybox(GLuint cubemap)
     {
         glCullFace(GL_FRONT);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
 
         glUseProgram(prgSkybox);
         
@@ -350,12 +389,11 @@ protected:
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
 
-        glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
+        drawBox();
 
         glUseProgram(0);
         glBindSampler(0, 0);
 
-        glDisableVertexAttribArray(0);
         glCullFace(GL_BACK);
 
     }
@@ -377,8 +415,6 @@ protected:
 
     void onPaint()
     {
-        GLenum err;
-
         glClearDepth(1.0);
 
         glFrontFace(GL_CCW);
@@ -408,7 +444,16 @@ protected:
         glEnd();
 
         gpuTimer.start();
-        model.Render(mProj*vm, matSHRed, matSHGreen, matSHBlue);
+        glTranslatef(0, 9, 0);
+        glScalef(4, 4, 4);
+        glBindBufferRange(GL_UNIFORM_BUFFER, 2, ubo, 0, 3*sizeof(ml::mat4x4));
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0,   64, matSHRed);
+        glBufferSubData(GL_UNIFORM_BUFFER, 64,  64, matSHGreen);
+        glBufferSubData(GL_UNIFORM_BUFFER, 128, 64, matSHBlue);
+        glUseProgram(prgSH);
+        drawBox();
+        //model.Render(mProj*vm, matSHRed, matSHGreen, matSHBlue);
         gpuTimer.stop();
 
         drawSkybox(texSkyboxCubemap);
@@ -422,8 +467,7 @@ protected:
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, cpuTime, gpuTime);
 
-        err = glGetError();
-        assert(err==GL_NO_ERROR);
+        CHECK_GL_ERROR();
     }
 
     float cpuTime, gpuTime;
