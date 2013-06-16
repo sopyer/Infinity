@@ -16,7 +16,26 @@ layout(binding = UNI_LIGHTING) uniform uniLighting
     mat4 uSHRed;
     mat4 uSHGreen;
     mat4 uSHBlue;
+	vec3 uSHcoef[10];
 };
+
+vec4 evalSHPoly(vec3 N, vec3 shCoef[10])
+{
+    vec4 c;
+    
+    c.rgb  = shCoef[9];
+    c.rgb += N.x * (shCoef[0] * N.x + (shCoef[3] * N.y + shCoef[6]));
+    c.rgb += N.y * (shCoef[1] * N.y + (shCoef[4] * N.z + shCoef[7]));
+    c.rgb += N.z * (shCoef[2] * N.z + (shCoef[5] * N.x + shCoef[8]));
+    
+    //c.rgb += N.x * shCoef[6];
+    //c.rgb += N.y * shCoef[7];
+    //c.rgb += N.z * shCoef[8];
+    
+    c.a = 1.0;
+    
+    return c;
+}
 
 mat3 cotangentFrame( vec3 p, vec3 N, vec2 uv )
 {
@@ -57,6 +76,8 @@ void main()
     c.b = dot((uSHBlue  * N), N);
     c.a = 1.0;
     
+	c = evalSHPoly(N.xyz, uSHcoef);
+	    
     c = 4.0*c*texture2D(samDiffuse, vTexCoord0)+0.1;
 	
 	outColor = c;
