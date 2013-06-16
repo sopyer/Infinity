@@ -31,39 +31,19 @@ GLushort cubeIndices[6*2*3] =
     7, 4, 3, 7, 3, 6, 7, 6, 4,
 };
 
-float matSHRed[16] = {
-     0.09010f, -0.04719f,  0.24026f, -0.14838f,
-    -0.04719f, -0.09010f, -0.11155f,  0.19955f,
-     0.24026f, -0.11155f, -0.11890f, -0.17397f,
-    -0.14838f,  0.19955f, -0.17397f, -0.07239f,
-};
-
-float matSHGreen[16] = {
-    -0.02145f, -0.02145f,  0.09010f, -0.03070f,
-    -0.02145f,  0.02145f, -0.09439f,  0.17908f,
-     0.09010f, -0.09439f, -0.06688f, -0.09210f,
-    -0.03070f,  0.17908f, -0.09210f, -0.01280f,
-};
-
-float matSHBlue[16] = {
-    -0.12871f, -0.05149f,  0.06007f,  0.00512f,
-    -0.05149f,  0.12871f, -0.20165f,  0.30700f,
-     0.06007f, -0.20165f, -0.11147f, -0.13815f,
-     0.00512f,  0.30700f, -0.13815f, -0.03463f,
-};
-
 v128 shPoly[10] = {
     { 0.09010f, -0.02145f, -0.12871f, 0.0f},
-    {-0.11890f, -0.06688f, -0.11147f, 0.0f},
     {-0.09010f,  0.02145f,  0.12871f, 0.0f},
-    { 0.48052f,  0.18020f,  0.12014f, 0.0f},
-    {-0.22310f, -0.18878f, -0.40330f, 0.0f},
+    {-0.11890f, -0.06688f, -0.11147f, 0.0f},
     {-0.09438f, -0.04290f, -0.10298f, 0.0f},
+    {-0.22310f, -0.18878f, -0.40330f, 0.0f},
+    { 0.48052f,  0.18020f,  0.12014f, 0.0f},
     {-0.29676f, -0.06140f,  0.01024f, 0.0f},
-    {-0.34794f, -0.18420f, -0.27630f, 0.0f},
     { 0.39910f,  0.35816f,  0.61400f, 0.0f},
+    {-0.34794f, -0.18420f, -0.27630f, 0.0f},
     {-0.07239f, -0.01280f, -0.03463f, 1.0f},
 };
+
 
 enum
 {
@@ -160,12 +140,6 @@ void xshProjectCubeMap3(int size, uint32_t* faces[NUM_FACES], v128 sh[9])
             {
 				uint32_t texel = data[y*size+x];
 
-                //TODO: add gamma correction????
-                float r, g, b;
-                r = ((texel    ) & 0xFF) / 255.0f;
-                g = ((texel>>8 ) & 0xFF) / 255.0f;
-                b = ((texel>>16) & 0xFF) / 255.0f;
-
 	            float nu = (2.0f * texelSize * ((float)x + 0.5f)) - 1.0f;
 	            float nv = (2.0f * texelSize * ((float)y + 0.5f)) - 1.0f;
 
@@ -181,7 +155,7 @@ void xshProjectCubeMap3(int size, uint32_t* faces[NUM_FACES], v128 sh[9])
                 for (int i = 0; i < 9; ++i)
                 {
                     v128 scale = vi_set_xxxx(shFunc[i] * solidAngle);
-                    v128 color = vi_cvt_ubyte4_to_vec4(texel);
+                    v128 color = vi_cvt_ubyte4_to_vec4(texel); //TODO: add gamma correction????
 
                     sh[i] = vi_add(sh[i], vi_mul(scale, color));
                 }
@@ -248,7 +222,7 @@ public:
     Anima()
     {
         model.LoadModel("boblampclean.md5mesh");
-        //model.LoadAnim ("boblampclean.md5anim");
+        model.LoadAnim ("boblampclean.md5anim");
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
@@ -313,7 +287,7 @@ public:
 
             xshProjectCubeMap3(size, faceData, vSH);
             xshGenEnvMap(vEnv, vSH);
-            //xshBuildPoly(shPoly, vEnv);
+            xshBuildPoly(shPoly, vEnv);
 
 
             for (int i = 0; i < NUM_FACES; ++i)
@@ -443,7 +417,7 @@ protected:
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 160, shPoly);
         glUseProgram(prgSH);
         //drawBox();
-        model.Render(mProj*vm, shPoly, matSHRed, matSHGreen, matSHBlue);
+        model.Render(mProj*vm, shPoly);
         gpuTimer.stop();
 
         drawSkybox(texSkyboxCubemap);

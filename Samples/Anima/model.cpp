@@ -81,9 +81,9 @@ MD5Model::MD5Model()
     --align;
 
     uboSize   = 0;
-    uniGlobal   = uboSize; uboSize+=sizeof(float)*16;                     uboSize += align; uboSize &=~align;
-    uniBones    = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat);      uboSize += align; uboSize &=~align;
-    uniLighting = uboSize; uboSize+=3*sizeof(ml::mat4x4)+10*sizeof(v128); uboSize += align; uboSize &=~align;
+    uniGlobal   = uboSize; uboSize+=sizeof(float)*16;                uboSize += align; uboSize &=~align;
+    uniBones    = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat); uboSize += align; uboSize &=~align;
+    uniLighting = uboSize; uboSize+=10*sizeof(v128);                 uboSize += align; uboSize &=~align;
     {
         GLint structSize;
         GLint uniGlobal, uniBones, uniLighting;
@@ -97,7 +97,7 @@ MD5Model::MD5Model()
         glGetActiveUniformBlockiv(prgDefault, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
         glGetActiveUniformBlockiv(prgDefault, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==3*sizeof(ml::mat4x4)+10*sizeof(v128));
+        assert(structSize==10*sizeof(v128));
 
         uniGlobal   = glGetUniformBlockIndex(prgLighting, "uniGlobal");
         uniBones    = glGetUniformBlockIndex(prgLighting, "uniBones");
@@ -108,7 +108,7 @@ MD5Model::MD5Model()
         glGetActiveUniformBlockiv(prgLighting, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
         glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==3*sizeof(ml::mat4x4)+10*sizeof(v128));
+        assert(structSize==10*sizeof(v128));
     }
 
     glGenBuffers(1, &ubo);
@@ -316,19 +316,16 @@ void MD5Model::Update( float fDeltaTime )
     }
 }
 
-void MD5Model::Render(float* MVP, v128 shPoly[9], float* matSHRed, float* matSHGreen, float* matSHBlue)
+void MD5Model::Render(float* MVP, v128 shPoly[9])
 {
     glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   ubo, uniGlobal,   16*sizeof(float));
     glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    ubo, uniBones,    MAX_BONES*sizeof(ml::dual_quat));
-    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, ubo, uniLighting, 3*sizeof(ml::mat4x4)+sizeof(v128)*10);
+    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, ubo, uniLighting, 10*sizeof(v128));
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     glBufferSubData(GL_UNIFORM_BUFFER, uniGlobal,   16*sizeof(float),                 MVP);
     glBufferSubData(GL_UNIFORM_BUFFER, uniBones,    mNumJoints*sizeof(ml::dual_quat), &mBoneTransform[0].real.x);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting,     64, matSHRed);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting+64,  64, matSHGreen);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting+128, 64, matSHBlue);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting+192, 160, shPoly);
+    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting, 160,                              shPoly);
 
     for (int i=0; i<mNumMeshes; ++i )
     {

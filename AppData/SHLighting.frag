@@ -13,9 +13,6 @@ layout(location = 0, index = 0) out vec4 outColor;
 
 layout(binding = UNI_LIGHTING) uniform uniLighting
 {
-    mat4 uSHRed;
-    mat4 uSHGreen;
-    mat4 uSHBlue;
 	vec3 uSHcoef[10];
 };
 
@@ -58,26 +55,17 @@ mat3 cotangentFrame( vec3 p, vec3 N, vec2 uv )
 
 void main()
 {
-    vec3 P = vPosition;
-	vec4 N = vec4(normalize(cross(dFdx(P), dFdy(P))), 1.0);
-    
-    mat3 TBN = cotangentFrame(P, vNormal, vTexCoord0);
+    mat3 TBN = cotangentFrame(vPosition, vNormal, vTexCoord0);
+	vec3 N;
     
     // Read normal map
-    N.xyz = texture2D(samNormal, vTexCoord0).xyz;
-    N.xyz = N.xyz * 255./127. - 128./127.;
-    N.y   = -N.y;
-    N.xyz = normalize(TBN * N.xyz);
+    N   = texture2D(samNormal, vTexCoord0).xyz;
+    N   = N * 255./127. - 128./127.;
+    N.y = -N.y;
+    N   = normalize(TBN * N);
 
-	vec4 c;
+	vec4 c = evalSHPoly(N, uSHcoef);
 
-    c.r = dot((uSHRed   * N), N);
-    c.g = dot((uSHGreen * N), N);
-    c.b = dot((uSHBlue  * N), N);
-    c.a = 1.0;
-    
-	c = evalSHPoly(N.xyz, uSHcoef);
-	    
     c = 4.0*c*texture2D(samDiffuse, vTexCoord0)+0.1;
 	
 	outColor = c;

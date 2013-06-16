@@ -16,7 +16,7 @@ public:
     bool LoadAnim (const char *name);
 
     void Update(float fDeltaTime);
-    void Render(float* MVP, v128 shPoly[9], float* matSHRed, float* matSHGreen, float* matSHBlue);
+    void Render(float* MVP, v128 shPoly[9]);
 
 public:
    	GLuint prgLighting;
