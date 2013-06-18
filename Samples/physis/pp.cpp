@@ -32,7 +32,7 @@ const ProgramDesc prgDesc[] =
 };
 
 
-static const float quadVertices[6] = {
+static const float triVertices[6] = {
     -1,  1, 3,  1, -1, -3,
 };
 
@@ -113,7 +113,7 @@ void ppBegin()
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quadVertices);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, triVertices);
 
     glBindSampler(0, samLinearClamp);
     glBindSampler(1, samLinearClamp);
