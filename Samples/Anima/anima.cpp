@@ -168,7 +168,7 @@ void xshProjectCubeMap3(int size, uint32_t* faces[NUM_FACES], v128 sh[9])
 
 void xshGenEnvMap(v128 env[9], v128 cubeProj[9])
 {
-    float Al[9] = {1.0f, 0.66666666666666667f, 0.66666666666666667f, 0.66666666666666667f, 0.25f, 0.25f, 0.25f, 0.25f};
+    float Al[9] = {1.0f, 0.66666666666666667f, 0.66666666666666667f, 0.66666666666666667f, 0.25f, 0.25f, 0.25f, 0.25f, 0.25f};
 
     env[0] = cubeProj[0];
     for (size_t i = 1; i < 9; ++i)
