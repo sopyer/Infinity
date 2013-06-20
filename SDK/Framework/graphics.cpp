@@ -3,7 +3,7 @@
 
 namespace graphics
 {
-    static GLsync frameSync[2] = {0, 0};
+    static GLsync frameSync[NUM_FRAMES_DELAY] = {0, 0};
     static int    frameID = 0;
 
     void init()
@@ -21,7 +21,9 @@ namespace graphics
         if (frameSync[frameID])
         {
             GLenum result = glClientWaitSync(frameSync[frameID], GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_INFINITE);
+            
             assert(result==GL_ALREADY_SIGNALED || result==GL_CONDITION_SATISFIED);
+            
             glDeleteSync(frameSync[frameID]);
             frameSync[frameID] = 0;
         }
@@ -30,6 +32,7 @@ namespace graphics
     void endFrame()
     {
         frameSync[frameID] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        frameID = (frameID + 1) & 0x01;
+        
+        frameID = (frameID + 1) % NUM_FRAMES_DELAY;
     }
 }
