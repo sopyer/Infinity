@@ -5,7 +5,7 @@
 
 namespace graphics
 {
-    static const GLuint64 GL_TIMEOUT_INFINITE = ~(0ul);
+    static const GLuint64 GL_TIMEOUT_INFINITE = ~0;
 
     void init();
     void fini();
