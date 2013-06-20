@@ -591,6 +591,12 @@ bool isModEnabled(int mod, int modState)
 	return (modState&mask)==0 && ((modState&mod)!=0 || mod==0); 
 }
 
+void ShaderEditOverlay::inputText(char* text)
+{
+    if (mActiveEditor==&mShaderEditor)
+        mActiveEditor->AddCharUTF(text, strlen(text));
+};
+
 void ShaderEditOverlay::handleKeyDown(SDL_KeyboardEvent& event)
 {
 	if (event.keysym.sym=='s' && isModEnabled(KMOD_CTRL, event.keysym.mod))
@@ -696,13 +702,6 @@ void ShaderEditOverlay::handleKeyDown(SDL_KeyboardEvent& event)
 				shiftPressed, ctrlPressed, altPressed,
 				&consumed
 			);
-			if (!consumed && event.keysym.unicode>=32 && !ctrlPressed && !altPressed)
-			{
-				char    utf8[5];
-				wchar_t utf16[2] = {event.keysym.unicode, 0};
-				UTF8FromUTF16(utf16, 1, utf8, sizeof(utf8));
-				mActiveEditor->AddCharUTF(utf8, strlen(utf8));
-			}
 		}
 	}
 }

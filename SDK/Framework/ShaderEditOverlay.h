@@ -49,58 +49,59 @@ class LexState;
 class ShaderEditOverlay
 {
 public:
-	ShaderEditOverlay();
-	~ShaderEditOverlay();
+    ShaderEditOverlay();
+    ~ShaderEditOverlay();
 
-	void initialise(int w, int h);
-	void reset();
+    void initialise(int w, int h);
+    void reset();
 
-	void handleKeyDown(SDL_KeyboardEvent& event);
-	void renderFullscreen();
+    void inputText(char* text);
+    void handleKeyDown(SDL_KeyboardEvent& event);
+    void renderFullscreen();
 
-	bool requireReset() {bool prevValue=mRequireReset; mRequireReset = false; return prevValue;}
+    bool requireReset() {bool prevValue=mRequireReset; mRequireReset = false; return prevValue;}
 
-	void addPrograms(size_t count, GLuint* programs);
-
-private:
-	void initialiseShaderEditor();
-	void initialiseDebugOutputView();
-	void initialiseSelectionList();
-
-	void saveShaderSource();
-	void compileProgram();
-	void fillListWithShaders();
-	void fillListWithPrograms();
-	void loadShaderSource();
+    void addPrograms(size_t count, GLuint* programs);
 
 private:
-	enum ModesEnum
-	{
-		SELMODE_PROGRAM_LIST,
-		SELMODE_SHADER_LIST
-	};
+    void initialiseShaderEditor();
+    void initialiseDebugOutputView();
+    void initialiseSelectionList();
+
+    void saveShaderSource();
+    void compileProgram();
+    void fillListWithShaders();
+    void fillListWithPrograms();
+    void loadShaderSource();
 
 private:
-	static const size_t TICK_INTERVAL = 100;
+    enum ModesEnum
+    {
+        SELMODE_PROGRAM_LIST,
+        SELMODE_SHADER_LIST
+    };
 
-	bool   mRequireReset;
+private:
+    static const size_t TICK_INTERVAL = 100;
 
-	size_t mNextTick;
+    bool   mRequireReset;
 
-	ModesEnum mSelectionMode;
-	GLuint    mSelectedProgram;
-	GLuint    mSelectedShader;
+    size_t mNextTick;
 
-	std::vector<GLuint> mPrograms;
-	std::vector<GLuint> mAttachedShaders;
+    ModesEnum mSelectionMode;
+    GLuint    mSelectedProgram;
+    GLuint    mSelectedShader;
 
-	LexState* mLexer;
+    std::vector<GLuint> mPrograms;
+    std::vector<GLuint> mAttachedShaders;
 
-	Editor  mShaderEditor;
-	Editor  mDebugOutputView;
-	Editor  mSelectionList;
-	Editor* mActiveEditor;
+    LexState* mLexer;
 
-	float mWidth;
-	float mHeight;
+    Editor  mShaderEditor;
+    Editor  mDebugOutputView;
+    Editor  mSelectionList;
+    Editor* mActiveEditor;
+
+    float mWidth;
+    float mHeight;
 };

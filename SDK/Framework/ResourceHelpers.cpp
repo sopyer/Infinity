@@ -216,25 +216,32 @@ namespace resources
 
         mopen(&texData, name);
 
-        int	imgWidth, imgHeight, imgChannels;
-        unsigned char*	pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
-            &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
+        if (texData.buffer)
+        {
+            int	imgWidth, imgHeight, imgChannels;
+            unsigned char*	pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
+                &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
 
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+            CHECK_GL_ERROR();
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
+            CHECK_GL_ERROR();
 
-        SOIL_free_image_data(pixelsPtr);
+            SOIL_free_image_data(pixelsPtr);
 
-        mfree(&texData);
+            mfree(&texData);
 
-        if (width)  *width  = imgWidth;
-        if (height) *height = imgHeight;
+            if (width)  *width  = imgWidth;
+            if (height) *height = imgHeight;
 
-        return texture;
+            return texture;
+        }
+
+        return 0;
     }
 
     GLuint createSpecialTexture1D(GLint internalFormat, GLsizei width, 

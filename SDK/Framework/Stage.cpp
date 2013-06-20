@@ -61,6 +61,9 @@ namespace ui
         mShaderEditOverlay->addPrograms(ARRAY_SIZE(programs), programs);
 
         mPrevTime = timerAbsoluteTime();
+
+        //TODO: HACK!!!!!
+        SDL_StartTextInput();
     }
 
     Stage::~Stage()
@@ -126,6 +129,9 @@ namespace ui
             {
             case SDL_QUIT:
                 close();
+                break;
+            case SDL_TEXTINPUT:
+                 if (mState==STATE_SHADER_EDIT) mShaderEditOverlay->inputText(E.text.text);
                 break;
 
             case SDL_KEYDOWN:
