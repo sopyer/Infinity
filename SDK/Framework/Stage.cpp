@@ -15,6 +15,7 @@
 #include "Framework.h"
 #include "Timer.h"
 #include "Stage.h"
+#include "graphics.h"
 
 void Platform_Initialise(HWND hWnd);
 void Platform_Finalise();
@@ -210,6 +211,11 @@ namespace ui
             mProfilerOverlay->loadProfilerData();
         }
         PROFILER_CPU_TIMESLICE("Frame");
+        
+        {
+            PROFILER_CPU_TIMESLICE("Frame sync");
+            graphics::beginFrame();
+        }
 
         glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
@@ -237,6 +243,8 @@ namespace ui
             mShaderEditOverlay->renderFullscreen();
         }
         
+        graphics::endFrame();
+
         {
             PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
             SDL_GL_SwapWindow(fwk::window);

@@ -52,6 +52,7 @@
     <ClCompile Include="media_api.cpp" />
     <ClCompile Include="SpectatorCamera.cpp" />
     <ClCompile Include="CameraDirector.cpp" />
+    <ClCompile Include="graphics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SOIL\image_DXT.h">
@@ -102,5 +103,6 @@
     <ClInclude Include="RainbowTables.h">
       <Filter>UI\Misc</Filter>
     </ClInclude>
+    <ClInclude Include="graphics.h" />
   </ItemGroup>
 </Project>

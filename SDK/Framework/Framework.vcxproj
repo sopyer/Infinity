@@ -86,6 +86,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CameraDirector.cpp" />
+    <ClCompile Include="graphics.cpp" />
     <ClCompile Include="media_api.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="ProfilerOverlay.cpp" />
@@ -108,6 +109,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CameraDirector.h" />
+    <ClInclude Include="graphics.h" />
     <ClInclude Include="media_api.h" />
     <ClInclude Include="profiler.h" />
     <ClInclude Include="ProfilerOverlay.h" />

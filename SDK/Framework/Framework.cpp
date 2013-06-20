@@ -3,6 +3,7 @@
 #include "Framework.h"
 #include <SDL2/SDL.h>
 #include "scheduler.h"
+#include "graphics.h"
 
 namespace logging
 {
@@ -66,10 +67,12 @@ namespace fwk
         vg::init();
         ui::init(1280, 720);
         mt::init();
+        graphics::init();
     }
 
     void cleanup()
     {
+        graphics::fini();
         mt::cleanup();
         ui::cleanup();
         vg::cleanup();
