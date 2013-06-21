@@ -66,14 +66,14 @@ namespace fwk
 
         vg::init();
         ui::init(1280, 720);
-        mt::init();
+        mt::init(1, 128);
         graphics::init();
     }
 
     void cleanup()
     {
         graphics::fini();
-        mt::cleanup();
+        mt::fini();
         ui::cleanup();
         vg::cleanup();
 

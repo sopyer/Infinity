@@ -32,7 +32,8 @@ namespace ui
     Stage::Stage():
         mState(STATE_DEFAULT),
         doFrameCapture(false),
-        doTimesliceCapture(false)
+        doTimesliceCapture(false),
+        mRunLoop(true)
 #if defined(DEBUG) || defined(_DEBUG)
         ,dumpPickImage(0)
 #endif
@@ -187,73 +188,9 @@ namespace ui
         }
     }
 
-    void Stage::frameStep()
-    {
-        static const char* strFrame = "Frame";
-
-        if (doFrameCapture && !profilerIsCaptureInProgress())
-        {
-            profilerBeginDataCapture();
-        }
-        else if (doFrameCapture && profilerIsCaptureInProgress())
-        {
-            profilerEndDataCapture();
-            mProfilerOverlay->loadProfilerData();
-            doFrameCapture = false;
-        }
-        else if (doTimesliceCapture && !profilerIsCaptureInProgress())
-        {
-            profilerBeginDataCapture();
-        }
-        else if (!doTimesliceCapture && profilerIsCaptureInProgress())
-        {
-            profilerEndDataCapture();
-            mProfilerOverlay->loadProfilerData();
-        }
-        PROFILER_CPU_TIMESLICE("Frame");
-        
-        {
-            PROFILER_CPU_TIMESLICE("Frame sync");
-            graphics::beginFrame();
-        }
-
-        glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
-
-        //TODO: Merge all tree
-        ui::update();
-        handleInput();
-        outlineActors();
-        
-        if (mShaderEditOverlay->requireReset())
-        {
-            impl::readyProgramsForUse();
-            onShaderRecompile();
-        }
-
-        renderActors();
-
-        if (mState==STATE_PROFILER)
-        {
-            PROFILER_CPU_TIMESLICE("mProfilerOverlay->renderFullscreen");
-            mProfilerOverlay->renderFullscreen();
-        }
-        if (mState==STATE_SHADER_EDIT)
-        {
-            PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
-            mShaderEditOverlay->renderFullscreen();
-        }
-        
-        graphics::endFrame();
-
-        {
-            PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
-            SDL_GL_SwapWindow(fwk::window);
-        }
-    }
-
     void Stage::close()
     {
-        mt::terminateLoop();
+        mRunLoop = false;
     }
 
     void Stage::setCaption(const char* caption)
@@ -263,9 +200,69 @@ namespace ui
 
     void Stage::run()
     {
-        mt::addFrameTask<Stage, &Stage::frameStep>(this);
+        while (mRunLoop)
+        {
+            static const char* strFrame = "Frame";
 
-        mt::mainLoop();
+            if (doFrameCapture && !profilerIsCaptureInProgress())
+            {
+                profilerBeginDataCapture();
+            }
+            else if (doFrameCapture && profilerIsCaptureInProgress())
+            {
+                profilerEndDataCapture();
+                mProfilerOverlay->loadProfilerData();
+                doFrameCapture = false;
+            }
+            else if (doTimesliceCapture && !profilerIsCaptureInProgress())
+            {
+                profilerBeginDataCapture();
+            }
+            else if (!doTimesliceCapture && profilerIsCaptureInProgress())
+            {
+                profilerEndDataCapture();
+                mProfilerOverlay->loadProfilerData();
+            }
+            PROFILER_CPU_TIMESLICE("Frame");
+        
+            {
+                PROFILER_CPU_TIMESLICE("Frame sync");
+                graphics::beginFrame();
+            }
+
+            glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
+
+            //TODO: Merge all tree
+            ui::update();
+            handleInput();
+            outlineActors();
+        
+            if (mShaderEditOverlay->requireReset())
+            {
+                impl::readyProgramsForUse();
+                onShaderRecompile();
+            }
+
+            renderActors();
+
+            if (mState==STATE_PROFILER)
+            {
+                PROFILER_CPU_TIMESLICE("mProfilerOverlay->renderFullscreen");
+                mProfilerOverlay->renderFullscreen();
+            }
+            if (mState==STATE_SHADER_EDIT)
+            {
+                PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
+                mShaderEditOverlay->renderFullscreen();
+            }
+        
+            graphics::endFrame();
+
+            {
+                PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
+                SDL_GL_SwapWindow(fwk::window);
+            }
+        }
     }
 
     Stage& Stage::setProjection(float* mat4x4)

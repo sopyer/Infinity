@@ -1,98 +1,48 @@
-#ifndef __SCHEDULER_H_INCLUDED__
-#	define __SCHEDULER_H_INCLUDED__
+#ifndef __FRAMEWORK_SCHEDULER_H_INCLUDED__
+#	define __FRAMEWORK_SCHEDULER_H_INCLUDED__
 
-struct SDL_Thread;
-struct SDL_mutex;
-
-namespace mt
-{
-	struct SchedEntry;
-}
+// Implementation is based on Mathias Brossard threadpool (https://github.com/mbrossard/threadpool).
 
 namespace mt
 {
-	typedef SchedEntry*	Task;
-	typedef SDL_Thread*	Thread;
-	typedef SDL_mutex*	Mutex;
+    typedef enum {
+        noError       =  0,
+        invalidValue  = -1,
+        lockFailure   = -2,
+        queueFull     = -3,
+        shutdown      = -4,
+        threadFailure = -5
+    } error_t;
 
-	typedef void (*TaskFunc)(void*);
-	typedef void (*TimedTaskFunc)(void*);
+    /**
+     * @param thread_count Number of worker threads.
+     * @param queue_size   Size of the queue.
+     * @param flags        Unused parameter.
+     */
+    void init(int threadCount, int queueSize);
+    void fini();
 
-	//Initializes scheduler subsystem
-	void init();
-
-	//Shuts down scheduler subsystem
-	void cleanup();
-
-	//Adds task to execution queue
-	//void addTask(TaskFunc func, void* userData/*, size_t flags*/);
-
-	//Adds timed task to execution queue
-	Task addTimedTask(TimedTaskFunc func, void* userData, size_t msTimeout/*, size_t flags*/);
-	Task addFrameTask(TaskFunc func, void* userData/*, size_t flags*/);
-
-	//Dispatches tasks for execution
-	void mainLoop();
-
-	void terminateLoop();
-	void terminateTask(Task handle);
+    /**
+     * @brief add a new task in the queue of a thread pool
+     * @param taskFunc Pointer to the function that will perform the task.
+     * @param arg      Argument to be passed to the function.
+     * @param flags    Unused parameter.
+     * @return 0 if all goes well, negative values in case of error (@see error_t for codes).
+     */
+    int addAsyncTask(void (*taskFunc)(void *), void *arg);
 
     template <class T, void (T::*callback)()>
     void taskFuncStub(void* objPtr)
     {
         T* p = static_cast<T*>(objPtr);
         (p->*callback)();
-	}
+    }
 
-	template<class T, void (T::*callback)()>
-	Task addTimedTask(T* obj, size_t msTimeout)
-	{
-		return addTimedTask(&taskFuncStub<T, callback>, obj, msTimeout);
-	}
-
-	template<class T, void (T::*callback)()>
-	Task addFrameTask(T* obj)
-	{
-		return addFrameTask(&taskFuncStub<T, callback>, obj);
-	}
-
-	Thread createThread(int (__cdecl *fn)(void *), void *data);
-	void waitThread(Thread thread, int *status);
-
-	template <class T, void (T::*callback)()>
-	int __cdecl threadFuncStub(void* objPtr)
-	{
-		T* p = static_cast<T*>(objPtr);
-		(p->*callback)();
-		return 0;
-	}
-
-	template<class T, void (T::*callback)()>
-	Thread createThread(T* obj)
-	{
-		return createThread(&threadFuncStub<T, callback>, obj);
-	}
-
-	Mutex createMutex();
-	int lockMutex(Mutex mtx);
-	int unlockMutex(Mutex mtx);
-	void destroyMutex(Mutex mtx);
-
-	class Lock
-	{
-		public:
-			Lock(Mutex mtx):mMutex(mtx)
-			{
-				lockMutex(mMutex);
-			}
-			~Lock()
-			{
-				unlockMutex(mMutex);
-			}
-
-		private:
-			Mutex	mMutex;
-	};
+    template<class T, void (T::*callback)()>
+    int addAsyncTask(T* obj)
+    {
+        return addFrameTask(&taskFuncStub<T, callback>, obj);
+    }
 }
 
 #endif

@@ -4,11 +4,6 @@
 #include <utils.h>
 #include <SpectatorCamera.h>
 
-extern "C"
-{
-#include "threadpool.h"
-}
-
 void task(void*)
 {
     PROFILER_CPU_TIMESLICE("TaskInWorker");
@@ -20,20 +15,17 @@ void task(void*)
 class SchedulerTest: public ui::Stage
 {
 private:
-    threadpool_t*       pool;
     SpectatorCamera     camera;
-
     glm::mat4	mProj;
+
 public:
     SchedulerTest()
     {
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
-        pool = threadpool_create(1, 128, 0);
     }
 
     ~SchedulerTest()
     {
-        threadpool_destroy(pool, 0);
     }
 
 protected:
@@ -95,7 +87,7 @@ protected:
 
     void onUpdate(float dt)
     {
-        threadpool_add(pool, task, NULL, 0);
+        mt::addAsyncTask(task, NULL);
     }
 };
 

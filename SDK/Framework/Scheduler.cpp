@@ -1,299 +1,230 @@
 #include "Scheduler.h"
-#include <queue>
-#include <cassert>
-#include <ctime>
-#include <windows.h>
-#include <list>
-#include <algorithm>
+#include <assert.h>
+#include <stdlib.h>
 #include <SDL2/SDL.h>
 
 namespace mt
 {
-	enum TaskFlags
-	{
-		SCHED_DESC_IMMEDIATE=0,
-		SCHED_DESC_TIMED=1,
-		SCHED_MASK_TASK_TIME_MODE=1,
+    #define MAX_POOL_THREADS 8
 
-		SCHED_DESC_ONE_TIME=0,
-		SCHED_DESC_RECURRING=2,
-		SCHED_MASK_TASK_REPEAT_MODE=2,
+    typedef struct {
+        void (*function)(void *);
+        void *argument;
+    } task_t;
 
-		SCHED_DESC_STOP_TASK=4,
-		SCHED_MASK_TASK_CONTROL=4,
-	};
+    struct threadpool_t
+    {
+        SDL_mutex*  lock;
+        SDL_cond*   notify;
+        SDL_Thread* threads[MAX_POOL_THREADS];
+        task_t*     queue;
+        int         thread_count;
+        int         queue_size;
+        int         head;
+        int         tail;
+        int         count;
+        int         shutdown;
+        int         started;
+    };
 
-	enum SchedEntryType
-	{
-		SCHED_ENTRY_TASK,
-		SCHED_ENTRY_TIMED_TASK,
-		SCHED_ENTRY_JOB,
-	};
+    static int SDLCALL threadpoolThread(void* poolPtr);
+    static void releaseMTResources();
 
-	struct SchedEntry
-	{
-		size_t			flags;
-		SchedEntryType	type;
-		union
-		{
-			struct
-			{
-				TaskFunc	taskFunc;
-				void*		userData;
-				size_t		frameToExecute;
-			} taskDesc;
+    threadpool_t pool;
 
-			struct
-			{
-				TimedTaskFunc	taskFunc;
-				void*			userData;
-				size_t			msTimeout;
-				size_t			msDueTime;
-			} timedTaskDesc;
-		};
-	};
+    void init(int thread_count, int queue_size)
+    {
+        int  i;
+        char threadName[8] = "Worker\0";
 
-	struct TaskPool
-	{
-		std::list<SchedEntry*>	inactiveTasks;
+        assert(thread_count < MAX_POOL_THREADS);
 
-		static void delTask(SchedEntry* entry) {delete entry;}
+        memset(&pool, 0, sizeof(threadpool_t));
 
-		~TaskPool()
-		{
-			std::for_each(inactiveTasks.begin(), inactiveTasks.end(), &TaskPool::delTask);
-		}
+        /* Initialize */
+        pool.thread_count = thread_count;
+        pool.queue_size   = queue_size;
 
-		SchedEntry* get()
-		{
-			if (!inactiveTasks.empty())
-			{
-				SchedEntry* entry = inactiveTasks.back();
-				inactiveTasks.pop_back();
-				return entry;
-			}
-			else
-				return new SchedEntry();
-		}
+        /* Allocate thread and task queue */
+        pool.queue = (task_t*)malloc(sizeof(task_t) * queue_size);
 
-		void put(SchedEntry* entry)
-		{
-			inactiveTasks.push_back(entry);
-		}
-	};
+        pool.lock   = SDL_CreateMutex();
+        pool.notify = SDL_CreateCond();
 
-	struct TaskHandle
-	{
-		SchedEntry*	entry;
+        /* Initialize mutex and conditional variable first */
+        if (pool.lock    == NULL  ||
+            pool.notify  == NULL  ||
+            pool.queue   == NULL)
+        {
+            goto err;
+        }
 
-		TaskHandle(SchedEntry* other)
-		{
-			entry = other;
-		}
+        for(i = 0; i < thread_count; i++)
+        {
+            threadName[6] = 0x30+i;
 
-		operator SchedEntry&()
-		{
-			return *entry;
-		}
+            pool.threads[i] = SDL_CreateThread(threadpoolThread, threadName, &pool);
+            if (pool.threads[i] == 0)
+            {
+                goto err;
+            }
 
-		TaskHandle& operator=(SchedEntry* other)
-		{
-			entry = other;
-		}
-	};
+            pool.started++;
+        }
 
-	struct compareTimedTasks
-	{
-		bool operator()(const TaskHandle& left, const TaskHandle& right) const
-		{
-			assert(left.entry->type==SCHED_ENTRY_TIMED_TASK && right.entry->type==SCHED_ENTRY_TIMED_TASK);
-			return left.entry->timedTaskDesc.msDueTime > right.entry->timedTaskDesc.msDueTime;
-		}
-	};
+        return;
 
-	struct compareTasks
-	{
-		bool operator()(const TaskHandle& left, const TaskHandle& right) const
-		{
-			assert(left.entry->type==SCHED_ENTRY_TASK && right.entry->type==SCHED_ENTRY_TASK);
-			return left.entry->taskDesc.frameToExecute > right.entry->taskDesc.frameToExecute;
-		}
-	};
+    err:
+        releaseMTResources();
+    }
 
-	//bool operator<(const TaskHandle& lhs, const TaskHandle& rhs)
-	//{
-	//	assert(lhs.entry->type==SCHED_ENTRY_TIMED_TASK && rhs.entry->type==SCHED_ENTRY_TIMED_TASK);
-	//	return lhs.entry->timedTaskDesc.msDueTime > rhs.entry->timedTaskDesc.msDueTime;
-	//}
+    void fini()
+    {
+        if (SDL_LockMutex(pool.lock) != 0)
+        {
+            return;
+        }
 
-	bool		isInitialized=false;
-	bool		doTerminate=false;
-	size_t		curFrame=0;
-	clock_t		startTime=0;
-	TaskPool	taskPool;
+        do
+        {
+            /* Already shutting down */
+            if(pool.shutdown)
+            {
+                break;
+            }
 
-	std::priority_queue<TaskHandle, std::vector<TaskHandle>, compareTimedTasks>	timedTaskQueue;
-	std::priority_queue<TaskHandle, std::vector<TaskHandle>, compareTasks>		taskQueue;
+            pool.shutdown = 1;
 
-	size_t	timeElapsedMS()
-	{
-		assert(isInitialized);
-		return (clock()-startTime)*1000/CLOCKS_PER_SEC;
-	}
+            /* Wake up all worker threads */
+            if (SDL_CondBroadcast(pool.notify) != 0 ||
+                SDL_UnlockMutex(pool.lock) != 0)
+            {
+                break;
+            }
 
-	void init()
-	{
-		if (isInitialized)
-			return;
+            /* Join all worker thread */
+            for(int i = 0; i < pool.thread_count; i++)
+            {
+                SDL_WaitThread(pool.threads[i], NULL);
+            }
+        }
+        while(0);
 
-		isInitialized = true;
-		doTerminate=false;
-		assert(timedTaskQueue.empty());
-		assert(taskQueue.empty());
-		startTime = clock();
-		curFrame = 0;
-	}
+        SDL_UnlockMutex(pool.lock);
+    
+        releaseMTResources();
+    }
 
-	void cleanup()
-	{
-		if (!isInitialized)
-			return;
+    int addAsyncTask(void (*taskFunc)(void *), void *arg)
+    {
+        int err = 0;
+        int next;
 
-		while (!timedTaskQueue.empty())
-		{
-			taskPool.put(timedTaskQueue.top().entry);
-			timedTaskQueue.pop();
-		}
-		while (!taskQueue.empty())
-		{
-			taskPool.put(taskQueue.top().entry);
-			taskQueue.pop();
-		}
+        if(taskFunc == NULL)
+        {
+            return invalidValue;
+        }
 
-		isInitialized = false;
-		doTerminate=true;
-	}
+        if(SDL_LockMutex(pool.lock) != 0)
+        {
+            return lockFailure;
+        }
 
-	//void addTask(TaskFunc code, void* userData/*, size_t flags*/)
-	//{
-	//}
+        next = pool.tail + 1;
+        next = (next == pool.queue_size) ? 0 : next;
 
-	//Adds timed task to execution queue
-	Task addTimedTask(TimedTaskFunc func, void* userData, size_t msTimeout/*, size_t flags*/)
-	{
-		SchedEntry* entry = taskPool.get();
-		entry->flags = SCHED_DESC_RECURRING|SCHED_DESC_TIMED;
-		entry->type  = SCHED_ENTRY_TIMED_TASK;
-		entry->timedTaskDesc.taskFunc = func;
-		entry->timedTaskDesc.userData = userData;
-		entry->timedTaskDesc.msTimeout = msTimeout;
-		entry->timedTaskDesc.msDueTime = timeElapsedMS();
-		timedTaskQueue.push(entry);
+        do
+        {
+            /* Are we full? */
+            if(pool.count == pool.queue_size)
+            {
+                err = queueFull;
+                break;
+            }
 
-		return entry;
-	}
+            /* Are we shutting down? */
+            if(pool.shutdown)
+            {
+                err = shutdown;
+                break;
+            }
 
-	Task addFrameTask(TaskFunc func, void* userData/*, size_t flags*/)
-	{
-		SchedEntry* entry = taskPool.get();
-		entry->flags = SCHED_DESC_RECURRING|SCHED_DESC_IMMEDIATE;
-		entry->type  = SCHED_ENTRY_TASK;
-		entry->taskDesc.taskFunc = func;
-		entry->taskDesc.userData = userData;
-		entry->taskDesc.frameToExecute = curFrame;
-		taskQueue.push(entry);
+            /* Add task to queue */
+            pool.queue[pool.tail].function = taskFunc;
+            pool.queue[pool.tail].argument = arg;
+            pool.tail = next;
+            pool.count += 1;
 
-		return entry;
-	}
+            /* pthread_cond_broadcast */
+            if (SDL_CondSignal(pool.notify) != 0)
+            {
+                err = lockFailure;
+                break;
+            }
+        }
+        while(0);
 
-	void terminateLoop()
-	{
-		doTerminate = true;
-	}
+        if(SDL_UnlockMutex(pool.lock) != 0)
+        {
+            err = lockFailure;
+        }
 
-	void terminateTask(Task handle)
-	{
-		handle->flags |= SCHED_DESC_STOP_TASK;
-	}
+        return err;
+    }
 
-#include "Timer.h"
+    static void releaseMTResources()
+    {
+        assert(pool.started <= 0);
 
-	void mainLoop()
-	{
-		while(!doTerminate)
-		{
-			size_t time = timeElapsedMS();
+        free(pool.queue);
+ 
+        SDL_LockMutex(pool.lock);
+        SDL_DestroyMutex(pool.lock);
+        SDL_DestroyCond(pool.notify);
 
-			while (!timedTaskQueue.empty())
-			{
-				SchedEntry& entry = timedTaskQueue.top();
-				if (entry.timedTaskDesc.msDueTime>time)
-					break;
-				assert(entry.type == SCHED_ENTRY_TIMED_TASK);
-				timedTaskQueue.pop();
-				if (entry.flags&SCHED_DESC_STOP_TASK)
-				{
-					taskPool.put(&entry);
-				}
-				else
-				{
-					entry.timedTaskDesc.taskFunc(entry.timedTaskDesc.userData);
-					entry.timedTaskDesc.msDueTime += entry.timedTaskDesc.msTimeout;
-					if ((entry.flags&SCHED_MASK_TASK_REPEAT_MODE) == SCHED_DESC_RECURRING)
-						timedTaskQueue.push(&entry);
-				}
-			}
+        memset(&pool, 0, sizeof(threadpool_t));
+    }
 
-			while (!taskQueue.empty())
-			{
-				SchedEntry& entry = taskQueue.top();
-				if (entry.taskDesc.frameToExecute>curFrame)
-					break;
-				assert(entry.type == SCHED_ENTRY_TASK);
-				taskQueue.pop();
-				if (entry.flags&SCHED_DESC_STOP_TASK)
-				{
-					taskPool.put(&entry);
-				}
-				else
-				{
-					entry.taskDesc.taskFunc(entry.taskDesc.userData);
-					++entry.taskDesc.frameToExecute;
-					if ((entry.flags&SCHED_MASK_TASK_REPEAT_MODE) == SCHED_DESC_RECURRING)
-						taskQueue.push(&entry);
-				}
-			}
-			++curFrame;
-		}
-	}
+    static int SDLCALL threadpoolThread(void* poolPtr)
+    {
+        threadpool_t*   pool = (threadpool_t*)poolPtr;
+        task_t          task;
 
-	Thread createThread(int (__cdecl *fn)(void *), void *data)
-	{
-		return SDL_CreateThread(fn, "", data);
-	}
+        for(;;)
+        {
+            /* Lock must be taken to wait on conditional variable */
+            SDL_LockMutex(pool->lock);
 
-	void waitThread(Thread thread, int *status)
-	{
-		SDL_WaitThread(thread, status);
-	}
+            /* Wait on condition variable, check for spurious wakeups.
+               When returning from pthread_cond_wait(), we own the lock. */
+            while((pool->count == 0) && (!pool->shutdown))
+            {
+                SDL_CondWait(pool->notify, pool->lock);
+            }
 
-	Mutex createMutex()
-	{
-		return SDL_CreateMutex();
-	}
+            if(pool->shutdown)
+            {
+                break;
+            }
 
-	int lockMutex(Mutex mtx)
-	{
-		return SDL_LockMutex(mtx);
-	}
+            /* Grab our task */
+            task.function = pool->queue[pool->head].function;
+            task.argument = pool->queue[pool->head].argument;
+            pool->head += 1;
+            pool->head = (pool->head == pool->queue_size) ? 0 : pool->head;
+            pool->count -= 1;
 
-	int unlockMutex(Mutex mtx)
-	{
-		return SDL_UnlockMutex(mtx);
-	}
+            /* Unlock */
+            SDL_UnlockMutex(pool->lock);
 
-	void destroyMutex(Mutex mtx)
-	{
-		SDL_DestroyMutex(mtx);
-	}
+            /* Get to work */
+            (*(task.function))(task.argument);
+        }
+
+        pool->started--;
+
+        SDL_UnlockMutex(pool->lock);
+
+        return 0;
+    }
 }

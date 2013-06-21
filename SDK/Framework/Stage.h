@@ -52,11 +52,10 @@ namespace ui
         void outlineActors();
         void renderActors();
         void handleInput();
-        void frameStep();
 
     private:
         glm::mat4   mProjection;
-
+        bool        mRunLoop;
 #if defined(DEBUG) || defined(_DEBUG)
         int dumpPickImage:1;
 #endif
