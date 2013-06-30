@@ -12,14 +12,9 @@ extern "C"
 #include <swscale.h>
 }
 
+#include "Timer.h"
 #include "profiler.h"
-
-uint64_t timerAbsoluteTime();
-
-#define NUM_BUFFERS 3
-
-static const int aFramesCache = 2;
-static const int vFramesCache = 1;
+#include "ResourceHelpers.h"
 
 //Simple ring buffer for AVPacket
 //Relies on overflow behaviour
@@ -58,9 +53,9 @@ void popAVPacket(AVPacketRingBuffer* rbuf)
 
 struct media_player_data_t
 {
-    AVFormatContext* pFormatCtx;
-    AVCodecContext*  pVideoCodecCtx;
-    AVCodecContext*  pAudioCodecCtx;
+    AVFormatContext* formatContext;
+    AVCodecContext*  videoCodecContext;
+    AVCodecContext*  audioCodecContext;
     unsigned int     videoStream;
     unsigned int     audioStream;
     AVFrame*         pFrame; 
@@ -77,19 +72,14 @@ struct media_player_data_t
     AVPacketRingBuffer vPackets;
 
     __int64 baseTime, timeShift, timeOfNextFrame;
-
-    __int64 FPS;
-    __int64 vFrameTime;
     __int64 aBufferSize;
-    __int64 aFramesAva, vFramesAva;
 
     GLuint texY[2];
     GLuint texU[2];
     GLuint texV[2];
 
     ALuint		audioSource;
-    ALuint		audioBuffers[NUM_BUFFERS];
-    int			availableAudioBuffers;
+    ALuint		audioBuffers[2];
 
     char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE]; // make it part of thread scratch buffer
 };
@@ -121,19 +111,15 @@ media_player_data_t hack;
 
 static void closeAudioStream(media_player_t player)
 {
-    if (player->pAudioCodecCtx)
+    if (player->audioCodecContext)
     {
-        avcodec_close(player->pAudioCodecCtx);
+        avcodec_close(player->audioCodecContext);
 
-        ALint enqueuedBuffers;
         alSourceStop(player->audioSource);
-        alGetSourcei(player->audioSource, AL_BUFFERS_QUEUED, &enqueuedBuffers);
-        assert(player->availableAudioBuffers+enqueuedBuffers == NUM_BUFFERS);
-        alSourceUnqueueBuffers(player->audioSource, enqueuedBuffers, player->audioBuffers+player->availableAudioBuffers);
+        alDeleteBuffers(2, player->audioBuffers);
         alDeleteSources(1, &player->audioSource);
-        alDeleteBuffers(NUM_BUFFERS, player->audioBuffers);
 
-        player->pAudioCodecCtx = 0;
+        player->audioCodecContext = 0;
     }
 }
 
@@ -162,32 +148,30 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
         return 0;
     }
 
-    player->pAudioCodecCtx = audioContext;
+    player->audioCodecContext = audioContext;
 
     alGenSources(1, &player->audioSource);
-    alGenBuffers(NUM_BUFFERS, player->audioBuffers);
+    alGenBuffers(2, player->audioBuffers);
 
     //TODO: HARDCODE!!!!!!!
-    player->aBufferSize  = player->pAudioCodecCtx->sample_rate / 25 * 3/*frames to buffer*/ * 2/*num channels*/ * 2/*bits per channel*/;
-
-    player->availableAudioBuffers = NUM_BUFFERS;
+    player->aBufferSize  = player->audioCodecContext->sample_rate / 25 * 3/*frames to buffer*/ * 2/*num channels*/ * 2/*bits per channel*/;
 
     return 1;
 }
 
 static void closeVideoStream(media_player_t player)
 {
-    if (player->pVideoCodecCtx)
+    if (player->videoCodecContext)
     {
         av_free(player->pFrame);
 
-        avcodec_close(player->pVideoCodecCtx);
+        avcodec_close(player->videoCodecContext);
 
         glDeleteTextures(2, player->texY );
         glDeleteTextures(2, player->texU);
         glDeleteTextures(2, player->texV);
 
-        player->pVideoCodecCtx = 0;
+        player->videoCodecContext = 0;
     }
 }
 
@@ -214,14 +198,12 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     // if(pVideoCodecCtx->frame_rate>1000 && pVideoCodecCtx->frame_rate_base==1)
     //    pVideoCodecCtx->frame_rate_base=1000;
 
-    player->pVideoCodecCtx = videoContext;
-    player->pFrame         = avcodec_alloc_frame();
-    player->numBytes       = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
+    player->videoCodecContext = videoContext;
+    player->pFrame            = avcodec_alloc_frame();
+    player->numBytes          = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
 
     resetAVPackets(&player->aPackets);
     resetAVPackets(&player->vPackets);
-
-    player->vFramesAva = 0;
 
     player->width     = videoContext->width;
     player->height    = videoContext->height;
@@ -248,7 +230,7 @@ static void streamMediaData(media_player_t player)
 
     AVPacket packet;
 
-    if (!player->streamEnd && av_read_frame(player->pFormatCtx, &packet)>=0)
+    if (!player->streamEnd && av_read_frame(player->formatContext, &packet)>=0)
     {
         if (packet.stream_index==player->audioStream)
         {
@@ -286,7 +268,7 @@ static void decodeAudio(media_player_t player, ALuint buffer)
 
             while(inSize > 0)
             {
-                int processed = avcodec_decode_audio2(player->pAudioCodecCtx, (int16_t*)(player->audioBuf+bufSize), &bufSizeAva, inData, inSize);
+                int processed = avcodec_decode_audio2(player->audioCodecContext, (int16_t*)(player->audioBuf+bufSize), &bufSizeAva, inData, inSize);
 
                 if(processed < 0)
                 {
@@ -312,7 +294,7 @@ static void decodeAudio(media_player_t player, ALuint buffer)
     {
         PROFILER_CPU_TIMESLICE("dataUpdate");
 
-        alBufferData(buffer, player->mAudioFormat, player->audioBuf, bufSize, player->pAudioCodecCtx->sample_rate);
+        alBufferData(buffer, player->mAudioFormat, player->audioBuf, bufSize, player->audioCodecContext->sample_rate);
         alSourceQueueBuffers(player->audioSource, 1, &buffer);
     }
 }
@@ -330,7 +312,7 @@ static void decodeFrame(media_player_t player)
         AVPacket* pkt = frontAVPacket(&player->vPackets);
         if (pkt)
         {
-            avcodec_decode_video(player->pVideoCodecCtx, player->pFrame, &frameDone, pkt->data, pkt->size);
+            avcodec_decode_video(player->videoCodecContext, player->pFrame, &frameDone, pkt->data, pkt->size);
 
             av_free_packet(pkt);
             popAVPacket(&player->vPackets);
@@ -373,43 +355,10 @@ char errBuf[2048];
 
 void mediaInit()
 {
-    const char* src;
-    GLsizei     len, res;
-    GLuint      fs;
-
     // Register all formats and codecs
     av_register_all();
 
-    fs  = glCreateShader(GL_FRAGMENT_SHADER);
-    progYUV2RGB = glCreateProgram();
-
-    src = srcYUV2RGB;
-    len = sizeof(srcYUV2RGB);
-
-    glShaderSource(fs, 1, (const GLchar**)&src, &len);
-    glCompileShader(fs);
-
-#ifdef _DEBUG
-    glGetShaderInfoLog(fs, sizeof(errBuf), &len, errBuf); 
-    glGetShaderiv(fs, GL_COMPILE_STATUS, &res);
-    assert(res);
-#endif
-
-    glAttachShader(progYUV2RGB, fs);
-    glLinkProgram(progYUV2RGB);
-
-#ifdef _DEBUG
-    glGetProgramInfoLog(progYUV2RGB, sizeof(errBuf), &len, errBuf); 
-    glGetProgramiv(progYUV2RGB, GL_LINK_STATUS, &res);
-    assert(res);
-#endif
-
-    glDeleteShader(fs);
-
-#ifdef _DEBUG
-    GLenum err = glGetError();
-    assert(err==GL_NO_ERROR);
-#endif
+    progYUV2RGB = resources::createProgram(GL_FRAGMENT_SHADER, srcYUV2RGB);
 
     extAudioFormatsPresent = alIsExtensionPresent("AL_EXT_MCFORMATS");
 }
@@ -421,18 +370,20 @@ void mediaShutdown()
 
 media_player_t mediaCreatePlayer(const char* source)
 {
-    media_player_t player = &hack;
+    media_player_t player = (media_player_t)malloc(sizeof(media_player_data_t));
 
-    if (av_open_input_file(&player->pFormatCtx, source, NULL, 0, NULL)!=0)
+    memset(player, 0, sizeof(media_player_data_t));
+
+    if (av_open_input_file(&player->formatContext, source, NULL, 0, NULL)!=0)
         return 0;
 
-    if (av_find_stream_info(player->pFormatCtx)<0)
+    if (av_find_stream_info(player->formatContext)<0)
         return 0 ;
 
-    dump_format(player->pFormatCtx, 0, source, false); // Dump information about file onto standard error
+    dump_format(player->formatContext, 0, source, false); // Dump information about file onto standard error
 
-    unsigned int  numStreams = player->pFormatCtx->nb_streams;
-    AVStream**    streams    = player->pFormatCtx->streams;
+    unsigned int  numStreams = player->formatContext->nb_streams;
+    AVStream**    streams    = player->formatContext->streams;
 
     player->audioStream = numStreams;
     for(unsigned int i=0; i<numStreams; i++)
@@ -460,14 +411,13 @@ media_player_t mediaCreatePlayer(const char* source)
     return player;
 }
 
-#include <cstdlib>
-
 void mediaDestroyPlayer(media_player_t player)
 {
     closeAudioStream(player);
     closeVideoStream(player);
 
-    av_close_input_file(player->pFormatCtx);
+    av_close_input_file(player->formatContext);
+    free(player);
 }
 
 void mediaStartPlayback(media_player_t player)
@@ -475,8 +425,8 @@ void mediaStartPlayback(media_player_t player)
     player->timeOfNextFrame = 0;
     player->streamEnd       = FALSE;
 
-    ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
-    decodeAudio(player, buffer);
+    decodeAudio(player, player->audioBuffers[0]);
+    decodeAudio(player, player->audioBuffers[1]);
     decodeFrame(player);
 
     player->playback  = TRUE;
@@ -504,13 +454,6 @@ void mediaPlayerUpdate(media_player_t player)
         {
             ALuint buffer;
             alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
-            assert(player->availableAudioBuffers<NUM_BUFFERS);
-            player->audioBuffers[player->availableAudioBuffers++] = buffer;
-        }
-
-        if (player->availableAudioBuffers>0)
-        {
-            ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
             decodeAudio(player, buffer);
         }
 
