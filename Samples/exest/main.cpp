@@ -23,8 +23,6 @@ private:
 
     CDLODTerrain terrain;
 
-    mt::Task            mUpdateTask;
-
     CameraDirector camDirector;
 
 public:
