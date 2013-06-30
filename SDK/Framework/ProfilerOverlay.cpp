@@ -266,7 +266,6 @@ void ProfilerOverlay::updateUI()
 
 void ProfilerOverlay::renderFullscreen()
 {
-    glUseProgram(0);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
@@ -302,7 +301,8 @@ void ProfilerOverlay::renderFullscreen()
     {
         char str[256];
 
-        glColor3f(1.0f, 1.0f, 1.0f);
+       glUseProgram(0);
+       glColor3f(1.0f, 1.0f, 1.0f);
 
         _snprintf(str, 256, "name     : %s", intervals[mSelection].name);
         vg::drawString(ui::defaultFont, 50, 550, str, strlen(str));

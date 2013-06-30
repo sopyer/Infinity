@@ -12,6 +12,8 @@ extern "C"
 #include <swscale.h>
 }
 
+#include "profiler.h"
+
 uint64_t timerAbsoluteTime();
 
 #define NUM_BUFFERS 3
@@ -56,7 +58,6 @@ void popAVPacket(AVPacketRingBuffer* rbuf)
 
 struct media_player_data_t
 {
-
     AVFormatContext* pFormatCtx;
     AVCodecContext*  pVideoCodecCtx;
     AVCodecContext*  pAudioCodecCtx;
@@ -79,21 +80,18 @@ struct media_player_data_t
 
     __int64 FPS;
     __int64 vFrameTime;
-    __int64 aFrameSamples, aSamplesDecoded, aBufferSamples;
+    __int64 aBufferSize;
     __int64 aFramesAva, vFramesAva;
 
     GLuint texY[2];
     GLuint texU[2];
     GLuint texV[2];
-    GLuint pbo;
 
     ALuint		audioSource;
     ALuint		audioBuffers[NUM_BUFFERS];
     int			availableAudioBuffers;
 
-    char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE];
-    char __declspec(align(16)) audioBuf2[AVCODEC_MAX_AUDIO_FRAME_SIZE];
-    int                        bufSize;
+    char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE]; // make it part of thread scratch buffer
 };
 
 typedef struct media_player_data_t* media_player_t;
@@ -170,8 +168,7 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
     alGenBuffers(NUM_BUFFERS, player->audioBuffers);
 
     //TODO: HARDCODE!!!!!!!
-    player->aBufferSamples  = player->pAudioCodecCtx->sample_rate / 25 * 2 * 2 * 2;
-    player->aSamplesDecoded = 0;
+    player->aBufferSize  = player->pAudioCodecCtx->sample_rate / 25 * 3/*frames to buffer*/ * 2/*num channels*/ * 2/*bits per channel*/;
 
     player->availableAudioBuffers = NUM_BUFFERS;
 
@@ -190,9 +187,7 @@ static void closeVideoStream(media_player_t player)
         glDeleteTextures(2, player->texU);
         glDeleteTextures(2, player->texV);
 
-        glDeleteBuffers(1, &player->pbo);
         player->pVideoCodecCtx = 0;
-        player->bufSize = 0;
     }
 }
 
@@ -233,8 +228,6 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     player->srcFormat = videoContext->pix_fmt;
     assert(player->srcFormat == PIX_FMT_YUV420P);
 
-    glGenBuffers(1, &player->pbo);
-
     glGenTextures(2, player->texY);
     glGenTextures(2, player->texU);
     glGenTextures(2, player->texV);
@@ -251,6 +244,8 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
 
 static void streamMediaData(media_player_t player)
 {
+    PROFILER_CPU_TIMESLICE("streamMediaData");
+
     AVPacket packet;
 
     if (!player->streamEnd && av_read_frame(player->pFormatCtx, &packet)>=0)
@@ -273,12 +268,14 @@ static void streamMediaData(media_player_t player)
     }
 }
 
-static void decodeAudio(media_player_t player, __int64 time)
+static void decodeAudio(media_player_t player, ALuint buffer)
 {
-    __int64 aSamples = (time<0?0:time) / 1000 * player->pAudioCodecCtx->sample_rate / 1000;
+    PROFILER_CPU_TIMESLICE("decodeAudio");
 
     int audioDataAva = 1;
-    while((aSamples+player->aBufferSamples)>player->aSamplesDecoded && audioDataAva)
+    int bufSize      = 0;
+
+    while((bufSize < player->aBufferSize) && audioDataAva)
     {
         AVPacket* pkt = frontAVPacket(&player->aPackets);
         if (pkt)
@@ -289,7 +286,7 @@ static void decodeAudio(media_player_t player, __int64 time)
 
             while(inSize > 0)
             {
-                int processed = avcodec_decode_audio2(player->pAudioCodecCtx, (int16_t*)player->audioBuf, &bufSizeAva, inData, inSize);
+                int processed = avcodec_decode_audio2(player->pAudioCodecCtx, (int16_t*)(player->audioBuf+bufSize), &bufSizeAva, inData, inSize);
 
                 if(processed < 0)
                 {
@@ -299,13 +296,8 @@ static void decodeAudio(media_player_t player, __int64 time)
                 inData     += processed;
                 inSize     -= processed;
 
-                if (processed>0)
-                {
-                    assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
-                    memcpy(player->audioBuf2+player->bufSize, player->audioBuf, bufSizeAva);
-                    player->bufSize += bufSizeAva;
-                    player->aSamplesDecoded+=bufSizeAva/2/2;
-                }
+                assert(bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
+                bufSize += bufSizeAva;
             }
 
             av_free_packet(pkt);
@@ -317,44 +309,24 @@ static void decodeAudio(media_player_t player, __int64 time)
         audioDataAva = !player->streamEnd || usedAVPackets(&player->aPackets)!=0;
     }
 
-    ALint  count;
-    alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
-    if (count>0)
     {
-        ALuint buffer;
-        alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
-        assert(player->availableAudioBuffers<NUM_BUFFERS);
-        player->audioBuffers[player->availableAudioBuffers++] = buffer;
-    }
+        PROFILER_CPU_TIMESLICE("dataUpdate");
 
-    if (player->bufSize>0 && player->availableAudioBuffers>0)
-    {
-        ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
-        alBufferData(buffer, player->mAudioFormat, player->audioBuf2, player->bufSize, player->pAudioCodecCtx->sample_rate);
+        alBufferData(buffer, player->mAudioFormat, player->audioBuf, bufSize, player->pAudioCodecCtx->sample_rate);
         alSourceQueueBuffers(player->audioSource, 1, &buffer);
-        player->bufSize = 0;
-    }
-
-    ALint state;
-    alGetSourcei(player->audioSource, AL_SOURCE_STATE, &state);
-    if (state != AL_PLAYING)
-    {
-        alSourcePlay(player->audioSource);
     }
 }
 
-static void decodeFrame(media_player_t player, __int64 time)
+static void decodeFrame(media_player_t player)
 {
-    int frameDone, videoDataAva;
+    PROFILER_CPU_TIMESLICE("decodeFrame");
 
-    if (time<player->timeOfNextFrame) return;
+    int frameDone, videoDataAva;
 
     frameDone    = 0;
     videoDataAva = 1;
     while(!frameDone && videoDataAva)
     {
-        player->playback = !player->streamEnd || usedAVPackets(&player->aPackets)!=0 || usedAVPackets(&player->vPackets)!=0;
-
         AVPacket* pkt = frontAVPacket(&player->vPackets);
         if (pkt)
         {
@@ -368,45 +340,21 @@ static void decodeFrame(media_player_t player, __int64 time)
 
         if(frameDone)
         {
+            PROFILER_CPU_TIMESLICE("frameDone");
+
             player->timeOfNextFrame = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
-
-            size_t sizeY;
-            size_t sizeU;
-            size_t sizeV;
-            size_t offsetU;
-            size_t offsetV;
-            size_t bufferSize;
-
-            sizeY = player->pFrame->linesize[0]*player->height;
-            sizeU = player->pFrame->linesize[1]*player->height/2;
-            sizeV = player->pFrame->linesize[2]*player->height/2;
-
-            offsetU    = sizeY;
-            offsetV    = offsetU+sizeU;
-            bufferSize = offsetV+sizeV;
-
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, player->pbo);
-            glBufferData(GL_PIXEL_UNPACK_BUFFER, bufferSize, 0, GL_STREAM_DRAW);
-
-            uint8_t* ptr = (uint8_t*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
-
-            memcpy(ptr,         player->pFrame->data[0], sizeY);
-            memcpy(ptr+offsetU, player->pFrame->data[1], sizeU);
-            memcpy(ptr+offsetV, player->pFrame->data[2], sizeV);
-
-            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
 
             glBindTexture(GL_TEXTURE_2D, player->texY[1]);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
 
             glBindTexture(GL_TEXTURE_2D, player->texU[1]);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetU);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
 
             glBindTexture(GL_TEXTURE_2D, player->texV[1]);
             glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)offsetV);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
 
             glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
@@ -414,11 +362,6 @@ static void decodeFrame(media_player_t player, __int64 time)
             assert(err == GL_NO_ERROR);
 
             glBindTexture(GL_TEXTURE_2D, 0);
-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-            std::swap(player->texY[0], player->texY[1]);
-            std::swap(player->texU[0], player->texU[1]);
-            std::swap(player->texV[0], player->texV[1]);
         }
         videoDataAva = !player->streamEnd || usedAVPackets(&player->vPackets)!=0;
     }
@@ -532,23 +475,62 @@ void mediaStartPlayback(media_player_t player)
     player->timeOfNextFrame = 0;
     player->streamEnd       = FALSE;
 
-    decodeAudio(player, 0);
-    decodeFrame(player, 0);
+    ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
+    decodeAudio(player, buffer);
+    decodeFrame(player);
 
     player->playback  = TRUE;
     player->timeShift = player->timeOfNextFrame; //in some videos first dts differs from 0
     player->baseTime  = timerAbsoluteTime();
+
+    alSourcePlay(player->audioSource);
 }
 
 void mediaPlayerUpdate(media_player_t player)
 {
+    PROFILER_CPU_TIMESLICE("mediaPlayerUpdate");
+
     if (!player->playback)
         return;
 
     __int64 currentTime = timerAbsoluteTime()-player->baseTime;
 
-    decodeAudio(player, currentTime);
-    decodeFrame(player, currentTime+player->timeShift);
+    player->playback = !player->streamEnd || usedAVPackets(&player->aPackets)!=0 || usedAVPackets(&player->vPackets)!=0;
+
+    {
+        ALint  count;
+        alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
+        if (count>0)
+        {
+            ALuint buffer;
+            alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
+            assert(player->availableAudioBuffers<NUM_BUFFERS);
+            player->audioBuffers[player->availableAudioBuffers++] = buffer;
+        }
+
+        if (player->availableAudioBuffers>0)
+        {
+            ALuint buffer = player->audioBuffers[--player->availableAudioBuffers];
+            decodeAudio(player, buffer);
+        }
+
+        ALint state;
+        alGetSourcei(player->audioSource, AL_SOURCE_STATE, &state);
+        if (state != AL_PLAYING)
+        {
+            alSourcePlay(player->audioSource);
+        }
+    }
+
+    int64_t time = currentTime+player->timeShift;
+    if (time>=player->timeOfNextFrame)
+    {
+        decodeFrame(player);
+
+        std::swap(player->texY[0], player->texY[1]);
+        std::swap(player->texU[0], player->texU[1]);
+        std::swap(player->texV[0], player->texV[1]);
+    }
 }
 
 void mediaPlayerPrepareRender(media_player_t player)
@@ -559,6 +541,7 @@ void mediaPlayerPrepareRender(media_player_t player)
     glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, player->texU[0]);
     glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, player->texV[0]);
 
+    glActiveTexture(GL_TEXTURE0);
 #ifdef _DEBUG
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);

@@ -4,25 +4,6 @@
 
 #include <media_api.h>
 
-const char srcVideoOut[] = 
-    "layout(binding = 0) uniform sampler2D samY;                                                                        \n"
-    "layout(binding = 1) uniform sampler2D samU;                                                                        \n"
-    "layout(binding = 2) uniform sampler2D samV;                                                                        \n"
-    "                                                                                               \n"
-    "void main()                                                                                    \n"
-    "{                                                                                              \n"
-    "    float y   = texture2D(samY, gl_TexCoord[0].xy).r;                                          \n"
-    "    float u   = texture2D(samU, gl_TexCoord[0].xy).r - 0.5;                                    \n"
-    "    float v   = texture2D(samV, gl_TexCoord[0].xy).r - 0.5;                                    \n"
-    "                                                                                               \n"
-    "    vec3 rgb = vec3(y) + u*vec3(0.0, -0.344, 1.770) + v*vec3(1.403, -0.714, 0.0);              \n"
-    "                                                                                               \n"
-    "    gl_FragColor = vec4(rgb, 1.0)*gl_Color;                                                    \n"
-    "}                                                                                              \n";
-
-GLuint progVideoOut;
-
-
 class VideoSample: public ui::Stage
 {
 	public:
@@ -40,16 +21,12 @@ class VideoSample: public ui::Stage
 			alcMakeContextCurrent(mAudioContext);
 
             player = mediaCreatePlayer("k:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
-
-            progVideoOut = resources::createProgram(GL_FRAGMENT_SHADER, srcVideoOut);
         }
 		
 		ctx::Context	mBase, mCtx[2];
 		
 		~VideoSample()
 		{
-            glDeleteProgram(progVideoOut);
-
             mediaDestroyPlayer(player);
             mediaShutdown();
 
@@ -112,7 +89,6 @@ class VideoSample: public ui::Stage
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             mediaPlayerPrepareRender(player);//Rename to SetTextures
-		    glUseProgram(progVideoOut);
 
             glBegin(GL_QUADS);
             glColor4f(1.0f, 1.0f, 1.0f, 1.0f); glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, 1.0f);
