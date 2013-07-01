@@ -69,8 +69,12 @@ namespace resources
             char*  str  = va_arg(args, char*);
 
             shader = createShaderFromFile(type, str, headerCount, headers);
-            glAttachShader(program, shader);
-            glDeleteShader(shader);
+            
+            if (shader)
+            {
+                glAttachShader(program, shader);
+                glDeleteShader(shader);
+            }
         }
         va_end(args);
 
