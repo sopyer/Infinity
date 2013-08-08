@@ -41,7 +41,7 @@ namespace ui
     bool    mouseWheelDown;
 
     uint32_t mouseOverAreaID;
-    uint32_t mouseCaptureID;
+    uint32_t mouseTrackID;
 
     GLuint  fboPick;
     GLuint  rbPickID;
@@ -114,7 +114,7 @@ namespace ui
         deltaY = 0;
 
         mouseOverAreaID = 0;
-        mouseCaptureID  = ID_INVALID;
+        mouseTrackID    = ID_INVALID;
 
         //init pick resources
         glGenFramebuffers(1, &fboPick);
@@ -154,9 +154,29 @@ namespace ui
 
         mouseWheelUp = mouseWheelDown = false;
 
-        mouseOverAreaID = (mouseCaptureID!=ID_INVALID) ? mouseCaptureID : pickID(mouseX, mouseY);
+        mouseOverAreaID = (mouseTrackID!=ID_INVALID) ? mouseTrackID : pickID(mouseX, mouseY);
+        mouseOverAreaID = mouseIsCaptured() ? 0 : mouseOverAreaID;
 
         checkBoxUpdateAll();
+    }
+
+    void mouseCapture()
+    {
+        SDL_ShowCursor(FALSE);
+        SDL_SetWindowGrab(fwk::window, SDL_TRUE);
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+    }
+
+    void mouseRelease()
+    {
+        SDL_ShowCursor(TRUE);
+        SDL_SetWindowGrab(fwk::window, SDL_FALSE);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+    }
+
+    bool mouseIsCaptured()
+    {
+        return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
     }
 
     void render()
@@ -248,14 +268,14 @@ namespace ui
         }
     }
 
-    void captureMouse(uint32_t ID)
+    void mouseTrack(uint32_t ID)
     {
-        mouseCaptureID = ID;
+        mouseTrackID = ID;
     }
 
-    void releaseMouse()
+    void mouseUntrack()
     {
-        mouseCaptureID = ID_INVALID;
+        mouseTrackID = ID_INVALID;
     }
 
 
@@ -399,23 +419,42 @@ namespace ui
 
     void processCameraInput(SpectatorCamera* camera, float dt)
     {
-        glm::vec3   direction(0.0f, 0.0f, 0.0f);
-        float       heading = 0.0f;
-        float       pitch   = 0.0f;
+        uint32_t id = mouseOverID();
 
-        direction.z += ui::keyIsPressed(SDL_SCANCODE_W)?1.0f:0.0f;
-        direction.z -= ui::keyIsPressed(SDL_SCANCODE_S)?1.0f:0.0f;
-        direction.x -= ui::keyIsPressed(SDL_SCANCODE_A)?1.0f:0.0f;
-        direction.x += ui::keyIsPressed(SDL_SCANCODE_D)?1.0f:0.0f;
+        bool LCTRL_Down_LALT_Released     = keyIsPressed  (SDL_SCANCODE_LCTRL) && keyWasReleased(SDL_SCANCODE_LALT );
+        bool LALT_Down_LCTRL_Released     = keyIsPressed  (SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
+        bool LALT_Released_LCTRL_Released = keyWasReleased(SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
+        
+        bool actionReleaseMouse = LCTRL_Down_LALT_Released || LALT_Down_LCTRL_Released || LALT_Released_LCTRL_Released;
 
-        pitch   += ui::keyIsPressed(SDL_SCANCODE_KP_8)?1.50f:0.0f;
-        pitch   -= ui::keyIsPressed(SDL_SCANCODE_KP_5)?1.50f:0.0f;
-        heading += ui::keyIsPressed(SDL_SCANCODE_KP_4)?1.50f:0.0f;
-        heading -= ui::keyIsPressed(SDL_SCANCODE_KP_6)?1.50f:0.0f;
+        if (id == 0 && mouseWasPressed(SDL_BUTTON_LEFT))
+        {
+            mouseCapture();
+        }
+        else if (mouseIsCaptured() && actionReleaseMouse)
+        {
+            mouseRelease();
+        }
+        else if (mouseIsCaptured())
+        {
+            glm::vec3   direction(0.0f, 0.0f, 0.0f);
+            float       heading = 0.0f;
+            float       pitch   = 0.0f;
 
-        camera->rotateSmoothly(heading, pitch);
-        camera->rotateSmoothly((float)-ui::deltaX, (float)-ui::deltaY);
-        camera->updatePosition(direction, dt);
+            direction.z += ui::keyIsPressed(SDL_SCANCODE_W)?1.0f:0.0f;
+            direction.z -= ui::keyIsPressed(SDL_SCANCODE_S)?1.0f:0.0f;
+            direction.x -= ui::keyIsPressed(SDL_SCANCODE_A)?1.0f:0.0f;
+            direction.x += ui::keyIsPressed(SDL_SCANCODE_D)?1.0f:0.0f;
+
+            pitch   += ui::keyIsPressed(SDL_SCANCODE_KP_8)?1.50f:0.0f;
+            pitch   -= ui::keyIsPressed(SDL_SCANCODE_KP_5)?1.50f:0.0f;
+            heading += ui::keyIsPressed(SDL_SCANCODE_KP_4)?1.50f:0.0f;
+            heading -= ui::keyIsPressed(SDL_SCANCODE_KP_6)?1.50f:0.0f;
+
+            camera->rotateSmoothly(heading, pitch);
+            camera->rotateSmoothly((float)-ui::deltaX, (float)-ui::deltaY);
+            camera->updatePosition(direction, dt);
+        }
     }
 
     void displayStats(float x, float y, float w, float h, float cpuTime, float gpuTime)

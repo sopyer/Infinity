@@ -28,6 +28,10 @@ namespace ui
     bool     keyIsReleased (int key);
     bool     keyWasReleased(int key);
 
+    void     mouseCapture   ();
+    void     mouseRelease   ();
+    bool     mouseIsCaptured();
+
     bool     mouseIsPressed  (int button);
     bool     mouseWasPressed (int button);
     bool     mouseIsReleased (int button);
@@ -37,12 +41,14 @@ namespace ui
     bool     mouseWasWheelDown();
 
     uint32_t mouseOverID();
-    void     captureMouse(uint32_t ID);
-    void     releaseMouse();
+    
+    void     mouseTrack  (uint32_t ID);
+    void     mouseUntrack();
 
-    void     mouseAddEventArea(float x0, float y0, float x1, float y1, uint32_t id);
+    void     mouseAddEventArea   (float    x0, float y0, float x1, float y1, uint32_t id);
     void     mouseRemoveEventArea(uint32_t id);
     void     mouseUpdateEventArea(uint32_t id, float x0, float y0, float x1, float y1);
+    
     void     mouseRelOffset(int* dx, int* dy);
     void     mouseAbsOffset(int*  x, int*  y);
 
@@ -56,10 +62,9 @@ namespace ui
     void     readPickBuffer(GLsizei sz, void* data);
 #endif
 
-    void     processCameraInput(SpectatorCamera* camera, float dt);
-    void     processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera);
-
-    void     processZoomAndPan(float& scale, float& transX, float& transY, bool& drag);
+    void     processCameraDirectorInput(CameraDirector*  camDirector, SpectatorCamera* camera);
+    void     processCameraInput        (SpectatorCamera* camera, float dt);
+    void     processZoomAndPan         (float& scale, float& transX, float& transY, bool& drag);
 
     void     displayStats(float x, float y, float w, float h, float cpuTime, float gpuTime);
 

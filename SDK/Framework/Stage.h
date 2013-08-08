@@ -20,16 +20,11 @@ namespace ui
         Stage();
         ~Stage();
 
-        Stage& captureMouse();
-        Stage& releaseMouse();
-
         Stage& setProjection(float* mat4x4);
 
         void run();
         void close();
         void setCaption(const char* caption);
-
-        bool isMouseCaptured();
 
     protected:
         //Debug functions and callbacks

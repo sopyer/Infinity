@@ -135,11 +135,6 @@ protected:
 
     void onKeyUp(const KeyEvent& event)
     {
-        if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
-            event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
-        {
-            releaseMouse();
-        }
         if (event.keysym.sym==SDLK_BACKSLASH)
         {
             terrain.maxPatchCount = (terrain.maxPatchCount)?0:CDLODTerrain::MAX_PATCH_COUNT;
@@ -152,12 +147,6 @@ protected:
         {
             terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
         }
-    }
-
-    void onTouch(const ButtonEvent& event)
-    {
-        UNUSED(event);
-        captureMouse();
     }
 
     void onPaint()
@@ -237,10 +226,7 @@ protected:
     {
         bool lockView = false;
 
-        if (isMouseCaptured())
-        {
-            ui::processCameraInput(&camera, dt);
-        }
+        ui::processCameraInput(&camera, dt);
 
         ui::processCameraDirectorInput(&camDirector, &camera);
 

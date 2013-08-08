@@ -48,21 +48,6 @@ public:
     }
 
 protected:
-    void onKeyUp(const KeyEvent& event)
-    {
-        if ((event.keysym.sym==SDLK_LALT  && event.keysym.mod==KMOD_LCTRL||
-            event.keysym.sym==SDLK_LCTRL && event.keysym.mod==KMOD_LALT))
-        {
-            releaseMouse();
-        }
-    }
-
-    void onTouch(const ButtonEvent& event)
-    {
-        UNUSED(event);
-        captureMouse();
-    }
-
     void onPaint()
     {
         glClearDepth(1.0);
@@ -124,8 +109,7 @@ protected:
 
         gpuTime = (float)gpuTimer.getResult();
 
-        if (isMouseCaptured())
-            ui::processCameraInput(&camera, dt);
+        ui::processCameraInput(&camera, dt);
     }
 };
 

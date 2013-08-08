@@ -81,27 +81,6 @@ namespace ui
         mShaderEditOverlay->addPrograms(count, programs);
     }
 
-    Stage& Stage::captureMouse()
-    {
-        SDL_ShowCursor(FALSE);
-        SDL_SetWindowGrab(fwk::window, SDL_TRUE);
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-        return *this;
-    }
-
-    Stage& Stage::releaseMouse()
-    {
-        SDL_ShowCursor(TRUE);
-        SDL_SetWindowGrab(fwk::window, SDL_FALSE);
-        SDL_SetRelativeMouseMode(SDL_FALSE);
-        return *this;
-    }
-
-    bool Stage::isMouseCaptured()
-    {
-        return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
-    }
-
     void onSDLEvent(SDL_Event& event);
 
     void Stage::handleInput()
