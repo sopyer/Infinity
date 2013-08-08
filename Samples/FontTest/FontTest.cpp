@@ -8,6 +8,7 @@ public:
     FontTest()
     {
         font = createFont("C:\\Windows\\Fonts\\times.ttf", 20);
+        fontArial = createFont("C:\\Windows\\Fonts\\arial.ttf", 12);
 
         prgGradient = resources::createProgramFromFiles(NULL, "Gradient.frag");
 
@@ -82,16 +83,23 @@ public:
         vg::destroyPath(path);
         glDeleteProgram(prgGradient);
         destroyFont(font);
+        destroyFont(fontArial);
     }
 
 protected:
     virtual void onPaint()
     {
+		glClearColor(38.0f/255.0f, 38.0f/255.0f, 40.0f/255.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
         glMatrixMode(GL_MODELVIEW);
-        glTranslatef(100, 100, 0);
+		glPushMatrix();
+        
+		glTranslatef(100, 100, 0);
         glScalef(1, -1, 1);
-        glColor3f(1, 1, 1);
-        glUseProgram(0);
+        
+		glColor3f(1, 1, 1);
+		glUseProgram(0);
         drawString(font, 0, 0, "Hello World!!!");
 
         float xmin, ymin, xmax, ymax;
@@ -105,12 +113,25 @@ protected:
         glVertex2f(xmin,  ymin);
         glEnd();
 
+		glPopMatrix();
 
         glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+		glPushMatrix();
+
+		glLoadIdentity();
         glTranslatef(0, 0, -1);
 
         vg::drawPath(path, paint);
+		glPopMatrix();
+
+
+		vg::drawRoundedRect(49, 199, 302, 352, 2, 2, 0xFF212121, 0xFF4A3F37);
+
+		vg::drawRect(55, 205, 296, 225, 0xFF373737, 0xFF373737);
+
+		glColor3ub(0xA0, 0xA0, 0xA0);
+		glUseProgram(0);
+        drawString(fontArial, 58, 210, "HEADER");
 
         //glUseProgram(prgGradient);
         //glColor3f(1, 1, 0);
@@ -128,6 +149,7 @@ private:
     vg::Paint		paint;
     vg::Path		path;
     Font			font;
+    Font			fontArial;
     GLuint			prgGradient;
 };
 

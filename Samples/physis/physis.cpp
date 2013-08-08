@@ -4,6 +4,7 @@
 #include <utils.h>
 #include "pp.h"
 #include "Perlin.h"
+#include "lighting.h"
 
 static const int texSize = 1024;
 
@@ -257,14 +258,22 @@ public:
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_S,     GL_REPEAT );
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_T,     GL_REPEAT );
 
+        lighting::init();
+
         CHECK_GL_ERROR();
 
-        ui::mouseAddEventArea(462.0f, 4.0f, 578.0f, 36.0f, 0xFF000000);
-        ui::mouseAddEventArea(582.0f, 4.0f, 698.0f, 36.0f, 0xFF000001);
-        ui::mouseAddEventArea(702.0f, 4.0f, 818.0f, 36.0f, 0xFF000002);
-        
-        ui::mouseAddEventArea(100.0f, 100.0f, 200.0f, 114.0f, 0xAA001000);
-        
+        const float     size   = 120.0f;
+        const float     margin = 2.0f;
+        const uint32_t  count  = 4;
+
+        float pos = (1280.0f/*width*/ - size * count) / 2.0f;
+
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            ui::mouseAddEventArea(pos + margin, 4.0f, pos + size - margin, 36.0f, 0xFF000000|(uint32_t)i);
+            pos += size;
+        }
+
         currentTab = 1;
     }
 
@@ -278,6 +287,8 @@ public:
 
     ~PhysisDemo()
     {
+        lighting::fini();
+
         glDeleteSamplers(1, &samNearestRepeat);
         glDeleteTextures(TEX_ID_COUNT, textures);
         glDeleteProgram(texGtorProg);
@@ -290,6 +301,12 @@ public:
     }
 
 protected:
+
+	void initLightingResources();
+	void finiLightingResources();
+
+	void renderLightingScene();
+
     void onShaderRecompile()
     {
         ppOnShaderReload();
@@ -658,17 +675,32 @@ protected:
 
         vg::drawRect(3.0f, 3.0f, 1277.0f, 37.0f, 0xFF3E3E3E, 0xFF3E3E3E);
 
-        vg::drawRect(579.0f, 10.0f, 581.0f, 30.0f, 0xFF585858, 0xFF585858);
-        vg::drawRect(699.0f, 10.0f, 701.0f, 30.0f, 0xFF585858, 0xFF585858);
+        const float     size    = 120.0f;
+        const float     margin  = 2.0f;
+        const float     margin2 = 1.0f;
+        const uint32_t  count   = 4;
 
-        vg::drawRect(462.0f, 34.0f-(currentTab==0?3.0f:0.0f), 578.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
-        vg::drawRect(582.0f, 34.0f-(currentTab==1?3.0f:0.0f), 698.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
-        vg::drawRect(702.0f, 34.0f-(currentTab==2?3.0f:0.0f), 818.0f, 35.0f, 0xFFEDB734, 0xFF34B7ED);
+        float pos = (1280.0f/*width*/ - size * count) / 2.0f;
 
-        vg::drawString(ui::defaultFont, 490.0f, 25.0f, "PHYSIS", 6);
-        vg::drawString(ui::defaultFont, 615.0f, 25.0f, "GUIDED", 6);
-        vg::drawString(ui::defaultFont, 708.0f, 25.0f, "COLOR GUIDED", 12);
+        const char* caption[4] = {
+            "PHYSIS",
+            "GUIDED",
+            "COLOR GUIDED",
+            "LIGHTING"
+        };
 
+        for (uint32_t i = 0; i < count; ++i)
+        {
+            if (i > 0)
+                vg::drawRect(pos-margin2, 10.0f, pos+margin2, 30.0f, 0xFF585858, 0xFF585858);
+
+            vg::drawRect(pos+margin, 34.0f-(currentTab==i?3.0f:0.0f), pos+size-margin, 35.0f, 0xFFEDB734, 0xFF34B7ED);
+
+            float x = vg::getTextHExtent(ui::defaultFont, caption[i]);
+            vg::drawString(ui::defaultFont, pos + 0.5f * (size - x), 25.0f, caption[i], strlen(caption[i]));
+            pos += size;
+        }
+ 
         glViewport(vp[0], vp[1], vp[2], vp[3]-40);
 
         switch (currentTab)
@@ -682,6 +714,9 @@ protected:
             case 2:
                 visualizeColorGuided();
                 break;
+            case 3:
+                lighting::draw();
+                break;
         }
 
         CHECK_GL_ERROR();
@@ -691,7 +726,10 @@ protected:
 
     void onUpdate(float dt)
     {
-        ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
+        if (currentTab == 3)
+            lighting::update(dt);
+        else
+            ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
 
         uint32_t id = ui::mouseOverID();
         if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && ((id&0xFF000000)==0xFF000000))
