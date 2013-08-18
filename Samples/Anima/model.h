@@ -3,57 +3,53 @@
 #include <ml.h>
 #include <opengl.h>
 
-struct Mesh;
-struct Material;
-
-class MD5Model
+namespace Model
 {
-public:
-	MD5Model();
-    ~MD5Model();
-
-    bool LoadModel(const char* name);
-    bool LoadAnim (const char *name);
-
-    void Update(float fDeltaTime);
-    void Render(float* MVP, v128 shPoly[9]);
-
-public:
-   	GLuint prgLighting;
-    GLuint prgDefault;
-
-private:
-    void RenderMesh    (Mesh* mesh, Material* material);
-
-private:
-    bool                mHasAnimation;
-
-    // mesh data
-    int                 mNumMeshes;
-    Mesh*               mMeshes;
-    Material*           mMaterials;
-    Material*           mWireframe;
-
-    // skeleton data
-    int                 mNumJoints;
-    int*                mBoneHierarchy;
-    ml::dual_quat*      mBindPose;
-    ml::dual_quat*      mInvBindPose;
-
-    // animetion data
-    int                 mNumFrames;
-    int                 mFrameRate;
-    ml::dual_quat*      mFramePoses;
+    struct mesh_t;
+    struct material_t;
     
-    // working set
-    float               mAnimTime;          // Animation time converted to frames
-    ml::dual_quat*      mBoneTransform;
-    ml::dual_quat*      mPose;              // Current pose, atm used to visualize skeleton
+    struct model_t
+    {
+        int            numMeshes;
+        mesh_t*        meshes;
+        material_t*    materials;
+    };
 
-    // uniform locations
-    GLuint   ubo;
-    GLsizei  uboSize;
-    GLsizei  uniGlobal;
-    GLsizei  uniBones;
-    GLsizei  uniLighting;
+    struct skeleton_t
+    {
+        int            numJoints;
+        int*           boneHierarchy;
+        ml::dual_quat* bindPose;
+        ml::dual_quat* invBindPose;
+    };
+    
+    struct animation_t
+    {
+        int            numFrames;
+        int            frameRate;
+        ml::dual_quat* framePoses;
+    };
+
+    struct pose_t
+    {
+        float          animTime;          // Animation time converted to frames
+        ml::dual_quat* boneTransforms;
+        ml::dual_quat* pose;              // Current pose, atm used to visualize skeleton
+    };
+
+    void init();
+    void fini();
+
+    bool loadModel    (const char* name, model_t*     model, skeleton_t* skel);
+    bool loadAnimation(const char* name, animation_t* anim,  skeleton_t* skel);
+
+    void createPose(pose_t* pose, skeleton_t* skel);
+
+    void destroyModel    (model_t*     model);
+    void destroySkeleton (skeleton_t*  skel );
+    void destroyAnimation(animation_t* anim );
+    void destroyPose     (pose_t*      pose );
+
+    void update(float fDeltaTime, animation_t* anim, skeleton_t* skel, pose_t* pose);
+    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[9]);
 };

@@ -69,15 +69,3 @@ struct md5_anim_data_t
 
 bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary);
 bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary);
-
-void md5BuildJoints(int            numJoints,
-                    md5_joint_t*   joints,
-                    int*           hierarchy,
-                    ml::dual_quat* bindPose,
-                    ml::dual_quat* invBindPose);
-
-void md5BuildAnimations(int              numJoints,
-                        int              numFrames,
-                        int*             hierarchy,
-                        md5_anim_data_t* animData,
-                        ml::dual_quat*   framePoses);

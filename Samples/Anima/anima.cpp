@@ -24,7 +24,12 @@ private:
     SpectatorCamera     camera;
     glm::mat4           mProj;
 
-    MD5Model            model;
+    Model::model_t      model;
+    Model::skeleton_t   skel;
+    Model::animation_t  anim;
+    Model::pose_t       pose;
+    bool                mHasAnimation;
+
 
     CPUTimer            cpuTimer;
     GPUTimer            gpuTimer;
@@ -32,8 +37,12 @@ private:
 public:
     Anima()
     {
-        model.LoadModel("boblampclean.md5mesh");
-        model.LoadAnim ("boblampclean.md5anim");
+        Model::init();
+
+        Model::loadModel("boblampclean.md5mesh", &model, &skel);
+        mHasAnimation = Model::loadAnimation("boblampclean.md5anim", &anim, &skel);
+
+        Model::createPose(&pose, &skel);
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
@@ -45,6 +54,12 @@ public:
 
     ~Anima()
     {
+        Model::destroyModel    (&model);
+        Model::destroyAnimation(&anim);
+        Model::destroySkeleton (&skel);
+        Model::destroyPose     (&pose);
+
+        Model::fini();
     }
 
 protected:
@@ -79,7 +94,7 @@ protected:
         glEnd();
 
         gpuTimer.start();
-        model.Render(mProj*vm, shPoly);
+        Model::render(&model, &skel, &pose, mProj*vm, shPoly);
         gpuTimer.stop();
 
         glMatrixMode(GL_PROJECTION);
@@ -102,7 +117,7 @@ protected:
 
         cpuTimer.start();
 
-        model.Update(std::min(dt, maxTimeStep));
+        Model::update(std::min(dt, maxTimeStep), &anim, &skel, &pose);
 
         cpuTime = (float)cpuTimer.elapsed();
         cpuTimer.stop();

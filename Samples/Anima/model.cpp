@@ -14,609 +14,657 @@
 #define UNI_BONES    1
 #define UNI_LIGHTING 2
 
-struct SkinnedVertex
+namespace Model
 {
-    float   px, py, pz;
-    float   nx, ny, nz;
-    float   u, v;
-    float	w[4];
-    uint8_t b[4];
-};
 
-struct Mesh
-{
-	GLuint			vbo;
-	GLuint          ibo;
-    GLenum          idxFormat;
-    GLsizei         idxOffset;
-	GLsizei			numIndices;
-};
+    GLuint prgLighting;
+    GLuint prgDefault;
+    material_t* mWireframe;
 
-struct Material
-{
-    GLuint          program;
-    GLuint          diffuse;
-    GLuint          normal;
-};
+    GLuint   ubo;
+    GLsizei  uboSize;
+    GLsizei  uniGlobal;
+    GLsizei  uniBones;
+    GLsizei  uniLighting;
 
-void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
-
-void createMesh (Mesh* mesh,
-                 size_t numJoints,   ml::dual_quat* joints, 
-                 size_t numVertices, md5_vertex_t*  md5Vertices,
-                 size_t numWeights,  md5_weight_t*  md5Weights,
-                 size_t numIndices,  uint16_t*      indices);
-
-void destroyMesh(Mesh* mesh);
-
-bool loadMaterial(Material* mat, const char* name);
-void destroyMaterial(Material* mat);
-
-MD5Model::MD5Model()
-: mNumJoints(0)
-, mNumMeshes(0)
-, mHasAnimation(false)
-, mNumFrames(0)
-, mFrameRate(0)
-, mAnimTime(0)
-, mMeshes(0)
-, mMaterials(0)
-, mBoneHierarchy(0)
-, mBindPose(0)
-, mInvBindPose(0)
-, mFramePoses(0)
-, mBoneTransform(0)
-, mPose(0)
-{
-    prgDefault = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
-    
-    mWireframe = (Material*)malloc(sizeof(Material));
-    mWireframe->program = prgDefault;
-    mWireframe->diffuse = mWireframe->normal = 0;
-
-    prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
-
-    GLint align;
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-    --align;
-
-    uboSize   = 0;
-    uniGlobal   = uboSize; uboSize+=sizeof(float)*16;                uboSize += align; uboSize &=~align;
-    uniBones    = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat); uboSize += align; uboSize &=~align;
-    uniLighting = uboSize; uboSize+=10*sizeof(v128);                 uboSize += align; uboSize &=~align;
+    struct SkinnedVertex
     {
-        GLint structSize;
-        GLint uniGlobal, uniBones, uniLighting;
+        float   px, py, pz;
+        float   nx, ny, nz;
+        float   u, v;
+        float	w[4];
+        uint8_t b[4];
+    };
 
-        uniGlobal    = glGetUniformBlockIndex(prgDefault, "uniGlobal");
-        uniBones     = glGetUniformBlockIndex(prgDefault, "uniBones");
-        uniLighting  = glGetUniformBlockIndex(prgDefault, "uniLighting");
-
-        glGetActiveUniformBlockiv(prgDefault, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==16*sizeof(float));
-        glGetActiveUniformBlockiv(prgDefault, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
-        glGetActiveUniformBlockiv(prgDefault, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==10*sizeof(v128));
-
-        uniGlobal   = glGetUniformBlockIndex(prgLighting, "uniGlobal");
-        uniBones    = glGetUniformBlockIndex(prgLighting, "uniBones");
-        uniLighting = glGetUniformBlockIndex(prgLighting, "uniLighting");
-
-        glGetActiveUniformBlockiv(prgLighting, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==16*sizeof(float));
-        glGetActiveUniformBlockiv(prgLighting, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
-        glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==10*sizeof(v128));
-    }
-
-    glGenBuffers(1, &ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, uboSize, 0, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    assert(glGetError()==GL_NO_ERROR);
-}
-
-MD5Model::~MD5Model()
-{
-    glDeleteBuffers(1, &ubo);
-
-    glDeleteProgram(prgLighting);
-    glDeleteProgram(prgDefault);
-
-    free(mWireframe);
-
-    for (int i=0; i<mNumMeshes; ++i)
+    struct mesh_t
     {
-        destroyMesh(&mMeshes[i]);
-    }
+        GLuint			vbo;
+        GLuint          ibo;
+        GLenum          idxFormat;
+        GLsizei         idxOffset;
+        GLsizei			numIndices;
+    };
 
-    for (int i=0; i<mNumMeshes; ++i)
+    struct material_t
     {
-        destroyMaterial(&mMaterials[i]);
-    }
+        GLuint          program;
+        GLuint          diffuse;
+        GLuint          normal;
+    };
 
-    mNumJoints = 0;
-    mNumMeshes = 0;
+    void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
 
-    if (mMeshes)        free(mMeshes);
-    if (mMaterials)     free(mMaterials);
-    if (mBoneHierarchy) free(mBoneHierarchy);
-    if (mBindPose)      free(mBindPose);
-    if (mInvBindPose)   free(mInvBindPose);
-    if (mFramePoses)    free(mFramePoses);
-    if (mBoneTransform) free(mBoneTransform);
-    if (mPose)          free(mPose);
+    void destroyMesh(mesh_t* mesh);
 
-    mMeshes        = 0;
-    mMaterials     = 0;
-    mBoneHierarchy = 0;
-    mBindPose      = 0;
-    mInvBindPose   = 0;
-    mFramePoses    = 0;
-    mBoneTransform = 0;
-    mPose          = 0;
-}
+    bool loadMaterial   (material_t* mat, const char* name);
+    void destroyMaterial(material_t* mat);
 
-bool MD5Model::LoadModel(const char* name)
-{
-    memory_t inText    = MEMORY_T_INITIALIZER;
-    memory_t outBinary = MEMORY_T_INITIALIZER;
-
-    if (marea(&outBinary, 4*1024*1024) &&
-        mopen(&inText, name)           &&
-        md5meshConvertToBinary(&inText, &outBinary))
+    void init()
     {
-        mfree( &inText );
+        prgDefault = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
 
-        md5_model_t* model = (md5_model_t*)outBinary.buffer;
+        mWireframe = (material_t*)malloc(sizeof(material_t));
+        mWireframe->program = prgDefault;
+        mWireframe->diffuse = mWireframe->normal = 0;
 
-        mNumMeshes = model->numMeshes;
-        mNumJoints = model->numJoints;
+        prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
 
-        mMeshes        = (Mesh*)         malloc(mNumMeshes*sizeof(Mesh));
-        mMaterials     = (Material*)     malloc(mNumMeshes*sizeof(Material));
-        mBoneHierarchy = (int*)          malloc(mNumJoints*sizeof(int));
-        mBindPose      = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
-        mInvBindPose   = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
-        mBoneTransform = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
-        mPose          = (ml::dual_quat*)malloc(mNumJoints*sizeof(ml::dual_quat));
+        GLint align;
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
+        --align;
 
-        md5BuildJoints(model->numJoints,
-            model->joints,
-            mBoneHierarchy,
-            mBindPose,
-            mInvBindPose);
-
-        md5_mesh_t* mesh = model->meshes;
-        for (int i=0; i<mNumMeshes; ++i)
+        uboSize   = 0;
+        uniGlobal   = uboSize; uboSize+=sizeof(float)*16;                uboSize += align; uboSize &=~align;
+        uniBones    = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat); uboSize += align; uboSize &=~align;
+        uniLighting = uboSize; uboSize+=10*sizeof(v128);                 uboSize += align; uboSize &=~align;
         {
-            createMesh(&mMeshes[i],
-                        mNumJoints,        mBindPose,
-                        mesh->numVertices, mesh->vertices,
-                        mesh->numWeights,  mesh->weights,
-                        mesh->numIndices,  mesh->indices);
+            GLint structSize;
+            GLint uniGlobal, uniBones, uniLighting;
 
-            mMaterials[i] = *mWireframe;
-            loadMaterial(&mMaterials[i], mesh->shader);
-            if (mMaterials[i].diffuse && mMaterials[i].normal) mMaterials[i].program = prgLighting;
+            uniGlobal    = glGetUniformBlockIndex(prgDefault, "uniGlobal");
+            uniBones     = glGetUniformBlockIndex(prgDefault, "uniBones");
+            uniLighting  = glGetUniformBlockIndex(prgDefault, "uniLighting");
 
-            ++mesh;
+            glGetActiveUniformBlockiv(prgDefault, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==16*sizeof(float));
+            glGetActiveUniformBlockiv(prgDefault, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
+            glGetActiveUniformBlockiv(prgDefault, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==10*sizeof(v128));
+
+            uniGlobal   = glGetUniformBlockIndex(prgLighting, "uniGlobal");
+            uniBones    = glGetUniformBlockIndex(prgLighting, "uniBones");
+            uniLighting = glGetUniformBlockIndex(prgLighting, "uniLighting");
+
+            glGetActiveUniformBlockiv(prgLighting, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==16*sizeof(float));
+            glGetActiveUniformBlockiv(prgLighting, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
+            glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+            assert(structSize==10*sizeof(v128));
         }
 
-        mfree(&outBinary);
+        glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, uboSize, 0, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        return true;
+        assert(glGetError()==GL_NO_ERROR);
     }
 
-    mfree(&inText);
-    mfree(&outBinary);
-
-    return false;
-}
-
-bool MD5Model::LoadAnim( const char *name )
-{
-    memory_t inText    = MEMORY_T_INITIALIZER;
-    memory_t outBinary = MEMORY_T_INITIALIZER;
-
-    if (mopen(&inText, name)            &&
-        marea(&outBinary, 4*1024*1024)  &&
-        md5animConvertToBinary(&inText, &outBinary))
+    void fini()
     {
-        mfree( &inText );
+        glDeleteBuffers(1, &ubo);
 
-        md5_anim_t* anim = (md5_anim_t*)outBinary.buffer;
+        glDeleteProgram(prgLighting);
+        glDeleteProgram(prgDefault);
 
-        if (mNumJoints != anim->numJoints) goto cleanup;
+        free(mWireframe);
+    }
 
-        mNumFrames = anim->numFrames;
-        mFrameRate = anim->frameRate;
+    static ml::quat rotx = {-0.7071067812f, 0.0f, 0.0f, 0.7071067812f};
 
-        mFramePoses = (ml::dual_quat*)malloc(mNumFrames*mNumJoints*sizeof(ml::dual_quat));
+    void md5CreateSkeleton(skeleton_t* skel, int numJoints, md5_joint_t* joints)
+    {
+        skel->numJoints     = numJoints;
+        skel->boneHierarchy = (int*)          malloc(skel->numJoints*sizeof(int));
+        skel->bindPose      = (ml::dual_quat*)malloc(skel->numJoints*sizeof(ml::dual_quat));
+        skel->invBindPose   = (ml::dual_quat*)malloc(skel->numJoints*sizeof(ml::dual_quat));
 
-        md5BuildAnimations(anim->numJoints,
-                           anim->numFrames,
-                           mBoneHierarchy,
-                           anim->frameData,
-                           mFramePoses);
+        int*            hierarchy   = skel->boneHierarchy;
+        ml::dual_quat*  bindPose    = skel->bindPose;
+        ml::dual_quat*  invBindPose = skel->invBindPose;
 
-        mHasAnimation = true;
+        while (numJoints--)
+        {
+            *hierarchy = joints->parent;
 
+            ml::create_dual_quat   (bindPose, &joints->rotation, &joints->location);
+            ml::mul_quat           (&bindPose->real, &rotx, &bindPose->real);
+            ml::mul_quat           (&bindPose->dual, &rotx, &bindPose->dual);
+            ml::conjugate_dual_quat(invBindPose, bindPose);
+
+            ++joints;
+            ++bindPose;
+            ++invBindPose;
+            ++hierarchy;
+        }
+    }
+
+    void md5CreateMesh(mesh_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
+    {
+        SkinnedVertex* vertices;
+        size_t         vertexDataSize;
+
+        vertexDataSize = sizeof(SkinnedVertex)*md5Mesh->numVertices;
+        vertices = (SkinnedVertex*)malloc(vertexDataSize);
+        memset(vertices, 0, vertexDataSize);
+
+        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        {
+            SkinnedVertex& vert        = vertices[i];
+            int            weightCount = md5Mesh->vertices[i].count;
+            int            startWeight = md5Mesh->vertices[i].start;
+
+            assert( weightCount <= 4 );
+
+            v128 pos;
+
+            pos = vi_load_zero();
+
+            // Sum the position of the weights
+            for ( int j = 0; j < weightCount; ++j )
+            {
+                md5_weight_t&  weight = md5Mesh->weights[startWeight + j];
+                ml::dual_quat& joint  = skel->bindPose[weight.joint];
+
+                v128 r, d, v, t;
+
+                r = ml::load_quat(&joint.real);
+                d = ml::load_quat(&joint.dual);
+                v = ml::load_vec3(&weight.location);
+
+                v = ml::rotate_quat_vec3(r, v);
+                t = ml::translation_dual_quat(r, d);
+                t = vi_add(v, t);
+
+                pos = vi_mad(t, vi_set_xxxx(weight.bias), pos);
+
+                assert(weight.joint<256);
+
+                vert.b[j] = (uint8_t)weight.joint;
+                vert.w[j] = weight.bias;
+            }
+
+            ml::store_vec3((ml::vec3*)&vert.px, pos);
+        }
+
+        // Loop through all triangles and calculate the normal of each triangle
+        for ( int i = 0; i < md5Mesh->numIndices/3; ++i )
+        {
+            v128 v0, v1, v2;
+            v128 n0, n1, n2;
+            v128 n;
+
+            v0 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].px);
+            v1 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].px);
+            v2 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].px);
+
+            n = vi_cross3(vi_sub(v2, v0), vi_sub(v1, v0));
+
+            n0 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].nx);
+            n1 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].nx);
+            n2 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].nx);
+
+            n0 = vi_add(n0, n);
+            n1 = vi_add(n1, n);
+            n2 = vi_add(n2, n);
+
+            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].nx, n0);
+            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].nx, n1);
+            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].nx, n2);
+        }
+
+        // Now normalize all the normals
+        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        {
+            v128           n;
+            SkinnedVertex& vert = vertices[i];
+
+            n = ml::load_vec3((ml::vec3*)&vert.nx);
+            n = ml::normalize(n);
+            ml::store_vec3((ml::vec3*)&vert.nx, n);
+        }
+
+        // Copy texture coordinates
+        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        {
+            vertices[i].u = md5Mesh->vertices[i].u;
+            vertices[i].v = md5Mesh->vertices[i].v;
+        }
+
+        glGenBuffers(1, &mesh->vbo);
+        glGenBuffers(1, &mesh->ibo);
+
+        glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
+        glBufferData( GL_ARRAY_BUFFER, vertexDataSize, vertices, GL_STATIC_DRAW );
+
+        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->ibo );
+        glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * md5Mesh->numIndices, md5Mesh->indices, GL_STATIC_DRAW ); 
+
+        glBindBuffer( GL_ARRAY_BUFFER, 0 );
+        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
+        mesh->numIndices = md5Mesh->numIndices;
+        mesh->idxFormat  = GL_UNSIGNED_SHORT;
+        mesh->idxOffset  = 0;
+
+        {
+            GLuint err = glGetError();
+            assert(err==GL_NO_ERROR);
+        }
+
+        free(vertices);
+    }
+
+    void md5CreateAnimation( animation_t* anim, md5_anim_t* md5Anim, skeleton_t* skel )
+    {
+        anim->numFrames = md5Anim->numFrames;
+        anim->frameRate = md5Anim->frameRate;
+
+        anim->framePoses = (ml::dual_quat*)malloc(md5Anim->numFrames * skel->numJoints * sizeof(ml::dual_quat));
+
+        int              numFrames  = md5Anim->numFrames;
+        int*             hierarchy  = skel->boneHierarchy;
+        md5_anim_data_t* animData   = md5Anim->frameData;
+        ml::dual_quat*   framePoses = anim->framePoses;
+
+        while(numFrames--)
+        {
+            for (int i=0; i<skel->numJoints; ++i)
+            {
+                ml::create_dual_quat(&framePoses[i], &animData[i].rotation, &animData[i].location);
+
+                int parent = hierarchy[i];
+                if( parent > -1 )
+                {
+                    ml::mul_dual_quat(&framePoses[i], &framePoses[parent], &framePoses[i]);
+                }
+                else
+                {
+                    ml::mul_quat(&framePoses[i].real, &rotx, &framePoses[i].real);
+                    ml::mul_quat(&framePoses[i].dual, &rotx, &framePoses[i].dual);
+                }
+            }
+
+            framePoses += skel->numJoints;
+            animData   += skel->numJoints;
+        }
+    }
+    
+    bool loadModel(const char* name, model_t* model, skeleton_t* skel)
+    {
+        memory_t inText    = MEMORY_T_INITIALIZER;
+        memory_t outBinary = MEMORY_T_INITIALIZER;
+
+        memset(model, 0, sizeof(model_t   ));
+        memset(skel,  0, sizeof(skeleton_t));
+
+        if (marea(&outBinary, 4*1024*1024) &&
+            mopen(&inText, name)           &&
+            md5meshConvertToBinary(&inText, &outBinary))
+        {
+            mfree( &inText );
+
+            md5_model_t* md5Model = (md5_model_t*)outBinary.buffer;
+
+            model->numMeshes = md5Model->numMeshes;
+            model->meshes    = (mesh_t*)    malloc(model->numMeshes*sizeof(mesh_t));
+            model->materials = (material_t*)malloc(model->numMeshes*sizeof(material_t));
+
+            md5CreateSkeleton(skel, md5Model->numJoints, md5Model->joints);
+
+            md5_mesh_t* md5Mesh = md5Model->meshes;
+            for (int i=0; i<model->numMeshes; ++i)
+            {
+                md5CreateMesh(&model->meshes[i], md5Mesh, skel);
+
+                model->materials[i] = *mWireframe;
+                loadMaterial(&model->materials[i], md5Mesh->shader);
+                if (model->materials[i].diffuse && model->materials[i].normal) model->materials[i].program = prgLighting;
+
+                ++md5Mesh;
+            }
+
+            mfree(&outBinary);
+
+            return true;
+        }
+
+        mfree(&inText);
         mfree(&outBinary);
 
-        return true;
+        return false;
     }
+
+    bool loadAnimation(const char *name, animation_t* anim, skeleton_t* skel)
+    {
+        memory_t inText    = MEMORY_T_INITIALIZER;
+        memory_t outBinary = MEMORY_T_INITIALIZER;
+
+        memset(anim, 0, sizeof(animation_t));
+
+        if (mopen(&inText, name)            &&
+            marea(&outBinary, 4*1024*1024)  &&
+            md5animConvertToBinary(&inText, &outBinary))
+        {
+            mfree( &inText );
+
+            md5_anim_t* md5Anim = (md5_anim_t*)outBinary.buffer;
+
+            if (skel->numJoints != md5Anim->numJoints) goto cleanup;
+
+
+            md5CreateAnimation(anim, md5Anim, skel);
+
+            mfree(&outBinary);
+
+            return true;
+        }
 
 cleanup:
+        mfree(&inText);
+        mfree(&outBinary);
 
-    mHasAnimation = false;
+        return false;
+    }
 
-    mfree(&inText);
-    mfree(&outBinary);
-
-    return false;
-}
-
-void MD5Model::Update( float fDeltaTime )
-{
-    if ( mHasAnimation && mNumFrames > 1)
+    void update(float fDeltaTime, animation_t* anim, skeleton_t* skel, pose_t* pose)
     {
-        int   frame0, frame1;
-        float lerpK;
-
-        mAnimTime += fDeltaTime * (float)mFrameRate;
-        mAnimTime  = fmodf(mAnimTime, (float)mNumFrames);
-
-        frame0 = (int)floorf( mAnimTime );
-        frame0 = frame0 % mNumFrames;
-        frame1 = frame0 + 1;
-        frame1 = frame1 % mNumFrames;
-
-        lerpK  = mAnimTime - floorf(mAnimTime);
-
-        // I assume there is no zero quaternions in orientation data
-        // so I do not check whether real quaternion norm is zero
-        v128 qr0, qd0, qr1, qd1, r, n;
-
-        ml::dual_quat* frame0Data = mFramePoses + frame0*mNumJoints; 
-        ml::dual_quat* frame1Data = mFramePoses + frame1*mNumJoints; 
-
-        for ( int i = 0; i < mNumJoints; ++i )
+        if ( anim->numFrames > 1)
         {
-            qr0 = ml::load_quat(&frame0Data[i].real);
-            qd0 = ml::load_quat(&frame0Data[i].dual);
-            qr1 = ml::load_quat(&frame1Data[i].real);
-            qd1 = ml::load_quat(&frame1Data[i].dual);
+            int   frame0, frame1;
+            float lerpK;
 
-            if (vi_cmpx_lt(vi_dot4(qr0, qr1), vi_load_zero()))
+            pose->animTime += fDeltaTime * (float)anim->frameRate;
+            pose->animTime  = fmodf(pose->animTime, (float)anim->numFrames);
+
+            frame0 = (int)floorf( pose->animTime );
+            frame0 = frame0 % anim->numFrames;
+            frame1 = frame0 + 1;
+            frame1 = frame1 % anim->numFrames;
+
+            lerpK  = pose->animTime - floorf(pose->animTime);
+
+            // I assume there is no zero quaternions in orientation data
+            // so I do not check whether real quaternion norm is zero
+            v128 qr0, qd0, qr1, qd1, r, n;
+
+            ml::dual_quat* frame0Data = anim->framePoses + frame0*skel->numJoints; 
+            ml::dual_quat* frame1Data = anim->framePoses + frame1*skel->numJoints; 
+
+            for ( int i = 0; i < skel->numJoints; ++i )
             {
-                qr1 = vi_neg(qr1);
-                qd1 = vi_neg(qd1);
-            }
+                qr0 = ml::load_quat(&frame0Data[i].real);
+                qd0 = ml::load_quat(&frame0Data[i].dual);
+                qr1 = ml::load_quat(&frame1Data[i].real);
+                qd1 = ml::load_quat(&frame1Data[i].dual);
 
-            r  = vi_lerp(qr0, qr1, lerpK);
-            n  = ml::length_quat(r);
-            r  = vi_div(r, n);
-            ml::store_quat(&mPose[i].real, r);
+                if (vi_cmpx_lt(vi_dot4(qr0, qr1), vi_load_zero()))
+                {
+                    qr1 = vi_neg(qr1);
+                    qd1 = vi_neg(qd1);
+                }
 
-            r  = vi_lerp(qd0, qd1, lerpK);
-            r  = vi_div(r, n);
-            ml::store_quat(&mPose[i].dual, r);
+                r  = vi_lerp(qr0, qr1, lerpK);
+                n  = ml::length_quat(r);
+                r  = vi_div(r, n);
+                ml::store_quat(&pose->pose[i].real, r);
 
-            ml::mul_dual_quat(&mBoneTransform[i], &mPose[i], &mInvBindPose[i]);
-        }
-    }
-    else
-    {
-        // No animation. Just use identity quaternions for each bone.
-        std::fill(mBoneTransform, mBoneTransform+mNumJoints, ml::identity_dual_quat);
-    }
-}
+                r  = vi_lerp(qd0, qd1, lerpK);
+                r  = vi_div(r, n);
+                ml::store_quat(&pose->pose[i].dual, r);
 
-void MD5Model::Render(float* MVP, v128 shPoly[9])
-{
-    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   ubo, uniGlobal,   16*sizeof(float));
-    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    ubo, uniBones,    MAX_BONES*sizeof(ml::dual_quat));
-    glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, ubo, uniLighting, 10*sizeof(v128));
-
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniGlobal,   16*sizeof(float),                 MVP);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniBones,    mNumJoints*sizeof(ml::dual_quat), &mBoneTransform[0].real.x);
-    glBufferSubData(GL_UNIFORM_BUFFER, uniLighting, 160,                              shPoly);
-
-    for (int i=0; i<mNumMeshes; ++i )
-    {
-        RenderMesh( &mMeshes[i], &mMaterials[i] );
-    }
-
-    RenderSkeleton(mNumJoints, mBoneHierarchy, mPose);
-
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-}
-
-void MD5Model::RenderMesh(Mesh* mesh, Material* material)
-{
-    glUseProgram(material->program);
-
-    // Position data
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
-
-    glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, px)));
-    glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, nx)));
-    glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, u)));
-    glVertexAttribIPointer(3, 4, GL_UNSIGNED_BYTE,   sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, b)));
-    glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, w)));
-
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    glEnableVertexAttribArray(3);
-    glEnableVertexAttribArray(4);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material->diffuse);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, material->normal);
-
-    // Draw mesh from index buffer
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
-    glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-    glDisableVertexAttribArray(2);
-    glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray(4);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    {
-        GLenum err = glGetError();
-        assert(err==GL_NO_ERROR);
-    }
-}
-
-void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
-{
-    glUseProgram(0);
-
-    glPointSize( 5.0f );
-    glColor3f( 1.0f, 0.0f, 0.0f );
-
-    glPushAttrib( GL_ENABLE_BIT );
-
-    glDisable(GL_LIGHTING );
-    glDisable( GL_DEPTH_TEST );
-
-    // Draw the joint positions
-    glBegin( GL_POINTS );
-    {
-        for ( int i = 0; i < numJoints; ++i )
-        {
-            ml::vec3 pos;
-
-            ml::get_translation_from_dual_quat(&pos, &joints[i]);
-            glVertex3fv( &pos.x );
-        }
-    }
-    glEnd();
-
-    // Draw the bones
-    glColor3f( 0.0f, 1.0f, 0.0f );
-    glBegin( GL_LINES );
-    {
-        for ( int i = 0; i < numJoints; ++i )
-        {
-            ml::vec3 pos0, pos1;
-
-            ml::get_translation_from_dual_quat(&pos0, &joints[i]);
-            const int    parent = hierarchy[i];
-            if ( parent != -1 )
-            {
-                ml::get_translation_from_dual_quat(&pos1, &joints[parent]);
-                glVertex3fv( &pos0.x );
-                glVertex3fv( &pos1.x );
+                ml::mul_dual_quat(&pose->boneTransforms[i], &pose->pose[i], &skel->invBindPose[i]);
             }
         }
-    }
-    glEnd();
-
-    glPopAttrib();
-}
-
-void createMesh( Mesh*  mesh,
-                 size_t numJoints,   ml::dual_quat* joints, 
-                 size_t numVertices, md5_vertex_t*  md5Vertices,
-                 size_t numWeights,  md5_weight_t*  weights,
-                 size_t numIndices,  uint16_t*      indices )
-{
-    SkinnedVertex* vertices;
-    size_t         vertexDataSize;
-
-    vertexDataSize = sizeof(SkinnedVertex)*numVertices;
-    vertices = (SkinnedVertex*)malloc(vertexDataSize);
-    memset(vertices, 0, vertexDataSize);
-
-    for ( unsigned int i = 0; i < numVertices; ++i )
-    {
-        SkinnedVertex& vert        = vertices[i];
-        int            weightCount = md5Vertices[i].count;
-        int            startWeight = md5Vertices[i].start;
-
-        assert( weightCount <= 4 );
-
-        v128 pos;
-
-        pos = vi_load_zero();
-
-        // Sum the position of the weights
-        for ( int j = 0; j < weightCount; ++j )
+        else
         {
-            md5_weight_t&  weight = weights[startWeight + j];
-            ml::dual_quat& joint  = joints[weight.joint];
-
-            v128 r, d, v, t;
-
-            r = ml::load_quat(&joint.real);
-            d = ml::load_quat(&joint.dual);
-            v = ml::load_vec3(&weight.location);
-
-            v = ml::rotate_quat_vec3(r, v);
-            t = ml::translation_dual_quat(r, d);
-            t = vi_add(v, t);
-
-            pos = vi_mad(t, vi_set_xxxx(weight.bias), pos);
-
-            assert(weight.joint<256);
-
-            vert.b[j] = (uint8_t)weight.joint;
-            vert.w[j] = weight.bias;
+            // No animation. Just use identity quaternions for each bone.
+            std::fill(pose->boneTransforms, pose->boneTransforms+skel->numJoints, ml::identity_dual_quat);
         }
-
-        ml::store_vec3((ml::vec3*)&vert.px, pos);
     }
 
-    // Loop through all triangles and calculate the normal of each triangle
-    for ( unsigned int i = 0; i < numIndices/3; ++i )
+    void renderMesh(mesh_t* mesh, material_t* material)
     {
-        v128 v0, v1, v2;
-        v128 n0, n1, n2;
-        v128 n;
+        glUseProgram(material->program);
 
-        v0 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+0] ].px);
-        v1 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+1] ].px);
-        v2 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+2] ].px);
+        // Position data
+        glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
 
-        n = vi_cross3(vi_sub(v2, v0), vi_sub(v1, v0));
+        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, px)));
+        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, nx)));
+        glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, u)));
+        glVertexAttribIPointer(3, 4, GL_UNSIGNED_BYTE,   sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, b)));
+        glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, w)));
 
-        n0 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+0] ].nx);
-        n1 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+1] ].nx);
-        n2 = ml::load_vec3((ml::vec3*)&vertices[ indices[i*3+2] ].nx);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+        glEnableVertexAttribArray(3);
+        glEnableVertexAttribArray(4);
 
-        n0 = vi_add(n0, n);
-        n1 = vi_add(n1, n);
-        n2 = vi_add(n2, n);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, material->diffuse);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, material->normal);
 
-        ml::store_vec3((ml::vec3*)&vertices[ indices[i*3+0] ].nx, n0);
-        ml::store_vec3((ml::vec3*)&vertices[ indices[i*3+1] ].nx, n1);
-        ml::store_vec3((ml::vec3*)&vertices[ indices[i*3+2] ].nx, n2);
-    }
+        // Draw mesh from index buffer
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
+        glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
 
-    // Now normalize all the normals
-    for ( unsigned int i = 0; i < numVertices; ++i )
-    {
-        v128           n;
-        SkinnedVertex& vert = vertices[i];
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
-        n = ml::load_vec3((ml::vec3*)&vert.nx);
-        n = ml::normalize(n);
-        ml::store_vec3((ml::vec3*)&vert.nx, n);
-    }
+        glDisableVertexAttribArray(0);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
+        glDisableVertexAttribArray(3);
+        glDisableVertexAttribArray(4);
 
-    // Copy texture coordinates
-    for ( unsigned int i = 0; i < numVertices; ++i )
-    {
-       vertices[i].u = md5Vertices[i].u;
-       vertices[i].v = md5Vertices[i].v;
-    }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    glGenBuffers(1, &mesh->vbo);
-    glGenBuffers(1, &mesh->ibo);
-
-    glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
-    glBufferData( GL_ARRAY_BUFFER, vertexDataSize, vertices, GL_STATIC_DRAW );
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->ibo );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * numIndices, indices, GL_STATIC_DRAW ); 
-
-    glBindBuffer( GL_ARRAY_BUFFER, 0 );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-
-    mesh->numIndices = numIndices;
-    mesh->idxFormat  = GL_UNSIGNED_SHORT;
-    mesh->idxOffset  = 0;
-
-    {
-        GLuint err = glGetError();
-        assert(err==GL_NO_ERROR);
-    }
-
-    free(vertices);
-}
-
-void destroyMesh(Mesh* mesh)
-{
-    if (mesh->vbo)
-    {
-        glDeleteBuffers(1, &mesh->vbo);
-        mesh->vbo = 0;
-    }
-
-    if (mesh->ibo)
-    {
-        glDeleteBuffers(1, &mesh->ibo);
-        mesh->ibo = 0;
-    }
-}
-
-bool loadMaterial(Material* mat, const char* name)
-{
-    memory_t inText;
-    char     path[1024];
-
-    strcpy(path, name);
-    strcat(path, ".material");
-
-    if (mopen(&inText, path))
-    {
-        inText.buffer[inText.size] = 0;
-        json_value* topObject = json_parse((char*)inText.buffer);
-
-        assert(topObject->type == json_object);
-
-        for (unsigned int i = 0; i < topObject->u.object.length; ++i)
         {
-            const char* name  = topObject->u.object.values[i].name;
-            json_value* value = topObject->u.object.values[i].value;
+            GLenum err = glGetError();
+            assert(err==GL_NO_ERROR);
+        }
+    }
 
-            if (strcmp(name, "diffuse")==0 && value->type == json_string)
+    void renderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
+    {
+        glUseProgram(0);
+
+        glPointSize( 5.0f );
+        glColor3f( 1.0f, 0.0f, 0.0f );
+
+        glPushAttrib( GL_ENABLE_BIT );
+
+        glDisable(GL_LIGHTING );
+        glDisable( GL_DEPTH_TEST );
+
+        // Draw the joint positions
+        glBegin( GL_POINTS );
+        {
+            for ( int i = 0; i < numJoints; ++i )
             {
-                mat->diffuse = resources::createTexture2D(value->u.string.ptr);
-            }
-            else if (strcmp(name, "normal")==0 && value->type == json_string)
-            {
-                mat->normal = resources::createTexture2D(value->u.string.ptr);
+                ml::vec3 pos;
+
+                ml::get_translation_from_dual_quat(&pos, &joints[i]);
+                glVertex3fv( &pos.x );
             }
         }
+        glEnd();
 
-        json_value_free(topObject);
+        // Draw the bones
+        glColor3f( 0.0f, 1.0f, 0.0f );
+        glBegin( GL_LINES );
+        {
+            for ( int i = 0; i < numJoints; ++i )
+            {
+                ml::vec3 pos0, pos1;
 
-        mfree( &inText );
+                ml::get_translation_from_dual_quat(&pos0, &joints[i]);
+                const int    parent = hierarchy[i];
+                if ( parent != -1 )
+                {
+                    ml::get_translation_from_dual_quat(&pos1, &joints[parent]);
+                    glVertex3fv( &pos0.x );
+                    glVertex3fv( &pos1.x );
+                }
+            }
+        }
+        glEnd();
 
-        return true;
+        glPopAttrib();
     }
 
-    return false;
-}
-
-void destroyMaterial(Material* mat)
-{
-    if (mat->diffuse)
+    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[9])
     {
-        glDeleteTextures(1, &mat->diffuse);
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   ubo, uniGlobal,   16*sizeof(float));
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    ubo, uniBones,    MAX_BONES*sizeof(ml::dual_quat));
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, ubo, uniLighting, 10*sizeof(v128));
+
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferSubData(GL_UNIFORM_BUFFER, uniGlobal,   16*sizeof(float), MVP);
+        glBufferSubData(GL_UNIFORM_BUFFER, uniBones,    skel->numJoints*sizeof(ml::dual_quat), &pose->boneTransforms[0].real.x);
+        glBufferSubData(GL_UNIFORM_BUFFER, uniLighting, 160, shPoly);
+
+        for (int i=0; i<model->numMeshes; ++i )
+        {
+            renderMesh( &model->meshes[i], &model->materials[i] );
+        }
+
+        renderSkeleton(skel->numJoints, skel->boneHierarchy, pose->pose);
+
+        glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
-    if (mat->normal)
+    void createPose(pose_t* pose, skeleton_t* skel)
     {
-        glDeleteTextures(1, &mat->normal);
+        memset(pose, 0, sizeof(pose_t));
+
+        pose->boneTransforms = (ml::dual_quat*) malloc(skel->numJoints * sizeof(ml::dual_quat));
+        pose->pose           = (ml::dual_quat*) malloc(skel->numJoints * sizeof(ml::dual_quat));
+    }
+
+    bool loadMaterial(material_t* mat, const char* name)
+    {
+        memory_t inText = MEMORY_T_INITIALIZER;
+        char     path[1024];
+
+        strcpy(path, name);
+        strcat(path, ".material");
+
+        if (mopen(&inText, path))
+        {
+            inText.buffer[inText.size] = 0;
+            json_value* topObject = json_parse((char*)inText.buffer);
+
+            assert(topObject->type == json_object);
+
+            for (unsigned int i = 0; i < topObject->u.object.length; ++i)
+            {
+                const char* name  = topObject->u.object.values[i].name;
+                json_value* value = topObject->u.object.values[i].value;
+
+                if (strcmp(name, "diffuse")==0 && value->type == json_string)
+                {
+                    mat->diffuse = resources::createTexture2D(value->u.string.ptr);
+                }
+                else if (strcmp(name, "normal")==0 && value->type == json_string)
+                {
+                    mat->normal = resources::createTexture2D(value->u.string.ptr);
+                }
+            }
+
+            json_value_free(topObject);
+
+            mfree( &inText );
+
+            return true;
+        }
+
+        return false;
+    }
+
+    void destroyMaterial(material_t* mat)
+    {
+        if (mat->diffuse)
+        {
+            glDeleteTextures(1, &mat->diffuse);
+        }
+
+        if (mat->normal)
+        {
+            glDeleteTextures(1, &mat->normal);
+        }
+
+        memset(mat, 0, sizeof(material_t));
+    }
+
+    void destroyMesh(mesh_t* mesh)
+    {
+        if (mesh->vbo)
+        {
+            glDeleteBuffers(1, &mesh->vbo);
+        }
+
+        if (mesh->ibo)
+        {
+            glDeleteBuffers(1, &mesh->ibo);
+        }
+
+        memset(mesh, 0, sizeof(mesh_t));
+    }
+
+    void destroyModel(model_t* model)
+    {
+        for (int i = 0; i < model->numMeshes; ++i)
+        {
+            destroyMesh    (&model->meshes   [i]);
+            destroyMaterial(&model->materials[i]);
+        }
+
+        if (model->meshes   ) free(model->meshes   );
+        if (model->materials) free(model->materials);
+
+        memset(model, 0, sizeof(model_t));
+    }
+
+    void destroySkeleton(skeleton_t* skel)
+    {
+        if (skel->boneHierarchy) free(skel->boneHierarchy);
+        if (skel->bindPose     ) free(skel->bindPose     );
+        if (skel->invBindPose  ) free(skel->invBindPose  );
+
+        memset(skel, 0, sizeof(skeleton_t));
+    }
+
+    void destroyAnimation(animation_t* anim)
+    {
+        if (anim->framePoses) free(anim->framePoses);
+
+        memset(anim, 0, sizeof(animation_t));
+    }
+
+    void destroyPose(pose_t* pose)
+    {
+        if (pose->boneTransforms) free(pose->boneTransforms);
+        if (pose->pose          ) free(pose->pose          );
+
+        memset(pose, 0, sizeof(pose_t));
     }
 }
