@@ -1,12 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtest-md", "SDK\External\gtest\msvc\gtest-md.vcproj", "{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGTests", "Tests\VGTests\VGTests.vcproj", "{2989F066-8D1A-4C39-B35B-28532B7FBE85}"
-	ProjectSection(ProjectDependencies) = postProject
-		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8} = {C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}
-	EndProjectSection
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGTests", "Tests\VGTests\VGTests.vcxproj", "{2989F066-8D1A-4C39-B35B-28532B7FBE85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,10 +9,6 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Win32.ActiveCfg = Debug|Win32
-		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Debug|Win32.Build.0 = Debug|Win32
-		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Win32.ActiveCfg = Release|Win32
-		{C8F6C172-56F2-4E76-B5FA-C3B423B31BE8}.Release|Win32.Build.0 = Release|Win32
 		{2989F066-8D1A-4C39-B35B-28532B7FBE85}.Debug|Win32.ActiveCfg = Debug|Win32
 		{2989F066-8D1A-4C39-B35B-28532B7FBE85}.Debug|Win32.Build.0 = Debug|Win32
 		{2989F066-8D1A-4C39-B35B-28532B7FBE85}.Release|Win32.ActiveCfg = Release|Win32
