@@ -17,6 +17,9 @@
     <ClCompile Include="ml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="mjson.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="utils.h">
@@ -26,6 +29,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mjson.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

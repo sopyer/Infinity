@@ -6,7 +6,7 @@
 #include <algorithm>
 
 #include "md5.h"
-#include "json.h"
+#include "mjson.h"
 
 #define MAX_BONES 128
 
@@ -562,37 +562,42 @@ cleanup:
 
     bool loadMaterial(material_t* mat, const char* name)
     {
-        memory_t inText = MEMORY_T_INITIALIZER;
-        char     path[1024];
+        memory_t        inText = MEMORY_T_INITIALIZER;
+        memory_t        bjson  = MEMORY_T_INITIALIZER;
+        mjson_element_t root = 0;
+        char            path[1024];
 
         strcpy(path, name);
         strcat(path, ".material");
 
         if (mopen(&inText, path))
         {
-            inText.buffer[inText.size] = 0;
-            json_value* topObject = json_parse((char*)inText.buffer);
+            marea(&bjson, 10*1024);
+            int result = mjson_parse((const char*)inText.buffer, inText.allocated, bjson.buffer, bjson.size, &root);
+            
+            assert(result && mjson_get_type(root) == MJSON_ID_DICT32);
 
-            assert(topObject->type == json_object);
-
-            for (unsigned int i = 0; i < topObject->u.object.length; ++i)
+            mjson_element_t key, value;
+            
+            key = mjson_get_member_first(root, &value);
+            while (key)
             {
-                const char* name  = topObject->u.object.values[i].name;
-                json_value* value = topObject->u.object.values[i].value;
+                const char* name = mjson_get_string(key, "");
 
-                if (strcmp(name, "diffuse")==0 && value->type == json_string)
+                if (strcmp(name, "diffuse")==0)
                 {
-                    mat->diffuse = resources::createTexture2D(value->u.string.ptr);
+                    mat->diffuse = resources::createTexture2D(mjson_get_string(value, ""));
                 }
-                else if (strcmp(name, "normal")==0 && value->type == json_string)
+                else if (strcmp(name, "normal")==0)
                 {
-                    mat->normal = resources::createTexture2D(value->u.string.ptr);
+                    mat->normal = resources::createTexture2D(mjson_get_string(value, ""));
                 }
+
+                key = mjson_get_member_next(root, key, &value);
             }
 
-            json_value_free(topObject);
-
-            mfree( &inText );
+            mfree(&inText);
+            mfree(&bjson);
 
             return true;
         }

@@ -73,10 +73,12 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="mjson.c" />
     <ClCompile Include="ml.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\mjson.h" />
     <ClInclude Include="..\include\vi.h" />
     <ClInclude Include="ml.h" />
     <ClInclude Include="utils.h" />
