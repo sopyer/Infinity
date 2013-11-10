@@ -26,10 +26,8 @@
 
 #include "physfs_internal.h"
 
-#define LOWORDER_UINT64(pos) (PHYSFS_uint32) \
-    (pos & 0x00000000FFFFFFFF)
-#define HIGHORDER_UINT64(pos) (PHYSFS_uint32) \
-    (((pos & 0xFFFFFFFF00000000) >> 32) & 0x00000000FFFFFFFF)
+#define LOWORDER_UINT64(pos) ((PHYSFS_uint32) (pos & 0xFFFFFFFF))
+#define HIGHORDER_UINT64(pos) ((PHYSFS_uint32) ((pos >> 32) & 0xFFFFFFFF))
 
 /*
  * Users without the platform SDK don't have this defined.  The original docs
@@ -49,7 +47,7 @@
     if (str == NULL) \
         w_assignto = NULL; \
     else { \
-        const PHYSFS_uint64 len = (PHYSFS_uint64) ((strlen(str) * 4) + 1); \
+        const PHYSFS_uint64 len = (PHYSFS_uint64) ((strlen(str) + 1) * 2); \
         w_assignto = (WCHAR *) __PHYSFS_smallAlloc(len); \
         if (w_assignto != NULL) \
             PHYSFS_utf8ToUcs2(str, (PHYSFS_uint16 *) w_assignto, len); \
@@ -258,10 +256,21 @@ static HANDLE WINAPI fallbackCreateFileW(LPCWSTR fname,
 } /* fallbackCreateFileW */
 
 
-/* A blatant abuse of pointer casting... */
-static int symLookup(HMODULE dll, void **addr, const char *sym)
+#if (PHYSFS_MINIMUM_GCC_VERSION(3,3))
+    typedef FARPROC __attribute__((__may_alias__)) PHYSFS_FARPROC;
+#else
+    typedef FARPROC PHYSFS_FARPROC;
+#endif
+
+
+static void symLookup(HMODULE dll, PHYSFS_FARPROC *addr, const char *sym,
+                      int reallyLook, PHYSFS_FARPROC fallback)
 {
-    return( (*addr = GetProcAddress(dll, sym)) != NULL );
+    PHYSFS_FARPROC proc;
+    proc = (PHYSFS_FARPROC) ((reallyLook) ? GetProcAddress(dll, sym) : NULL);
+    if (proc == NULL)
+        proc = fallback;  /* may also be NULL. */
+    *addr = proc;
 } /* symLookup */
 
 
@@ -269,17 +278,12 @@ static int findApiSymbols(void)
 {
     HMODULE dll = NULL;
 
-    #define LOOKUP_NOFALLBACK(x, reallyLook) { \
-        if (reallyLook) \
-            symLookup(dll, (void **) &p##x, #x); \
-        else \
-            p##x = NULL; \
-    }
+    #define LOOKUP_NOFALLBACK(x, reallyLook) \
+        symLookup(dll, (PHYSFS_FARPROC *) &p##x, #x, reallyLook, NULL)
 
-    #define LOOKUP(x, reallyLook) { \
-        if ((!reallyLook) || (!symLookup(dll, (void **) &p##x, #x))) \
-            p##x = fallback##x; \
-    }
+    #define LOOKUP(x, reallyLook) \
+        symLookup(dll, (PHYSFS_FARPROC *) &p##x, #x, \
+                  reallyLook, (PHYSFS_FARPROC) fallback##x)
 
     /* Apparently Win9x HAS the Unicode entry points, they just don't WORK. */
     /*  ...so don't look them up unless we're on NT+. (see osHasUnicode.) */
@@ -341,6 +345,9 @@ static const char *winApiStrError(void)
                     msgbuf, __PHYSFS_ARRAYLEN(msgbuf),
                     NULL);
 
+    if (rc == 0)
+        msgbuf[0] = '\0';  /* oh well. */
+
     /* chop off newlines. */
     for (ptr = msgbuf; *ptr; ptr++)
     {
@@ -360,7 +367,6 @@ static const char *winApiStrError(void)
 static char *getExePath(void)
 {
     DWORD buflen = 64;
-    int success = 0;
     LPWSTR modpath = NULL;
     char *retval = NULL;
 
@@ -456,6 +462,7 @@ static int determineUserDir(void)
              */	
     		rc = pGetUserProfileDirectoryW(accessToken, &dummy, &psize);
             assert(!rc);  /* !!! FIXME: handle this gracefully. */
+            (void)rc;
 
             /* Allocate memory for the profile directory */
             wstr = (LPWSTR) __PHYSFS_smallAlloc(psize * sizeof (WCHAR));
@@ -553,9 +560,9 @@ char *__PHYSFS_platformGetUserDir(void)
 } /* __PHYSFS_platformGetUserDir */
 
 
-PHYSFS_uint64 __PHYSFS_platformGetThreadID(void)
+void *__PHYSFS_platformGetThreadID(void)
 {
-    return((PHYSFS_uint64) GetCurrentThreadId());
+    return( (void *) ((size_t) GetCurrentThreadId()) );
 } /* __PHYSFS_platformGetThreadID */
 
 
@@ -797,6 +804,8 @@ char *__PHYSFS_platformCurrentDir(void)
 /* this could probably use a cleanup. */
 char *__PHYSFS_platformRealPath(const char *path)
 {
+    /* !!! FIXME: this should return NULL if (path) doesn't exist? */
+    /* !!! FIXME: Need to handle symlinks in Vista... */
     /* !!! FIXME: try GetFullPathName() instead? */
     /* this function should be UTF-8 clean. */
     char *retval = NULL;
@@ -934,14 +943,14 @@ int __PHYSFS_platformMkDir(const char *path)
   *
   * Returns non-zero if successful, otherwise it returns zero on failure.
   */
- static int getOSInfo(void)
- {
-     OSVERSIONINFO osVerInfo;     /* Information about the OS */
-     osVerInfo.dwOSVersionInfoSize = sizeof(osVerInfo);
-     BAIL_IF_MACRO(!GetVersionEx(&osVerInfo), winApiStrError(), 0);
-     osHasUnicode = (osVerInfo.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS);
-     return(1);
- } /* getOSInfo */
+static int getOSInfo(void)
+{
+    OSVERSIONINFO osVerInfo;     /* Information about the OS */
+    osVerInfo.dwOSVersionInfoSize = sizeof(osVerInfo);
+    BAIL_IF_MACRO(!GetVersionEx(&osVerInfo), winApiStrError(), 0);
+    osHasUnicode = (osVerInfo.dwPlatformId != VER_PLATFORM_WIN32_WINDOWS);
+    return(1);
+} /* getOSInfo */
 
 
 int __PHYSFS_platformInit(void)
@@ -981,8 +990,8 @@ static void *doOpen(const char *fname, DWORD mode, DWORD creation, int rdonly)
 
     UTF8_TO_UNICODE_STACK_MACRO(wfname, fname);
     BAIL_IF_MACRO(wfname == NULL, ERR_OUT_OF_MEMORY, NULL);
-    fileHandle = pCreateFileW(wfname, mode, FILE_SHARE_READ, NULL,
-                              creation, FILE_ATTRIBUTE_NORMAL, NULL);
+    fileHandle = pCreateFileW(wfname, mode, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                              NULL, creation, FILE_ATTRIBUTE_NORMAL, NULL);
     __PHYSFS_smallFree(wfname);
 
     BAIL_IF_MACRO
@@ -1087,8 +1096,8 @@ PHYSFS_sint64 __PHYSFS_platformWrite(void *opaque, const void *buffer,
 int __PHYSFS_platformSeek(void *opaque, PHYSFS_uint64 pos)
 {
     HANDLE Handle = ((WinApiFile *) opaque)->handle;
-    DWORD HighOrderPos;
-    DWORD *pHighOrderPos;
+    LONG HighOrderPos;
+    PLONG pHighOrderPos;
     DWORD rc;
 
     /* Get the high order 32-bits of the position */
@@ -1125,7 +1134,7 @@ int __PHYSFS_platformSeek(void *opaque, PHYSFS_uint64 pos)
 PHYSFS_sint64 __PHYSFS_platformTell(void *opaque)
 {
     HANDLE Handle = ((WinApiFile *) opaque)->handle;
-    DWORD HighPos = 0;
+    LONG HighPos = 0;
     DWORD LowPos;
     PHYSFS_sint64 retval;
 
@@ -1134,7 +1143,7 @@ PHYSFS_sint64 __PHYSFS_platformTell(void *opaque)
     if ( (LowPos == PHYSFS_INVALID_SET_FILE_POINTER) &&
          (GetLastError() != NO_ERROR) )
     {
-        BAIL_MACRO(winApiStrError(), 0);
+        BAIL_MACRO(winApiStrError(), -1);
     } /* if */
     else
     {
@@ -1173,14 +1182,18 @@ PHYSFS_sint64 __PHYSFS_platformFileLength(void *opaque)
 
 int __PHYSFS_platformEOF(void *opaque)
 {
+    const PHYSFS_sint64 FileLength = __PHYSFS_platformFileLength(opaque);
     PHYSFS_sint64 FilePosition;
     int retval = 0;
 
+    if (FileLength == 0)
+        return 1;  /* we're definitely at EOF. */
+
     /* Get the current position in the file */
-    if ((FilePosition = __PHYSFS_platformTell(opaque)) != 0)
+    if ((FilePosition = __PHYSFS_platformTell(opaque)) != -1)
     {
         /* Non-zero if EOF is equal to the file length */
-        retval = FilePosition == __PHYSFS_platformFileLength(opaque);
+        retval = (FilePosition == FileLength);
     } /* if */
 
     return(retval);
@@ -1209,7 +1222,7 @@ int __PHYSFS_platformClose(void *opaque)
 static int doPlatformDelete(LPWSTR wpath)
 {
     /* If filename is a folder */
-    if (pGetFileAttributesW(wpath) == FILE_ATTRIBUTE_DIRECTORY)
+    if (pGetFileAttributesW(wpath) & FILE_ATTRIBUTE_DIRECTORY)
     {
         BAIL_IF_MACRO(!pRemoveDirectoryW(wpath), winApiStrError(), 0);
     } /* if */

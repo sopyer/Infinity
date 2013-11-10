@@ -97,8 +97,21 @@ char *__PHYSFS_platformGetUserName(void)
 char *__PHYSFS_platformGetUserDir(void)
 {
     char *retval = __PHYSFS_platformCopyEnvironmentVariable("HOME");
+
+    /* if the environment variable was set, make sure it's really a dir. */
+    if (retval != NULL)
+    {
+        struct stat statbuf;
+        if ((stat(retval, &statbuf) == -1) || (S_ISDIR(statbuf.st_mode) == 0))
+        {
+            allocator.Free(retval);
+            retval = NULL;
+        } /* if */
+    } /* if */
+
     if (retval == NULL)
         retval = getUserDirByUID();
+
     return(retval);
 } /* __PHYSFS_platformGetUserDir */
 
@@ -236,12 +249,25 @@ int __PHYSFS_platformMkDir(const char *path)
 
 static void *doOpen(const char *filename, int mode)
 {
+    const int appending = (mode & O_APPEND);
     int fd;
     int *retval;
     errno = 0;
 
+    /* O_APPEND doesn't actually behave as we'd like. */
+    mode &= ~O_APPEND;
+
     fd = open(filename, mode, S_IRUSR | S_IWUSR);
     BAIL_IF_MACRO(fd < 0, strerror(errno), NULL);
+
+    if (appending)
+    {
+        if (lseek(fd, 0, SEEK_END) < 0)
+        {
+            close(fd);
+            BAIL_MACRO(strerror(errno), NULL);
+        } /* if */
+    } /* if */
 
     retval = (int *) allocator.Malloc(sizeof (int));
     if (retval == NULL)
@@ -357,7 +383,7 @@ int __PHYSFS_platformEOF(void *opaque)
 {
     PHYSFS_sint64 pos = __PHYSFS_platformTell(opaque);
     PHYSFS_sint64 len = __PHYSFS_platformFileLength(opaque);
-    return(pos >= len);
+    return((pos < 0) || (len < 0) || (pos >= len));
 } /* __PHYSFS_platformEOF */
 
 

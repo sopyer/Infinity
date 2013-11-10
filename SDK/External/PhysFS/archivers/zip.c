@@ -375,13 +375,13 @@ static int ZIP_fileClose(fvoid *opaque)
 static PHYSFS_sint64 zip_find_end_of_central_dir(void *in, PHYSFS_sint64 *len)
 {
     PHYSFS_uint8 buf[256];
+    PHYSFS_uint8 extra[4] = { 0, 0, 0, 0 };
     PHYSFS_sint32 i = 0;
     PHYSFS_sint64 filelen;
     PHYSFS_sint64 filepos;
     PHYSFS_sint32 maxread;
     PHYSFS_sint32 totalread = 0;
     int found = 0;
-    PHYSFS_uint32 extra = 0;
 
     filelen = __PHYSFS_platformFileLength(in);
     BAIL_IF_MACRO(filelen == -1, NULL, 0);  /* !!! FIXME: unlocalized string */
@@ -419,7 +419,7 @@ static PHYSFS_sint64 zip_find_end_of_central_dir(void *in, PHYSFS_sint64 *len)
         {
             if (__PHYSFS_platformRead(in, buf, maxread - 4, 1) != 1)
                 return(-1);
-            *((PHYSFS_uint32 *) (&buf[maxread - 4])) = extra;
+            memcpy(&buf[maxread - 4], &extra, sizeof (extra));
             totalread += maxread - 4;
         } /* if */
         else
@@ -429,7 +429,7 @@ static PHYSFS_sint64 zip_find_end_of_central_dir(void *in, PHYSFS_sint64 *len)
             totalread += maxread;
         } /* else */
 
-        extra = *((PHYSFS_uint32 *) (&buf[0]));
+        memcpy(&extra, buf, sizeof (extra));
 
         for (i = maxread - 4; i > 0; i--)
         {
@@ -447,6 +447,8 @@ static PHYSFS_sint64 zip_find_end_of_central_dir(void *in, PHYSFS_sint64 *len)
             break;
 
         filepos -= (maxread - 4);
+        if (filepos < 0)
+            filepos = 0;
     } /* while */
 
     BAIL_IF_MACRO(!found, ERR_NOT_AN_ARCHIVE, -1);
@@ -533,6 +535,8 @@ static ZIPentry *zip_find_entry(ZIPinfo *info, const char *path, int *isDir)
 
         else /* substring match...might be dir or entry or nothing. */
         {
+            int i;
+
             if (isDir != NULL)
             {
                 *isDir = (thispath[pathlen] == '/');
@@ -542,9 +546,27 @@ static ZIPentry *zip_find_entry(ZIPinfo *info, const char *path, int *isDir)
 
             if (thispath[pathlen] == '\0') /* found entry? */
                 return(&a[middle]);
-            else
-                hi = middle - 1;  /* adjust search params, try again. */
-        } /* if */
+
+            /* substring match; search remaining space to find it... */
+            for (i = lo; i < hi; i++)
+            {
+                thispath = a[i].name;
+                if (strncmp(path, thispath, pathlen) == 0)
+                {
+                    if (isDir != NULL)
+                    {
+                        *isDir = (thispath[pathlen] == '/');
+                        if (*isDir)
+                            return(NULL);
+                    } /* if */
+
+                    if (thispath[pathlen] == '\0') /* found entry? */
+                        return(&a[i]);
+                } /* if */
+            } /* for */
+            break;
+
+        } /* else */
     } /* while */
 
     if (isDir != NULL)
@@ -623,6 +645,7 @@ static void zip_expand_symlink_path(char *path)
         else
         {
             prevptr = ptr;
+            ptr++;
         } /* else */
     } /* while */
 } /* zip_expand_symlink_path */
@@ -836,7 +859,7 @@ static int zip_version_does_symlinks(PHYSFS_uint32 version)
 } /* zip_version_does_symlinks */
 
 
-static int zip_entry_is_symlink(ZIPentry *entry)
+static int zip_entry_is_symlink(const ZIPentry *entry)
 {
     return((entry->resolved == ZIP_UNRESOLVED_SYMLINK) ||
            (entry->resolved == ZIP_BROKEN_SYMLINK) ||
@@ -950,19 +973,27 @@ zip_load_entry_puked:
 
 static int zip_entry_cmp(void *_a, PHYSFS_uint32 one, PHYSFS_uint32 two)
 {
-    ZIPentry *a = (ZIPentry *) _a;
-    return(strcmp(a[one].name, a[two].name));
+    if (one != two)
+    {
+        const ZIPentry *a = (const ZIPentry *) _a;
+        return(strcmp(a[one].name, a[two].name));
+    } /* if */
+
+    return 0;
 } /* zip_entry_cmp */
 
 
 static void zip_entry_swap(void *_a, PHYSFS_uint32 one, PHYSFS_uint32 two)
 {
-    ZIPentry tmp;
-    ZIPentry *first = &(((ZIPentry *) _a)[one]);
-    ZIPentry *second = &(((ZIPentry *) _a)[two]);
-    memcpy(&tmp, first, sizeof (ZIPentry));
-    memcpy(first, second, sizeof (ZIPentry));
-    memcpy(second, &tmp, sizeof (ZIPentry));
+    if (one != two)
+    {
+        ZIPentry tmp;
+        ZIPentry *first = &(((ZIPentry *) _a)[one]);
+        ZIPentry *second = &(((ZIPentry *) _a)[two]);
+        memcpy(&tmp, first, sizeof (ZIPentry));
+        memcpy(first, second, sizeof (ZIPentry));
+        memcpy(second, &tmp, sizeof (ZIPentry));
+    } /* if */
 } /* zip_entry_swap */
 
 
@@ -1293,7 +1324,7 @@ static int ZIP_isDirectory(dvoid *opaque, const char *name, int *fileExists)
 static int ZIP_isSymLink(dvoid *opaque, const char *name, int *fileExists)
 {
     int isDir;
-    ZIPentry *entry = zip_find_entry((ZIPinfo *) opaque, name, &isDir);
+    const ZIPentry *entry = zip_find_entry((ZIPinfo *) opaque, name, &isDir);
     *fileExists = ((isDir) || (entry != NULL));
     BAIL_IF_MACRO(entry == NULL, NULL, 0);
     return(zip_entry_is_symlink(entry));

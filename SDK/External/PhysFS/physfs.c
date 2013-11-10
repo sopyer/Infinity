@@ -43,7 +43,7 @@ typedef struct __PHYSFS_FILEHANDLE__
 
 typedef struct __PHYSFS_ERRMSGTYPE__
 {
-    PHYSFS_uint64 tid;
+    void *tid;
     int errorAvailable;
     char errorString[80];
     struct __PHYSFS_ERRMSGTYPE__ *next;
@@ -94,7 +94,7 @@ static const PHYSFS_ArchiveInfo *supported_types[] =
     NULL
 };
 
-static const PHYSFS_Archiver *archivers[] =
+static const PHYSFS_Archiver * const archivers[] =
 {
     &__PHYSFS_Archiver_DIR,
 #if (defined PHYSFS_SUPPORTS_ZIP)
@@ -245,7 +245,8 @@ static void __PHYSFS_quick_sort(void *a, PHYSFS_uint32 lo, PHYSFS_uint32 hi,
                 break;
             swapfn(a, i, j);
         } /* while */
-        swapfn(a, i, hi-1);
+        if (i != (hi-1))
+            swapfn(a, i, hi-1);
         __PHYSFS_quick_sort(a, lo, j, cmpfn, swapfn);
         __PHYSFS_quick_sort(a, i+1, hi, cmpfn, swapfn);
     } /* else */
@@ -260,14 +261,15 @@ void __PHYSFS_sort(void *entries, PHYSFS_uint32 max,
      * Quicksort w/ Bubblesort fallback algorithm inspired by code from here:
      *   http://www.cs.ubc.ca/spider/harrison/Java/sorting-demo.html
      */
-    __PHYSFS_quick_sort(entries, 0, max - 1, cmpfn, swapfn);
+    if (max > 0)
+        __PHYSFS_quick_sort(entries, 0, max - 1, cmpfn, swapfn);
 } /* __PHYSFS_sort */
 
 
 static ErrMsg *findErrorForCurrentThread(void)
 {
     ErrMsg *i;
-    PHYSFS_uint64 tid;
+    void *tid;
 
     if (errorLock != NULL)
         __PHYSFS_platformGrabMutex(errorLock);
@@ -415,7 +417,7 @@ static DirHandle *tryOpenDir(const PHYSFS_Archiver *funcs,
 static DirHandle *openDirectory(const char *d, int forWriting)
 {
     DirHandle *retval = NULL;
-    const PHYSFS_Archiver **i;
+    const PHYSFS_Archiver * const *i;
     const char *ext;
 
     BAIL_IF_MACRO(!__PHYSFS_platformExists(d), ERR_NO_SUCH_FILE, NULL);
@@ -604,18 +606,21 @@ static int freeDirHandle(DirHandle *dh, FileHandle *openList)
 
 static char *calculateUserDir(void)
 {
-    char *retval = NULL;
-    const char *str = NULL;
+    char *retval = __PHYSFS_platformGetUserDir();
+    if (retval != NULL)
+    {
+        /* make sure it really exists and is normalized. */
+        char *ptr = __PHYSFS_platformRealPath(retval);
+        allocator.Free(retval);
+        retval = ptr;
+    } /* if */
 
-    str = __PHYSFS_platformGetUserDir();
-    if (str != NULL)
-        retval = (char *) str;
-    else
+    if (retval == NULL)
     {
         const char *dirsep = PHYSFS_getDirSeparator();
         const char *uname = __PHYSFS_platformGetUserName();
+        const char *str = (uname != NULL) ? uname : "default";
 
-        str = (uname != NULL) ? uname : "default";
         retval = (char *) allocator.Malloc(strlen(baseDir) + strlen(str) +
                                            strlen(dirsep) + 6);
 
@@ -753,13 +758,6 @@ int PHYSFS_init(const char *argv0)
     BAIL_IF_MACRO(!appendDirSep(&baseDir), NULL, 0);
 
     userDir = calculateUserDir();
-    if (userDir != NULL)
-    {
-        ptr = __PHYSFS_platformRealPath(userDir);
-        allocator.Free(userDir);
-        userDir = ptr;
-    } /* if */
-
     if ((userDir == NULL) || (!appendDirSep(&userDir)))
     {
         allocator.Free(baseDir);
@@ -1978,6 +1976,8 @@ PHYSFS_sint64 PHYSFS_read(PHYSFS_File *handle, void *buffer,
     FileHandle *fh = (FileHandle *) handle;
 
     BAIL_IF_MACRO(!fh->forReading, ERR_FILE_ALREADY_OPEN_W, -1);
+    BAIL_IF_MACRO(objSize == 0, NULL, 0);
+    BAIL_IF_MACRO(objCount == 0, NULL, 0);
     if (fh->buffer != NULL)
         return(doBufferedRead(fh, buffer, objSize, objCount));
 
@@ -2011,6 +2011,8 @@ PHYSFS_sint64 PHYSFS_write(PHYSFS_File *handle, const void *buffer,
     FileHandle *fh = (FileHandle *) handle;
 
     BAIL_IF_MACRO(fh->forReading, ERR_FILE_ALREADY_OPEN_R, -1);
+    BAIL_IF_MACRO(objSize == 0, NULL, 0);
+    BAIL_IF_MACRO(objCount == 0, NULL, 0);
     if (fh->buffer != NULL)
         return(doBufferedWrite(handle, buffer, objSize, objCount));
 
