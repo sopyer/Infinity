@@ -63,7 +63,7 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>scintilla_d.lib;opengl32.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;sdl2_d.lib;sdl2main_d.lib;freetype_d.lib;physfs_d.lib;framework_d.lib;vg_d.lib;utils_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>scintilla_d.lib;opengl32.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;winmm.lib;openal32.lib;sdl2_d.lib;sdl2main_d.lib;freetype_d.lib;physfs_d.lib;framework_d.lib;vg_d.lib;utils_d.lib;zlib_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -81,7 +81,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>winmm.lib;kernel32.lib;user32.lib;advapi32.lib;scintilla.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;openal32.lib;utils.lib</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;kernel32.lib;user32.lib;advapi32.lib;scintilla.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;avcodec.lib;avformat.lib;swscale.lib;avutil.lib;openal32.lib;utils.lib;zlib.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>

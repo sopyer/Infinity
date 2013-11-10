@@ -42,12 +42,14 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)SDK\lib\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)Temp\SDK\$(ProjectName)\$(Configuration)\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectName)_d</TargetName>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)SDK\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)SDK\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.;.\lzma;.\zlib123;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_SZ_ONE_DIRECTORY;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;PHYSFS_SUPPORTS_7Z;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -60,8 +62,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;.\lzma;.\zlib123;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_SZ_ONE_DIRECTORY;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;PHYSFS_SUPPORTS_7Z;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PHYSFS_SUPPORTS_ZIP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -71,59 +73,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="archivers\dir.c" />
-    <ClCompile Include="archivers\lzma.c" />
     <ClCompile Include="archivers\zip.c" />
     <ClCompile Include="platform\windows.c" />
-    <ClCompile Include="zlib123\adler32.c" />
-    <ClCompile Include="zlib123\compress.c" />
-    <ClCompile Include="zlib123\crc32.c" />
-    <ClCompile Include="zlib123\deflate.c" />
-    <ClCompile Include="zlib123\gzio.c" />
-    <ClCompile Include="zlib123\infback.c" />
-    <ClCompile Include="zlib123\inffast.c" />
-    <ClCompile Include="zlib123\inflate.c" />
-    <ClCompile Include="zlib123\inftrees.c" />
-    <ClCompile Include="zlib123\trees.c" />
-    <ClCompile Include="zlib123\uncompr.c" />
-    <ClCompile Include="zlib123\zutil.c" />
-    <ClCompile Include="lzma\7zBuffer.c" />
-    <ClCompile Include="lzma\7zCrc.c" />
-    <ClCompile Include="lzma\7zDecode.c" />
-    <ClCompile Include="lzma\7zExtract.c" />
-    <ClCompile Include="lzma\7zHeader.c" />
-    <ClCompile Include="lzma\7zIn.c" />
-    <ClCompile Include="lzma\7zItem.c" />
-    <ClCompile Include="lzma\7zMethodID.c" />
-    <ClCompile Include="lzma\LzmaDecode.c" />
-    <ClCompile Include="lzma\LzmaStateDecode.c" />
     <ClCompile Include="physfs.c" />
     <ClCompile Include="physfs_byteorder.c" />
     <ClCompile Include="physfs_unicode.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="zlib123\crc32.h" />
-    <ClInclude Include="zlib123\deflate.h" />
-    <ClInclude Include="zlib123\inffast.h" />
-    <ClInclude Include="zlib123\inffixed.h" />
-    <ClInclude Include="zlib123\inflate.h" />
-    <ClInclude Include="zlib123\inftrees.h" />
-    <ClInclude Include="zlib123\trees.h" />
-    <ClInclude Include="zlib123\zconf.h" />
-    <ClInclude Include="zlib123\zlib.h" />
-    <ClInclude Include="zlib123\zutil.h" />
-    <ClInclude Include="lzma\7zAlloc.h" />
-    <ClInclude Include="lzma\7zBuffer.h" />
-    <ClInclude Include="lzma\7zCrc.h" />
-    <ClInclude Include="lzma\7zDecode.h" />
-    <ClInclude Include="lzma\7zExtract.h" />
-    <ClInclude Include="lzma\7zHeader.h" />
-    <ClInclude Include="lzma\7zIn.h" />
-    <ClInclude Include="lzma\7zItem.h" />
-    <ClInclude Include="lzma\7zMethodID.h" />
-    <ClInclude Include="lzma\7zTypes.h" />
-    <ClInclude Include="lzma\LzmaDecode.h" />
-    <ClInclude Include="lzma\LzmaStateDecode.h" />
-    <ClInclude Include="lzma\LzmaTypes.h" />
     <ClInclude Include="physfs.h" />
     <ClInclude Include="physfs_casefolding.h" />
     <ClInclude Include="physfs_internal.h" />
