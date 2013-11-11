@@ -28,20 +28,37 @@
 #include "../SDL_sysaudio.h"
 #include "SDL_assert.h"
 
+#ifdef __GNUC__
+/* The configure script already did any necessary checking */
+#  define SDL_XAUDIO2_HAS_SDK 1
+#else
 #include <dxsdkver.h> /* XAudio2 exists as of the March 2008 DirectX SDK */
 #if (!defined(_DXSDK_BUILD_MAJOR) || (_DXSDK_BUILD_MAJOR < 1284))
 #  pragma message("Your DirectX SDK is too old. Disabling XAudio2 support.")
 #else
 #  define SDL_XAUDIO2_HAS_SDK 1
 #endif
+#endif /* __GNUC__ */
 
 #ifdef SDL_XAUDIO2_HAS_SDK
 
 #define INITGUID 1
-#include <XAudio2.h>
+#include <xaudio2.h>
 
 /* Hidden "this" pointer for the audio functions */
-#define _THIS	SDL_AudioDevice *this
+#define _THIS   SDL_AudioDevice *this
+
+/* Fixes bug 1210 where some versions of gcc need named parameters */
+#ifdef __GNUC__
+#ifdef THIS
+#undef THIS
+#endif
+#define THIS    INTERFACE *p
+#ifdef THIS_
+#undef THIS_
+#endif
+#define THIS_   INTERFACE *p,
+#endif
 
 struct SDL_PrivateAudioData
 {
@@ -55,27 +72,18 @@ struct SDL_PrivateAudioData
 };
 
 
-static __inline__ char *
-utf16_to_utf8(const WCHAR *S)
-{
-    /* !!! FIXME: this should be UTF-16, not UCS-2! */
-    return SDL_iconv_string("UTF-8", "UCS-2", (char *)(S),
-                            (SDL_wcslen(S)+1)*sizeof(WCHAR));
-}
-
 static void
 XAUDIO2_DetectDevices(int iscapture, SDL_AddAudioDevice addfn)
 {
     IXAudio2 *ixa2 = NULL;
     UINT32 devcount = 0;
     UINT32 i = 0;
-    void *ptr = NULL;
 
     if (iscapture) {
         SDL_SetError("XAudio2: capture devices unsupported.");
         return;
     } else if (XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR) != S_OK) {
-        SDL_SetError("XAudio2: XAudio2Create() failed.");
+        SDL_SetError("XAudio2: XAudio2Create() failed at detection.");
         return;
     } else if (IXAudio2_GetDeviceCount(ixa2, &devcount) != S_OK) {
         SDL_SetError("XAudio2: IXAudio2::GetDeviceCount() failed.");
@@ -86,7 +94,7 @@ XAUDIO2_DetectDevices(int iscapture, SDL_AddAudioDevice addfn)
     for (i = 0; i < devcount; i++) {
         XAUDIO2_DEVICE_DETAILS details;
         if (IXAudio2_GetDeviceDetails(ixa2, i, &details) == S_OK) {
-            char *str = utf16_to_utf8(details.DisplayName);
+            char *str = WIN_StringToUTF8(details.DisplayName);
             if (str != NULL) {
                 addfn(str);
                 SDL_free(str);  /* addfn() made a copy of the string. */
@@ -209,9 +217,7 @@ XAUDIO2_CloseDevice(_THIS)
         if (ixa2 != NULL) {
             IXAudio2_Release(ixa2);
         }
-        if (this->hidden->mixbuf != NULL) {
-            SDL_free(this->hidden->mixbuf);
-        }
+        SDL_free(this->hidden->mixbuf);
         if (this->hidden->semaphore != NULL) {
             CloseHandle(this->hidden->semaphore);
         }
@@ -232,22 +238,22 @@ XAUDIO2_OpenDevice(_THIS, const char *devname, int iscapture)
     IXAudio2SourceVoice *source = NULL;
     UINT32 devId = 0;  /* 0 == system default device. */
 
-	static IXAudio2VoiceCallbackVtbl callbacks_vtable = {
-	    VoiceCBOnVoiceProcessPassStart,
+    static IXAudio2VoiceCallbackVtbl callbacks_vtable = {
+        VoiceCBOnVoiceProcessPassStart,
         VoiceCBOnVoiceProcessPassEnd,
         VoiceCBOnStreamEnd,
         VoiceCBOnBufferStart,
         VoiceCBOnBufferEnd,
         VoiceCBOnLoopEnd,
         VoiceCBOnVoiceError
-	};
+    };
 
-	static IXAudio2VoiceCallback callbacks = { &callbacks_vtable };
+    static IXAudio2VoiceCallback callbacks = { &callbacks_vtable };
 
     if (iscapture) {
         return SDL_SetError("XAudio2: capture devices unsupported.");
     } else if (XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR) != S_OK) {
-        return SDL_SetError("XAudio2: XAudio2Create() failed.");
+        return SDL_SetError("XAudio2: XAudio2Create() failed at open.");
     }
 
     if (devname != NULL) {
@@ -261,7 +267,7 @@ XAUDIO2_OpenDevice(_THIS, const char *devname, int iscapture)
         for (i = 0; i < devcount; i++) {
             XAUDIO2_DEVICE_DETAILS details;
             if (IXAudio2_GetDeviceDetails(ixa2, i, &details) == S_OK) {
-                char *str = utf16_to_utf8(details.DisplayName);
+                char *str = WIN_StringToUTF8(details.DisplayName);
                 if (str != NULL) {
                     const int match = (SDL_strcmp(str, devname) == 0);
                     SDL_free(str);
@@ -405,7 +411,7 @@ XAUDIO2_Init(SDL_AudioDriverImpl * impl)
 
     if (XAudio2Create(&ixa2, 0, XAUDIO2_DEFAULT_PROCESSOR) != S_OK) {
         WIN_CoUninitialize();
-        SDL_SetError("XAudio2: XAudio2Create() failed");
+        SDL_SetError("XAudio2: XAudio2Create() failed at initialization");
         return 0;  /* not available. */
     }
     IXAudio2_Release(ixa2);

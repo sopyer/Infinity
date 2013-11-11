@@ -231,12 +231,8 @@ extern "C"
         if (joystick->hwdata) {
             joystick->hwdata->stick->Close();
             delete joystick->hwdata->stick;
-            if (joystick->hwdata->new_hats) {
-                SDL_free(joystick->hwdata->new_hats);
-            }
-            if (joystick->hwdata->new_axes) {
-                SDL_free(joystick->hwdata->new_axes);
-            }
+            SDL_free(joystick->hwdata->new_hats);
+            SDL_free(joystick->hwdata->new_axes);
             SDL_free(joystick->hwdata);
             joystick->hwdata = NULL;
         }
@@ -261,7 +257,7 @@ extern "C"
     SDL_JoystickGUID SDL_SYS_JoystickGetDeviceGUID( int device_index )
     {
         SDL_JoystickGUID guid;
-        // the GUID is just the first 16 chars of the name for now
+        /* the GUID is just the first 16 chars of the name for now */
         const char *name = SDL_SYS_JoystickNameForDeviceIndex( device_index );
         SDL_zero( guid );
         SDL_memcpy( &guid, name, SDL_min( sizeof(guid), SDL_strlen( name ) ) );
@@ -271,7 +267,7 @@ extern "C"
     SDL_JoystickGUID SDL_SYS_JoystickGetGUID(SDL_Joystick * joystick)
     {
         SDL_JoystickGUID guid;
-        // the GUID is just the first 16 chars of the name for now
+        /* the GUID is just the first 16 chars of the name for now */
         const char *name = joystick->name;
         SDL_zero( guid );
         SDL_memcpy( &guid, name, SDL_min( sizeof(guid), SDL_strlen( name ) ) );

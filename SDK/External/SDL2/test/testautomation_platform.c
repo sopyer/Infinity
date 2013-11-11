@@ -102,7 +102,7 @@ int platform_testEndianessAndSwap(void *arg)
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_GetXYZ() functions
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_GetPlatform
@@ -151,7 +151,7 @@ int platform_testGetFunctions (void *arg)
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_HasXYZ() functions
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_Has3DNow
@@ -168,7 +168,7 @@ int platform_testHasFunctions (void *arg)
 {
    int ret;
 
-   // TODO: independently determine and compare values as well
+   /* TODO: independently determine and compare values as well */
 
    ret = SDL_HasRDTSC();
    SDLTest_AssertPass("SDL_HasRDTSC()");
@@ -200,7 +200,7 @@ int platform_testHasFunctions (void *arg)
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_GetVersion
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_GetVersion
@@ -225,7 +225,7 @@ int platform_testGetVersion(void *arg)
 }
 
 
-/*!
+/* !
  * \brief Tests SDL_VERSION macro
  */
 int platform_testSDLVersion(void *arg)
@@ -248,7 +248,7 @@ int platform_testSDLVersion(void *arg)
 }
 
 
-/*!
+/* !
  * \brief Tests default SDL_Init
  */
 int platform_testDefaultInit(void *arg)
@@ -270,7 +270,7 @@ int platform_testDefaultInit(void *arg)
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_Get/Set/ClearError
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_GetError
@@ -315,14 +315,14 @@ int platform_testGetSetClearError(void *arg)
              lastError);
    }
 
-   // Clean up
+   /* Clean up */
    SDL_ClearError();
    SDLTest_AssertPass("SDL_ClearError()");
 
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_SetError with empty input
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_SetError
@@ -351,14 +351,14 @@ int platform_testSetErrorEmptyInput(void *arg)
              lastError);
    }
 
-   // Clean up
+   /* Clean up */
    SDL_ClearError();
    SDLTest_AssertPass("SDL_ClearError()");
 
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_SetError with invalid input
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_SetError
@@ -370,11 +370,11 @@ int platform_testSetErrorInvalidInput(void *arg)
    char *lastError;
    int len;
 
-   // Reset
+   /* Reset */
    SDL_ClearError();
    SDLTest_AssertPass("SDL_ClearError()");
 
-   // Check for no-op
+   /* Check for no-op */
    SDL_SetError(testError);
    SDLTest_AssertPass("SDL_SetError()");
    lastError = (char *)SDL_GetError();
@@ -392,11 +392,11 @@ int platform_testSetErrorInvalidInput(void *arg)
              lastError);
    }
 
-   // Set
+   /* Set */
    SDL_SetError(probeError);
    SDLTest_AssertPass("SDL_SetError()");
 
-   // Check for no-op
+   /* Check for no-op */
    SDL_SetError(testError);
    SDLTest_AssertPass("SDL_SetError()");
    lastError = (char *)SDL_GetError();
@@ -415,14 +415,14 @@ int platform_testSetErrorInvalidInput(void *arg)
              lastError);
    }
 
-   // Clean up
+   /* Clean up */
    SDL_ClearError();
    SDLTest_AssertPass("SDL_ClearError()");
 
    return TEST_COMPLETED;
 }
 
-/*!
+/* !
  * \brief Tests SDL_GetPowerInfo
  * \sa
  * http://wiki.libsdl.org/moin.cgi/SDL_GetPowerInfo
@@ -472,7 +472,7 @@ int platform_testGetPowerInfo(void *arg)
          pct);
    }
 
-   // Partial return value variations
+   /* Partial return value variations */
    stateAgain = SDL_GetPowerInfo(&secsAgain, NULL);
    SDLTest_AssertCheck(
         state==stateAgain,
@@ -504,58 +504,58 @@ int platform_testGetPowerInfo(void *arg)
 
 /* Platform test cases */
 static const SDLTest_TestCaseReference platformTest1 =
-		{ (SDLTest_TestCaseFp)platform_testTypes, "platform_testTypes", "Tests predefined types", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testTypes, "platform_testTypes", "Tests predefined types", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest2 =
-		{ (SDLTest_TestCaseFp)platform_testEndianessAndSwap, "platform_testEndianessAndSwap", "Tests endianess and swap functions", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testEndianessAndSwap, "platform_testEndianessAndSwap", "Tests endianess and swap functions", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest3 =
-		{ (SDLTest_TestCaseFp)platform_testGetFunctions, "platform_testGetFunctions", "Tests various SDL_GetXYZ functions", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testGetFunctions, "platform_testGetFunctions", "Tests various SDL_GetXYZ functions", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest4 =
-		{ (SDLTest_TestCaseFp)platform_testHasFunctions, "platform_testHasFunctions", "Tests various SDL_HasXYZ functions", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testHasFunctions, "platform_testHasFunctions", "Tests various SDL_HasXYZ functions", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest5 =
-		{ (SDLTest_TestCaseFp)platform_testGetVersion, "platform_testGetVersion", "Tests SDL_GetVersion function", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testGetVersion, "platform_testGetVersion", "Tests SDL_GetVersion function", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest6 =
-		{ (SDLTest_TestCaseFp)platform_testSDLVersion, "platform_testSDLVersion", "Tests SDL_VERSION macro", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testSDLVersion, "platform_testSDLVersion", "Tests SDL_VERSION macro", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest7 =
-		{ (SDLTest_TestCaseFp)platform_testDefaultInit, "platform_testDefaultInit", "Tests default SDL_Init", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testDefaultInit, "platform_testDefaultInit", "Tests default SDL_Init", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest8 =
-		{ (SDLTest_TestCaseFp)platform_testGetSetClearError, "platform_testGetSetClearError", "Tests SDL_Get/Set/ClearError", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testGetSetClearError, "platform_testGetSetClearError", "Tests SDL_Get/Set/ClearError", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest9 =
-		{ (SDLTest_TestCaseFp)platform_testSetErrorEmptyInput, "platform_testSetErrorEmptyInput", "Tests SDL_SetError with empty input", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testSetErrorEmptyInput, "platform_testSetErrorEmptyInput", "Tests SDL_SetError with empty input", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest10 =
-		{ (SDLTest_TestCaseFp)platform_testSetErrorInvalidInput, "platform_testSetErrorInvalidInput", "Tests SDL_SetError with invalid input", TEST_ENABLED};
+        { (SDLTest_TestCaseFp)platform_testSetErrorInvalidInput, "platform_testSetErrorInvalidInput", "Tests SDL_SetError with invalid input", TEST_ENABLED};
 
 static const SDLTest_TestCaseReference platformTest11 =
-		{ (SDLTest_TestCaseFp)platform_testGetPowerInfo, "platform_testGetPowerInfo", "Tests SDL_GetPowerInfo function", TEST_ENABLED };
+        { (SDLTest_TestCaseFp)platform_testGetPowerInfo, "platform_testGetPowerInfo", "Tests SDL_GetPowerInfo function", TEST_ENABLED };
 
 /* Sequence of Platform test cases */
 static const SDLTest_TestCaseReference *platformTests[] =  {
-	&platformTest1,
-	&platformTest2,
-	&platformTest3,
-	&platformTest4,
-	&platformTest5,
-	&platformTest6,
-	&platformTest7,
-	&platformTest8,
-	&platformTest9,
-	&platformTest10,
-	&platformTest11,
-	NULL
+    &platformTest1,
+    &platformTest2,
+    &platformTest3,
+    &platformTest4,
+    &platformTest5,
+    &platformTest6,
+    &platformTest7,
+    &platformTest8,
+    &platformTest9,
+    &platformTest10,
+    &platformTest11,
+    NULL
 };
 
 /* Platform test suite (global) */
 SDLTest_TestSuiteReference platformTestSuite = {
-	"Platform",
-	NULL,
-	platformTests,
-	NULL
+    "Platform",
+    NULL,
+    platformTests,
+    NULL
 };

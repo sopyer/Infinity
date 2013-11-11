@@ -48,15 +48,15 @@ typedef struct SDL_DisplayModeData {
 };
 #endif
 
-static inline SDL_BWin *_ToBeWin(SDL_Window *window) {
+static SDL_INLINE SDL_BWin *_ToBeWin(SDL_Window *window) {
 	return ((SDL_BWin*)(window->driverdata));
 }
 
-static inline SDL_BApp *_GetBeApp() {
+static SDL_INLINE SDL_BApp *_GetBeApp() {
 	return ((SDL_BApp*)be_app);
 }
 
-static inline display_mode * _ExtractBMode(SDL_DisplayMode *mode) {
+static SDL_INLINE display_mode * _ExtractBMode(SDL_DisplayMode *mode) {
 #if WRAP_BMODE
 	return ((SDL_DisplayModeData*)mode->driverdata)->bmode;
 #else
@@ -275,7 +275,7 @@ void BE_GetDisplayModes(_THIS, SDL_VideoDisplay *display) {
 	bscreen.GetMode(&this_bmode);
 	
 	for(i = 0; i < count; ++i) {
-		//FIXME: Apparently there are errors with colorspace changes
+		// FIXME: Apparently there are errors with colorspace changes
 		if (bmodes[i].space == this_bmode.space) {
 			_BDisplayModeToSdlDisplayMode(&bmodes[i], &mode);
 			SDL_AddDisplayMode(display, &mode);

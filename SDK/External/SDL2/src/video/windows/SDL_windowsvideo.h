@@ -23,9 +23,9 @@
 #ifndef _SDL_windowsvideo_h
 #define _SDL_windowsvideo_h
 
-#include "../SDL_sysvideo.h"
-
 #include "../../core/windows/SDL_windows.h"
+
+#include "../SDL_sysvideo.h"
 
 #if defined(_MSC_VER)
 #include <msctf.h>
@@ -51,8 +51,8 @@
 
 #if WINVER < 0x0601
 /* Touch input definitions */
-#define TWF_FINETOUCH	1
-#define TWF_WANTPALM	2
+#define TWF_FINETOUCH   1
+#define TWF_WANTPALM    2
 
 #define TOUCHEVENTF_MOVE 0x0001
 #define TOUCHEVENTF_DOWN 0x0002
@@ -61,16 +61,16 @@
 DECLARE_HANDLE(HTOUCHINPUT);
 
 typedef struct _TOUCHINPUT {
-	LONG      x;
-	LONG      y;
-	HANDLE    hSource;
-	DWORD     dwID;
-	DWORD     dwFlags;
-	DWORD     dwMask;
-	DWORD     dwTime;
-	ULONG_PTR dwExtraInfo;
-	DWORD     cxContact;
-	DWORD     cyContact;
+    LONG      x;
+    LONG      y;
+    HANDLE    hSource;
+    DWORD     dwID;
+    DWORD     dwFlags;
+    DWORD     dwMask;
+    DWORD     dwTime;
+    ULONG_PTR dwExtraInfo;
+    DWORD     cxContact;
+    DWORD     cyContact;
 } TOUCHINPUT, *PTOUCHINPUT;
 
 #endif /* WINVER < 0x0601 */
@@ -78,7 +78,7 @@ typedef struct _TOUCHINPUT {
 typedef BOOL  (*PFNSHFullScreen)(HWND, DWORD);
 typedef void  (*PFCoordTransform)(SDL_Window*, POINT*);
 
-typedef struct  
+typedef struct
 {
     void **lpVtbl;
     int refcount;
@@ -115,13 +115,13 @@ typedef struct SDL_VideoData
 {
     int render;
 
-	DWORD clipboard_count;
+    DWORD clipboard_count;
 
-	/* Touch input functions */
-	void* userDLL;
-	BOOL (WINAPI *CloseTouchInputHandle)( HTOUCHINPUT );
-	BOOL (WINAPI *GetTouchInputInfo)( HTOUCHINPUT, UINT, PTOUCHINPUT, int );
-	BOOL (WINAPI *RegisterTouchWindow)( HWND, ULONG );
+    /* Touch input functions */
+    void* userDLL;
+    BOOL (WINAPI *CloseTouchInputHandle)( HTOUCHINPUT );
+    BOOL (WINAPI *GetTouchInputInfo)( HTOUCHINPUT, UINT, PTOUCHINPUT, int );
+    BOOL (WINAPI *RegisterTouchWindow)( HWND, ULONG );
 
     SDL_bool ime_com_initialized;
     struct ITfThreadMgr *ime_threadmgr;
@@ -169,6 +169,10 @@ typedef struct SDL_VideoData
     TSFSink *ime_uielemsink;
     TSFSink *ime_ippasink;
 } SDL_VideoData;
+
+
+typedef struct IDirect3D9 IDirect3D9;
+extern SDL_bool D3D_LoadDLL( void **pD3DDLL, IDirect3D9 **pDirect3D9Interface );
 
 #endif /* _SDL_windowsvideo_h */
 

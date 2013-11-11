@@ -40,7 +40,7 @@
 #include "SDL_name.h"
 #include "SDL_loadso.h"
 #else
-#define SDL_NAME(X)	X
+#define SDL_NAME(X) X
 #endif
 
 #ifdef SDL_AUDIO_DRIVER_ESD_DYNAMIC
@@ -123,7 +123,7 @@ ESD_WaitDevice(_THIS)
     /* Check to see if the thread-parent process is still alive */
     {
         static int cnt = 0;
-        /* Note that this only works with thread implementations 
+        /* Note that this only works with thread implementations
            that use a different process id for each thread.
          */
         /* Check every 10 loops */
@@ -135,8 +135,7 @@ ESD_WaitDevice(_THIS)
     }
 
     /* Use timer for general audio synchronization */
-    ticks =
-        ((Sint32) (this->hidden->next_frame - SDL_GetTicks())) - FUDGE_TICKS;
+    ticks = ((Sint32) (this->hidden->next_frame - SDL_GetTicks())) - FUDGE_TICKS;
     if (ticks > 0) {
         SDL_Delay(ticks);
     }
@@ -176,10 +175,8 @@ static void
 ESD_CloseDevice(_THIS)
 {
     if (this->hidden != NULL) {
-        if (this->hidden->mixbuf != NULL) {
-            SDL_FreeAudioMem(this->hidden->mixbuf);
-            this->hidden->mixbuf = NULL;
-        }
+        SDL_FreeAudioMem(this->hidden->mixbuf);
+        this->hidden->mixbuf = NULL;
         if (this->hidden->audio_fd >= 0) {
             SDL_NAME(esd_close) (this->hidden->audio_fd);
             this->hidden->audio_fd = -1;

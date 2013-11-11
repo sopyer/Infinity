@@ -22,6 +22,11 @@
 #define _LARGEFILE64_SOURCE
 #include "SDL_config.h"
 
+#if defined(__WIN32__)
+#include "../core/windows/SDL_windows.h"
+#endif
+
+
 /* This file provides a general interface for SDL to read and write
    data sources.  It can easily be extended to files, memory, etc.
 */
@@ -35,19 +40,18 @@
 
 #ifdef ANDROID
 #include "../core/android/SDL_android.h"
+#include "SDL_system.h"
 #endif
 
 #ifdef __WIN32__
 
 /* Functions to read/write Win32 API file pointers */
 
-#include "../core/windows/SDL_windows.h"
-
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER 0xFFFFFFFF
 #endif
 
-#define READAHEAD_BUFFER_SIZE	1024
+#define READAHEAD_BUFFER_SIZE   1024
 
 static int SDLCALL
 windows_file_open(SDL_RWops * context, const char *filename, const char *mode)
@@ -274,10 +278,8 @@ windows_file_close(SDL_RWops * context)
             CloseHandle(context->hidden.windowsio.h);
             context->hidden.windowsio.h = INVALID_HANDLE_VALUE;   /* to be sure */
         }
-        if (context->hidden.windowsio.buffer.data) {
-            SDL_free(context->hidden.windowsio.buffer.data);
-            context->hidden.windowsio.buffer.data = NULL;
-        }
+        SDL_free(context->hidden.windowsio.buffer.data);
+        context->hidden.windowsio.buffer.data = NULL;
         SDL_FreeRW(context);
     }
     return (0);
@@ -518,12 +520,12 @@ SDL_RWFromFile(const char *file, const char *mode)
 
 #elif HAVE_STDIO_H
     {
-    	#ifdef __APPLE__
-    	FILE *fp = SDL_OpenFPFromBundleOrFallback(file, mode);
+        #ifdef __APPLE__
+        FILE *fp = SDL_OpenFPFromBundleOrFallback(file, mode);
         #else
-    	FILE *fp = fopen(file, mode);
-    	#endif
-    	if (fp == NULL) {
+        FILE *fp = fopen(file, mode);
+        #endif
+        if (fp == NULL) {
             SDL_SetError("Couldn't open %s", file);
         } else {
             rwops = SDL_RWFromFP(fp, 1);

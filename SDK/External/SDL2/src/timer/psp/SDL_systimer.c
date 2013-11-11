@@ -29,20 +29,30 @@
 #include <pspthreadman.h>
 
 static struct timeval start;
+static SDL_bool ticks_started = SDL_FALSE;
 
-void SDL_StartTicks(void)
+void SDL_InitTicks(void)
 {
-	gettimeofday(&start, NULL);
+    if (ticks_started) {
+        return;
+    }
+    ticks_started = SDL_TRUE;
+
+    gettimeofday(&start, NULL);
 }
 
 Uint32 SDL_GetTicks(void)
 {
-	struct timeval now;
-	Uint32 ticks;
+    if (!ticks_started) {
+        SDL_InitTicks();
+    }
 
-	gettimeofday(&now, NULL);
-	ticks=(now.tv_sec-start.tv_sec)*1000+(now.tv_usec-start.tv_usec)/1000;
-	return(ticks);
+    struct timeval now;
+    Uint32 ticks;
+
+    gettimeofday(&now, NULL);
+    ticks=(now.tv_sec-start.tv_sec)*1000+(now.tv_usec-start.tv_usec)/1000;
+    return(ticks);
 }
 
 Uint64
@@ -59,10 +69,10 @@ SDL_GetPerformanceFrequency(void)
 
 void SDL_Delay(Uint32 ms)
 {
-	const Uint32 max_delay = 0xffffffffUL / 1000;
-	if(ms > max_delay)
-		ms = max_delay;
-	sceKernelDelayThreadCB(ms * 1000);
+    const Uint32 max_delay = 0xffffffffUL / 1000;
+    if(ms > max_delay)
+        ms = max_delay;
+    sceKernelDelayThreadCB(ms * 1000);
 }
 
 /* vim: ts=4 sw=4

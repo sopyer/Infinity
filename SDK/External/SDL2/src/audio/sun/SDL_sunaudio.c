@@ -47,7 +47,7 @@
 
 /* Open the audio device for playback, and don't block if busy */
 
-#if defined(AUDIO_GETINFO) && !defined(AUDIO_GETBUFINFO) 
+#if defined(AUDIO_GETINFO) && !defined(AUDIO_GETBUFINFO)
 #define AUDIO_GETBUFINFO AUDIO_GETINFO
 #endif
 
@@ -82,7 +82,7 @@ static void
 SUNAUDIO_WaitDevice(_THIS)
 {
 #ifdef AUDIO_GETBUFINFO
-#define SLEEP_FUDGE	10      /* 10 ms scheduling fudge factor */
+#define SLEEP_FUDGE 10      /* 10 ms scheduling fudge factor */
     audio_info_t info;
     Sint32 left;
 
@@ -184,14 +184,10 @@ static void
 SUNAUDIO_CloseDevice(_THIS)
 {
     if (this->hidden != NULL) {
-        if (this->hidden->mixbuf != NULL) {
-            SDL_FreeAudioMem(this->hidden->mixbuf);
-            this->hidden->mixbuf = NULL;
-        }
-        if (this->hidden->ulaw_buf != NULL) {
-            SDL_free(this->hidden->ulaw_buf);
-            this->hidden->ulaw_buf = NULL;
-        }
+        SDL_FreeAudioMem(this->hidden->mixbuf);
+        this->hidden->mixbuf = NULL;
+        SDL_free(this->hidden->ulaw_buf);
+        this->hidden->ulaw_buf = NULL;
         if (this->hidden->audio_fd >= 0) {
             close(this->hidden->audio_fd);
             this->hidden->audio_fd = -1;

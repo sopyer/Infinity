@@ -61,10 +61,8 @@ static void
 DSP_CloseDevice(_THIS)
 {
     if (this->hidden != NULL) {
-        if (this->hidden->mixbuf != NULL) {
-            SDL_FreeAudioMem(this->hidden->mixbuf);
-            this->hidden->mixbuf = NULL;
-        }
+        SDL_FreeAudioMem(this->hidden->mixbuf);
+        this->hidden->mixbuf = NULL;
         if (this->hidden->audio_fd >= 0) {
             close(this->hidden->audio_fd);
             this->hidden->audio_fd = -1;
@@ -161,7 +159,7 @@ DSP_OpenDevice(_THIS, const char *devname, int iscapture)
             break;
 #if 0
 /*
- * These formats are not used by any real life systems so they are not 
+ * These formats are not used by any real life systems so they are not
  * needed here.
  */
         case AUDIO_S8:

@@ -48,13 +48,13 @@
 #include <sys/audio.h>
 
 /* Open the audio device for playback, and don't block if busy */
-/* #define OPEN_FLAGS	(O_WRONLY|O_NONBLOCK) */
-#define OPEN_FLAGS	O_WRONLY
+/* #define OPEN_FLAGS   (O_WRONLY|O_NONBLOCK) */
+#define OPEN_FLAGS  O_WRONLY
 
 /* Get the name of the audio device we use for output */
 
 #ifndef _PATH_DEV_DSP
-#define _PATH_DEV_DSP	"/dev/%caud%c/%c"
+#define _PATH_DEV_DSP   "/dev/%caud%c/%c"
 #endif
 
 static char devsettings[][3] = {
@@ -133,9 +133,7 @@ PAUDIO_WaitDevice(_THIS)
         /* Use timer for general audio synchronization */
         Sint32 ticks;
 
-        ticks =
-            ((Sint32) (this->hidden->next_frame - SDL_GetTicks())) -
-            FUDGE_TICKS;
+        ticks = ((Sint32) (this->hidden->next_frame - SDL_GetTicks())) - FUDGE_TICKS;
         if (ticks > 0) {
             SDL_Delay(ticks);
         }
@@ -231,10 +229,8 @@ static void
 PAUDIO_CloseDevice(_THIS)
 {
     if (this->hidden != NULL) {
-        if (this->hidden->mixbuf != NULL) {
-            SDL_FreeAudioMem(this->hidden->mixbuf);
-            this->hidden->mixbuf = NULL;
-        }
+        SDL_FreeAudioMem(this->hidden->mixbuf);
+        this->hidden->mixbuf = NULL;
         if (this->hidden->audio_fd >= 0) {
             close(this->hidden->audio_fd);
             this->hidden->audio_fd = -1;

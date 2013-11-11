@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 1997-2011 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -57,39 +57,38 @@ main(int argc, char *argv[])
                 if (argv[i + 1]) {
                     testIterations = SDL_atoi(argv[i + 1]);
                     if (testIterations < 1) testIterations = 1;
-                    consumed = 2;                    
+                    consumed = 2;
                 }
-            } 
+            }
             else if (SDL_strcasecmp(argv[i], "--execKey") == 0) {
                 if (argv[i + 1]) {
                     SDL_sscanf(argv[i + 1], "%llu", (long long unsigned int *)&userExecKey);
-                    consumed = 2;                    
+                    consumed = 2;
                 }
-            } 
+            }
             else if (SDL_strcasecmp(argv[i], "--seed") == 0) {
                 if (argv[i + 1]) {
                     userRunSeed = SDL_strdup(argv[i + 1]);
                     consumed = 2;
                 }
-            } 
+            }
             else if (SDL_strcasecmp(argv[i], "--filter") == 0) {
                 if (argv[i + 1]) {
                     filter = SDL_strdup(argv[i + 1]);
                     consumed = 2;
                 }
-            } 
+            }
         }
         if (consumed < 0) {
-            fprintf(stderr,
-                    "Usage: %s %s [--iterations #] [--execKey #] [--seed string] [--filter suite_name|test_name]\n",
+            SDL_Log("Usage: %s %s [--iterations #] [--execKey #] [--seed string] [--filter suite_name|test_name]\n",
                     argv[0], SDLTest_CommonUsage(state));
             quit(1);
         }
-        
+
         i += consumed;
     }
 
-    /* Initialize common state */    
+    /* Initialize common state */
     if (!SDLTest_CommonInit(state)) {
         quit(2);
     }
@@ -104,7 +103,7 @@ main(int argc, char *argv[])
     /* Call Harness */
     result = SDLTest_RunSuites(testSuites, (const char *)userRunSeed, userExecKey, (const char *)filter, testIterations);
 
-    /* Empty event queue */    
+    /* Empty event queue */
     done = 0;
     for (i=0; i<100; i++)  {
       while (SDL_PollEvent(&event)) {
@@ -114,15 +113,11 @@ main(int argc, char *argv[])
     }
 
     /* Clean up */
-    if (userRunSeed != NULL) {
-        SDL_free(userRunSeed);
-    }
-    if (filter != NULL) {
-        SDL_free(filter);
-    }
-        
+    SDL_free(userRunSeed);
+    SDL_free(filter);
+
     /* Shutdown everything */
-    quit(result);        
+    quit(result);
     return(result);
 }
 

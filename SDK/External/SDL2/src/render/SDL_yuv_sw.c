@@ -26,17 +26,17 @@
 
  * Copyright (c) 1995 The Regents of the University of California.
  * All rights reserved.
- * 
+ *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose, without fee, and without written agreement is
  * hereby granted, provided that the above copyright notice and the following
  * two paragraphs appear in all copies of this software.
- * 
+ *
  * IN NO EVENT SHALL THE UNIVERSITY OF CALIFORNIA BE LIABLE TO ANY PARTY FOR
  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
  * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF THE UNIVERSITY OF
  * CALIFORNIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * THE UNIVERSITY OF CALIFORNIA SPECIFICALLY DISCLAIMS ANY WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
  * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
@@ -45,17 +45,17 @@
 
  * Copyright (c) 1995 Erik Corry
  * All rights reserved.
- * 
+ *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose, without fee, and without written agreement is
  * hereby granted, provided that the above copyright notice and the following
  * two paragraphs appear in all copies of this software.
- * 
+ *
  * IN NO EVENT SHALL ERIK CORRY BE LIABLE TO ANY PARTY FOR DIRECT, INDIRECT,
  * SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OF
  * THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF ERIK CORRY HAS BEEN ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * ERIK CORRY SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
  * PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS"
@@ -64,17 +64,17 @@
 
  * Portions of this software Copyright (c) 1995 Brown University.
  * All rights reserved.
- * 
+ *
  * Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose, without fee, and without written agreement
  * is hereby granted, provided that the above copyright notice and the
  * following two paragraphs appear in all copies of this software.
- * 
+ *
  * IN NO EVENT SHALL BROWN UNIVERSITY BE LIABLE TO ANY PARTY FOR
  * DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING OUT
  * OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF BROWN
  * UNIVERSITY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * BROWN UNIVERSITY SPECIFICALLY DISCLAIMS ANY WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
  * PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS ON AN "AS IS"
@@ -82,6 +82,7 @@
  * SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
  */
 
+#include "SDL_assert.h"
 #include "SDL_video.h"
 #include "SDL_cpuinfo.h"
 #include "SDL_yuv_sw_c.h"
@@ -904,7 +905,7 @@ SDL_SW_SetupYUVDisplay(SDL_SW_YUVTexture * swdata, Uint32 target_format)
     g_2_pix_alloc = &swdata->rgb_2_pix[1 * 768];
     b_2_pix_alloc = &swdata->rgb_2_pix[2 * 768];
 
-    /* 
+    /*
      * Set up entries 0-255 in rgb-to-pixel value tables.
      */
     for (i = 0; i < 256; ++i) {
@@ -922,7 +923,7 @@ SDL_SW_SetupYUVDisplay(SDL_SW_YUVTexture * swdata, Uint32 target_format)
     /*
      * If we have 16-bit output depth, then we double the value
      * in the top word. This means that we can write out both
-     * pixels in the pixel doubling mode with one op. It is 
+     * pixels in the pixel doubling mode with one op. It is
      * harmless in the normal case as storing a 32-bit value
      * through a short pointer will lose the top bits anyway.
      */
@@ -957,10 +958,10 @@ SDL_SW_SetupYUVDisplay(SDL_SW_YUVTexture * swdata, Uint32 target_format)
             if (SDL_HasMMX() && (Rmask == 0xF800) &&
                 (Gmask == 0x07E0) && (Bmask == 0x001F)
                 && (swdata->w & 15) == 0) {
-/*printf("Using MMX 16-bit 565 dither\n");*/
+/* printf("Using MMX 16-bit 565 dither\n"); */
                 swdata->Display1X = Color565DitherYV12MMX1X;
             } else {
-/*printf("Using C 16-bit dither\n");*/
+/* printf("Using C 16-bit dither\n"); */
                 swdata->Display1X = Color16DitherYV12Mod1X;
             }
 #else
@@ -978,10 +979,10 @@ SDL_SW_SetupYUVDisplay(SDL_SW_YUVTexture * swdata, Uint32 target_format)
             if (SDL_HasMMX() && (Rmask == 0x00FF0000) &&
                 (Gmask == 0x0000FF00) &&
                 (Bmask == 0x000000FF) && (swdata->w & 15) == 0) {
-/*printf("Using MMX 32-bit dither\n");*/
+/* printf("Using MMX 32-bit dither\n"); */
                 swdata->Display1X = ColorRGBDitherYV12MMX1X;
             } else {
-/*printf("Using C 32-bit dither\n");*/
+/* printf("Using C 32-bit dither\n"); */
                 swdata->Display1X = Color32DitherYV12Mod1X;
             }
 #else
@@ -1011,10 +1012,8 @@ SDL_SW_SetupYUVDisplay(SDL_SW_YUVTexture * swdata, Uint32 target_format)
         break;
     }
 
-    if (swdata->display) {
-        SDL_FreeSurface(swdata->display);
-        swdata->display = NULL;
-    }
+    SDL_FreeSurface(swdata->display);
+    swdata->display = NULL;
     return 0;
 }
 
@@ -1029,12 +1028,6 @@ SDL_SW_CreateYUVTexture(Uint32 format, int w, int h)
     int i;
     int CR, CB;
 
-    swdata = (SDL_SW_YUVTexture *) SDL_calloc(1, sizeof(*swdata));
-    if (!swdata) {
-        SDL_OutOfMemory();
-        return NULL;
-    }
-
     switch (format) {
     case SDL_PIXELFORMAT_YV12:
     case SDL_PIXELFORMAT_IYUV:
@@ -1043,8 +1036,13 @@ SDL_SW_CreateYUVTexture(Uint32 format, int w, int h)
     case SDL_PIXELFORMAT_YVYU:
         break;
     default:
-        SDL_SW_DestroyYUVTexture(swdata);
         SDL_SetError("Unsupported YUV format");
+        return NULL;
+    }
+
+    swdata = (SDL_SW_YUVTexture *) SDL_calloc(1, sizeof(*swdata));
+    if (!swdata) {
+        SDL_OutOfMemory();
         return NULL;
     }
 
@@ -1095,7 +1093,7 @@ SDL_SW_CreateYUVTexture(Uint32 format, int w, int h)
         swdata->planes[0] = swdata->pixels;
         break;
     default:
-        /* We should never get here (caught above) */
+        SDL_assert(0 && "We should never get here (caught above)");
         break;
     }
 
@@ -1187,6 +1185,61 @@ SDL_SW_UpdateYUVTexture(SDL_SW_YUVTexture * swdata, const SDL_Rect * rect,
 }
 
 int
+SDL_SW_UpdateYUVTexturePlanar(SDL_SW_YUVTexture * swdata, const SDL_Rect * rect,
+                              const Uint8 *Yplane, int Ypitch,
+                              const Uint8 *Uplane, int Upitch,
+                              const Uint8 *Vplane, int Vpitch)
+{
+    const Uint8 *src;
+    Uint8 *dst;
+    int row;
+    size_t length;
+
+    /* Copy the Y plane */
+    src = Yplane;
+    dst = swdata->pixels + rect->y * swdata->w + rect->x;
+    length = rect->w;
+    for (row = 0; row < rect->h; ++row) {
+        SDL_memcpy(dst, src, length);
+        src += Ypitch;
+        dst += swdata->w;
+    }
+
+    /* Copy the U plane */
+    src = Uplane;
+    if (swdata->format == SDL_PIXELFORMAT_IYUV) {
+        dst = swdata->pixels + swdata->h * swdata->w;
+    } else {
+        dst = swdata->pixels + swdata->h * swdata->w +
+              (swdata->h * swdata->w) / 4;
+    }
+    dst += rect->y/2 * swdata->w/2 + rect->x/2;
+    length = rect->w / 2;
+    for (row = 0; row < rect->h/2; ++row) {
+        SDL_memcpy(dst, src, length);
+        src += Upitch;
+        dst += swdata->w/2;
+    }
+
+    /* Copy the V plane */
+    src = Vplane;
+    if (swdata->format == SDL_PIXELFORMAT_YV12) {
+        dst = swdata->pixels + swdata->h * swdata->w;
+    } else {
+        dst = swdata->pixels + swdata->h * swdata->w +
+              (swdata->h * swdata->w) / 4;
+    }
+    dst += rect->y/2 * swdata->w/2 + rect->x/2;
+    length = rect->w / 2;
+    for (row = 0; row < rect->h/2; ++row) {
+        SDL_memcpy(dst, src, length);
+        src += Vpitch;
+        dst += swdata->w/2;
+    }
+    return 0;
+}
+
+int
 SDL_SW_LockYUVTexture(SDL_SW_YUVTexture * swdata, const SDL_Rect * rect,
                       void **pixels, int *pitch)
 {
@@ -1202,7 +1255,11 @@ SDL_SW_LockYUVTexture(SDL_SW_YUVTexture * swdata, const SDL_Rect * rect,
         break;
     }
 
-    *pixels = swdata->planes[0] + rect->y * swdata->pitches[0] + rect->x * 2;
+    if (rect) {
+        *pixels = swdata->planes[0] + rect->y * swdata->pitches[0] + rect->x * 2;
+    } else {
+        *pixels = swdata->planes[0];
+    }
     *pitch = swdata->pitches[0];
     return 0;
 }
@@ -1331,21 +1388,11 @@ void
 SDL_SW_DestroyYUVTexture(SDL_SW_YUVTexture * swdata)
 {
     if (swdata) {
-        if (swdata->pixels) {
-            SDL_free(swdata->pixels);
-        }
-        if (swdata->colortab) {
-            SDL_free(swdata->colortab);
-        }
-        if (swdata->rgb_2_pix) {
-            SDL_free(swdata->rgb_2_pix);
-        }
-        if (swdata->stretch) {
-            SDL_FreeSurface(swdata->stretch);
-        }
-        if (swdata->display) {
-            SDL_FreeSurface(swdata->display);
-        }
+        SDL_free(swdata->pixels);
+        SDL_free(swdata->colortab);
+        SDL_free(swdata->rgb_2_pix);
+        SDL_FreeSurface(swdata->stretch);
+        SDL_FreeSurface(swdata->display);
         SDL_free(swdata);
     }
 }

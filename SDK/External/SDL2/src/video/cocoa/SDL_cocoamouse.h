@@ -33,7 +33,12 @@ extern void Cocoa_QuitMouse(_THIS);
 typedef struct {
     int deltaXOffset;
     int deltaYOffset;
+    void *tapdata;
 } SDL_MouseData;
+
+@interface NSCursor (InvisibleCursor)
++ (NSCursor *)invisibleCursor;
+@end
 
 #endif /* _SDL_cocoamouse_h */
 

@@ -32,13 +32,31 @@
 #include "SDL_cocoavideo.h"
 #include "SDL_cocoashape.h"
 #include "SDL_cocoamouse.h"
+#include "SDL_cocoaopengl.h"
 
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 1070
+/* Taken from AppKit/NSOpenGLView.h in 10.8 SDK. */
+@interface NSView (NSOpenGLSurfaceResolution)
+- (BOOL)wantsBestResolutionOpenGLSurface;
+- (void)setWantsBestResolutionOpenGLSurface:(BOOL)flag;
+@end
+#endif
 
 static Uint32 s_moveHack;
 
-static __inline__ void ConvertNSRect(NSRect *r)
+static void ConvertNSRect(NSRect *r)
 {
     r->origin.y = CGDisplayPixelsHigh(kCGDirectMainDisplay) - r->origin.y - r->size.height;
+}
+
+static void ScheduleContextUpdates(SDL_WindowData *data)
+{
+    NSMutableArray *contexts = data->nscontexts;
+    @synchronized (contexts) {
+        for (SDLOpenGLContext *context in contexts) {
+            [context scheduleUpdate];
+        }
+    }
 }
 
 @implementation Cocoa_WindowListener
@@ -51,6 +69,7 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
     _data = data;
     observingVisible = YES;
+    wasCtrlLeft = NO;
     wasVisible = [window isVisible];
 
     center = [NSNotificationCenter defaultCenter];
@@ -67,9 +86,10 @@ static __inline__ void ConvertNSRect(NSRect *r)
         [window setDelegate:self];
     }
 
-    // Haven't found a delegate / notification that triggers when the window is
-    // ordered out (is not visible any more). You can be ordered out without
-    // minimizing, so DidMiniaturize doesn't work. (e.g. -[NSWindow orderOut:])
+    /* Haven't found a delegate / notification that triggers when the window is
+     * ordered out (is not visible any more). You can be ordered out without
+     * minimizing, so DidMiniaturize doesn't work. (e.g. -[NSWindow orderOut:])
+     */
     [window addObserver:self
              forKeyPath:@"visible"
                 options:NSKeyValueObservingOptionNew
@@ -80,11 +100,9 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
     [view setNextResponder:self];
 
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
     if ([view respondsToSelector:@selector(setAcceptsTouchEvents:)]) {
         [view setAcceptsTouchEvents:YES];
     }
-#endif
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath
@@ -132,6 +150,7 @@ static __inline__ void ConvertNSRect(NSRect *r)
     NSNotificationCenter *center;
     NSWindow *window = _data->nswindow;
     NSView *view = [window contentView];
+    NSArray *windows = nil;
 
     center = [NSNotificationCenter defaultCenter];
 
@@ -156,6 +175,21 @@ static __inline__ void ConvertNSRect(NSRect *r)
     if ([view nextResponder] == self) {
         [view setNextResponder:nil];
     }
+
+    /* Make the next window in the z-order Key. If we weren't the foreground
+       when closed, this is a no-op.
+       !!! FIXME: Note that this is a hack, and there are corner cases where
+       !!! FIXME:  this fails (such as the About box). The typical nib+RunLoop
+       !!! FIXME:  handles this for Cocoa apps, but we bypass all that in SDL.
+       !!! FIXME:  We should remove this code when we find a better way to
+       !!! FIXME:  have the system do this for us. See discussion in
+       !!! FIXME:   http://bugzilla.libsdl.org/show_bug.cgi?id=1825
+    */
+    windows = [NSApp orderedWindows];
+    if ([windows count] > 0) {
+        NSWindow *win = (NSWindow *) [windows objectAtIndex:0];
+        [win makeKeyAndOrderFront:self];
+    }
 }
 
 - (BOOL)windowShouldClose:(id)sender
@@ -172,7 +206,6 @@ static __inline__ void ConvertNSRect(NSRect *r)
 - (void)windowDidMove:(NSNotification *)aNotification
 {
     int x, y;
-    SDL_VideoDevice *device = SDL_GetVideoDevice();
     SDL_Window *window = _data->window;
     NSWindow *nswindow = _data->nswindow;
     NSRect rect = [nswindow contentRectForFrameRect:[nswindow frame]];
@@ -196,16 +229,13 @@ static __inline__ void ConvertNSRect(NSRect *r)
     x = (int)rect.origin.x;
     y = (int)rect.origin.y;
 
-    if (window == device->current_glwin) {
-        [((NSOpenGLContext *) device->current_glctx) update];
-    }
+    ScheduleContextUpdates(_data);
 
     SDL_SendWindowEvent(window, SDL_WINDOWEVENT_MOVED, x, y);
 }
 
 - (void)windowDidResize:(NSNotification *)aNotification
 {
-    SDL_VideoDevice *device = SDL_GetVideoDevice();
     int x, y, w, h;
     NSRect rect = [_data->nswindow contentRectForFrameRect:[_data->nswindow frame]];
     ConvertNSRect(&rect);
@@ -216,14 +246,19 @@ static __inline__ void ConvertNSRect(NSRect *r)
     if (SDL_IsShapedWindow(_data->window))
         Cocoa_ResizeWindowShape(_data->window);
 
-    if (_data->window == device->current_glwin) {
-        [((NSOpenGLContext *) device->current_glctx) update];
-    }
+    ScheduleContextUpdates(_data);
 
     /* The window can move during a resize event, such as when maximizing
        or resizing from a corner */
     SDL_SendWindowEvent(_data->window, SDL_WINDOWEVENT_MOVED, x, y);
     SDL_SendWindowEvent(_data->window, SDL_WINDOWEVENT_RESIZED, w, h);
+
+    const BOOL zoomed = [_data->nswindow isZoomed];
+    if (!zoomed) {
+        SDL_SendWindowEvent(_data->window, SDL_WINDOWEVENT_RESTORED, 0, 0);
+    } else if (zoomed) {
+        SDL_SendWindowEvent(_data->window, SDL_WINDOWEVENT_MAXIMIZED, 0, 0);
+    }
 }
 
 - (void)windowDidMiniaturize:(NSNotification *)aNotification
@@ -239,12 +274,13 @@ static __inline__ void ConvertNSRect(NSRect *r)
 - (void)windowDidBecomeKey:(NSNotification *)aNotification
 {
     SDL_Window *window = _data->window;
+    SDL_Mouse *mouse = SDL_GetMouse();
 
     /* We're going to get keyboard events, since we're key. */
     SDL_SetKeyboardFocus(window);
 
     /* If we just gained focus we need the updated mouse position */
-    {
+    if (!mouse->relative_mode) {
         NSPoint point;
         int x, y;
 
@@ -254,7 +290,6 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
         if (x >= 0 && x < window->w && y >= 0 && y < window->h) {
             SDL_SendMouseMotion(window, 0, 0, x, y);
-            SDL_SetCursor(NULL);
         }
     }
 
@@ -275,27 +310,29 @@ static __inline__ void ConvertNSRect(NSRect *r)
     }
 }
 
-// We'll respond to key events by doing nothing so we don't beep.
-// We could handle key messages here, but we lose some in the NSApp dispatch,
-// where they get converted to action messages, etc.
+/* We'll respond to key events by doing nothing so we don't beep.
+ * We could handle key messages here, but we lose some in the NSApp dispatch,
+ * where they get converted to action messages, etc.
+ */
 - (void)flagsChanged:(NSEvent *)theEvent
 {
-    //Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);
+    /*Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);*/
 }
 - (void)keyDown:(NSEvent *)theEvent
 {
-    //Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);
+    /*Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);*/
 }
 - (void)keyUp:(NSEvent *)theEvent
 {
-    //Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);
+    /*Cocoa_HandleKeyEvent(SDL_GetVideoDevice(), theEvent);*/
 }
 
-// We'll respond to selectors by doing nothing so we don't beep.
-// The escape key gets converted to a "cancel" selector, etc.
+/* We'll respond to selectors by doing nothing so we don't beep.
+ * The escape key gets converted to a "cancel" selector, etc.
+ */
 - (void)doCommandBySelector:(SEL)aSelector
 {
-    //NSLog(@"doCommandBySelector: %@\n", NSStringFromSelector(aSelector));
+    /*NSLog(@"doCommandBySelector: %@\n", NSStringFromSelector(aSelector));*/
 }
 
 - (void)mouseDown:(NSEvent *)theEvent
@@ -304,7 +341,13 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
     switch ([theEvent buttonNumber]) {
     case 0:
-        button = SDL_BUTTON_LEFT;
+        if ([theEvent modifierFlags] & NSControlKeyMask) {
+            wasCtrlLeft = YES;
+            button = SDL_BUTTON_RIGHT;
+        } else {
+            wasCtrlLeft = NO;
+            button = SDL_BUTTON_LEFT;
+        }
         break;
     case 1:
         button = SDL_BUTTON_RIGHT;
@@ -335,7 +378,12 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
     switch ([theEvent buttonNumber]) {
     case 0:
-        button = SDL_BUTTON_LEFT;
+        if (wasCtrlLeft) {
+            button = SDL_BUTTON_RIGHT;
+            wasCtrlLeft = NO;
+        } else {
+            button = SDL_BUTTON_LEFT;
+        }
         break;
     case 1:
         button = SDL_BUTTON_RIGHT;
@@ -390,6 +438,11 @@ static __inline__ void ConvertNSRect(NSRect *r)
                 y = window->h - 1;
             }
 
+#if !SDL_MAC_NO_SANDBOX
+            /* When SDL_MAC_NO_SANDBOX is set, this is handled by
+             * SDL_cocoamousetap.m.
+             */
+
             cgpoint.x = window->x + x;
             cgpoint.y = window->y + y;
 
@@ -400,6 +453,7 @@ static __inline__ void ConvertNSRect(NSRect *r)
             CGSetLocalEventsSuppressionInterval(0.0);
             CGDisplayMoveCursorToPoint(kCGDirectMainDisplay, cgpoint);
             CGSetLocalEventsSuppressionInterval(0.25);
+#endif
         }
     }
     SDL_SendMouseMotion(window, 0, 0, x, y);
@@ -447,7 +501,6 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
 - (void)handleTouches:(cocoaTouchType)type withEvent:(NSEvent *)event
 {
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
     NSSet *touches = 0;
     NSEnumerator *enumerator;
     NSTouch *touch;
@@ -473,7 +526,7 @@ static __inline__ void ConvertNSRect(NSRect *r)
             if (SDL_AddTouch(touchId, "") < 0) {
                 return;
             }
-        } 
+        }
 
         const SDL_FingerID fingerId = (SDL_FingerID)(intptr_t)[touch identity];
         float x = [touch normalizedPosition].x;
@@ -496,7 +549,6 @@ static __inline__ void ConvertNSRect(NSRect *r)
 
         touch = (NSTouch*)[enumerator nextObject];
     }
-#endif /* MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 */
 }
 
 @end
@@ -520,6 +572,7 @@ static __inline__ void ConvertNSRect(NSRect *r)
 @end
 
 @interface SDLView : NSView
+
 /* The default implementation doesn't pass rightMouseDown to responder chain */
 - (void)rightMouseDown:(NSEvent *)theEvent;
 @end
@@ -529,6 +582,20 @@ static __inline__ void ConvertNSRect(NSRect *r)
 {
     [[self nextResponder] rightMouseDown:theEvent];
 }
+
+- (void)resetCursorRects
+{
+    [super resetCursorRects];
+    SDL_Mouse *mouse = SDL_GetMouse();
+
+    if (mouse->cursor_shown && mouse->cur_cursor && !mouse->relative_mode) {
+        [self addCursorRect:[self bounds]
+                     cursor:mouse->cur_cursor->driverdata];
+    } else {
+        [self addCursorRect:[self bounds]
+                     cursor:[NSCursor invisibleCursor]];
+    }
+}
 @end
 
 static unsigned int
@@ -536,18 +603,18 @@ GetWindowStyle(SDL_Window * window)
 {
     unsigned int style;
 
-	if (window->flags & SDL_WINDOW_FULLSCREEN) {
+    if (window->flags & SDL_WINDOW_FULLSCREEN) {
         style = NSBorderlessWindowMask;
-	} else {
-		if (window->flags & SDL_WINDOW_BORDERLESS) {
-			style = NSBorderlessWindowMask;
-		} else {
-			style = (NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask);
-		}
-		if (window->flags & SDL_WINDOW_RESIZABLE) {
-			style |= NSResizableWindowMask;
-		}
-	}
+    } else {
+        if (window->flags & SDL_WINDOW_BORDERLESS) {
+            style = NSBorderlessWindowMask;
+        } else {
+            style = (NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask);
+        }
+        if (window->flags & SDL_WINDOW_RESIZABLE) {
+            style |= NSResizableWindowMask;
+        }
+    }
     return style;
 }
 
@@ -567,6 +634,7 @@ SetupWindowData(_THIS, SDL_Window * window, NSWindow *nswindow, SDL_bool created
     data->nswindow = nswindow;
     data->created = created;
     data->videodata = videodata;
+    data->nscontexts = [[NSMutableArray alloc] init];
 
     pool = [[NSAutoreleasePool alloc] init];
 
@@ -673,10 +741,18 @@ Cocoa_CreateWindow(_THIS, SDL_Window * window)
         }
     }
     nswindow = [[SDLWindow alloc] initWithContentRect:rect styleMask:style backing:NSBackingStoreBuffered defer:NO screen:screen];
+    [nswindow setBackgroundColor:[NSColor blackColor]];
 
-    // Create a default view for this window
+    /* Create a default view for this window */
     rect = [nswindow contentRectForFrameRect:[nswindow frame]];
     NSView *contentView = [[SDLView alloc] initWithFrame:rect];
+
+    if ((window->flags & SDL_WINDOW_ALLOW_HIGHDPI) > 0) {
+        if ([contentView respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)]) {
+            [contentView setWantsBestResolutionOpenGLSurface:YES];
+        }
+    }
+
     [nswindow setContentView: contentView];
     [contentView release];
 
@@ -744,7 +820,8 @@ void
 Cocoa_SetWindowPosition(_THIS, SDL_Window * window)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    NSWindow *nswindow = ((SDL_WindowData *) window->driverdata)->nswindow;
+    SDL_WindowData *windata = (SDL_WindowData *) window->driverdata;
+    NSWindow *nswindow = windata->nswindow;
     NSRect rect;
     Uint32 moveHack;
 
@@ -759,9 +836,7 @@ Cocoa_SetWindowPosition(_THIS, SDL_Window * window)
     [nswindow setFrameOrigin:rect.origin];
     s_moveHack = moveHack;
 
-    if (window == _this->current_glwin) {
-        [((NSOpenGLContext *) _this->current_glctx) update];
-    }
+    ScheduleContextUpdates(windata);
 
     [pool release];
 }
@@ -778,9 +853,7 @@ Cocoa_SetWindowSize(_THIS, SDL_Window * window)
     size.height = window->h;
     [nswindow setContentSize:size];
 
-    if (window == _this->current_glwin) {
-        [((NSOpenGLContext *) _this->current_glctx) update];
-    }
+    ScheduleContextUpdates(windata);
 
     [pool release];
 }
@@ -790,13 +863,13 @@ Cocoa_SetWindowMinimumSize(_THIS, SDL_Window * window)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     SDL_WindowData *windata = (SDL_WindowData *) window->driverdata;
-        
+
     NSSize minSize;
     minSize.width = window->min_w;
     minSize.height = window->min_h;
-        
+
     [windata->nswindow setContentMinSize:minSize];
-    
+
     [pool release];
 }
 
@@ -805,13 +878,13 @@ Cocoa_SetWindowMaximumSize(_THIS, SDL_Window * window)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     SDL_WindowData *windata = (SDL_WindowData *) window->driverdata;
-        
+
     NSSize maxSize;
     maxSize.width = window->max_w;
     maxSize.height = window->max_h;
-        
+
     [windata->nswindow setContentMaxSize:maxSize];
-    
+
     [pool release];
 }
 
@@ -847,8 +920,13 @@ Cocoa_RaiseWindow(_THIS, SDL_Window * window)
     SDL_WindowData *windowData = ((SDL_WindowData *) window->driverdata);
     NSWindow *nswindow = windowData->nswindow;
 
+    /* makeKeyAndOrderFront: has the side-effect of deminiaturizing and showing
+       a minimized or hidden window, so check for that before showing it.
+     */
     [windowData->listener pauseVisibleObservation];
-    [nswindow makeKeyAndOrderFront:nil];
+    if (![nswindow isMiniaturized] && [nswindow isVisible]) {
+        [nswindow makeKeyAndOrderFront:nil];
+    }
     [windowData->listener resumeVisibleObservation];
 
     [pool release];
@@ -858,13 +936,12 @@ void
 Cocoa_MaximizeWindow(_THIS, SDL_Window * window)
 {
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    NSWindow *nswindow = ((SDL_WindowData *) window->driverdata)->nswindow;
+    SDL_WindowData *windata = (SDL_WindowData *) window->driverdata;
+    NSWindow *nswindow = windata->nswindow;
 
     [nswindow zoom:nil];
 
-    if (window == _this->current_glwin) {
-        [((NSOpenGLContext *) _this->current_glctx) update];
-    }
+    ScheduleContextUpdates(windata);
 
     [pool release];
 }
@@ -916,18 +993,15 @@ Cocoa_RebuildWindow(SDL_WindowData * data, NSWindow * nswindow, unsigned style)
 void
 Cocoa_SetWindowBordered(_THIS, SDL_Window * window, SDL_bool bordered)
 {
-    /* this message arrived in 10.6. You're out of luck on older OSes. */
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSWindow *nswindow = ((SDL_WindowData *) window->driverdata)->nswindow;
     if ([nswindow respondsToSelector:@selector(setStyleMask:)]) {
         [nswindow setStyleMask:GetWindowStyle(window)];
         if (bordered) {
-            Cocoa_SetWindowTitle(_this, window);  // this got blanked out.
+            Cocoa_SetWindowTitle(_this, window);  /* this got blanked out. */
         }
     }
     [pool release];
-#endif
 }
 
 void
@@ -984,8 +1058,8 @@ Cocoa_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display
     }
 
     s_moveHack = 0;
-    [nswindow setFrameOrigin:rect.origin];
     [nswindow setContentSize:rect.size];
+    [nswindow setFrameOrigin:rect.origin];
     s_moveHack = SDL_GetTicks();
 
     /* When the window style changes the title is cleared */
@@ -993,22 +1067,20 @@ Cocoa_SetWindowFullscreen(_THIS, SDL_Window * window, SDL_VideoDisplay * display
         Cocoa_SetWindowTitle(_this, window);
     }
 
-#ifdef FULLSCREEN_TOGGLEABLE
     if (SDL_ShouldAllowTopmost() && fullscreen) {
         /* OpenGL is rendering to the window, so make it visible! */
         [nswindow setLevel:CGShieldingWindowLevel()];
     } else {
         [nswindow setLevel:kCGNormalWindowLevel];
     }
-#endif
 
-    [data->listener pauseVisibleObservation];
-    [nswindow makeKeyAndOrderFront:nil];
-    [data->listener resumeVisibleObservation];
-
-    if (window == _this->current_glwin) {
-        [((NSOpenGLContext *) _this->current_glctx) update];
+    if ([nswindow isVisible] || fullscreen) {
+        [data->listener pauseVisibleObservation];
+        [nswindow makeKeyAndOrderFront:nil];
+        [data->listener resumeVisibleObservation];
     }
+
+    ScheduleContextUpdates(data);
 
     [pool release];
 }
@@ -1076,17 +1148,17 @@ Cocoa_SetWindowGrab(_THIS, SDL_Window * window, SDL_bool grabbed)
         cgpoint.y = window->y + y;
         CGDisplayMoveCursorToPoint(kCGDirectMainDisplay, cgpoint);
     }
-	
-    if ( window->flags & SDL_WINDOW_FULLSCREEN ) {
-		SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
 
-		if (SDL_ShouldAllowTopmost() && (window->flags & SDL_WINDOW_INPUT_FOCUS)) {
-			/* OpenGL is rendering to the window, so make it visible! */
-			[data->nswindow setLevel:CGShieldingWindowLevel()];
-		} else {
-			[data->nswindow setLevel:kCGNormalWindowLevel];
-		}
-	}
+    if ( window->flags & SDL_WINDOW_FULLSCREEN ) {
+        SDL_WindowData *data = (SDL_WindowData *) window->driverdata;
+
+        if (SDL_ShouldAllowTopmost() && (window->flags & SDL_WINDOW_INPUT_FOCUS)) {
+            /* OpenGL is rendering to the window, so make it visible! */
+            [data->nswindow setLevel:CGShieldingWindowLevel()];
+        } else {
+            [data->nswindow setLevel:kCGNormalWindowLevel];
+        }
+    }
 }
 
 void
@@ -1101,6 +1173,14 @@ Cocoa_DestroyWindow(_THIS, SDL_Window * window)
         if (data->created) {
             [data->nswindow close];
         }
+
+        NSArray *contexts = [[data->nscontexts copy] autorelease];
+        for (SDLOpenGLContext *context in contexts) {
+            /* Calling setWindow:NULL causes the context to remove itself from the context list. */            
+            [context setWindow:NULL];
+        }
+        [data->nscontexts release];
+
         SDL_free(data);
     }
     [pool release];

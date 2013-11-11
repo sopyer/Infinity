@@ -36,6 +36,7 @@
 #include "SDL_androidclipboard.h"
 #include "SDL_androidevents.h"
 #include "SDL_androidkeyboard.h"
+#include "SDL_androidtouch.h"
 #include "SDL_androidwindow.h"
 
 #define ANDROID_VID_DRIVER_NAME "Android"
@@ -44,24 +45,22 @@
 static int Android_VideoInit(_THIS);
 static void Android_VideoQuit(_THIS);
 
+#include "../SDL_egl.h"
 /* GL functions (SDL_androidgl.c) */
-extern int Android_GL_LoadLibrary(_THIS, const char *path);
-extern void *Android_GL_GetProcAddress(_THIS, const char *proc);
-extern void Android_GL_UnloadLibrary(_THIS);
-//extern int *Android_GL_GetVisual(_THIS, Display * display, int screen);
-extern SDL_GLContext Android_GL_CreateContext(_THIS, SDL_Window * window);
-extern int Android_GL_MakeCurrent(_THIS, SDL_Window * window,
-                              SDL_GLContext context);
-extern int Android_GL_SetSwapInterval(_THIS, int interval);
-extern int Android_GL_GetSwapInterval(_THIS);
-extern void Android_GL_SwapWindow(_THIS, SDL_Window * window);
-extern void Android_GL_DeleteContext(_THIS, SDL_GLContext context);
+extern SDL_GLContext Android_GLES_CreateContext(_THIS, SDL_Window * window);
+extern int Android_GLES_MakeCurrent(_THIS, SDL_Window * window, SDL_GLContext context);
+extern void Android_GLES_SwapWindow(_THIS, SDL_Window * window);
+extern int Android_GLES_LoadLibrary(_THIS, const char *path);
+#define Android_GLES_GetProcAddress SDL_EGL_GetProcAddress
+#define Android_GLES_UnloadLibrary SDL_EGL_UnloadLibrary
+#define Android_GLES_SetSwapInterval SDL_EGL_SetSwapInterval
+#define Android_GLES_GetSwapInterval SDL_EGL_GetSwapInterval
+#define Android_GLES_DeleteContext SDL_EGL_DeleteContext
 
 /* Android driver bootstrap functions */
 
 
-// These are filled in with real values in Android_SetScreenResolution on 
-// init (before SDL_main())
+/* These are filled in with real values in Android_SetScreenResolution on init (before SDL_main()) */
 int Android_ScreenWidth = 0;
 int Android_ScreenHeight = 0;
 Uint32 Android_ScreenFormat = SDL_PIXELFORMAT_UNKNOWN;
@@ -85,7 +84,6 @@ Android_DeleteDevice(SDL_VideoDevice * device)
 static SDL_VideoDevice *
 Android_CreateDevice(int devindex)
 {
-    printf("Creating video device\n");
     SDL_VideoDevice *device;
     SDL_VideoData *data;
 
@@ -117,15 +115,15 @@ Android_CreateDevice(int devindex)
     device->free = Android_DeleteDevice;
 
     /* GL pointers */
-    device->GL_LoadLibrary = Android_GL_LoadLibrary;
-    device->GL_GetProcAddress = Android_GL_GetProcAddress;
-    device->GL_UnloadLibrary = Android_GL_UnloadLibrary;
-    device->GL_CreateContext = Android_GL_CreateContext;
-    device->GL_MakeCurrent = Android_GL_MakeCurrent;
-    device->GL_SetSwapInterval = Android_GL_SetSwapInterval;
-    device->GL_GetSwapInterval = Android_GL_GetSwapInterval;
-    device->GL_SwapWindow = Android_GL_SwapWindow;
-    device->GL_DeleteContext = Android_GL_DeleteContext;
+    device->GL_LoadLibrary = Android_GLES_LoadLibrary;
+    device->GL_GetProcAddress = Android_GLES_GetProcAddress;
+    device->GL_UnloadLibrary = Android_GLES_UnloadLibrary;
+    device->GL_CreateContext = Android_GLES_CreateContext;
+    device->GL_MakeCurrent = Android_GLES_MakeCurrent;
+    device->GL_SetSwapInterval = Android_GLES_SetSwapInterval;
+    device->GL_GetSwapInterval = Android_GLES_GetSwapInterval;
+    device->GL_SwapWindow = Android_GLES_SwapWindow;
+    device->GL_DeleteContext = Android_GLES_DeleteContext;
 
     /* Text input */
     device->StartTextInput = Android_StartTextInput;
@@ -168,6 +166,8 @@ Android_VideoInit(_THIS)
 
     Android_InitKeyboard();
 
+    Android_InitTouch();
+
     /* We're done! */
     return 0;
 }
@@ -182,7 +182,7 @@ void
 Android_SetScreenResolution(int width, int height, Uint32 format)
 {
     Android_ScreenWidth = width;
-    Android_ScreenHeight = height;   
+    Android_ScreenHeight = height;
     Android_ScreenFormat = format;
 
     if (Android_Window) {

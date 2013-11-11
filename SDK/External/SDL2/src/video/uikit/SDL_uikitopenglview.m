@@ -47,6 +47,7 @@
       depthBits:(int)depthBits
       stencilBits:(int)stencilBits
       majorVersion:(int)majorVersion
+      shareGroup:(EAGLSharegroup*)shareGroup
 {
     depthBufferFormat = 0;
 
@@ -71,9 +72,9 @@
                                         [NSNumber numberWithBool: retained], kEAGLDrawablePropertyRetainedBacking, colorFormat, kEAGLDrawablePropertyColorFormat, nil];
 
         if (majorVersion > 1) {
-            context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES2];
+            context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2 sharegroup:shareGroup];
         } else {
-            context = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES1];
+            context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES1 sharegroup:shareGroup];
         }
         if (!context || ![EAGLContext setCurrentContext:context]) {
             [self release];
@@ -120,6 +121,8 @@
         if (glCheckFramebufferStatusOES(GL_FRAMEBUFFER_OES) != GL_FRAMEBUFFER_COMPLETE_OES) {
             return NO;
         }
+
+        glBindRenderbufferOES(GL_RENDERBUFFER_OES, viewRenderbuffer);
         /* end create buffers */
 
         self.autoresizingMask = (UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight);
@@ -147,6 +150,8 @@
         glBindRenderbufferOES(GL_RENDERBUFFER_OES, depthRenderbuffer);
         glRenderbufferStorageOES(GL_RENDERBUFFER_OES, depthBufferFormat, backingWidth, backingHeight);
     }
+
+    glBindRenderbufferOES(GL_RENDERBUFFER_OES, viewRenderbuffer);
 }
 
 - (void)setAnimationCallback:(int)interval
@@ -165,9 +170,10 @@
 
 - (void)startAnimation
 {
-    // CADisplayLink is API new to iPhone SDK 3.1. Compiling against earlier versions will result in a warning, but can be dismissed
-    // if the system version runtime check for CADisplayLink exists in -initWithCoder:. 
-    
+    /* CADisplayLink is API new to iPhone SDK 3.1.
+     * Compiling against earlier versions will result in a warning, but can be dismissed
+     * if the system version runtime check for CADisplayLink exists in -initWithCoder:.
+     */
     displayLink = [NSClassFromString(@"CADisplayLink") displayLinkWithTarget:self selector:@selector(doLoop:)];
     [displayLink setFrameInterval:animationInterval];
     [displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
@@ -181,7 +187,7 @@
 
 - (void)doLoop:(id)sender
 {
-    // Don't run the game loop while a messagebox is up
+    /* Don't run the game loop while a messagebox is up */
     if (!UIKit_ShowingMessageBox()) {
         animationCallback(animationCallbackParam);
     }
@@ -195,7 +201,9 @@
 
 - (void)swapBuffers
 {
-    glBindRenderbufferOES(GL_RENDERBUFFER_OES, viewRenderbuffer);
+    /* viewRenderbuffer should always be bound here. Code that binds something
+        else is responsible for rebinding viewRenderbuffer, to reduce
+        duplicate state changes. */
     [context presentRenderbuffer:GL_RENDERBUFFER_OES];
 }
 
