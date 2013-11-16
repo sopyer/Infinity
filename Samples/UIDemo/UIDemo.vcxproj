@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{0F479481-9CEC-4B26-A1FC-1758485BF01C}</ProjectGuid>
+    <ProjectGuid>{DE757721-DDED-4EEC-95B9-3A954B1EDFB4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>SVGRendering</RootNamespace>
+    <RootNamespace>UIDemo</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -39,15 +39,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(SolutionDir)SDK\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
     <LibraryPath>$(SolutionDir)SDK\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
-    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
     <IncludePath>$(SolutionDir)SDK\include;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
     <LibraryPath>$(SolutionDir)SDK\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
-    <IntDir>$(SolutionDir)Temp\Samples\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -56,14 +56,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;</AdditionalIncludeDirectories>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>winmm.lib;scintilla_d.lib;utils_d.lib;physfs_d.lib;opengl32.lib;framework_d.lib;sdl2_d.lib;sdl2main_d.lib;vg_d.lib;freetype_d.lib;zlib_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(OutDir);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -75,7 +73,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\SDK\framework;..\..\SDK\glClasses;..\..\SDK\utils;..\..\SDK;..\..\SDK\External\glFont;..\..\SDK\External\FreeType\include;..\..\SDK\External;..\..\SDK\VG;..\..\SDK\include;..\..\SDK\External\SDL\include;..\..\SDK\framework\SOIL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -83,17 +81,20 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>winmm.lib;scintilla.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;utils.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>
-      </AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="nanosvg.c" />
+    <ClCompile Include="nanovg.c" />
+    <ClCompile Include="stb_image.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="uidemo.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nanosvg.h" />
-    <ClInclude Include="vgtest.h" />
+    <ClInclude Include="fontstash.h" />
+    <ClInclude Include="glnanovg.h" />
+    <ClInclude Include="nanovg.h" />
+    <ClInclude Include="stb_truetype.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
