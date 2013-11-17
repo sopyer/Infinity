@@ -3,6 +3,7 @@ debug
 Release
 release
 ipch
+projects
 Temp
 temp
 *.suo
