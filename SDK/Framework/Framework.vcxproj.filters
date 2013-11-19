@@ -30,7 +30,6 @@
     <ClCompile Include="UI.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="ContextWin.cpp" />
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
     <ClCompile Include="ResourceHelpers.cpp" />
@@ -82,7 +81,6 @@
     <ClInclude Include="UI.h">
       <Filter>UI</Filter>
     </ClInclude>
-    <ClInclude Include="Context.h" />
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />
     <ClInclude Include="Timer.h" />

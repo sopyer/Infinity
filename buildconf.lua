@@ -3,14 +3,10 @@ function sample ( params )
         kind        "ConsoleApp"
         language    "C++"
         vpaths {
-            ["Headers"] = "**.h",
-            ["Source"]  = {"**.cpp", "**.c"}
+            ["Headers"] = { "**.h", "**.inl" },
+            ["Source"]  = { "**.cpp", "**.c" }
         }
-        files {
-            "Samples/"..params.name.."/*.c",
-            "Samples/"..params.name.."/*.cpp",
-            "Samples/"..params.name.."/*.h"
-        }
+        files ( params.src )
         includedirs {
             "SDK",
             "SDK/include",
@@ -21,12 +17,11 @@ function sample ( params )
             "SDK/External",
             "SDK/External/FreeType/include",
         }
-        libdirs {
-            "SDK/lib"
-        }
+        libdirs { "SDK/lib" }
 
         configuration "windows"
-            links       { "glu32","opengl32", "gdi32", "winmm", "user32" }
+            defines     { "WIN32" }
+            links       { "glu32", "opengl32", "gdi32", "winmm", "user32" }
 
         configuration "Debug"
             links {
@@ -38,7 +33,11 @@ function sample ( params )
                 "sdl2main_d",
                 "vg_d",
                 "freetype_d",
-                "zlib_d"
+                "zlib_d",
+                "avcodec",
+                "avformat",
+                "avutil",
+                "openal32"
             }
             defines         { "DEBUG" }
             objdir          ( "temp/Infinity/samples/"..params.name.."/debug" )
@@ -55,7 +54,11 @@ function sample ( params )
                 "sdl2main",
                 "vg",
                 "freetype",
-                "zlib"
+                "zlib",
+                "avcodec",
+                "avformat",
+                "avutil",
+                "openal32"
             }
             defines         { "NDEBUG" }
             objdir          ( "temp/Infinity/samples/"..params.name.."/release" )
@@ -63,3 +66,42 @@ function sample ( params )
             flags           { "EnableSSE2", "OptimizeSize", "Symbols", "ExtraWarnings"}    
  
 end
+
+function library ( params )
+    project ( params.name )
+        kind        "StaticLib"
+        language    "C++"
+        vpaths {
+            ["Headers"] = {"**.h", "**.inl"},
+            ["Source"]  = {"**.cpp", "**.c"}
+        }
+        files ( params.src )
+        includedirs {
+            "SDK",
+            "SDK/include",
+            "SDK/framework",
+            "SDK/VG",
+            "SDK/utils",
+            "SDK/framework/SOIL",
+            "SDK/External",
+            "SDK/External/FreeType/include",
+        }
+
+        configuration "windows"
+            defines     { "WIN32" }
+
+        configuration "Debug"
+            defines         { "DEBUG" }
+            objdir          ( "temp/Infinity/libs/"..params.name.."/debug" )
+            targetsuffix    ( "_d" ) 
+            targetdir       ( "SDK/lib" )
+            flags           { "EnableSSE2", "Symbols", "ExtraWarnings"}
+
+        configuration "Release"
+            defines         { "NDEBUG" }
+            objdir          ( "temp/Infinity/libs/"..params.name.."/release" )
+            targetdir       ( "SDK/lib" )
+            flags           { "EnableSSE2", "OptimizeSize", "Symbols", "ExtraWarnings"}    
+ 
+end
+

@@ -31,7 +31,7 @@ namespace ui
         void addPrograms(size_t count, GLuint* programs);
 
         virtual void onShaderRecompile() {}
-        virtual void onUpdate(float dt) {}
+        virtual void onUpdate(float /*dt*/) {}
         virtual void onPaint() {}
         virtual void onTouch(const ButtonEvent& /*event*/) {}
         virtual void onUntouch(const ButtonEvent& /*event*/) {}

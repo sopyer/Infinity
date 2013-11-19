@@ -23,8 +23,6 @@ class VideoSample: public ui::Stage
             player = mediaCreatePlayer("k:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
         }
 		
-		ctx::Context	mBase, mCtx[2];
-		
 		~VideoSample()
 		{
             mediaDestroyPlayer(player);

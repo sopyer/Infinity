@@ -6,7 +6,6 @@
 
 #include <UI.h>
 #include <ResourceHelpers.h>
-#include <Context.h>
 #include <profiler.h>
 #include <physfs/physfs.h>
 #include <Stage.h>

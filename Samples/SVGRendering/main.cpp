@@ -25,7 +25,6 @@ public:
             vg::Path path = vg::createPath(cur->count, cur->commands, cur->data);
             mPaths.push_back(path);
 
-            unsigned int col = 0xFFFFFFFF;
             vg::Paint paint = vg::createSolidPaint(cur->fillColor);
             mPaints.push_back(paint);
 
@@ -59,7 +58,7 @@ public:
     }
 
 protected:
-    void onUpdate(float dt)
+    void onUpdate(float /*dt*/)
     {
         ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
     }

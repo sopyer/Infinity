@@ -16,12 +16,9 @@ namespace ui
         GLfloat x0, y0, x1, y1;
     };
 
-    enum ControlID
-    {
-        ID_CHECKBOX = 0x01000000,
-        ID_MASK     = 0xFF000000,
-        ID_INVALID  = 0xFFFFFFFF
-    };
+    static const uint32_t ID_CHECKBOX = 0x01000000;
+    static const uint32_t ID_MASK     = 0xFF000000;
+    static const uint32_t ID_INVALID  = 0xFFFFFFFF;
 
     vg::Font defaultFont;
 
@@ -33,12 +30,12 @@ namespace ui
     int   mouseY;
     int   deltaX;
     int   deltaY;
-    uint8_t keyStatePrev[SDL_NUM_SCANCODES];
-    uint8_t keyStateCur[SDL_NUM_SCANCODES];
-    uint8_t mouseStatePrev;
-    uint8_t mouseStateCur;
-    bool    mouseWheelUp;
-    bool    mouseWheelDown;
+    uint8_t  keyStatePrev[SDL_NUM_SCANCODES];
+    uint8_t  keyStateCur[SDL_NUM_SCANCODES];
+    uint32_t mouseStatePrev;
+    uint32_t mouseStateCur;
+    bool     mouseWheelUp;
+    bool     mouseWheelDown;
 
     uint32_t mouseOverAreaID;
     uint32_t mouseTrackID;

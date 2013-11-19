@@ -5,7 +5,7 @@
 
 namespace graphics
 {
-    static const GLuint64 GL_TIMEOUT_INFINITE = ~0;
+    static const GLuint64 GL_TIMEOUT_INFINITE = ~0ull;
     static const GLuint   NUM_FRAMES_DELAY = 2; //2 * number of GPUs
 
     void init();
