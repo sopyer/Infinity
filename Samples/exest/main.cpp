@@ -74,8 +74,7 @@ public:
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
 
-        GLuint prgs[] = {terrain.prgTerrain, terrain.prgInstancedTerrain};
-        addPrograms(2, prgs);
+        addPrograms(1, &terrain.prgTerrain);
     }
 
     ~Exest()
@@ -237,11 +236,6 @@ protected:
         if (ui::keyWasReleased(SDL_SCANCODE_F))
         {
             terrain.drawWireframe = !terrain.drawWireframe;
-        }
-
-        if (ui::keyWasReleased(SDL_SCANCODE_I))
-        {
-            terrain.useInstancing = !terrain.useInstancing;
         }
 
         if (lockView)

@@ -36,20 +36,18 @@ public:
     size_t      maxLevel;
 
     PatchData*	instData;
-    PatchData*	patchDataMem;
     size_t		patchCount;
     size_t		maxPatchCount;
     GLsizei		idxCount;
 
-    bool useInstancing;
     bool drawWireframe;
 
-    GLuint		prgInstancedTerrain, prgTerrain;
+    GLuint		prgTerrain;
     GLuint		geomVBO, instVBO, ibo, ubo;
     GLuint		mHeightmapTex;
     GLuint      mipTexture;
     GLuint      compositeFBO;
-    GLuint		vaoInst, vao;
+    GLuint		vao;
     GLsizei		uniTerrainOffset, uniViewOffset, uniPatchOffset;
 
     void generateGeometry(size_t vertexCount);

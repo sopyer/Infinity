@@ -28,48 +28,23 @@ struct TerrainData
 
 void CDLODTerrain::initialize()
 {
-    useInstancing = true;
     drawWireframe = false;
 
-    char* define;
-
-    // Create non-instanced terrain program
-    define = "#version 330\n";
-    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
-
-#ifdef _DEBUG
-    {
-        GLint structSize;
-        GLint uniTerrain, uniPatch, uniView;
-
-        uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
-        uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
-        uniPatch    = glGetUniformBlockIndex(prgTerrain, "uniPatch");
-
-        glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==sizeof(TerrainData));
-        glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==sizeof(ViewData));
-        glGetActiveUniformBlockiv(prgTerrain, uniPatch, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-        assert(structSize==sizeof(PatchData));
-    }
-#endif
-
     // Create instanced terrain program
-    define = "#version 330\n#define ENABLE_INSTANCING\n";
-    prgInstancedTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, (const char**)&define);
+    const char* define = "#version 330\n#define ENABLE_INSTANCING\n";
+    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, &define);
 
 #ifdef _DEBUG
     {
         GLint structSize;
         GLint uniTerrain, uniView;
 
-        uniTerrain  = glGetUniformBlockIndex(prgInstancedTerrain, "uniTerrain");
-        uniView     = glGetUniformBlockIndex(prgInstancedTerrain, "uniView");
+        uniTerrain  = glGetUniformBlockIndex(prgTerrain, "uniTerrain");
+        uniView     = glGetUniformBlockIndex(prgTerrain, "uniView");
 
-        glGetActiveUniformBlockiv(prgInstancedTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        glGetActiveUniformBlockiv(prgTerrain, uniTerrain, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(TerrainData));
-        glGetActiveUniformBlockiv(prgInstancedTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
+        glGetActiveUniformBlockiv(prgTerrain, uniView, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
         assert(structSize==sizeof(ViewData));
     }
 #endif
@@ -115,8 +90,8 @@ void CDLODTerrain::initialize()
     glGenBuffers(1, &instVBO);
     glGenBuffers(1, &ibo);
 
-    glGenVertexArrays(1, &vaoInst);
-    glBindVertexArray(vaoInst);
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
     glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glVertexAttribDivisor(ATTR_POSITION, 0);
@@ -129,15 +104,6 @@ void CDLODTerrain::initialize()
     glEnableVertexAttribArray(ATTR_POSITION);
     glEnableVertexAttribArray(ATTR_LEVEL);
     glEnableVertexAttribArray(ATTR_PATCH_BASE);
-    glBindVertexArray(0);
-
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-    glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glVertexAttribDivisor(ATTR_POSITION, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glEnableVertexAttribArray(ATTR_POSITION);
     glBindVertexArray(0);
 
     // Assumption - align is power of 2
@@ -153,8 +119,6 @@ void CDLODTerrain::initialize()
     glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-    patchDataMem = (PatchData*)malloc(MAX_PATCH_COUNT*sizeof(PatchData));
-
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);
 }
@@ -165,14 +129,12 @@ void CDLODTerrain::reset()
 
 void CDLODTerrain::cleanup()
 {
-    free(patchDataMem);
     glDeleteBuffers(1, &ubo);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &geomVBO);
     glDeleteBuffers(1, &instVBO);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(prgTerrain);
-    glDeleteProgram(prgInstancedTerrain);
     glDeleteTextures(1, &mHeightmapTex);
     glDeleteTextures(1, &mipTexture);
     glDeleteFramebuffers(1, &compositeFBO);
@@ -336,17 +298,10 @@ void CDLODTerrain::drawTerrain()
     PROFILER_CPU_TIMESLICE("CDLODTerrain");
     cpuTimer.start();
 
-    if (useInstancing)
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-        //Discard data from previous frame
-        glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-        instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    }
-    else
-    {
-        instData = patchDataMem;
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+    //Discard data from previous frame
+    glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+    instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
@@ -368,11 +323,8 @@ void CDLODTerrain::drawTerrain()
         cpuSelectTimer.stop();
     }
 
-    if (useInstancing)
-    {
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     cpuDrawTimer.start();
     gpuTimer.start();
@@ -399,28 +351,15 @@ void CDLODTerrain::drawTerrain()
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glEnable(GL_DEPTH_TEST);
 
-        glUseProgram(useInstancing?prgInstancedTerrain:prgTerrain);
+        glUseProgram(prgTerrain);
 
         viewData.uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
 
-        if (useInstancing)
-        {
-            glBindVertexArray(vaoInst);
-            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
-        }
-        else
-        {
-            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_PATCH_BINDING, ubo, uniPatchOffset, sizeof(PatchData));
-            glBindVertexArray(vao);
-            for (size_t i=0; i<patchCount; ++i)
-            {
-                glBufferSubData(GL_UNIFORM_BUFFER, uniPatchOffset, sizeof(PatchData), patchDataMem+i);
-                glDrawElements(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0);
-            }
-        }
+        glBindVertexArray(vao);
+        glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
 
         glUseProgram(0);
         glBindVertexArray(0);
