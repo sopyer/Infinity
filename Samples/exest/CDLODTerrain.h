@@ -30,7 +30,6 @@ public:
         v128		uLODViewK;
     } viewData;
 
-    glm::vec4	viewDir;
     glm::vec3   viewPoint;
     ml::mat4x4	sseVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
     float       vertDistToTerrain;
@@ -56,7 +55,6 @@ public:
     void generateGeometry(size_t vertexCount);
     void setHeightmap(uint16_t* data, size_t width, size_t height);
 
-    void addPatchToQueue(size_t level, float bx, float bz);
     void selectQuadsForDrawing(size_t level, float bx, float bz, float patchSize, bool skipFrustumTest=false);
 
     void initialize();

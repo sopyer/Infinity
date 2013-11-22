@@ -177,8 +177,6 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        terrain.viewDir = glm::vec4(vm[0].z, vm[1].z, -vm[2].z, 1);
-
         if (!fixedMode)
         {
             terrain.viewPoint = camera.getPosition();

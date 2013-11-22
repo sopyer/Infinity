@@ -163,7 +163,6 @@ void CDLODTerrain::reset()
 {
 }
 
-
 void CDLODTerrain::cleanup()
 {
     free(patchDataMem);
@@ -196,19 +195,6 @@ void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
     viewData.uMVP.r3 = vi_loadu(mat[3]);
 }
 
-void CDLODTerrain::addPatchToQueue(size_t level, float bx, float bz)
-{
-    if (patchCount<MAX_PATCH_COUNT)
-    {
-        instData->baseX = bx;
-        instData->baseZ = bz;
-        instData->level = level;
-
-        ++instData;
-        ++patchCount;
-    }
-}
-
 inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radius)
 {
     v128  vdist;
@@ -225,6 +211,8 @@ inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radi
 void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float patchSize, bool skipFrustumTest)
 {
     if (bx>=maxX || bz>=maxZ) return;
+
+    if (patchCount>=MAX_PATCH_COUNT) return;
 
     ml::aabb AABB;
 
@@ -252,7 +240,12 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
 
     if (level==maxLevel || !patchIntersectsCircle(AABB.min, AABB.max, vp, LODRange[level]))
     {
-        addPatchToQueue(level, bx, bz);
+        instData->baseX = bx;
+        instData->baseZ = bz;
+        instData->level = level;
+
+        ++instData;
+        ++patchCount;
     }
     else
     {
