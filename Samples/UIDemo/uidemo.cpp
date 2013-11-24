@@ -224,7 +224,7 @@ void drawEditBoxNum(struct NVGcontext* vg,
 	nvgText(vg, x+w-uw-h*0.5f,y+h*0.5f,text, NULL);
 }
 
-void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, float w, float h)
+void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, float w, float h, bool checked)
 {
 	struct NVGpaint bg;
 	char icon[8];
@@ -242,11 +242,14 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
 	nvgFillPaint(vg, bg);
 	nvgFill(vg);
 
-	nvgFontSize(vg, 40);
-	nvgFontFace(vg, "icons");
-	nvgFillColor(vg, nvgRGBA(255,255,255,128));
-	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon), NULL);
+	if (checked)
+    {
+        nvgFontSize(vg, 40);
+	    nvgFontFace(vg, "icons");
+	    nvgFillColor(vg, nvgRGBA(255,255,255,128));
+	    nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+	    nvgText(vg, x+9+2, y+h*0.5f, cpToUTF8(ICON_CHECK,icon), NULL);
+    }
 }
 
 void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, unsigned int col)
@@ -758,6 +761,8 @@ public:
             printf("Could not add font bold.\n");
         }
 
+        showEffects   = false;
+        checkboxValue = false;
     }
 
     ~UIDemo()
@@ -773,42 +778,16 @@ public:
     }
 
 protected:
+    bool showEffects;
+    bool checkboxValue;
+
     void onPaint()
     {
-        glClearDepth(1.0);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadMatrixf(mProj);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
-        glm::mat4 vm;
-        camera.getViewMatrix(vm);
-        glLoadMatrixf(vm);
-
-        glDisable(GL_CULL_FACE);
-
-        glUseProgram(0);
-        glBegin(GL_TRIANGLES);
-        glColor3f(1, 0, 0);
-        glVertex3f(-3, -1, -10);
-        glColor3f(0, 1, 0);
-        glVertex3f( 3, -1, -10);
-        glColor3f(0, 0, 1);
-        glVertex3f( 0, 4, -10);
-        glEnd();
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glDisable(GL_BLEND);
-
 		double mx, my;
 		int width, height, xx, yy;
         
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+
         ui::mouseAbsOffset(&xx, &yy);
 
         mx = xx; my = yy;
@@ -863,7 +842,7 @@ protected:
 		y += 35;
 		drawEditBox(vg, "Password", x,y, 280,28);
 		y += 38;
-		drawCheckBox(vg, "Remember me", x,y, 140,28);
+        drawCheckBox(vg, "Remember me", x,y, 140,28, checkboxValue);
 		drawButton(vg, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
 		y += 45;
 
@@ -877,18 +856,53 @@ protected:
 		drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
 		drawButton(vg, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
 
-		// Thumbnails box
-		drawThumbnails(vg, 365, popy-30, 160, 300, images, 12, t);
+		if (showEffects)
+        {
+            // Thumbnails box
+		    drawThumbnails(vg, 365, popy-30, 160, 300, images, 12, t);
+        }
 
 		nvgRestore(vg);
 
 		glEnable(GL_DEPTH_TEST);
+        glPopAttrib();
 
         CHECK_GL_ERROR();
     }
 
     void onUpdate(float dt)
     {
+        const uint32_t effectsID  = 0xFF00FF00;
+        const uint32_t checkboxID = 0xFF00FF01;
+        
+        uint32_t id = ui::mouseOverID();
+
+        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==effectsID)
+        {
+            showEffects = !showEffects;
+        }
+
+        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==checkboxID)
+        {
+            checkboxValue = !checkboxValue;
+        }
+
+        glUseProgram(0);
+        glColor4ubv((GLubyte*)&effectsID);
+        glBegin(GL_QUADS);
+        glVertex2f( 60, 135);
+        glVertex2f(340, 135);
+        glVertex2f(340, 163);
+        glVertex2f( 60, 163);
+        glEnd();
+
+        glColor4ubv((GLubyte*)&checkboxID);
+        glBegin(GL_QUADS);
+        glVertex2f( 60, 278);
+        glVertex2f(200, 278);
+        glVertex2f(200, 306);
+        glVertex2f( 60, 306);
+        glEnd();
     }
 };
 
