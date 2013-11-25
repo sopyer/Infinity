@@ -761,6 +761,7 @@ public:
             printf("Could not add font bold.\n");
         }
 
+        activeView    = ViewMain;
         showEffects   = false;
         checkboxValue = false;
     }
@@ -778,6 +779,13 @@ public:
     }
 
 protected:
+    enum EnumView
+    {
+        ViewMain,
+        ViewThumbnails
+    };
+
+    EnumView activeView;
     bool showEffects;
     bool checkboxValue;
 
@@ -877,32 +885,53 @@ protected:
         
         uint32_t id = ui::mouseOverID();
 
-        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==effectsID)
+        if (activeView == ViewThumbnails)
         {
-            showEffects = !showEffects;
-        }
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==ui::ID_MAIN_VIEW)
+            {
+                showEffects = false;
+            }
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==ui::ID_MAIN_VIEW)
+            {
+                showEffects = false;
+                activeView = ViewMain;
+            }
 
-        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==checkboxID)
+            if (showEffects)
+            {
+                //draw selection
+            }
+        }
+        else
         {
-            checkboxValue = !checkboxValue;
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==effectsID)
+            {
+                activeView  = ViewThumbnails;
+                showEffects = true;
+            }
+
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==checkboxID)
+            {
+                checkboxValue = !checkboxValue;
+            }
+
+            glUseProgram(0);
+            glColor4ubv((GLubyte*)&effectsID);
+            glBegin(GL_QUADS);
+            glVertex2f( 60, 135);
+            glVertex2f(340, 135);
+            glVertex2f(340, 163);
+            glVertex2f( 60, 163);
+            glEnd();
+
+            glColor4ubv((GLubyte*)&checkboxID);
+            glBegin(GL_QUADS);
+            glVertex2f( 60, 278);
+            glVertex2f(200, 278);
+            glVertex2f(200, 306);
+            glVertex2f( 60, 306);
+            glEnd();
         }
-
-        glUseProgram(0);
-        glColor4ubv((GLubyte*)&effectsID);
-        glBegin(GL_QUADS);
-        glVertex2f( 60, 135);
-        glVertex2f(340, 135);
-        glVertex2f(340, 163);
-        glVertex2f( 60, 163);
-        glEnd();
-
-        glColor4ubv((GLubyte*)&checkboxID);
-        glBegin(GL_QUADS);
-        glVertex2f( 60, 278);
-        glVertex2f(200, 278);
-        glVertex2f(200, 306);
-        glVertex2f( 60, 306);
-        glEnd();
     }
 };
 

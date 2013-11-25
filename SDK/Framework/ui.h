@@ -14,6 +14,8 @@ namespace ui
 
 	extern vg::Font       defaultFont;
 
+    static const uint32_t ID_MAIN_VIEW;
+
     static const size_t   RAINBOW_TABLE_L_SIZE = 533;
     extern const uint32_t rainbowTableL[RAINBOW_TABLE_L_SIZE];
 
