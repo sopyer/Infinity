@@ -764,6 +764,11 @@ public:
         activeView    = ViewMain;
         showEffects   = false;
         checkboxValue = false;
+        
+        wx1 = 51.0f;
+        wy1 = 51.0f;
+        ww  = 300.0f - 2.0f;
+        wh = 30.0f;
     }
 
     ~UIDemo()
@@ -782,12 +787,14 @@ protected:
     enum EnumView
     {
         ViewMain,
-        ViewThumbnails
+        ViewThumbnails,
+        ViewDragWindow
     };
 
     EnumView activeView;
     bool showEffects;
     bool checkboxValue;
+    float wx1, wy1, ww, wh;
 
     void onPaint()
     {
@@ -835,8 +842,8 @@ protected:
 		nvgSave(vg);
 
 		// Widgets
-		drawWindow(vg, "Widgets `n Stuff", 50, 50, 300, 400);
-		x = 60; y = 95;
+		drawWindow(vg, "Widgets `n Stuff", wx1, wy1, 300, 400);
+		x = wx1 + 10; y = wy1 + 45;
 		drawSearchBox(vg, "Search", x,y,280,25);
 		y += 40;
 		drawDropDown(vg, "Effects", x,y,280,28);
@@ -867,7 +874,7 @@ protected:
 		if (showEffects)
         {
             // Thumbnails box
-		    drawThumbnails(vg, 365, popy-30, 160, 300, images, 12, t);
+		    drawThumbnails(vg, wx1 + 315, popy-30, 160, 300, images, 12, t);
         }
 
 		nvgRestore(vg);
@@ -878,12 +885,18 @@ protected:
         CHECK_GL_ERROR();
     }
 
+    int dsx, dsy;
+    
+    float wsx, wsy;
+
     void onUpdate(float dt)
     {
-        const uint32_t effectsID  = 0xFF00FF00;
-        const uint32_t checkboxID = 0xFF00FF01;
+        const uint32_t effectsID      = 0xFF00FF00;
+        const uint32_t checkboxID     = 0xFF00FF01;
+        const uint32_t windowHeaderID = 0xFF00FF02;
         
         uint32_t id = ui::mouseOverID();
+
 
         if (activeView == ViewThumbnails)
         {
@@ -902,7 +915,19 @@ protected:
                 //draw selection
             }
         }
-        else
+        else if (activeView == ViewDragWindow)
+        {
+            int csx, csy;
+            ui::mouseAbsOffset(&csx, &csy);
+            wx1 = wsx + float(csx - dsx);
+            wy1 = wsy + float(csy - dsy);
+
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+            {
+                activeView = ViewMain;
+            }
+        }
+        else if (activeView == ViewMain)
         {
             if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==effectsID)
             {
@@ -915,23 +940,40 @@ protected:
                 checkboxValue = !checkboxValue;
             }
 
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==windowHeaderID)
+            {
+                activeView = ViewDragWindow;
+                ui::mouseAbsOffset(&dsx, &dsy);
+                wsx = wx1;
+                wsy = wy1;
+            }
+             
+            glColor4ubv((GLubyte*)&windowHeaderID);
+            glBegin(GL_QUADS);
+            glVertex2f(wx1,    wy1   );
+            glVertex2f(wx1+ww, wy1   );
+            glVertex2f(wx1+ww, wy1+wh);
+            glVertex2f(wx1,    wy1+wh);
+            glEnd();
+            
             glUseProgram(0);
             glColor4ubv((GLubyte*)&effectsID);
             glBegin(GL_QUADS);
-            glVertex2f( 60, 135);
-            glVertex2f(340, 135);
-            glVertex2f(340, 163);
-            glVertex2f( 60, 163);
+            glVertex2f(wx1 +  10, wy1 +  85);
+            glVertex2f(wx1 + 290, wy1 +  85);
+            glVertex2f(wx1 + 290, wy1 + 113);
+            glVertex2f(wx1 +  10, wy1 + 113);
             glEnd();
 
             glColor4ubv((GLubyte*)&checkboxID);
             glBegin(GL_QUADS);
-            glVertex2f( 60, 278);
-            glVertex2f(200, 278);
-            glVertex2f(200, 306);
-            glVertex2f( 60, 306);
+            glVertex2f(wx1 +  10, wy1 + 228);
+            glVertex2f(wx1 + 135, wy1 + 228);
+            glVertex2f(wx1 + 135, wy1 + 256);
+            glVertex2f(wx1 +  10, wy1 + 256);
             glEnd();
         }
+        else assert(0);
     }
 };
 
