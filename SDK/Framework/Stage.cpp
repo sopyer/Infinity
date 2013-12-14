@@ -103,8 +103,7 @@ namespace ui
         }
 #endif
         SDL_Event	E;
-        uint32_t i = 0;
-        while (SDL_PollEvent(&E) && i<10)
+        while (SDL_PollEvent(&E))
         {
             switch(E.type)
             {
@@ -118,12 +117,9 @@ namespace ui
             case SDL_KEYDOWN:
                 switch (mState)
                 {
-                case STATE_DEFAULT:
-                    onKeyDown(E.key);
-                    break;
-                case STATE_SHADER_EDIT:
-                    mShaderEditOverlay->handleKeyDown(E.key);
-                    break;
+                    case STATE_SHADER_EDIT:
+                        mShaderEditOverlay->handleKeyDown(E.key);
+                        break;
                 }
                 break;
             case SDL_KEYUP:		
@@ -140,30 +136,10 @@ namespace ui
                 {
                     mState = mState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
                 }
-                else if (mState==STATE_DEFAULT)
-                    onKeyUp(E.key);
-                break;
-            case SDL_MOUSEMOTION:
-                if (mState==STATE_DEFAULT)
-                {
-                    if (!SDL_GetWindowGrab(fwk::window))
-                        onMotion(E.motion);
-                }
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-                if (mState==STATE_DEFAULT)
-                {
-                    onTouch(E.button);
-                }
-                break;
-            case SDL_MOUSEBUTTONUP:
-                if (mState==STATE_DEFAULT)
-                    onUntouch(E.button);
                 break;
             default:
-                onSDLEvent(E);
+                ui::onSDLEvent(E);
             }
-            ++i;
         }
     }
 
@@ -211,9 +187,9 @@ namespace ui
 
             glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
-            //TODO: Merge all tree
-            ui::update();
+            //TODO: Merge all three
             handleInput();
+            ui::update();
             outlineActors();
         
             if (mShaderEditOverlay->requireReset())

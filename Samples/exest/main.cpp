@@ -132,22 +132,6 @@ protected:
     std::vector<glm::vec3>      savedCamPos;
     int                         loc;
 
-    void onKeyUp(const KeyEvent& event)
-    {
-        if (event.keysym.sym==SDLK_BACKSLASH)
-        {
-            terrain.maxPatchCount = (terrain.maxPatchCount)?0:CDLODTerrain::MAX_PATCH_COUNT;
-        }
-        if (event.keysym.sym==SDLK_LEFTBRACKET)
-        {
-            terrain.maxPatchCount -= (terrain.maxPatchCount>0)?1:0;
-        }
-        if (event.keysym.sym==SDLK_RIGHTBRACKET)
-        {
-            terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
-        }
-    }
-
     void onPaint()
     {
         GLenum err;
@@ -221,29 +205,39 @@ protected:
 
     void onUpdate(float dt)
     {
-        bool lockView = false;
-
         ui::processCameraInput(&camera, dt);
-
         ui::processCameraDirectorInput(&camDirector, &camera);
+
+        if (ui::keyWasReleased(SDLK_BACKSLASH))
+        {
+            terrain.maxPatchCount = (terrain.maxPatchCount)?0:CDLODTerrain::MAX_PATCH_COUNT;
+        }
+
+        if (ui::keyWasReleased(SDLK_LEFTBRACKET))
+        {
+            terrain.maxPatchCount -= (terrain.maxPatchCount>0)?1:0;
+        }
+
+        if (ui::keyWasReleased(SDLK_RIGHTBRACKET))
+        {
+            terrain.maxPatchCount += (terrain.maxPatchCount<CDLODTerrain::MAX_PATCH_COUNT)?1:0;
+        }
 
         if (ui::keyWasReleased(SDL_SCANCODE_L))
         {
             fixedMode = !fixedMode;
-            lockView  = fixedMode==true;
+            if (fixedMode)
+            {
+                glm::mat4 vm;
+                camera.getViewMatrix(vm);
+                VP = mProj*vm;
+                VPpp = camera.getPosition();
+            }
         }
 
         if (ui::keyWasReleased(SDL_SCANCODE_F))
         {
             terrain.drawWireframe = !terrain.drawWireframe;
-        }
-
-        if (lockView)
-        {
-            glm::mat4 vm;
-            camera.getViewMatrix(vm);
-            VP = mProj*vm;
-            VPpp = camera.getPosition();
         }
     }
 };

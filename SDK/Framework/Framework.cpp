@@ -60,8 +60,6 @@ namespace fwk
 
         context = SDL_GL_CreateContext(window);
 
-        SDL_GL_SetSwapInterval(1);
-
         importOpenGL();
 
         vg::init();

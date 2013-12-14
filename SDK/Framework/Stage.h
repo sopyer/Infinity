@@ -33,11 +33,6 @@ namespace ui
         virtual void onShaderRecompile() {}
         virtual void onUpdate(float /*dt*/) {}
         virtual void onPaint() {}
-        virtual void onTouch(const ButtonEvent& /*event*/) {}
-        virtual void onUntouch(const ButtonEvent& /*event*/) {}
-        virtual void onMotion(const MotionEvent& /*event*/) {}
-        virtual void onKeyDown(const KeyEvent& /*event*/) {}
-        virtual void onKeyUp(const KeyEvent& /*event*/) {}
 
     protected:
         bool	mFullscreen;
