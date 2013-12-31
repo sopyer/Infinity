@@ -97,13 +97,22 @@ public:
             glm::vec4(-1,  1,  1, 1), 
         };
 
+        static const int indices[30] = 
+        {
+            0, 1, 3, 1, 2, 3,
+            1, 0, 4, 1, 4, 5,
+            3, 2, 7, 2, 6, 7,
+            4, 0, 7, 0, 3, 7,
+            1, 5, 2, 2, 5, 6,
+        };
+
         glm::vec4 wpoints[8];
 
         for (size_t i=0; i<8; ++i)
             wpoints[i] = inverted*points[i];
 
         glUseProgram(0);
-        glColor3f(1, 0, 0);
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         glBegin(GL_LINES);
         glVertex4fv(wpoints[0]); glVertex4fv(wpoints[1]);
         glVertex4fv(wpoints[1]); glVertex4fv(wpoints[2]);
@@ -120,6 +129,35 @@ public:
         glVertex4fv(wpoints[2]); glVertex4fv(wpoints[6]);
         glVertex4fv(wpoints[3]); glVertex4fv(wpoints[7]);
         glEnd();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendEquation(GL_FUNC_ADD);
+        glEnable(GL_CULL_FACE);
+        glDisable(GL_TEXTURE_2D);
+
+        //Simple sorting for convex alpha object rendering
+        //First render back faces
+        //Then render front faces
+        glColor4f(1.0f, 0.5f, 0.0f, 0.8f);
+        glCullFace(GL_FRONT);
+        glBegin(GL_TRIANGLES);
+        for (int i=0; i<30; ++i)
+        {
+            glVertex4fv(wpoints[indices[i]]);
+        }
+        glEnd();
+
+        glCullFace(GL_BACK);
+        glBegin(GL_TRIANGLES);
+        for (int i=0; i<30; ++i)
+        {
+            glVertex4fv(wpoints[indices[i]]);
+        }
+        glEnd();
+
+        glDisable(GL_BLEND);
+        glDisable(GL_CULL_FACE);
     }
 
 protected:
@@ -169,12 +207,16 @@ protected:
         {
             terrain.viewPoint = VPpp;
             terrain.setSelectMatrix(VP);
-            drawFrustum(VP);
         }
 
         terrain.setMVPMatrix(mProj*vm);
 
         terrain.drawTerrain();
+
+        if (fixedMode)
+        {
+            drawFrustum(VP);
+        }
 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
