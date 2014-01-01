@@ -5,14 +5,12 @@ namespace impl
 	enum
 	{
 		//PRG_SIMPLE_UI uniforms
-		UNI_SIMPLE_UI_FILL_COLOR,
-		UNI_SIMPLE_UI_BORDER_COLOR,
-		UNI_SIMPLE_UI_ZONES,
-		UNI_SIMPLE_UI_COUNT
+		UNI_SIMPLE_UI_FILL_COLOR   = 0,
+		UNI_SIMPLE_UI_BORDER_COLOR = 1,
+		UNI_SIMPLE_UI_ZONES        = 2,
 	};
 
 	extern GLuint	simpleUIProgram;
-	extern GLint	simpleUIUniforms[UNI_SIMPLE_UI_COUNT];
 
 	extern GLuint	stencilCubicAreaProgram;
 	extern GLuint	stencilCubicAreaAAProgram;
@@ -21,21 +19,15 @@ namespace impl
 
 	enum
 	{
-		UNI_LIN_GRAD_STOPS,
-		UNI_LIN_GRAD_SCALES,
-		UNI_LIN_GRAD_INV_STOP_COUNT,
-		UNI_LIN_GRAD_SAM_COLOR_RAMP,
-		UNI_LIN_GRAD_START_POINT,
-		UNI_LIN_GRAD_DIRECTION,
-		UNI_LIN_GRAD_COUNT
+		UNI_LIN_GRAD_STOPS          =  0,
+		UNI_LIN_GRAD_SCALES         =  8,
+		UNI_LIN_GRAD_INV_STOP_COUNT = 16,
+		UNI_LIN_GRAD_START_POINT    = 17,
+		UNI_LIN_GRAD_DIRECTION      = 18,
 	};
 
 	extern GLuint	linGradProgram;
-	extern GLint	linGradUniforms[UNI_LIN_GRAD_COUNT];
 
 	void allocResources();
 	void freeResources();
-
-	//debug functions
-	void readyProgramsForUse();
 }

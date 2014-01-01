@@ -194,7 +194,6 @@ namespace ui
         
             if (mShaderEditOverlay->requireReset())
             {
-                impl::readyProgramsForUse();
                 onShaderRecompile();
             }
 

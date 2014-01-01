@@ -114,9 +114,11 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,
-			"uniform vec4 uFillColor;														\n"
-			"uniform vec4 uBorderColor;														\n"
-			"uniform vec2 uZones;															\n"
+			"#extension GL_ARB_explicit_uniform_location : require                              \n"
+            "																					\n"
+			"layout (location =  0) uniform vec4 uFillColor;														\n"
+			"layout (location =  1) uniform vec4 uBorderColor;														\n"
+			"layout (location =  2) uniform vec2 uZones;															\n"
 			"																				\n"
 			"void main()																	\n"
 			"{																				\n"
@@ -146,33 +148,34 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,																			
-			"#version 130																					\n"
-			"																								\n"
-			"uniform vec4		uStops[8];																	\n"
-			"uniform vec4		uScales[8];																	\n"
-			"uniform float		uInvStopCount;																\n"
-			"uniform sampler1D	samColorRamp;																\n"
-			"																								\n"
-			"vec4 evalGrad(float t)																			\n"
-			"{																								\n"
-			"	vec4 accum = vec4(0);																		\n"
-			"																								\n"
-			"	for (int i=0; i<8; ++i)																		\n"
-			"	{																							\n"
-			"		vec4 deltas;																			\n"
-			"																								\n"
-			"		// can not use multiply-add, because {0, 0.5, 0.5, 1} case would not work 				\n"
-			"		// also this case requires support of IEEE 754 floats as well							\n"
-			"		// because uScales[1] is infinity in this case											\n"
-			"		deltas = (vec4(t)-uStops[i])*uScales[i];												\n"
-			"		deltas = clamp(deltas, vec4(0), vec4(1));												\n"
-			"		accum += deltas;																		\n"
-			"	}																							\n"
-			"																								\n"
-			"	float offset =(dot(accum, vec4(1))+0.5)*uInvStopCount;										\n"
-			"																								\n"
-			"	return texture(samColorRamp, offset);														\n"
-			"}																								\n"
+			"#version 130																		\n"
+			"#extension GL_ARB_explicit_uniform_location : require                              \n"
+            "																					\n"
+			"layout (location =  0) uniform vec4		uStops[8];								\n"
+			"layout (location =  8) uniform vec4		uScales[8];								\n"
+			"layout (location = 16) uniform float		uInvStopCount;							\n"
+			"layout (binding  =  0) uniform sampler1D	samColorRamp;							\n"
+			"																					\n"
+			"vec4 evalGrad(float t)																\n"
+			"{																					\n"
+			"	vec4 accum = vec4(0);															\n"
+			"																					\n"
+			"	for (int i=0; i<8; ++i)															\n"
+			"	{																				\n"
+			"		vec4 deltas;																\n"
+			"																					\n"
+			"		// can not use multiply-add, because {0, 0.5, 0.5, 1} case would not work 	\n"
+			"		// also this case requires support of IEEE 754 floats as well				\n"
+			"		// because uScales[1] is infinity in this case								\n"
+			"		deltas = (vec4(t)-uStops[i])*uScales[i];									\n"
+			"		deltas = clamp(deltas, vec4(0), vec4(1));									\n"
+			"		accum += deltas;															\n"
+			"	}																				\n"
+			"																					\n"
+			"	float offset =(dot(accum, vec4(1))+0.5)*uInvStopCount;							\n"
+			"																					\n"
+			"	return texture(samColorRamp, offset);											\n"
+			"}																					\n"
 		},
 
 		{
@@ -185,8 +188,8 @@ namespace impl
 			"//uDirection  = (uEndPt-uStartPt);																\n"
 			"//uScale      = 1.0/dot(uDirection, uDirection);												\n"
 			"//uDirection *= uScale;																		\n"
-			"uniform vec2 uStartPt;																			\n"
-			"uniform vec2 uDirection;																		\n"
+			"layout (location = 17) uniform vec2 uStartPt;																			\n"
+			"layout (location = 18) uniform vec2 uDirection;																		\n"
 			"																								\n"
 			"varying vec2 vFragPos;																			\n"
 			"																								\n"
@@ -198,44 +201,14 @@ namespace impl
 		},
 	};
 
-	const char* UNI_NAME_HALF_WIDTH       = "uHalfWidth";
-	const char* UNI_NAME_FILL_COLOR       = "uFillColor";
-	const char* UNI_NAME_BORDER_COLOR     = "uBorderColor";
-	const char* UNI_NAME_ZONES            = "uZones";
-	const char* UNI_NAME_STOPS            = "uStops";
-	const char* UNI_NAME_SCALES           = "uScales";
-	const char* UNI_NAME_INV_STOP_COUNT   = "uInvStopCount";
-	const char* UNI_NAME_SAM_COLOR_RAMP   = "samColorRamp";
-	const char* UNI_NAME_START_POINT      = "uStartPt";
-	const char* UNI_NAME_DIRECTION        = "uDirection";
-
-	const char* simpleUIUniformNames[UNI_SIMPLE_UI_COUNT] = 
-	{
-		UNI_NAME_FILL_COLOR,
-		UNI_NAME_BORDER_COLOR,
-		UNI_NAME_ZONES,
-	};
-
 	GLuint	simpleUIProgram;
-	GLint	simpleUIUniforms[UNI_SIMPLE_UI_COUNT];
 
 	GLuint	stencilCubicAreaProgram;
 	GLuint	stencilCubicAreaAAProgram;
 	GLuint	stencilQuadAreaProgram;
 	GLuint	stencilArcAreaProgram;
 
-	const char* linGradUniformNames[UNI_LIN_GRAD_COUNT] = 
-	{
-		UNI_NAME_STOPS,
-		UNI_NAME_SCALES,
-		UNI_NAME_INV_STOP_COUNT,
-		UNI_NAME_SAM_COLOR_RAMP,
-		UNI_NAME_START_POINT,
-		UNI_NAME_DIRECTION,
-	};
-
 	GLuint	linGradProgram;
-	GLint	linGradUniforms[UNI_LIN_GRAD_COUNT];
 
 	void	compileShader(GLuint shader, const char* source);
 	GLuint	linkProgram(GLsizei shaderCount, ...);
@@ -268,18 +241,9 @@ namespace impl
 			{
 				glDeleteShader(shaders[i]);
 			}
-
-			readyProgramsForUse();
 		}
 		initialized = true;
 	}
-
-	void readyProgramsForUse()
-	{
-		getUniforms(simpleUIProgram, UNI_SIMPLE_UI_COUNT, simpleUIUniformNames, simpleUIUniforms);
-		getUniforms(linGradProgram,  UNI_LIN_GRAD_COUNT,  linGradUniformNames,  linGradUniforms);
-	}
-
 
 	void freeResources()
 	{
@@ -338,14 +302,4 @@ namespace impl
 
 		return program;
 	}
-
-	void getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms)
-	{
-		for (GLsizei u=0; u<uniformCount; ++u)
-		{
-			uniforms[u] = glGetUniformLocation(program, uniformNames[u]);
-			assert(uniforms[u]!=-1);
-		}
-	}
-
 }
