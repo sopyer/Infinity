@@ -20,7 +20,7 @@ class VideoSample: public ui::Stage
 			
 			alcMakeContextCurrent(mAudioContext);
 
-            player = mediaCreatePlayer("k:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
+            player = mediaCreatePlayer("d:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
         }
 		
 		~VideoSample()

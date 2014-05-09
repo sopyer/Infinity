@@ -5,6 +5,8 @@
 #include <al/al.h>
 #include <al/alc.h>
 
+#include <SDL2/SDL.h>
+
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -48,7 +50,7 @@ AVPacket* frontAVPacket(AVPacketRingBuffer* rbuf)
 
 void popAVPacket(AVPacketRingBuffer* rbuf)
 {
-    if (usedAVPackets != 0) rbuf->tail++;
+    if (usedAVPackets(rbuf) != 0) rbuf->tail++;
 }
 
 struct media_player_data_t
@@ -71,7 +73,7 @@ struct media_player_data_t
     AVPacketRingBuffer aPackets;
     AVPacketRingBuffer vPackets;
 
-    __int64 baseTime, timeShift, timeOfNextFrame;
+    __int64 baseTime, timeShift, timeOfNextFrame, frameTime;
     __int64 aBufferSize;
 
     GLuint texY[2];
@@ -81,12 +83,23 @@ struct media_player_data_t
     ALuint		audioSource;
     ALuint		audioBuffers[2];
 
+    int bufSize;
+
     char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE]; // make it part of thread scratch buffer
+
+    int subTasks;
+    
+    ALuint bufferToUpdate;
+    
+    SDL_mutex*      lock;
+    SDL_cond*       notify;
+    bool            taskStarted;
+    bool            done;
 };
 
 typedef struct media_player_data_t* media_player_t;
 
-static int                        extAudioFormatsPresent;
+static int extAudioFormatsPresent;
 
 const char srcYUV2RGB[] = 
     "layout(binding = 0) uniform sampler2D samY;                                                    \n"
@@ -250,14 +263,24 @@ static void streamMediaData(media_player_t player)
     }
 }
 
-static void decodeAudio(media_player_t player, ALuint buffer)
+static void uploadAudioData(media_player_t player, ALuint buffer)
+{
+    PROFILER_CPU_TIMESLICE("uploadAudioData");
+
+    alBufferData(buffer, player->mAudioFormat, player->audioBuf, player->bufSize, player->audioCodecContext->sample_rate);
+    alSourceQueueBuffers(player->audioSource, 1, &buffer);
+}
+
+static void decodeAudio(media_player_t player)
 {
     PROFILER_CPU_TIMESLICE("decodeAudio");
 
-    int audioDataAva = 1;
-    int bufSize      = 0;
+    int audioDataAva;
+    
+    audioDataAva    = 1;
+    player->bufSize = 0;
 
-    while((bufSize < player->aBufferSize) && audioDataAva)
+    while((player->bufSize < player->aBufferSize) && audioDataAva)
     {
         AVPacket* pkt = frontAVPacket(&player->aPackets);
         if (pkt)
@@ -268,7 +291,7 @@ static void decodeAudio(media_player_t player, ALuint buffer)
 
             while(inSize > 0)
             {
-                int processed = avcodec_decode_audio2(player->audioCodecContext, (int16_t*)(player->audioBuf+bufSize), &bufSizeAva, inData, inSize);
+                int processed = avcodec_decode_audio2(player->audioCodecContext, (int16_t*)(player->audioBuf+player->bufSize), &bufSizeAva, inData, inSize);
 
                 if(processed < 0)
                 {
@@ -278,8 +301,8 @@ static void decodeAudio(media_player_t player, ALuint buffer)
                 inData     += processed;
                 inSize     -= processed;
 
-                assert(bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
-                bufSize += bufSizeAva;
+                assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
+                player->bufSize += bufSizeAva;
             }
 
             av_free_packet(pkt);
@@ -290,24 +313,42 @@ static void decodeAudio(media_player_t player, ALuint buffer)
 
         audioDataAva = !player->streamEnd || usedAVPackets(&player->aPackets)!=0;
     }
-
-    {
-        PROFILER_CPU_TIMESLICE("dataUpdate");
-
-        alBufferData(buffer, player->mAudioFormat, player->audioBuf, bufSize, player->audioCodecContext->sample_rate);
-        alSourceQueueBuffers(player->audioSource, 1, &buffer);
-    }
 }
 
-static void decodeFrame(media_player_t player)
+static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLuint texV)
 {
-    PROFILER_CPU_TIMESLICE("decodeFrame");
+    PROFILER_CPU_TIMESLICE("uploadVideoData");
 
-    int frameDone, videoDataAva;
+    glBindTexture(GL_TEXTURE_2D, texY);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
 
-    frameDone    = 0;
-    videoDataAva = 1;
-    while(!frameDone && videoDataAva)
+    glBindTexture(GL_TEXTURE_2D, texU);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
+
+    glBindTexture(GL_TEXTURE_2D, texV);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+    player->timeOfNextFrame = player->frameTime;
+
+    GLenum err = glGetError();
+    assert(err == GL_NO_ERROR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+static void decodeVideo(media_player_t player)
+{
+    PROFILER_CPU_TIMESLICE("decodeVideo");
+
+    int frameDone    = 0;
+    int videoDataAva = 1;
+
+    while(videoDataAva)
     {
         AVPacket* pkt = frontAVPacket(&player->vPackets);
         if (pkt)
@@ -322,29 +363,10 @@ static void decodeFrame(media_player_t player)
 
         if(frameDone)
         {
-            PROFILER_CPU_TIMESLICE("frameDone");
-
-            player->timeOfNextFrame = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
-
-            glBindTexture(GL_TEXTURE_2D, player->texY[1]);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
-
-            glBindTexture(GL_TEXTURE_2D, player->texU[1]);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
-
-            glBindTexture(GL_TEXTURE_2D, player->texV[1]);
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
-
-            glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-            GLenum err = glGetError();
-            assert(err == GL_NO_ERROR);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
+            player->frameTime = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
+            break;
         }
+
         videoDataAva = !player->streamEnd || usedAVPackets(&player->vPackets)!=0;
     }
 }
@@ -408,11 +430,29 @@ media_player_t mediaCreatePlayer(const char* source)
         }
     }
 
+    player->lock        = SDL_CreateMutex();
+    player->notify      = SDL_CreateCond();
+    player->taskStarted = false;
+
     return player;
 }
 
 void mediaDestroyPlayer(media_player_t player)
 {
+    if (player->taskStarted)
+    {
+        SDL_LockMutex(player->lock);
+        if (!player->done)
+        {        
+            SDL_CondWait(player->notify, player->lock);
+        }
+        SDL_UnlockMutex(player->lock);
+    }
+
+    SDL_LockMutex(player->lock);
+    SDL_DestroyMutex(player->lock);
+    SDL_DestroyCond(player->notify);
+    
     closeAudioStream(player);
     closeVideoStream(player);
 
@@ -420,17 +460,56 @@ void mediaDestroyPlayer(media_player_t player)
     free(player);
 }
 
+enum 
+{
+    MEDIA_DECODE_VIDEO = 1,
+    MEDIA_DECODE_AUDIO = 2,
+};
+
+static void doDecode(media_player_t player)
+{
+    PROFILER_CPU_TIMESLICE("mediaPlayerUpdateTask");
+
+    if (player->subTasks&MEDIA_DECODE_VIDEO)
+    {
+        decodeVideo(player);
+    }
+    if (player->subTasks&MEDIA_DECODE_AUDIO)
+    {
+        decodeAudio(player);
+    }
+}
+
+static void decodeTask(void* arg)
+{
+    media_player_t player = (media_player_t)arg;
+
+    SDL_LockMutex(player->lock);
+
+    doDecode(player);
+    
+    player->done = true;
+    SDL_CondBroadcast(player->notify);
+    SDL_UnlockMutex(player->lock);
+}
+
 void mediaStartPlayback(media_player_t player)
 {
     player->timeOfNextFrame = 0;
     player->streamEnd       = FALSE;
 
-    decodeAudio(player, player->audioBuffers[0]);
-    decodeAudio(player, player->audioBuffers[1]);
-    decodeFrame(player);
+    player->subTasks = MEDIA_DECODE_VIDEO|MEDIA_DECODE_AUDIO;
+    doDecode(player);
+    uploadAudioData(player, player->audioBuffers[0]);
+    uploadVideoData(player, player->texY[0], player->texU[0], player->texV[0]);
+    player->timeShift = player->frameTime; //in some videos first dts differs from 0
+
+    player->subTasks = MEDIA_DECODE_VIDEO|MEDIA_DECODE_AUDIO;
+    doDecode(player);
+    uploadAudioData(player, player->audioBuffers[1]);
+    uploadVideoData(player, player->texY[1], player->texU[1], player->texV[1]);
 
     player->playback  = TRUE;
-    player->timeShift = player->timeOfNextFrame; //in some videos first dts differs from 0
     player->baseTime  = timerAbsoluteTime();
 
     alSourcePlay(player->audioSource);
@@ -445,16 +524,41 @@ void mediaPlayerUpdate(media_player_t player)
 
     __int64 currentTime = timerAbsoluteTime()-player->baseTime;
 
+    ALuint buffer;
+
     player->playback = !player->streamEnd || usedAVPackets(&player->aPackets)!=0 || usedAVPackets(&player->vPackets)!=0;
+
+    if (player->taskStarted)
+    {
+        SDL_LockMutex(player->lock);
+        if (!player->done)
+        {
+            SDL_CondWait(player->notify, player->lock);
+        }
+        SDL_UnlockMutex(player->lock);
+
+        if (player->subTasks&MEDIA_DECODE_VIDEO)
+        {
+            uploadVideoData(player, player->texY[1], player->texU[1], player->texV[1]);
+        }
+        if (player->subTasks&MEDIA_DECODE_AUDIO)
+        {
+            uploadAudioData(player, player->bufferToUpdate);
+        }
+    }
+
+    player->done        = false;
+    player->taskStarted = false;
+    player->subTasks    = 0;
 
     {
         ALint  count;
         alGetSourcei(player->audioSource, AL_BUFFERS_PROCESSED, &count);
         if (count>0)
         {
-            ALuint buffer;
             alSourceUnqueueBuffers(player->audioSource, 1, &buffer);
-            decodeAudio(player, buffer);
+            player->subTasks |= MEDIA_DECODE_AUDIO;
+            player->bufferToUpdate = buffer;
         }
 
         ALint state;
@@ -468,12 +572,28 @@ void mediaPlayerUpdate(media_player_t player)
     int64_t time = currentTime+player->timeShift;
     if (time>=player->timeOfNextFrame)
     {
-        decodeFrame(player);
-
         std::swap(player->texY[0], player->texY[1]);
         std::swap(player->texU[0], player->texU[1]);
         std::swap(player->texV[0], player->texV[1]);
+
+        player->subTasks |= MEDIA_DECODE_VIDEO;
     }
+
+    if (player->subTasks)
+    {
+        player->done        = false;
+        player->taskStarted = true;
+        mt::addAsyncTask(decodeTask, player);
+    }
+    //decodeTaskST(player, player->subTasks);
+    //    if (player->subTasks&MEDIA_DECODE_VIDEO)
+    //    {
+    //        uploadVideoData(player, player->texY[1], player->texU[1], player->texV[1]);
+    //    }
+    //    if (player->subTasks&MEDIA_DECODE_AUDIO)
+    //    {
+    //        uploadAudioData(player, buffer);
+    //    }
 }
 
 void mediaPlayerPrepareRender(media_player_t player)
