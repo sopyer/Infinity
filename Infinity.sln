@@ -112,6 +112,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Anima", "Samples\Anima\Anim
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UIDemo", "Samples\UIDemo\UIDemo.vcxproj", "{DE757721-DDED-4EEC-95B9-3A954B1EDFB4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MindGame", "Samples\MindGame\MindGame.vcxproj", "{D372EC5E-3AD0-4A34-9359-7E7EF66EE938}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -182,6 +184,10 @@ Global
 		{DE757721-DDED-4EEC-95B9-3A954B1EDFB4}.Debug|Win32.Build.0 = Debug|Win32
 		{DE757721-DDED-4EEC-95B9-3A954B1EDFB4}.Release|Win32.ActiveCfg = Release|Win32
 		{DE757721-DDED-4EEC-95B9-3A954B1EDFB4}.Release|Win32.Build.0 = Release|Win32
+		{D372EC5E-3AD0-4A34-9359-7E7EF66EE938}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D372EC5E-3AD0-4A34-9359-7E7EF66EE938}.Debug|Win32.Build.0 = Debug|Win32
+		{D372EC5E-3AD0-4A34-9359-7E7EF66EE938}.Release|Win32.ActiveCfg = Release|Win32
+		{D372EC5E-3AD0-4A34-9359-7E7EF66EE938}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
