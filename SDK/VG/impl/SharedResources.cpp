@@ -114,11 +114,11 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,
-			"#extension GL_ARB_explicit_uniform_location : require                              \n"
-            "																					\n"
-			"layout (location =  0) uniform vec4 uFillColor;														\n"
-			"layout (location =  1) uniform vec4 uBorderColor;														\n"
-			"layout (location =  2) uniform vec2 uZones;															\n"
+			"#extension GL_ARB_explicit_uniform_location : require                          \n"
+            "																				\n"
+			"layout (location =  0) uniform vec4 uFillColor;								\n"
+			"layout (location =  1) uniform vec4 uBorderColor;								\n"
+			"layout (location =  2) uniform vec2 uZones;									\n"
 			"																				\n"
 			"void main()																	\n"
 			"{																				\n"
@@ -180,24 +180,25 @@ namespace impl
 
 		{
 			GL_FRAGMENT_SHADER,																			
-			"#version 130																					\n"
-			"																								\n"
-			"vec4 evalGrad(float t);																		\n"
-			"																								\n"
-			"//Mapping distance between uStartPt and uEndPt in range [0..1]									\n"
-			"//uDirection  = (uEndPt-uStartPt);																\n"
-			"//uScale      = 1.0/dot(uDirection, uDirection);												\n"
-			"//uDirection *= uScale;																		\n"
-			"layout (location = 17) uniform vec2 uStartPt;																			\n"
-			"layout (location = 18) uniform vec2 uDirection;																		\n"
-			"																								\n"
-			"varying vec2 vFragPos;																			\n"
-			"																								\n"
-			"void main()																					\n"
-			"{																								\n"
-			"	float t = dot(uDirection, vFragPos-uStartPt);												\n"
-			"	gl_FragColor = evalGrad(t);																	\n"
-			"}																								\n"
+			"#version 130																		\n"
+			"#extension GL_ARB_explicit_uniform_location : require                              \n"
+			"																					\n"
+			"vec4 evalGrad(float t);															\n"
+			"																					\n"
+			"//Mapping distance between uStartPt and uEndPt in range [0..1]						\n"
+			"//uDirection  = (uEndPt-uStartPt);													\n"
+			"//uScale      = 1.0/dot(uDirection, uDirection);									\n"
+			"//uDirection *= uScale;															\n"
+			"layout (location = 17) uniform vec2 uStartPt;										\n"
+			"layout (location = 18) uniform vec2 uDirection;									\n"
+			"																					\n"
+			"varying vec2 vFragPos;																\n"
+			"																					\n"
+			"void main()																		\n"
+			"{																					\n"
+			"	float t = dot(uDirection, vFragPos-uStartPt);									\n"
+			"	gl_FragColor = evalGrad(t);														\n"
+			"}																					\n"
 		},
 	};
 
@@ -226,7 +227,14 @@ namespace impl
 				GLint len = (GLint)strlen(shaderDefs[i].source);
 				glShaderSource(shaders[i], 1, (const GLchar **)&shaderDefs[i].source, &len);
 				glCompileShader(shaders[i]);
-			}
+#ifdef _DEBUG
+		        GLint	status;
+		        char output[8096];
+		        glGetShaderiv(shaders[i], GL_COMPILE_STATUS, &status);
+		        glGetShaderInfoLog(shaders[i], 8096, &len, output);
+		        assert(status);
+#endif			
+            }
 
 			simpleUIProgram = linkProgram(2, shaders[vsSimpleUI], shaders[fsSimpleUI]);
 
@@ -270,8 +278,8 @@ namespace impl
 		GLint	status;
 		char output[8096];
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+		glGetShaderInfoLog(shader, 8096, &len, output);
 		assert(status);
-		glGetShaderInfoLog(shader, 8096, &status, output);
 #endif
 	}
 
@@ -292,11 +300,11 @@ namespace impl
 		glLinkProgram(program);
 
 #ifdef _DEBUG
-		GLint	status;
+		GLint	status, len;
 		char output[8096];
 		glGetProgramiv(program, GL_LINK_STATUS, &status);
+		glGetProgramInfoLog(program, 8096, &len, output);
 		assert(status);
-		glGetProgramInfoLog(program, 8096, &status, output);
 #endif
 		va_end(arg);
 

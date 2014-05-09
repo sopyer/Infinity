@@ -14,6 +14,8 @@
 static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
 const char vsQuadSource[] = 
+	"#version 330                                                           \n"
+    "                                                                       \n"
     "layout(location=0) in vec4  aRect;                                     \n"
     "layout(location=1) in vec4  aColor;                                    \n"
     "                                                                       \n"
@@ -29,6 +31,8 @@ const char vsQuadSource[] =
     "}                                                                      \n";
 
 const char fsQuadSource[] = 
+	"#version 330                                                           \n"
+    "                                                                       \n"
     "in vec4 vColor;                                                        \n"
     "                                                                       \n"
     "layout(location = 0, index = 0) out vec4 outColor;                     \n"
