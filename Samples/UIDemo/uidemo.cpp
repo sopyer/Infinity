@@ -22,6 +22,20 @@ extern "C"
 #define ICON_LOGIN 0xE740
 #define ICON_TRASH 0xE729
 
+namespace ui
+{
+    struct AreaDesc
+    {
+        int             preicon;
+        const char*     text;
+        float           x;
+        float           y;
+        float           w;
+        float           h;
+        unsigned int    state;
+    };
+}
+
 static char* cpToUTF8(int cp, char* str)
 {
     int n = 0;
@@ -252,20 +266,56 @@ void drawCheckBox(struct NVGcontext* vg, const char* text, float x, float y, flo
     }
 }
 
-void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, unsigned int col)
+enum
+{
+        BUTTON_FOCUSED = 1 << 0,
+        BUTTON_PRESSED = 1 << 1,
+        BUTTON_DEFAULT = 0 << 2,
+        BUTTON_ACTION  = 1 << 2,
+        BUTTON_ALERT   = 2 << 2,
+};
+
+void drawButton(struct NVGcontext* vg, int preicon, const char* text, float x, float y, float w, float h, unsigned int state)
 {
     struct NVGpaint bg;
     char icon[8];
     float cornerRadius = 4.0f;
     float tw = 0, iw = 0;
+    
+    unsigned int color0;
+    unsigned int color1;
 
-    bg = nvgLinearGradient(vg, x,y,x,y+h, nvgRGBA(255,255,255,col==0?16:32), nvgRGBA(0,0,0,col==0?16:32));
+
+    if (state&BUTTON_FOCUSED || state&BUTTON_PRESSED)
+    {
+        color0 = nvgRGBA( 64,  64,  64, 48);
+        color1 = nvgRGBA(255, 255, 255, 48);
+    }
+    else
+    {
+        color0 = nvgRGBA(  0,   0,   0, 32);
+        color1 = nvgRGBA(255, 255, 255, 32);
+    }
+
+    if (state&BUTTON_PRESSED)
+        bg = nvgLinearGradient(vg, x,y,x,y+h, color0, color1);
+    else
+        bg = nvgLinearGradient(vg, x,y,x,y+h, color1, color0);
+
     nvgBeginPath(vg);
     nvgRoundedRect(vg, x+1,y+1, w-2,h-2, cornerRadius-1);
-    if (col != 0) {
-        nvgFillColor(vg, col);
+
+    if (state&BUTTON_ACTION)
+    {
+        nvgFillColor(vg, nvgRGBA(0,96,128,255));
         nvgFill(vg);
     }
+    else if (state&BUTTON_ALERT)
+    {
+        nvgFillColor(vg, nvgRGBA(128,16,8,255));
+        nvgFill(vg);
+    }
+
     nvgFillPaint(vg, bg);
     nvgFill(vg);
 
@@ -732,6 +782,16 @@ void drag(uint32_t areaID, int* x, int* y, int dx, int dy, int* dragInProgress)
     }
 }
 
+void drawButton(struct NVGcontext* vg, ui::AreaDesc* area)
+{
+    drawButton(vg, area->preicon, area->text, area->x, area->y, area->w, area->h, area->state);
+}
+
+ui::AreaDesc loginButton  = {ICON_LOGIN, "Sign in", 0, 0, 140, 28, BUTTON_ACTION};
+ui::AreaDesc deleteButton = {ICON_TRASH, "Delete",  0, 0, 160, 28, BUTTON_ALERT};
+ui::AreaDesc cancelButton = {         0, "Cancel",  0, 0, 110, 28, 0};
+
+
 class UIDemo: public ui::Stage
 {
 private:
@@ -828,6 +888,7 @@ protected:
         ViewThumbnails,
         ViewDragWindow,
         ViewDragSlider,
+        ViewWaitForRelease
     };
 
     EnumView activeView;
@@ -897,7 +958,7 @@ protected:
         drawEditBox(vg, "Password", x,y, 280,28);
         y += 38;
         drawCheckBox(vg, "Remember me", x,y, 140,28, checkboxValue);
-        drawButton(vg, ICON_LOGIN, "Sign in", x+138, y, 140, 28, nvgRGBA(0,96,128,255));
+        drawButton(vg, &loginButton);
         y += 45;
 
         // Slider
@@ -907,8 +968,8 @@ protected:
         drawSlider(vg, sliderPos, x,y, 170,28);
         y += 55;
 
-        drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, nvgRGBA(128,16,8,255));
-        drawButton(vg, 0, "Cancel", x+170, y, 110, 28, nvgRGBA(0,0,0,0));
+        drawButton(vg, &deleteButton);
+        drawButton(vg, &cancelButton);
 
         if (showEffects)
         {
@@ -927,32 +988,50 @@ protected:
     int dsx, dsy;
     int sliderPos;
 
+    bool hitTest(float x, float y, float x0, float y0, float x1, float y1)
+    {
+        return (x0<=x) && (x<=x1) && (y0<=y) && (y<=y1);
+    }
+
+    
+    bool buttonLogic(float mx, float my, ui::AreaDesc* area)
+    {
+        area->state &= ~3;
+        if (hitTest(mx, my, area->x, area->y, area->x+area->w, area->y+area->h))
+        {
+            if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
+                area->state |= BUTTON_PRESSED;
+            else
+                area->state |= BUTTON_FOCUSED;
+
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+                return true;
+        }
+
+        return false;
+    }
+
     void onUpdate(float dt)
     {
-        const uint32_t effectsID      = 0xFF00FF00;
-        const uint32_t checkboxID     = 0xFF00FF01;
-        const uint32_t windowHeaderID = 0xFF00FF02;
-        const uint32_t sliderID       = 0xFF00FF03;
+        int mx, my;
 
-        uint32_t id = ui::mouseOverID();
-
+        ui::mouseAbsOffset(&mx, &my);
 
         if (activeView == ViewThumbnails)
         {
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==ui::ID_MAIN_VIEW)
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && !hitTest(mx-wx1, my-wy1, 315, 69, 475, 369))
             {
                 showEffects = false;
+                activeView = ViewWaitForRelease;
             }
-            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==ui::ID_MAIN_VIEW)
-            {
-                showEffects = false;
-                activeView = ViewMain;
-            }
-
-            if (showEffects)
+            else
             {
                 //draw selection
             }
+        }
+        else if (activeView==ViewWaitForRelease)
+        {
+            activeView = ui::mouseWasReleased(SDL_BUTTON_LEFT) ? ViewMain : ViewWaitForRelease;
         }
         else if (activeView == ViewDragWindow)
         {
@@ -984,29 +1063,30 @@ protected:
         }
         else if (activeView == ViewMain)
         {
-            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==effectsID)
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 10, 85, 290, 113))
             {
                 activeView  = ViewThumbnails;
                 showEffects = true;
             }
 
-            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && id==checkboxID)
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 10, 228, 135, 256))
             {
                 checkboxValue = !checkboxValue;
             }
 
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==windowHeaderID)
-            {
-                int csx, csy;
+            buttonLogic(mx, my, &loginButton);
+            buttonLogic(mx, my, &deleteButton);
+            buttonLogic(mx, my, &cancelButton);
 
-                ui::mouseAbsOffset(&csx, &csy);
-                dsx = wx1 - csx;
-                dsy = wy1 - csy;
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 0, 0, ww, wh))
+            {
+                dsx = wx1 - mx;
+                dsy = wy1 - my;
 
                 activeView = ViewDragWindow;
             }
 
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==sliderID)
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 4+sliderPos, 306, 16+sliderPos, 318))
             {
                 int csx, csy;
 
@@ -1016,42 +1096,31 @@ protected:
                 activeView = ViewDragSlider;
             }
 
-            glColor4ubv((GLubyte*)&windowHeaderID);
-            glBegin(GL_QUADS);
-            glVertex2f(wx1,    wy1   );
-            glVertex2f(wx1+ww, wy1   );
-            glVertex2f(wx1+ww, wy1+wh);
-            glVertex2f(wx1,    wy1+wh);
-            glEnd();
-
-            glUseProgram(0);
-            glColor4ubv((GLubyte*)&effectsID);
-            glBegin(GL_QUADS);
-            glVertex2f(wx1 +  10, wy1 +  85);
-            glVertex2f(wx1 + 290, wy1 +  85);
-            glVertex2f(wx1 + 290, wy1 + 113);
-            glVertex2f(wx1 +  10, wy1 + 113);
-            glEnd();
-
-            glColor4ubv((GLubyte*)&checkboxID);
-            glBegin(GL_QUADS);
-            glVertex2f(wx1 +  10, wy1 + 228);
-            glVertex2f(wx1 + 135, wy1 + 228);
-            glVertex2f(wx1 + 135, wy1 + 256);
-            glVertex2f(wx1 +  10, wy1 + 256);
-            glEnd();
-
-
-            glColor4ubv((GLubyte*)&sliderID);
-            glBegin(GL_QUADS);
-            glVertex2f(wx1 + 10 + sliderPos - 6, wy1 + 306);
-            glVertex2f(wx1 + 10 + sliderPos + 6, wy1 + 306);
-            glVertex2f(wx1 + 10 + sliderPos + 6, wy1 + 318);
-            glVertex2f(wx1 + 10 + sliderPos - 6, wy1 + 318);
-            glEnd();
         }
         else assert(0);
-    }
+ 
+        float x,y,popy;
+        x = wx1 + 10; y = wy1 + 45;
+        y += 40;
+        popy = y + 14;
+        y += 45;
+        y += 25;
+        y += 35;
+        y += 38;
+        loginButton.x = x + 138;
+        loginButton.y = y;
+        //drawButton(vg, ICON_LOGIN, "Sign in", x+138, y,    140, 28, BUTTON_ACTION);
+        y += 45;
+        y += 25;
+        y += 55;
+        deleteButton.x = x;
+        deleteButton.y = y;
+        cancelButton.x = x+170;
+        cancelButton.y = y;
+
+        //drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, BUTTON_ALERT);
+        //drawButton(vg, 0, "Cancel", x+170, y, 110, 28, 0);
+   }
 };
 
 int main(int argc, char** argv)
