@@ -11,6 +11,8 @@
 #define BUFFER_OFFSET(i)    ((char*)NULL + (i))
 #define MEMORY_T_INITIALIZER  {0, 0, 0}
 
+char* cpToUTF8(int cp, char* str);
+
 struct memory_t
 {
     uint8_t* buffer;

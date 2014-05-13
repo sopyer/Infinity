@@ -308,7 +308,10 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	tex->width = w;
 	tex->height = h;
 	tex->type = type;
-	glBindTexture(GL_TEXTURE_2D, tex->tex);
+
+    glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+
+    glBindTexture(GL_TEXTURE_2D, tex->tex);
 	
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
@@ -323,7 +326,9 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, const 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glnvg__checkError("create tex");
+    glPopClientAttrib();
+
+    glnvg__checkError("create tex");
 
 	return tex->id;
 }
@@ -485,7 +490,7 @@ static void glnvg__renderFill(void* uptr, struct NVGpaint* paint, struct NVGscis
 	glDisable(GL_BLEND);
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xff);
-	glStencilFunc(GL_ALWAYS, 0, ~0);
+	glStencilFunc(GL_ALWAYS, 0, ~0u);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
