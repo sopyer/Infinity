@@ -1,3 +1,5 @@
+#version 330
+
 #define MAX_SAMPLE_COUNT 64
 
 layout(binding = 0) uniform sampler2D samSource;

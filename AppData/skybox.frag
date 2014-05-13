@@ -1,3 +1,5 @@
+#version 330
+
 in vec3 vDir;
 
 layout(location = 0, index = 0) out vec4 rt0;

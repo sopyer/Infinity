@@ -1,10 +1,14 @@
 #ifndef __FRAMEWORK_SCHEDULER_H_INCLUDED__
 #	define __FRAMEWORK_SCHEDULER_H_INCLUDED__
 
+#include <stdint.h>
+
 // Implementation is based on Mathias Brossard threadpool (https://github.com/mbrossard/threadpool).
 
 namespace mt
 {
+    static const uint32_t INVALID_HANDLE = 0xFFFFFFFF;
+
     typedef enum {
         noError       =  0,
         invalidValue  = -1,
@@ -29,7 +33,14 @@ namespace mt
      * @param flags    Unused parameter.
      * @return 0 if all goes well, negative values in case of error (@see error_t for codes).
      */
-    int addAsyncTask(void (*taskFunc)(void *), void *arg);
+    int addAsyncTask(void (*taskFunc)(void *), void *arg, uint32_t* handle);
+
+    void syncAndReleaseEvent(uint32_t handle);
+
+    inline int addAsyncTask(void (*taskFunc)(void *), void *arg)
+    {
+        return addAsyncTask(taskFunc, arg, 0);
+    }
 
     template <class T, void (T::*callback)()>
     void taskFuncStub(void* objPtr)
@@ -41,7 +52,7 @@ namespace mt
     template<class T, void (T::*callback)()>
     int addAsyncTask(T* obj)
     {
-        return addFrameTask(&taskFuncStub<T, callback>, obj);
+        return addAsyncTask(&taskFuncStub<T, callback>, obj);
     }
 }
 

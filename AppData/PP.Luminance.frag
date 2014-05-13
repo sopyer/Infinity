@@ -1,3 +1,5 @@
+#version 330
+
 in vec2 vUV;
 
 layout(binding = 0) uniform sampler2D samImage;

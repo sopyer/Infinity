@@ -1,3 +1,5 @@
+#version 330
+
 layout(location = 0) in vec2 aVertex;
 
 out vec2 vUV;

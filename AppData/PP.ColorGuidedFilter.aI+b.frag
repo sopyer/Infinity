@@ -1,4 +1,6 @@
-varying vec2 vUV;
+#version 330
+
+in vec2 vUV;
 
 layout(binding=0) uniform sampler2D samGuide;
 layout(binding=1) uniform sampler2D samMeanABx;
