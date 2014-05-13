@@ -3,14 +3,23 @@
 #include <opengl.h>
 #include <vg/openvg.h>
 
+extern "C"
+{
+#include <vg/nanovg.h>
+}
+
 namespace impl
 {
 	struct Geometry;
 }
 
+extern "C" struct NVGcontext;
+
 namespace vg
 {
-	struct FontOpaque;
+    extern NVGcontext* ctx;
+
+    struct FontOpaque;
 	struct PaintOpaque;
 
 	typedef FontOpaque*		Font;

@@ -84,14 +84,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="nanovg.c" />
     <ClCompile Include="uidemo.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="fontstash.h" />
-    <ClInclude Include="glnanovg.h" />
-    <ClInclude Include="nanovg.h" />
-    <ClInclude Include="stb_truetype.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

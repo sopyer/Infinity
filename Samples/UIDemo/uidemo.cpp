@@ -8,12 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-extern "C"
-{
-#include "nanovg.h"
-}
-#define GLNANOVG_IMPLEMENTATION
-#include "glnanovg.h"
+
 
 #define ICON_SEARCH 0x1F50D
 #define ICON_CIRCLED_CROSS 0x2716
@@ -797,7 +792,6 @@ class UIDemo: public ui::Stage
 private:
     SpectatorCamera     camera;
     glm::mat4	mProj;
-    struct NVGcontext* vg;
     int images[12];
     int fontNormal, fontBold, fontIcons; 
     memory_t f1, f2, f3;
@@ -809,19 +803,13 @@ public:
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
-        vg = glnvgCreate(512,512);
-        if (vg == NULL)
-        {
-            printf("Could not init nanovg.\n");
-        }
-
         for (size_t i = 0; i < 12; i++)
         {
             char file[128];
             _snprintf(file, 128, "uidemo/images/image%d.jpg", i+1);
             if (mopen(&fileData, file))
             {
-                images[i] = nvgCreateImageMem(vg, fileData.buffer, fileData.allocated, 0);
+                images[i] = nvgCreateImageMem(vg::ctx, fileData.buffer, fileData.allocated, 0);
                 mfree(&fileData);
             }
             if (images[i] == 0)
@@ -832,7 +820,7 @@ public:
 
         if (mopen(&f1, "uidemo/entypo.ttf"))
         {
-            fontIcons = nvgCreateFontMem(vg, "icons", f1.buffer, f1.allocated, 0);
+            fontIcons = nvgCreateFontMem(vg::ctx, "icons", f1.buffer, f1.allocated, 0);
         }
         if (fontIcons == -1)
         {
@@ -841,7 +829,7 @@ public:
         if (mopen(&f2, "uidemo/Roboto-Regular.ttf"))
         {
             //fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
-            fontNormal = nvgCreateFontMem(vg, "sans", f2.buffer, f2.allocated, 0);
+            fontNormal = nvgCreateFontMem(vg::ctx, "sans", f2.buffer, f2.allocated, 0);
         }
         if (fontNormal == -1)
         {
@@ -850,7 +838,7 @@ public:
         if (mopen(&f3, "uidemo/Roboto-Bold.ttf"))
         {
             //fontBold = nvgAddFont(vg, "sans-bold", "../example/FiraSans-Bold.ttf");
-            fontBold = nvgCreateFontMem(vg, "sans-bold", f3.buffer, f3.allocated, 0);
+            fontBold = nvgCreateFontMem(vg::ctx, "sans-bold", f3.buffer, f3.allocated, 0);
         }
         if (fontBold == -1)
         {
@@ -872,9 +860,7 @@ public:
     ~UIDemo()
     {
         for (size_t i = 0; i < 12; i++)
-            nvgDeleteImage(vg, images[i]);
-
-        glnvgDelete(vg);
+            nvgDeleteImage(vg::ctx, images[i]);
 
         mfree(&f1);
         mfree(&f2);
@@ -933,51 +919,51 @@ protected:
         float t = timerAbsoluteTime() / 1000000.0f;
         float x,y,popy;
 
-        nvgBeginFrame(vg);
+        nvgBeginFrame(vg::ctx);
 
-        drawEyes(vg, width - 250, 50, 150, 100, mx, my, t);
-        drawGraph(vg, 0, height/2, width, height/2, t);
-        drawColorwheel(vg, width - 300, height - 300, 250.0f, 250.0f, t);
+        drawEyes(vg::ctx, width - 250, 50, 150, 100, mx, my, t);
+        drawGraph(vg::ctx, 0, height/2, width, height/2, t);
+        drawColorwheel(vg::ctx, width - 300, height - 300, 250.0f, 250.0f, t);
 
-        nvgSave(vg);
+        nvgSave(vg::ctx);
 
         // Widgets
-        drawWindow(vg, "Widgets `n Stuff", wx1, wy1, 300, 400);
+        drawWindow(vg::ctx, "Widgets `n Stuff", wx1, wy1, 300, 400);
         x = wx1 + 10; y = wy1 + 45;
-        drawSearchBox(vg, "Search", x,y,280,25);
+        drawSearchBox(vg::ctx, "Search", x,y,280,25);
         y += 40;
-        drawDropDown(vg, "Effects", x,y,280,28);
+        drawDropDown(vg::ctx, "Effects", x,y,280,28);
         popy = y + 14;
         y += 45;
 
         // Form
-        drawLabel(vg, "Login", x,y, 280,20);
+        drawLabel(vg::ctx, "Login", x,y, 280,20);
         y += 25;
-        drawEditBox(vg, "Email",  x,y, 280,28);
+        drawEditBox(vg::ctx, "Email",  x,y, 280,28);
         y += 35;
-        drawEditBox(vg, "Password", x,y, 280,28);
+        drawEditBox(vg::ctx, "Password", x,y, 280,28);
         y += 38;
-        drawCheckBox(vg, "Remember me", x,y, 140,28, checkboxValue);
-        drawButton(vg, &loginButton);
+        drawCheckBox(vg::ctx, "Remember me", x,y, 140,28, checkboxValue);
+        drawButton(vg::ctx, &loginButton);
         y += 45;
 
         // Slider
-        drawLabel(vg, "Diameter", x,y, 280,20);
+        drawLabel(vg::ctx, "Diameter", x,y, 280,20);
         y += 25;
-        drawEditBoxNum(vg, "123.00", "px", x+180,y, 100,28);
-        drawSlider(vg, sliderPos, x,y, 170,28);
+        drawEditBoxNum(vg::ctx, "123.00", "px", x+180,y, 100,28);
+        drawSlider(vg::ctx, sliderPos, x,y, 170,28);
         y += 55;
 
-        drawButton(vg, &deleteButton);
-        drawButton(vg, &cancelButton);
+        drawButton(vg::ctx, &deleteButton);
+        drawButton(vg::ctx, &cancelButton);
 
         if (showEffects)
         {
             // Thumbnails box
-            drawThumbnails(vg, wx1 + 315, popy-30, 160, 300, images, 12, t);
+            drawThumbnails(vg::ctx, wx1 + 315, popy-30, 160, 300, images, 12, t);
         }
 
-        nvgRestore(vg);
+        nvgRestore(vg::ctx);
 
         glEnable(GL_DEPTH_TEST);
         glPopAttrib();
@@ -993,7 +979,6 @@ protected:
         return (x0<=x) && (x<=x1) && (y0<=y) && (y<=y1);
     }
 
-    
     bool buttonLogic(float mx, float my, ui::AreaDesc* area)
     {
         area->state &= ~3;

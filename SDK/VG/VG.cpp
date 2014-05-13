@@ -9,13 +9,19 @@
 //Path rendering use 0 as base refence value - it should work fine with GL_*_WRAP stencil operations
 //Path rendering avoids explicit stencil clear - cover/paint operation resets stencil
 
+#define GLNANOVG_IMPLEMENTATION
+#include "glnanovg.h"
+
 namespace vg
 {
-	void initFontSubsystem();
+    struct NVGcontext* ctx;
+
+    void initFontSubsystem();
 	void shutdownFontSubsystem();
 
 	void init()
 	{
+        ctx = glnvgCreate(512,512);
 		impl::allocResources();
 		initFontSubsystem();
 	}
@@ -24,6 +30,7 @@ namespace vg
 	{
 		shutdownFontSubsystem();
 		impl::freeResources();
+        glnvgDelete(ctx);
 	}
 
 	void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)
