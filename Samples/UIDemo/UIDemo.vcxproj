@@ -85,9 +85,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="nanovg.c" />
-    <ClCompile Include="stb_image.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="uidemo.cpp" />
   </ItemGroup>
   <ItemGroup>

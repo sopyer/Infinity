@@ -341,7 +341,9 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	if (tex == NULL) return 0;
 	glBindTexture(GL_TEXTURE_2D, tex->tex);
 
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
 	glPixelStorei(GL_UNPACK_SKIP_PIXELS, x);
 	glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
@@ -350,6 +352,8 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	else
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+
+    glPopClientAttrib();
 
 	return 1;
 }
