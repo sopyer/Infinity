@@ -90,11 +90,9 @@ struct media_player_data_t
     int subTasks;
     
     ALuint bufferToUpdate;
-    
-    SDL_mutex*      lock;
-    SDL_cond*       notify;
-    bool            taskStarted;
-    bool            done;
+
+    uint32_t eventID;
+    bool     taskStarted;
 };
 
 typedef struct media_player_data_t* media_player_t;
@@ -430,9 +428,8 @@ media_player_t mediaCreatePlayer(const char* source)
         }
     }
 
-    player->lock        = SDL_CreateMutex();
-    player->notify      = SDL_CreateCond();
     player->taskStarted = false;
+    player->eventID     = mt::INVALID_HANDLE;
 
     return player;
 }
@@ -441,18 +438,9 @@ void mediaDestroyPlayer(media_player_t player)
 {
     if (player->taskStarted)
     {
-        SDL_LockMutex(player->lock);
-        if (!player->done)
-        {        
-            SDL_CondWait(player->notify, player->lock);
-        }
-        SDL_UnlockMutex(player->lock);
+        mt::syncAndReleaseEvent(player->eventID);
     }
 
-    SDL_LockMutex(player->lock);
-    SDL_DestroyMutex(player->lock);
-    SDL_DestroyCond(player->notify);
-    
     closeAudioStream(player);
     closeVideoStream(player);
 
@@ -484,13 +472,7 @@ static void decodeTask(void* arg)
 {
     media_player_t player = (media_player_t)arg;
 
-    SDL_LockMutex(player->lock);
-
     doDecode(player);
-    
-    player->done = true;
-    SDL_CondBroadcast(player->notify);
-    SDL_UnlockMutex(player->lock);
 }
 
 void mediaStartPlayback(media_player_t player)
@@ -530,12 +512,7 @@ void mediaPlayerUpdate(media_player_t player)
 
     if (player->taskStarted)
     {
-        SDL_LockMutex(player->lock);
-        if (!player->done)
-        {
-            SDL_CondWait(player->notify, player->lock);
-        }
-        SDL_UnlockMutex(player->lock);
+        mt::syncAndReleaseEvent(player->eventID);
 
         if (player->subTasks&MEDIA_DECODE_VIDEO)
         {
@@ -547,7 +524,6 @@ void mediaPlayerUpdate(media_player_t player)
         }
     }
 
-    player->done        = false;
     player->taskStarted = false;
     player->subTasks    = 0;
 
@@ -581,19 +557,9 @@ void mediaPlayerUpdate(media_player_t player)
 
     if (player->subTasks)
     {
-        player->done        = false;
         player->taskStarted = true;
-        mt::addAsyncTask(decodeTask, player);
+        mt::addAsyncTask(decodeTask, player, &player->eventID);
     }
-    //decodeTaskST(player, player->subTasks);
-    //    if (player->subTasks&MEDIA_DECODE_VIDEO)
-    //    {
-    //        uploadVideoData(player, player->texY[1], player->texU[1], player->texV[1]);
-    //    }
-    //    if (player->subTasks&MEDIA_DECODE_AUDIO)
-    //    {
-    //        uploadAudioData(player, buffer);
-    //    }
 }
 
 void mediaPlayerPrepareRender(media_player_t player)
