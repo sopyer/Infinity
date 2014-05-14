@@ -13,6 +13,20 @@
 
 char* cpToUTF8(int cp, char* str);
 
+struct point_t
+{
+    float x, y;
+};
+
+struct rect_t
+{
+    float x, y;
+    float w, h;
+};
+
+bool testPtInRect(const point_t& pt, const rect_t& rect);
+bool testPtInRect(float xp, float yp, float xr, float yr, float wr, float hr);
+
 struct memory_t
 {
     uint8_t* buffer;

@@ -23,10 +23,7 @@ namespace ui
     {
         int             preicon;
         const char*     text;
-        float           x;
-        float           y;
-        float           w;
-        float           h;
+        rect_t          rect;
         unsigned int    state;
     };
 }
@@ -757,12 +754,12 @@ void drag(uint32_t areaID, int* x, int* y, int dx, int dy, int* dragInProgress)
 
 void drawButton(struct NVGcontext* vg, ui::AreaDesc* area)
 {
-    drawButton(vg, area->preicon, area->text, area->x, area->y, area->w, area->h, area->state);
+    drawButton(vg, area->preicon, area->text, area->rect.x, area->rect.y, area->rect.w, area->rect.h, area->state);
 }
 
-ui::AreaDesc loginButton  = {ICON_LOGIN, "Sign in", 0, 0, 140, 28, BUTTON_ACTION};
-ui::AreaDesc deleteButton = {ICON_TRASH, "Delete",  0, 0, 160, 28, BUTTON_ALERT};
-ui::AreaDesc cancelButton = {         0, "Cancel",  0, 0, 110, 28, 0};
+ui::AreaDesc loginButton  = {ICON_LOGIN, "Sign in", {0, 0, 140, 28}, BUTTON_ACTION};
+ui::AreaDesc deleteButton = {ICON_TRASH, "Delete",  {0, 0, 160, 28}, BUTTON_ALERT};
+ui::AreaDesc cancelButton = {         0, "Cancel",  {0, 0, 110, 28}, 0};
 
 
 class UIDemo: public ui::Stage
@@ -952,15 +949,10 @@ protected:
     int dsx, dsy;
     int sliderPos;
 
-    bool hitTest(float x, float y, float x0, float y0, float x1, float y1)
-    {
-        return (x0<=x) && (x<=x1) && (y0<=y) && (y<=y1);
-    }
-
-    bool buttonLogic(float mx, float my, ui::AreaDesc* area)
+    bool buttonLogic(const point_t& pt, ui::AreaDesc* area)
     {
         area->state &= ~3;
-        if (hitTest(mx, my, area->x, area->y, area->x+area->w, area->y+area->h))
+        if (testPtInRect(pt, area->rect))
         {
             if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
                 area->state |= BUTTON_PRESSED;
@@ -982,7 +974,7 @@ protected:
 
         if (activeView == ViewThumbnails)
         {
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && !hitTest(mx-wx1, my-wy1, 315, 69, 475, 369))
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && !testPtInRect(mx-wx1, my-wy1, 315, 69, 475, 369))
             {
                 showEffects = false;
                 activeView = ViewWaitForRelease;
@@ -1026,22 +1018,24 @@ protected:
         }
         else if (activeView == ViewMain)
         {
-            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 10, 85, 290, 113))
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && testPtInRect(mx-wx1, my-wy1, 10, 85, 280, 28))
             {
                 activeView  = ViewThumbnails;
                 showEffects = true;
             }
 
-            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 10, 228, 135, 256))
+            if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && testPtInRect(mx-wx1, my-wy1, 10, 228, 125, 28))
             {
                 checkboxValue = !checkboxValue;
             }
 
-            buttonLogic(mx, my, &loginButton);
-            buttonLogic(mx, my, &deleteButton);
-            buttonLogic(mx, my, &cancelButton);
+            point_t pt = {mx, my};
 
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 0, 0, ww, wh))
+            buttonLogic(pt, &loginButton);
+            buttonLogic(pt, &deleteButton);
+            buttonLogic(pt, &cancelButton);
+
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && testPtInRect(mx-wx1, my-wy1, 0, 0, ww, wh))
             {
                 dsx = wx1 - mx;
                 dsy = wy1 - my;
@@ -1049,7 +1043,7 @@ protected:
                 activeView = ViewDragWindow;
             }
 
-            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && hitTest(mx-wx1, my-wy1, 4+sliderPos, 306, 16+sliderPos, 318))
+            if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && testPtInRect(mx-wx1, my-wy1, 4+sliderPos, 306, 12, 12))
             {
                 int csx, csy;
 
@@ -1070,16 +1064,16 @@ protected:
         y += 25;
         y += 35;
         y += 38;
-        loginButton.x = x + 138;
-        loginButton.y = y;
+        loginButton.rect.x = x + 138;
+        loginButton.rect.y = y;
         //drawButton(vg, ICON_LOGIN, "Sign in", x+138, y,    140, 28, BUTTON_ACTION);
         y += 45;
         y += 25;
         y += 55;
-        deleteButton.x = x;
-        deleteButton.y = y;
-        cancelButton.x = x+170;
-        cancelButton.y = y;
+        deleteButton.rect.x = x;
+        deleteButton.rect.y = y;
+        cancelButton.rect.x = x+170;
+        cancelButton.rect.y = y;
 
         //drawButton(vg, ICON_TRASH, "Delete", x, y, 160, 28, BUTTON_ALERT);
         //drawButton(vg, 0, "Cancel", x+170, y, 110, 28, 0);

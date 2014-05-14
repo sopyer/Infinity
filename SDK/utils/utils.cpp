@@ -3,6 +3,16 @@
 #include "utils.h"
 #include "physfs/physfs.h"
 
+bool testPtInRect(const point_t& pt, const rect_t& rect)
+{
+    return (rect.x<=pt.x) && (pt.x<rect.x+rect.w) && (rect.y<=pt.y) && (pt.y<rect.y+rect.h);
+}
+
+bool testPtInRect(float xp, float yp, float xr, float yr, float wr, float hr)
+{
+    return (xr<=xp) && (xp<xr+wr) && (yr<=yp) && (yp<yr+hr);
+}
+
 bool marea(memory_t* mem, size_t size)
 {
     mem->allocated = 0;
