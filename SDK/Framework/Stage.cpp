@@ -246,7 +246,6 @@ namespace ui
     void Stage::outlineActors()
     {
         PROFILER_CPU_TIMESLICE("outlineActors");
-        beginPickOutline();
 
         glMatrixMode(GL_PROJECTION);
         glLoadMatrixf(mProjection);
@@ -265,21 +264,6 @@ namespace ui
             onUpdate((time-mPrevTime)*0.000001f);
             mPrevTime = time;
         }
-
-        endPickOutline();
-
-#if defined(DEBUG) || defined(_DEBUG)
-        if (dumpPickImage)
-        {
-            GLuint w = (GLuint)mWidth;
-            GLuint h = (GLuint)mHeight;
-            uint8_t* p = new uint8_t[w*h*4];
-            ui::readPickBuffer(w*h*4, p);
-            SOIL_save_image("pick.tga", SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
-            delete [] p;
-            dumpPickImage = 0;
-        }
-#endif
     }
 
     void Stage::renderActors()

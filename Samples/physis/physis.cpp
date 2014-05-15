@@ -262,18 +262,6 @@ public:
 
         CHECK_GL_ERROR();
 
-        const float     size   = 120.0f;
-        const float     margin = 2.0f;
-        const uint32_t  count  = 4;
-
-        float pos = (1280.0f/*width*/ - size * count) / 2.0f;
-
-        for (uint32_t i = 0; i < count; ++i)
-        {
-            ui::mouseAddEventArea(pos + margin, 4.0f, pos + size - margin, 36.0f, 0xFF000000|(uint32_t)i);
-            pos += size;
-        }
-
         currentTab = 1;
     }
 
@@ -726,17 +714,32 @@ protected:
 
     void onUpdate(float dt)
     {
-        if (currentTab == 3)
-            lighting::update(dt);
-        else
-            ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
+        const float     size   = 118.0f;
+        const float     margin = 2.0f;
+        const uint32_t  count  = 4;
 
-        uint32_t id = ui::mouseOverID();
-        if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && ((id&0xFF000000)==0xFF000000))
+        float pos = (1280.0f/*width*/ - size * count) / 2.0f  + margin;
+
+        int x, y;
+
+        ui::mouseAbsOffset(&x, &y);
+        for (uint32_t i = 0; i < count; ++i)
         {
-            currentTab = id & 0x00FFFFFF;
+            if (testPtInRect((float)x, (float)y, pos, 4.0f, size, 32.0f) && ui::mouseWasReleased(SDL_BUTTON_LEFT) )
+            {
+                currentTab = i;
+                break;
+            };
+            pos += size + 2.0f*margin;
+        }
 
-            assert(currentTab>=0 && currentTab<3);
+        if (currentTab == 3)
+        {
+            lighting::update(dt);
+        }
+        else if (y > 36)
+        {
+            ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
         }
     }
 

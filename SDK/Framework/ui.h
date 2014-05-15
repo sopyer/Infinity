@@ -19,6 +19,8 @@ namespace ui
     static const size_t   RAINBOW_TABLE_L_SIZE = 533;
     extern const uint32_t rainbowTableL[RAINBOW_TABLE_L_SIZE];
 
+    static const uint32_t ID_INVALID  = 0xFFFFFFFF;
+
     //TODO: Refactor!!!!!!
 	void     init(GLsizei width, GLsizei height); //Refactor later to add support for resolution change!!!!
     void     update();
@@ -42,27 +44,8 @@ namespace ui
     bool     mouseWasWheelUp  ();
     bool     mouseWasWheelDown();
 
-    uint32_t mouseOverID();
-    
-    void     mouseTrack  (uint32_t ID);
-    void     mouseUntrack();
-
-    void     mouseAddEventArea   (float    x0, float y0, float x1, float y1, uint32_t id);
-    void     mouseRemoveEventArea(uint32_t id);
-    void     mouseUpdateEventArea(uint32_t id, float x0, float y0, float x1, float y1);
-    
     void     mouseRelOffset(int* dx, int* dy);
     void     mouseAbsOffset(int*  x, int*  y);
-
-    void     beginPickOutline();
-    void     addPickOutlineRect(float x, float y, float w, float h, uint32_t id);
-    void     endPickOutline();
-    
-    uint32_t pickID(GLuint x, GLuint y);
-
-#if defined(DEBUG) || defined(_DEBUG)
-    void     readPickBuffer(GLsizei sz, void* data);
-#endif
 
     void     processCameraDirectorInput(CameraDirector*  camDirector, SpectatorCamera* camera);
     void     processCameraInput        (SpectatorCamera* camera, float dt);
@@ -72,6 +55,11 @@ namespace ui
 
     CheckBoxID checkBoxAdd(float x0, float y0, float x1, float y1, int checked);
     int        checkBoxIsChecked(CheckBoxID id);
+
+    void setMouseActiveID(uint32_t id);
+    bool isHighlightedID (uint32_t id);
+    bool isActiveID      (uint32_t id);
+    bool wasLClickedID   (uint32_t id);
 }
 
 namespace ui

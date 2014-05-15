@@ -18,7 +18,11 @@ namespace ui
 
     static const uint32_t ID_CHECKBOX = 0x01000000;
     static const uint32_t ID_MASK     = 0xFF000000;
-    static const uint32_t ID_INVALID  = 0xFFFFFFFF;
+
+    enum STATE_FLAGS
+    {
+        STATE_PRESSED = 1<<0,
+    };
 
     vg::Font defaultFont;
 
@@ -37,18 +41,8 @@ namespace ui
     bool     mouseWheelUp;
     bool     mouseWheelDown;
 
-    uint32_t mouseOverAreaID;
-    uint32_t mouseTrackID;
-
-    GLuint  fboPick;
-    GLuint  rbPickID;
-    GLuint  rbPickZ;
-
-    static const size_t MAX_AREAS     = 256;
-
-    size_t areaCount;
-    Area   areas[MAX_AREAS];
-    GLuint ids[MAX_AREAS];
+    uint32_t activeID;
+    uint32_t activeIDState;
 
     struct CheckBox
     {
@@ -66,30 +60,6 @@ namespace ui
     void checkBoxUpdateAll();
     void checkBoxRenderAll();
 
-    void createSurfaces()
-    {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
-        rbPickID = resources::createRenderbuffer(GL_RGBA8, width, height);
-        rbPickZ = resources::createRenderbuffer(GL_DEPTH24_STENCIL8, width, height);
-
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbPickID);
-        glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,  GL_RENDERBUFFER, rbPickZ );
-
-        GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
-        assert(status == GL_FRAMEBUFFER_COMPLETE);
-
-        GLuint  clearColor[4] = {0, 0, 0, 0};
-        glClearBufferuiv(GL_COLOR, 0, clearColor);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    }
-
-    void destroySurfaces()
-    {
-        glDeleteRenderbuffers(1, &rbPickID);
-        glDeleteRenderbuffers(1, &rbPickZ);
-    }
-
     void init(GLsizei w, GLsizei h)
     {
         //!!!! Refactor
@@ -97,7 +67,6 @@ namespace ui
         width      = w;
         height     = h;
 
-        areaCount     = 0;
         checkBoxCount = 0;
 
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
@@ -109,14 +78,6 @@ namespace ui
         mouseStateCur  = SDL_GetRelativeMouseState(&deltaX, &deltaY);
         deltaX = 0;
         deltaY = 0;
-
-        mouseOverAreaID = 0;
-        mouseTrackID    = ID_INVALID;
-
-        //init pick resources
-        glGenFramebuffers(1, &fboPick);
-
-        createSurfaces();
     }
 
     void cleanup()
@@ -131,11 +92,6 @@ namespace ui
 
         deltaX = 0;
         deltaY = 0;
-        
-        //fini pick resources
-        glDeleteFramebuffers(1, &fboPick);
-
-        destroySurfaces();
     }
 
     void update()
@@ -151,10 +107,34 @@ namespace ui
 
         mouseWheelUp = mouseWheelDown = false;
 
-        mouseOverAreaID = (mouseTrackID!=ID_INVALID) ? mouseTrackID : pickID(mouseX, mouseY);
-        mouseOverAreaID = mouseIsCaptured() ? 0 : mouseOverAreaID;
+        if (mouseWasPressed(SDL_BUTTON_LEFT)) activeIDState |= STATE_PRESSED;
+        if (mouseWasReleased(SDL_BUTTON_LEFT))
+        {
+            activeIDState |= ~STATE_PRESSED;
+            activeID = ID_INVALID;
+        }
 
         checkBoxUpdateAll();
+    }
+
+    void setMouseActiveID(uint32_t id)
+    {
+        if (activeID==ID_INVALID) activeID = id;
+    }
+
+    bool isHighlightedID (uint32_t id)
+    {
+        return activeID==id;
+    }
+
+    bool isActiveID(uint32_t id)
+    {
+        return activeID==id && (activeIDState&STATE_PRESSED);
+    }
+
+    bool wasLClickedID(uint32_t id)
+    {
+        return activeID==id && mouseWasReleased(SDL_BUTTON_LEFT);
     }
 
     void mouseCapture()
@@ -181,79 +161,6 @@ namespace ui
         checkBoxRenderAll();
     }
 
-    void beginPickOutline()
-    {
-        CHECK_GL_ERROR();
-
-        GLuint  clearColor[4] = {0, 0, 0, 0};
-        GLfloat depth1 = 1.0f;
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboPick);
-        glClearBufferuiv(GL_COLOR, 0, clearColor);
-        glClearBufferfv (GL_DEPTH, 0, &depth1);
-
-        glPushAttrib(GL_ALL_ATTRIB_BITS|GL_MULTISAMPLE_BIT);
-        glDisable(GL_BLEND);
-        glDisable(GL_TEXTURE_2D);
-        glDisable(GL_MULTISAMPLE);
-        glDepthMask(GL_TRUE);
-        glStencilMask(0xFF);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-        glUseProgram(0);
-
-        CHECK_GL_ERROR();
-    }
-
-    void addPickOutlineRect(GLfloat x, GLfloat y, GLfloat w, GLfloat h, GLuint id)
-    {
-        glBegin(GL_QUADS);
-        glVertex2f(x,     y    );
-        glVertex2f(x + w, y    );
-        glVertex2f(x,     y + h);
-        glVertex2f(x + w, y + h);
-        glEnd();
-    }
-
-    void endPickOutline()
-    {
-        CHECK_GL_ERROR();
-
-        //TODO: probably should be moved to another location
-        for (size_t i = 0; i < areaCount; ++i)
-        {
-            glColor4ubv((GLubyte*)&ids[i]);
-            glBegin(GL_QUADS);
-            glVertex2f(areas[i].x0, areas[i].y0);
-            glVertex2f(areas[i].x1, areas[i].y0);
-            glVertex2f(areas[i].x1, areas[i].y1);
-            glVertex2f(areas[i].x0, areas[i].y1);
-            glEnd();
-        }
-
-        glPopAttrib();
-        
-        CHECK_GL_ERROR();
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    }
-
-    GLuint pickID(GLuint x, GLuint y)
-    {
-        PROFILER_CPU_TIMESLICE("ui->pickID");
-
-        GLuint id;
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
-        glReadPixels (x, height-y-1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &id);
-
-        CHECK_GL_ERROR();
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-        return id;
-    }
-
     void onSDLEvent(SDL_Event& event)
     {
         switch(event.type)
@@ -263,89 +170,6 @@ namespace ui
                 mouseWheelDown = event.wheel.y < 0;
                 break;
         }
-    }
-
-    void mouseTrack(uint32_t ID)
-    {
-        mouseTrackID = ID;
-    }
-
-    void mouseUntrack()
-    {
-        mouseTrackID = ID_INVALID;
-    }
-
-
-    void readPickBuffer(GLsizei sz, void* data)
-    {
-        assert(sz>=width*height*4);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, fboPick);
-        glReadPixels (0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    }
-
-    uint32_t mouseOverID()
-    {
-        return mouseOverAreaID;
-    }
-
-    void mouseAddEventArea(float x0, float y0, float x1, float y1, uint32_t id)
-    {
-        assert(areaCount<MAX_AREAS);
-
-        areas[areaCount].x0 = x0;
-        areas[areaCount].y0 = y0;
-        areas[areaCount].x1 = x1;
-        areas[areaCount].y1 = y1;
-
-        ids[areaCount] = id;
-
-        areaCount++;
-    }
-
-    int findAreaFromID(uint32_t id)
-    {
-        for (size_t i = 0; i < areaCount; ++i)
-        {
-            if (ids[i] == id)
-                return i;
-        }
-
-        return -1;
-    }
-
-    void mouseRemoveEventArea(uint32_t id)
-    {
-        int idx = findAreaFromID(id) + 1;
-
-        //idx would be zero if not found
-        if (idx)
-        {
-            memmove(ids+idx-1,   ids+idx,   sizeof(ids[0]  )*(areaCount-idx));
-            memmove(areas+idx-1, areas+idx, sizeof(areas[0])*(areaCount-idx));
-
-            --areaCount;
-        }
-    }
-
-    void mouseUpdateEventArea(uint32_t id, float x0, float y0, float x1, float y1)
-    {
-        int idx;
-
-        idx = findAreaFromID(id);
-        if (idx < 0)
-        {
-            idx      = areaCount++;
-            ids[idx] = id;
-        }
-
-        assert(idx<MAX_AREAS);
-
-        areas[idx].x0 = x0;
-        areas[idx].y0 = y0;
-        areas[idx].x1 = x1;
-        areas[idx].y1 = y1;
-
     }
 
     bool mouseWasWheelUp()
@@ -416,15 +240,13 @@ namespace ui
 
     void processCameraInput(SpectatorCamera* camera, float dt)
     {
-        uint32_t id = mouseOverID();
-
         bool LCTRL_Down_LALT_Released     = keyIsPressed  (SDL_SCANCODE_LCTRL) && keyWasReleased(SDL_SCANCODE_LALT );
         bool LALT_Down_LCTRL_Released     = keyIsPressed  (SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
         bool LALT_Released_LCTRL_Released = keyWasReleased(SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
         
         bool actionReleaseMouse = LCTRL_Down_LALT_Released || LALT_Down_LCTRL_Released || LALT_Released_LCTRL_Released;
 
-        if (id == 0 && mouseWasPressed(SDL_BUTTON_LEFT))
+        if (mouseWasPressed(SDL_BUTTON_LEFT))
         {
             mouseCapture();
         }
@@ -576,8 +398,6 @@ namespace ui
 
         checkBoxCount++;
 
-        mouseAddEventArea(x0, y0, x1, y1, ID_CHECKBOX|id);
-
         return id;
     }
 
@@ -588,20 +408,20 @@ namespace ui
 
     void checkBoxUpdateAll()
     {
-        for (size_t i=0; i<checkBoxCount; ++i) //avoid cycle implement pre/post update
+        for (size_t i = 0; i < checkBoxCount; ++i)
         {
-            checkBoxes[i].hover = false;
-        }
-
-        uint32_t id = mouseOverAreaID;
-        if ((id&ID_MASK) == ID_CHECKBOX)
-        {
-            CheckBoxID cid = id&0x00FFFFFF;
-            assert(cid<checkBoxCount);
-
-            checkBoxes[cid].hover = true;
-            if (mouseWasReleased(SDL_BUTTON_LEFT))
-                checkBoxes[cid].checked = !checkBoxes[cid].checked;
+            if (testPtInRect((float)mouseX, (float)mouseY, checkBoxes[i].x0, checkBoxes[i].y0, checkBoxes[i].x1, checkBoxes[i].y1))
+            {
+                checkBoxes[i].hover = true;
+                if (mouseWasReleased(SDL_BUTTON_LEFT))
+                {
+                    checkBoxes[i].checked = !checkBoxes[i].checked;
+                }
+            }
+            else
+            {
+                checkBoxes[i].hover = false;
+            }
         }
     }
 

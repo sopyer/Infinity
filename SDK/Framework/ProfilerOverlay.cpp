@@ -232,10 +232,22 @@ void ProfilerOverlay::updateUI()
     if (!rectData.empty())
         drawBars(&ids[0]);
 
-    uint32_t id = ui::mouseOverID();
-    if (((id & profilerIntervalMask) == profilerIntervalMask) && ui::mouseWasReleased(SDL_BUTTON_LEFT))
+    int x, y;
+
+    ui::mouseAbsOffset(&x, &y);
+
+    point_t pt = {(x-30.0f-mOffsetX)/mScale, y-30.0f};
+
+    if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+    for (size_t i = 0; i < rectData.size(); i +=4)
     {
-        mSelection = id & 0xFFFF;
+        rect_t rect = {rectData[i], rectData[i+1], rectData[i+2]-rectData[i], rectData[i+3]-rectData[i+1]};
+
+        if (testPtInRect(pt, rect))
+        {
+            mSelection = i / 4;
+            break;
+        }
     }
 
     if (ui::keyWasReleased(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
@@ -270,6 +282,7 @@ void ProfilerOverlay::updateUI()
 
 void ProfilerOverlay::renderFullscreen()
 {
+    glViewport(0, 0, mWidth, mHeight);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 

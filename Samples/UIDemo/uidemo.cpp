@@ -719,39 +719,6 @@ void drawColorwheel(struct NVGcontext* vg, float x, float y, float w, float h, f
 
 uint64_t timerAbsoluteTime();
 
-void drag(uint32_t areaID, int* x, int* y, int dx, int dy, int* dragInProgress)
-{
-    assert(x);
-    assert(y);
-    assert(dragInProgress);
-
-    uint32_t id = ui::mouseOverID();
-
-    if (ui::mouseWasPressed(SDL_BUTTON_LEFT) && id==areaID)
-    {
-        int csx, csy;
-
-        ui::mouseAbsOffset(&csx, &csy);
-        dx = *x - csx;
-        dy = *y - csy;
-
-        *dragInProgress = true;
-    }
-    else if (ui::mouseIsPressed(SDL_BUTTON_LEFT) && *dragInProgress)
-    {
-        int csx, csy;
-
-        ui::mouseAbsOffset(&csx, &csy);
-        *x = csx + dx;
-        *y = csy + dy;
-
-        if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
-        {
-            *dragInProgress = false;
-        }
-    }
-}
-
 void drawButton(struct NVGcontext* vg, ui::AreaDesc* area)
 {
     drawButton(vg, area->preicon, area->text, area->rect.x, area->rect.y, area->rect.w, area->rect.h, area->state);
