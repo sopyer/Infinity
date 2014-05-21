@@ -190,10 +190,25 @@ namespace ui
             //TODO: Merge all three
             handleInput();
             ui::update();
-            outlineActors();
+ 
+            if (mState==STATE_PROFILER)
+            {
+                PROFILER_CPU_TIMESLICE("mProfilerOverlay->updateUI");
+                mProfilerOverlay->updateUI();
+            }
+            else if (mState==STATE_DEFAULT)
+            {
+                PROFILER_CPU_TIMESLICE("onUpdate");
+                uint64_t time;
+
+                time = timerAbsoluteTime();
+                onUpdate((time-mPrevTime)*0.000001f);
+                mPrevTime = time;
+            }
         
             if (mShaderEditOverlay->requireReset())
             {
+                PROFILER_CPU_TIMESLICE("onShaderRecompile");
                 onShaderRecompile();
             }
 
@@ -241,29 +256,6 @@ namespace ui
         glScalef(ur.x, ur.y, 1);
         glTranslatef(-1, 1, -0.1f/*z_near*/);
         glScalef(2.0f/width, -2.0f/height, 1.0f/width);
-    }
-
-    void Stage::outlineActors()
-    {
-        PROFILER_CPU_TIMESLICE("outlineActors");
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadMatrixf(mProjection);
-        glMatrixMode(GL_MODELVIEW);
-        setupUIViewMatrix(mProjection, mWidth, mHeight);
-
-        if (mState==STATE_PROFILER)
-        {
-            mProfilerOverlay->updateUI();
-        }
-        else if (mState==STATE_DEFAULT)
-        {
-            uint64_t time;
-
-            time = timerAbsoluteTime();
-            onUpdate((time-mPrevTime)*0.000001f);
-            mPrevTime = time;
-        }
     }
 
     void Stage::renderActors()

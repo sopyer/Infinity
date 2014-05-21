@@ -39,7 +39,6 @@ namespace ui
 		float   mWidth, mHeight;
 
     private:
-        void outlineActors();
         void renderActors();
         void handleInput();
 
