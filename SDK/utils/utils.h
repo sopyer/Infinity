@@ -62,76 +62,58 @@ type* madvance(memory_t* mem)
 
 namespace ut
 {
-    //TODO: Handle resize!!!!!!!!!!!!!!!!
-    // maps uint32_t -> [0..N]
-    // should be used only for small indices N<256
-    struct _vindex32_t
+    template<typename type_t, size_t N>
+    struct index_t
     {
         uint32_t used;
-        uint32_t allocated;
-        uint32_t data[1];
+        type_t   data[N];
     };
 
-    typedef _vindex32_t* vindex32_t;
-
-    inline void vindex_create(vindex32_t* ptrIndexData, size_t keysPrealloc);
-    inline void vindex_destroy(vindex32_t indexData);
-    inline void vindex_get(vindex32_t* ptrIndexData, uint32_t key, uint32_t* retIndex);
+    template<typename type_t, size_t N>
+    size_t index_lookup(index_t<type_t, N>* index, type_t key, size_t defValue);
 
 
-    inline void vindex_create(vindex32_t* ptrIndexData, size_t keysPrealloc)
+    template<typename type_t, size_t N>
+    size_t index_lookup(index_t<type_t, N>* index, type_t key, size_t defValue)
     {
-        size_t   dataSize;
-        vindex32_t indexData;
-
-        dataSize  = sizeof(_vindex32_t)+sizeof(uint32_t)*(keysPrealloc-1);
-        indexData = (vindex32_t)malloc(dataSize);
-
-        indexData->used      = 0;
-        indexData->allocated = keysPrealloc;
-
-        *ptrIndexData = indexData;
-    }
-
-    inline void vindex_destroy(vindex32_t indexData)
-    {
-        free(indexData);
-    }
-
-    // adds key to index
-    inline void vindex_get(vindex32_t* ptrIndexData, uint32_t key, uint32_t* retIndex)
-    {
-        size_t    idx, count;
-        uint32_t* keys;
-        vindex32_t  indexData;
-
-        indexData = *ptrIndexData;
-        idx   = 0;
-        count = indexData->used;
-        keys  = indexData->data;
+        size_t  idx   = 0;
+        size_t  count = index->used;
+        type_t* keys  = index->data;
 
         for (; idx < count; ++idx)
         {
             if (keys[idx]==key)
             {
-                goto result;
+                return idx;
             }
         }
 
-        //if (idx>=indexData->allocated)
-        //{
-        //    assert(indexData->allocated < (1<<30)); // avoid overflow!!!
-        //    size_t newSize = sizeof(_vindex_t)+sizeof(uint32_t)*(indexData->allocated*2-1);
-        //    indexData = (vindex_t)realloc(indexData, newSize);
-        //    *ptrIndexData = indexData;
-        //}
+        return defValue;
+    }
 
-        assert(idx < indexData->allocated);
-        indexData->data[idx] = key;
-        ++indexData->used;
-    
-    result:
-        if (retIndex) *retIndex = idx;
+    template<typename type_t, size_t N>
+    size_t index_lookup_or_add(index_t<type_t, N>* index, type_t key)
+    {
+
+        size_t  idx   = 0;
+        size_t  count = index->used;
+        type_t* keys  = index->data;
+
+        for (; idx < count; ++idx)
+        {
+            if (keys[idx]==key)
+            {
+                return idx;
+            }
+        }
+
+        assert(idx < N);
+
+        keys[idx] = key;
+        
+        ++index->used;
+
+        return idx;
     }
 }
 

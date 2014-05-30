@@ -110,11 +110,8 @@ void ProfilerOverlay::loadProfilerData()
 
     float scale = (mWidth-70.0f) / float(maxTime-minTime);
 
-    ut::vindex32_t colorMap;
-    ut::vindex32_t threadMap;
-    
-    ut::vindex_create(&colorMap, ui::RAINBOW_TABLE_L_SIZE);
-    ut::vindex_create(&threadMap, 32);
+    ut::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
+    ut::index_t<__int64, 32>                        threadMap = {0};
 
     rectData.clear();
     intervals.clear();
@@ -126,9 +123,9 @@ void ProfilerOverlay::loadProfilerData()
         profiler_event_t event = events[i];
         uint32_t         threadIdx;
 
-        ut::vindex_get(&threadMap, event.threadID, &threadIdx);
+        threadIdx = ut::index_lookup_or_add(&threadMap, event.threadID);
 
-        int&   top       = stackTop[threadIdx];
+        int& top = stackTop[threadIdx];
 
         if (event.phase==PROF_EVENT_PHASE_BEGIN)
         {
@@ -153,11 +150,11 @@ void ProfilerOverlay::loadProfilerData()
             ystart += threadIdx * 200;
             yend   += threadIdx * 200;
 
-            uint32_t colorIndex;
+            uint32_t colorIdx;
             uint32_t color;
 
-            ut::vindex_get(&colorMap, event.id, &colorIndex);
-            color = ui::rainbowTableL[colorIndex];
+            colorIdx = ut::index_lookup_or_add(&colorMap, event.id);
+            color    = ui::rainbowTableL[colorIdx];
 
             colors.push_back(color);
 
@@ -179,9 +176,6 @@ void ProfilerOverlay::loadProfilerData()
             --top;
         }
     }
-
-    ut::vindex_destroy(colorMap);
-    ut::vindex_destroy(threadMap);
 }
 
 void drawRects(GLsizei count, float* rects, uint32_t* colors)
@@ -206,6 +200,7 @@ void drawRects(GLsizei count, float* rects, uint32_t* colors)
 
 void ProfilerOverlay::drawBars(uint32_t* colorArray)
 {
+    PROFILER_CPU_TIMESLICE("ProfilerOverlay::drawBars");
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
     glPushMatrix();
