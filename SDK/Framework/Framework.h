@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <opengl.h>
 
-#include <UI.h>
+#include <ui.h>
 #include <ResourceHelpers.h>
 #include <profiler.h>
 #include <physfs/physfs.h>

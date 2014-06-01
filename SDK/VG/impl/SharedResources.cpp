@@ -1,5 +1,6 @@
-#include <cassert>
+#include <assert.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <opengl.h>
 
