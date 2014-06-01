@@ -1,1 +1,1 @@
-python flextGL\flextGLgen.py -D generated -T opengl flextGL.in
+python flextGL\flextGLgen.py -D generated -t templates\opengl flextGL.in
