@@ -224,9 +224,6 @@ void ProfilerOverlay::updateUI()
     static const float scaleUp   = 1.25;
     static const float scaleDown = 1.0f / 1.25f;
 
-    if (!rectData.empty())
-        drawBars(&ids[0]);
-
     int x, y;
 
     ui::mouseAbsOffset(&x, &y);
