@@ -79,6 +79,9 @@ namespace ml
     }
 }
 
+#define TRUE  1
+#define FALSE 0
+
 namespace ut
 {
     template<size_t N>
