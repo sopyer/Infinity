@@ -60,6 +60,92 @@ type* madvance(memory_t* mem)
     return (type*)var;
 }
 
+namespace ml
+{
+    static const float cf_pi          = 3.141592653589793f;
+    static const float cf_2_pi        = cf_pi * 2.0f;
+    static const float cf_1_over_pi   = 1.0f / cf_pi;
+    static const float cf_1_over_2_pi = 1.0f / cf_2_pi;
+
+    typedef union {float f; uint32_t u32;} f_u_conv_t;
+
+    inline float abs(float v)
+    {
+        f_u_conv_t conv = {v};
+
+        conv.u32 &= 0x7FFFFFFF;
+
+        return conv.f;
+    }
+}
+
+namespace ut
+{
+    template<size_t N>
+    struct moving_avg_filter_t
+    {
+        size_t active;
+        float  samples[N];
+    };
+
+    template<size_t N>
+    inline void moving_avg_filter_reset(moving_avg_filter_t<N>* filter)
+    {
+        memset(filter, 0, sizeof(filter));
+    }
+
+    template<size_t N>
+    inline float moving_avg_filter(moving_avg_filter_t<N>* filter, float sample)
+    {
+        size_t pos = filter->active++ % N;
+
+        filter->samples[pos] = sample;
+
+        float sum = 0.0f;
+        for (size_t i = 0; i < N; ++i)
+        {
+            sum += sample[i];
+        }
+
+        return sum / N;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    inline float exp_avg_calcLambda(float dt, float cutoffFreq)
+    {
+        return  1.0f / (1.0f + ml::cf_1_over_2_pi / (cutoffFreq * dt));
+    }
+
+    inline float exp_avg_filter(float* yn_1, float lambda, float sample)
+    {
+        *yn_1 = lambda * (sample - *yn_1) + *yn_1;
+
+        return *yn_1;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+    struct one_euro_filter_t
+    {
+        float dxn_1;
+        float yn_1;
+        float cutoffFreq;
+        float dcutoffFreq;
+        float dslope;
+    };
+
+    inline float one_euro_filter_accum(one_euro_filter_t* filter, float dt, float sample)
+    {
+        float lambda;
+
+        lambda = exp_avg_calcLambda(dt, filter->dcutoffFreq);
+        filter->dxn_1 = exp_avg_filter(&filter->dxn_1, lambda, sample - filter->yn_1);
+        lambda = exp_avg_calcLambda(dt, filter->cutoffFreq + filter->dslope * ml::abs(filter->dxn_1));
+        filter->yn_1 = exp_avg_filter(&filter->yn_1, lambda, sample);
+    }
+}
+
 namespace ut
 {
     template<typename type_t, size_t N>
