@@ -2,6 +2,7 @@
 #include <opengl.h>
 #include <vg/vg.h>
 
+#include "profiler.h"
 #include "ShaderEditOverlay.h"
 
 class LexState : public LexInterface {
@@ -573,14 +574,23 @@ void ShaderEditOverlay::renderFullscreen()
 
 	float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-	glTranslatef(30, 30, 0);
-	mSelectionList.Paint();
+    {
+        PROFILER_CPU_TIMESLICE("mSelectionList.Paint");
+	    glTranslatef(30, 30, 0);
+	    mSelectionList.Paint();
+    }
+    
+    {
+        PROFILER_CPU_TIMESLICE("mShaderEditor.Paint");
+	    glTranslatef(w1*0.3f+20, 0, 0);
+	    mShaderEditor.Paint();
+    }
 
-	glTranslatef(w1*0.3f+20, 0, 0);
-	mShaderEditor.Paint();
-
-	glTranslatef(0, h1*0.7f+20, 0);
-	mDebugOutputView.Paint();
+    {
+        PROFILER_CPU_TIMESLICE("mDebugOutputView.Paint");
+	    glTranslatef(0, h1*0.7f+20, 0);
+	    mDebugOutputView.Paint();
+    }
 
 	glPopAttrib();
 }
