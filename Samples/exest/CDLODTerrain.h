@@ -26,29 +26,27 @@ public:
 
     struct ViewData
     {
-        ml::mat4x4	uMVP;
-        v128		uLODViewK;
+        ml::mat4x4 uMVP;
+        v128       uLODViewK;
     } viewData;
 
-    glm::vec3   viewPoint;
-    ml::mat4x4	sseVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
-    float       vertDistToTerrain;
-    size_t      maxLevel;
+    glm::vec3  viewPoint;
+    ml::mat4x4 sseVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
+    float      vertDistToTerrain;
+    size_t     maxLevel;
 
-    PatchData*	instData;
-    size_t		patchCount;
-    size_t		maxPatchCount;
-    GLsizei		idxCount;
+    PatchData* instData;
+    size_t     patchCount;
+    size_t     maxPatchCount;
+    GLsizei    idxCount;
 
-    bool drawWireframe;
-
-    GLuint		prgTerrain;
-    GLuint		geomVBO, instVBO, ibo, ubo;
-    GLuint		mHeightmapTex;
-    GLuint      mipTexture;
-    GLuint      compositeFBO;
-    GLuint		vao;
-    GLsizei		uniTerrainOffset, uniViewOffset, uniPatchOffset;
+    GLuint  prgTerrain;
+    GLuint  geomVBO, instVBO, ibo, ubo;
+    GLuint  mHeightmapTex;
+    GLuint  mipTexture;
+    GLuint  compositeFBO;
+    GLuint  vao;
+    GLsizei uniTerrainOffset, uniViewOffset, uniPatchOffset;
 
     void generateGeometry(size_t vertexCount);
     void setHeightmap(uint16_t* data, size_t width, size_t height);
@@ -63,10 +61,10 @@ public:
     void setMVPMatrix(glm::mat4& mat);
     void drawTerrain();
 
-    CPUTimer	cpuTimer;
-    CPUTimer	cpuSelectTimer;
-    CPUTimer	cpuDrawTimer;
-    GPUTimer	gpuTimer;
+    CPUTimer cpuTimer;
+    CPUTimer cpuSelectTimer;
+    CPUTimer cpuDrawTimer;
+    GPUTimer gpuTimer;
 
     double cpuTime;
     double cpuSelectTime;

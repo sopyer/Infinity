@@ -28,8 +28,6 @@ struct TerrainData
 
 void CDLODTerrain::initialize()
 {
-    drawWireframe = false;
-
     // Create instanced terrain program
     const char* define = "#version 330\n#define ENABLE_INSTANCING\n";
     prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, &define);
@@ -298,10 +296,13 @@ void CDLODTerrain::drawTerrain()
     PROFILER_CPU_TIMESLICE("CDLODTerrain");
     cpuTimer.start();
 
-    glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-    //Discard data from previous frame
-    glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-    instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    {
+        PROFILER_CPU_TIMESLICE("MapBuffer");
+        glBindBuffer(GL_ARRAY_BUFFER, instVBO);
+        //Discard data from previous frame
+        glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
+        instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    }
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
@@ -323,8 +324,11 @@ void CDLODTerrain::drawTerrain()
         cpuSelectTimer.stop();
     }
 
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    {
+        PROFILER_CPU_TIMESLICE("MapBuffer");
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
 
     cpuDrawTimer.start();
     gpuTimer.start();
@@ -334,38 +338,51 @@ void CDLODTerrain::drawTerrain()
     {
         PROFILER_CPU_TIMESLICE("Render");
 
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        {
+            PROFILER_CPU_TIMESLICE("Uniforms");
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
+        }
 
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
+        {
+            PROFILER_CPU_TIMESLICE("SetTextures");
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, mipTexture);
+        }
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, mipTexture);
-
-        //TODO: Enable triangle culling and fix mesh(Partially done)
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        if (drawWireframe)
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glEnable(GL_DEPTH_TEST);
-
-        glUseProgram(prgTerrain);
+        {
+            PROFILER_CPU_TIMESLICE("BindProgram");
+            glUseProgram(prgTerrain);
+        }
 
         viewData.uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
+        {
+            PROFILER_CPU_TIMESLICE("Uniforms");
+            glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+            glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
+        }
 
-        glBindVertexArray(vao);
-        glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+        {
+            PROFILER_CPU_TIMESLICE("BindGeom");
+            glBindVertexArray(vao);
+        }
 
-        glUseProgram(0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glPopAttrib();
+        {
+            PROFILER_CPU_TIMESLICE("DIP");
+            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+        }
+
+        {
+            PROFILER_CPU_TIMESLICE("ClearBindings");
+            glUseProgram(0);
+            glBindVertexArray(0);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            glActiveTexture(GL_TEXTURE0);
+       }
     }
 
     cpuDrawTime = cpuDrawTimer.elapsed();

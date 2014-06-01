@@ -25,6 +25,8 @@ private:
 
     CameraDirector camDirector;
 
+    bool drawWireframe;
+
 public:
     Exest(): fixedMode(false), loc(0)
     {
@@ -70,7 +72,9 @@ public:
         PHYSFS_close(src);
 
         terrain.setHeightmap(data, w, h);
-
+        
+        drawWireframe = false;
+        
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
 
@@ -198,6 +202,12 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        if (drawWireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glEnable(GL_DEPTH_TEST);
+
         if (!fixedMode)
         {
             terrain.viewPoint = camera.getPosition();
@@ -213,10 +223,15 @@ protected:
 
         terrain.drawTerrain();
 
+        if (drawWireframe)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
         if (fixedMode)
         {
             drawFrustum(VP);
         }
+
+        glDisable(GL_CULL_FACE);
 
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
@@ -279,7 +294,7 @@ protected:
 
         if (ui::keyWasReleased(SDL_SCANCODE_F))
         {
-            terrain.drawWireframe = !terrain.drawWireframe;
+            drawWireframe = !drawWireframe;
         }
     }
 };
