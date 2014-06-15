@@ -1,4 +1,5 @@
 #include "CDLODTerrain.h"
+#include <Framework/graphics.h>
 
 struct PatchData
 {
@@ -9,22 +10,27 @@ struct PatchData
 
 struct TerrainData
 {
-    v128        uAABB;
-    v128		uUVXform;
-    v128		uHeightXform;
-    v128		uPatchScales[CDLODTerrain::MAX_LOD_COUNT];
-    v128		uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
-    v128		uColors[CDLODTerrain::MAX_LOD_COUNT];
+    v128 uAABB;
+    v128 uUVXform;
+    v128 uHeightXform;
+    v128 uPatchScales[CDLODTerrain::MAX_LOD_COUNT];
+    v128 uMorphParams[CDLODTerrain::MAX_LOD_COUNT];
+    v128 uColors[CDLODTerrain::MAX_LOD_COUNT];
 };
 
+struct ViewData
+{
+    ml::mat4x4 uMVP;
+    v128       uLODViewK;
+};
 
-#define ATTR_POSITION	0
-#define ATTR_PATCH_BASE	1
-#define ATTR_LEVEL		2
+#define ATTR_POSITION   0
+#define ATTR_PATCH_BASE 1
+#define ATTR_LEVEL      2
 
-#define UNI_TERRAIN_BINDING  0
-#define UNI_VIEW_BINDING     1
-#define UNI_PATCH_BINDING    2
+#define UNI_TERRAIN_BINDING 0
+#define UNI_VIEW_BINDING    1
+#define UNI_PATCH_BINDING   2
 
 void CDLODTerrain::initialize()
 {
@@ -47,75 +53,55 @@ void CDLODTerrain::initialize()
     }
 #endif
 
-    GLint totalSize=0;
-    GLint align;
-
     glGenTextures(1, &mHeightmapTex);
-    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
 
     glGenTextures(1, &mipTexture);
-    glBindTexture(GL_TEXTURE_2D, mipTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 32, 32, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA,  8,  8, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexImage2D(GL_TEXTURE_2D, 3, GL_RGBA,  4,  4, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexImage2D(GL_TEXTURE_2D, 4, GL_RGBA,  2,  2, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexImage2D(GL_TEXTURE_2D, 5, GL_RGBA,  1,  1, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glGenFramebuffers(1, &compositeFBO);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, compositeFBO);
-    float levelColors[6][4] = 
+    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
+    glTextureStorage2DEXT(mipTexture, GL_TEXTURE_2D, 6, GL_RGBA8, 32, 32);
+
+    uint32_t levelColor[6] = 
     {
-        {0.0f, 0.0f, 1.0f, 0.8f},
-        {0.0f, 0.5f, 1.0f, 0.4f},
-        {1.0f, 1.0f, 1.0f, 0.0f},
-        {1.0f, 0.7f, 0.0f, 0.2f},
-        {1.0f, 0.3f, 0.0f, 0.6f},
-        {1.0f, 0.0f, 0.0f, 0.8f}
+        0xCCFF0000,
+        0x66FF8000,
+        0x00FFFFFF,
+        0x3300B3FF,
+        0x66004DFF,
+        0xCC0000FF
     };
+
     for (GLint i=0; i<6; ++i)
     {
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mipTexture, i);
-        glClearBufferfv(GL_COLOR, 0, levelColors[i]);
+        glClearTexImage(mipTexture, i, GL_RGBA, GL_UNSIGNED_BYTE, &levelColor[i]);
     }
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glGenBuffers(1, &geomVBO);
-    glGenBuffers(1, &instVBO);
     glGenBuffers(1, &ibo);
 
     glGenVertexArrays(1, &vao);
+    glVertexArrayVertexAttribFormatEXT  (vao, ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0);
+    glVertexArrayVertexAttribBindingEXT (vao, ATTR_POSITION, 0);
+    glVertexArrayVertexBindingDivisorEXT(vao, 0, 0);
+
+    glVertexArrayVertexAttribIFormatEXT (vao, ATTR_PATCH_BASE, 2, GL_INT, 0);
+    glVertexArrayVertexAttribFormatEXT  (vao, ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, 8);
+    glVertexArrayVertexAttribBindingEXT (vao, ATTR_PATCH_BASE, 1);
+    glVertexArrayVertexAttribBindingEXT (vao, ATTR_LEVEL,      1);
+    glVertexArrayVertexBindingDivisorEXT(vao, 1, 1);
+
+    glEnableVertexArrayAttribEXT(vao, ATTR_POSITION);
+    glEnableVertexArrayAttribEXT(vao, ATTR_LEVEL);
+    glEnableVertexArrayAttribEXT(vao, ATTR_PATCH_BASE);
+
     glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-    glVertexAttribPointer(ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
-    glVertexAttribDivisor(ATTR_POSITION, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-    glVertexAttribIPointer(ATTR_PATCH_BASE, 2, GL_INT, sizeof(PatchData), (void*)0);
-    glVertexAttribDivisor(ATTR_PATCH_BASE, 1);
-    glVertexAttribPointer(ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, sizeof(PatchData), (void*)8);
-    glVertexAttribDivisor(ATTR_LEVEL, 1);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glEnableVertexAttribArray(ATTR_POSITION);
-    glEnableVertexAttribArray(ATTR_LEVEL);
-    glEnableVertexAttribArray(ATTR_PATCH_BASE);
     glBindVertexArray(0);
 
-    // Assumption - align is power of 2
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-    --align;
-
-    uniTerrainOffset  = totalSize;	totalSize+=sizeof(TerrainData);		totalSize += align; totalSize &=~align;
-    uniViewOffset     = totalSize;	totalSize+=sizeof(ViewData);		totalSize += align; totalSize &=~align;
-    uniPatchOffset    = totalSize;	totalSize+=sizeof(PatchData);		totalSize += align; totalSize &=~align;
-
     glGenBuffers(1, &ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, totalSize, 0, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glNamedBufferDataEXT(ubo, sizeof(TerrainData), 0, GL_DYNAMIC_DRAW);
 
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);
@@ -130,29 +116,27 @@ void CDLODTerrain::cleanup()
     glDeleteBuffers(1, &ubo);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &geomVBO);
-    glDeleteBuffers(1, &instVBO);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(prgTerrain);
     glDeleteTextures(1, &mHeightmapTex);
     glDeleteTextures(1, &mipTexture);
-    glDeleteFramebuffers(1, &compositeFBO);
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
 {
     // Attention! Column order is changed!
-    sseVP.r0 = vi_loadu(mat[0]);
-    sseVP.r1 = vi_loadu(mat[2]);
-    sseVP.r2 = vi_loadu(mat[1]);
-    sseVP.r3 = vi_loadu(mat[3]);
+    selectionMVP.r0 = vi_loadu(mat[0]);
+    selectionMVP.r1 = vi_loadu(mat[2]);
+    selectionMVP.r2 = vi_loadu(mat[1]);
+    selectionMVP.r3 = vi_loadu(mat[3]);
 }
 
 void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
 {
-    viewData.uMVP.r0 = vi_loadu(mat[0]);
-    viewData.uMVP.r1 = vi_loadu(mat[1]);
-    viewData.uMVP.r2 = vi_loadu(mat[2]);
-    viewData.uMVP.r3 = vi_loadu(mat[3]);
+    viewMVP.r0 = vi_loadu(mat[0]);
+    viewMVP.r1 = vi_loadu(mat[1]);
+    viewMVP.r2 = vi_loadu(mat[2]);
+    viewMVP.r3 = vi_loadu(mat[3]);
 }
 
 inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radius)
@@ -192,7 +176,7 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
     if (!skipFrustumTest)
     {
         //Check whether AABB intersects frustum
-        int result = ml::intersectionTest(&AABB, &sseVP);
+        int result = ml::intersectionTest(&AABB, &selectionMVP);
 
         if (result==ml::IT_OUTSIDE) return;
         skipFrustumTest = result==ml::IT_INSIDE;
@@ -233,9 +217,8 @@ glm::vec4 colors[] =
 
 void CDLODTerrain::generateGeometry(size_t vertexCount)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, geomVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*vertexCount*vertexCount, 0, GL_STATIC_DRAW);
-    float* ptr = (float*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    glNamedBufferDataEXT(geomVBO, sizeof(float)*2*vertexCount*vertexCount, 0, GL_STATIC_DRAW);
+    float* ptr = (float*)glMapNamedBufferRangeEXT(geomVBO, 0, sizeof(float)*2*vertexCount*vertexCount, GL_MAP_WRITE_BIT);
     for (size_t y=0; y<vertexCount; ++y)
     {
         for (size_t x=0; x<vertexCount; ++x)
@@ -244,18 +227,15 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
             *ptr++ = (float)y;
         }
     }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUnmapNamedBufferEXT(geomVBO);
 
 #define INDEX_FOR_LOCATION(x, y) ((y)*vertexCount+(x))
 
     size_t quadsInRow = (vertexCount-1);
 
     idxCount = quadsInRow*quadsInRow*6;
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
-    uint16_t* ptr2 = (uint16_t*)glMapBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_WRITE_ONLY);
+    glNamedBufferDataEXT(ibo, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
+    uint16_t* ptr2 = (uint16_t*)glMapNamedBufferRangeEXT(ibo, 0, sizeof(uint16_t)*idxCount, GL_MAP_WRITE_BIT);
     uint16_t vtx0 = 0;
     uint16_t vtx1 = 1;
     uint16_t vtx2 = vertexCount;
@@ -287,8 +267,7 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
 
 #undef INDEX_FOR_LOCATION
 
-    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glUnmapNamedBufferEXT(ibo);
 }
 
 void CDLODTerrain::drawTerrain()
@@ -296,13 +275,9 @@ void CDLODTerrain::drawTerrain()
     PROFILER_CPU_TIMESLICE("CDLODTerrain");
     cpuTimer.start();
 
-    {
-        PROFILER_CPU_TIMESLICE("MapBuffer");
-        glBindBuffer(GL_ARRAY_BUFFER, instVBO);
-        //Discard data from previous frame
-        glBufferData(GL_ARRAY_BUFFER, MAX_PATCH_COUNT*sizeof(PatchData), 0, GL_STREAM_DRAW);
-        instData = (PatchData*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    }
+    GLuint baseInstance;
+
+    instData = (PatchData*)graphics::allocDynVerts(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
@@ -324,12 +299,6 @@ void CDLODTerrain::drawTerrain()
         cpuSelectTimer.stop();
     }
 
-    {
-        PROFILER_CPU_TIMESLICE("MapBuffer");
-        glUnmapBuffer(GL_ARRAY_BUFFER);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-    }
-
     cpuDrawTimer.start();
     gpuTimer.start();
 
@@ -339,49 +308,46 @@ void CDLODTerrain::drawTerrain()
         PROFILER_CPU_TIMESLICE("Render");
 
         {
-            PROFILER_CPU_TIMESLICE("Uniforms");
-            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING,  ubo, uniTerrainOffset,  sizeof(TerrainData));
-            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,     ubo, uniViewOffset,     sizeof(ViewData));
-        }
-
-        {
-            PROFILER_CPU_TIMESLICE("SetTextures");
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, mipTexture);
-        }
-
-        {
             PROFILER_CPU_TIMESLICE("BindProgram");
             glUseProgram(prgTerrain);
         }
 
-        viewData.uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
+        {
+            PROFILER_CPU_TIMESLICE("SetTextures");
+            glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, mHeightmapTex);
+            glBindMultiTextureEXT(GL_TEXTURE1, GL_TEXTURE_2D, mipTexture);
+        }
 
         {
             PROFILER_CPU_TIMESLICE("Uniforms");
-            glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-            glBufferSubData(GL_UNIFORM_BUFFER, uniViewOffset, sizeof(ViewData), &viewData);
+            GLuint    offset;
+            ViewData* ptrViewData;
+            
+            ptrViewData = (ViewData*) graphics::allocDynMem(sizeof(ViewData), graphics::caps.uboAlignment, &offset);
+            offset += graphics::dynBufferOffset;
+            memcpy(&ptrViewData->uMVP, &viewMVP, sizeof(viewMVP));
+            ptrViewData->uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
+
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING, ubo,                 0,      sizeof(TerrainData));
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,    graphics::dynBuffer, offset, sizeof(ViewData));
         }
 
         {
             PROFILER_CPU_TIMESLICE("BindGeom");
             glBindVertexArray(vao);
+            glBindVertexBuffer(0, geomVBO, 0, sizeof(float)*2);
+            glBindVertexBuffer(1, graphics::dynBuffer, graphics::dynBufferOffset, sizeof(PatchData));
         }
 
         {
             PROFILER_CPU_TIMESLICE("DIP");
-            glDrawElementsInstanced(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount);
+            glDrawElementsInstancedBaseInstance(GL_TRIANGLES, idxCount, GL_UNSIGNED_SHORT, 0, patchCount, baseInstance);
         }
 
         {
             PROFILER_CPU_TIMESLICE("ClearBindings");
             glUseProgram(0);
             glBindVertexArray(0);
-            glBindBuffer(GL_UNIFORM_BUFFER, 0);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-            glActiveTexture(GL_TEXTURE0);
        }
     }
 
@@ -425,14 +391,12 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 
     generateGeometry(patchDim+1);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    uint8_t*      uniforms     = (uint8_t*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    TerrainData&  terrainData  = *(TerrainData*) (uniforms+uniTerrainOffset);
+    TerrainData& terrainData = *(TerrainData*) glMapNamedBufferRangeEXT(ubo, 0, sizeof(TerrainData), GL_MAP_WRITE_BIT);
 
     assert(LODCount<=MAX_LOD_COUNT);
 
-    float	size2=cellSize*cellSize*patchDim*patchDim,
-            range=100.0f, curRange=0.0f;
+    float size2=cellSize*cellSize*patchDim*patchDim,
+          range=100.0f, curRange=0.0f;
 
     for (size_t i=0; i<LODCount; ++i)
     {
@@ -463,17 +427,15 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     terrainData.uHeightXform = vi_set(heightScale, minY, 0.0f, 0.0f);
     memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+    glUnmapNamedBufferEXT(ubo);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glBindTexture(GL_TEXTURE_2D, mHeightmapTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTextureImage2DEXT(mHeightmapTex, GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
+    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
     GLenum err = glGetError();
     assert(err==GL_NO_ERROR);

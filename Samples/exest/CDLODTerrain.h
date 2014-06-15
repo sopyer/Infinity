@@ -24,14 +24,9 @@ public:
 
     float LODRange  [MAX_LOD_COUNT];
 
-    struct ViewData
-    {
-        ml::mat4x4 uMVP;
-        v128       uLODViewK;
-    } viewData;
-
+    ml::mat4x4 viewMVP;
+    ml::mat4x4 selectionMVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
     glm::vec3  viewPoint;
-    ml::mat4x4 sseVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
     float      vertDistToTerrain;
     size_t     maxLevel;
 
@@ -41,12 +36,10 @@ public:
     GLsizei    idxCount;
 
     GLuint  prgTerrain;
-    GLuint  geomVBO, instVBO, ibo, ubo;
+    GLuint  geomVBO, ibo, ubo;
     GLuint  mHeightmapTex;
     GLuint  mipTexture;
-    GLuint  compositeFBO;
     GLuint  vao;
-    GLsizei uniTerrainOffset, uniViewOffset, uniPatchOffset;
 
     void generateGeometry(size_t vertexCount);
     void setHeightmap(uint16_t* data, size_t width, size_t height);

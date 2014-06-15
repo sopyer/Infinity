@@ -1,13 +1,30 @@
 #include <assert.h>
+#include <stdint.h>
 #include "graphics.h"
 
 namespace graphics
 {
-    static GLsync frameSync[NUM_FRAMES_DELAY] = {0, 0};
-    static int    frameID = 0;
+    static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
+    static int        frameID = 0;
+
+    GLuint dynBuffer;
+    GLint  dynBufferOffset;
+
+    static uint8_t*   dynBufBasePtr;
+    static GLsizeiptr dynBufAllocated;
+
+    gl_caps_t caps;
 
     void init()
     {
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &caps.uboAlignment);
+
+        GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
+        GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
+
+        glGenBuffers(1, &dynBuffer);
+        glNamedBufferStorageEXT(dynBuffer, size, 0, flags);
+        dynBufBasePtr = (uint8_t*)glMapNamedBufferRangeEXT(dynBuffer, 0, size, flags);
     }
 
     void fini()
@@ -18,6 +35,9 @@ namespace graphics
 
     void beginFrame()
     {
+        assert(frameID > 0);
+        assert(frameID < NUM_FRAMES_DELAY);
+
         if (frameSync[frameID])
         {
             GLenum result = glClientWaitSync(frameSync[frameID], GL_SYNC_FLUSH_COMMANDS_BIT, GL_TIMEOUT_INFINITE);
@@ -27,12 +47,61 @@ namespace graphics
             glDeleteSync(frameSync[frameID]);
             frameSync[frameID] = 0;
         }
+
+        dynBufferOffset = frameID * DYNAMIC_BUFFER_FRAME_SIZE;
+        dynBufAllocated = 0;
     }
 
     void endFrame()
     {
+        assert(frameID > 0);
+        assert(frameID < NUM_FRAMES_DELAY);
+
         frameSync[frameID] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         
         frameID = (frameID + 1) % NUM_FRAMES_DELAY;
+    }
+
+    void* allocDynVerts(GLsizeiptr size, GLsizei stride, GLuint* baseVertex)
+    {
+        void* verts;
+
+        if (dynBufAllocated + size + stride > DYNAMIC_BUFFER_FRAME_SIZE)
+            return 0;
+
+        GLsizei rem = dynBufAllocated % stride;
+
+        dynBufAllocated += (rem == 0 ? 0 : stride - rem);
+        assert(dynBufAllocated % stride == 0);
+
+        verts = dynBufBasePtr + dynBufferOffset + dynBufAllocated;
+        if (baseVertex) *baseVertex = dynBufAllocated / stride;
+
+        dynBufAllocated += size;
+
+        return verts;
+    }
+
+    void* allocDynMem(GLsizeiptr size, GLuint align, GLuint* offset)
+    {
+        void* mem;
+
+        if (dynBufAllocated + size + align > DYNAMIC_BUFFER_FRAME_SIZE)
+            return 0;
+
+        if (align)
+        {
+            GLsizei rem = dynBufAllocated % align;
+
+            dynBufAllocated += (rem == 0 ? 0 : align - rem);
+            assert(dynBufAllocated % align == 0);
+        }
+
+        mem = dynBufBasePtr + dynBufferOffset + dynBufAllocated;
+        if (offset) *offset = dynBufAllocated;
+
+        dynBufAllocated += size;
+
+        return mem;
     }
 }
