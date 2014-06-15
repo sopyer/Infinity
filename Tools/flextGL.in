@@ -1,17 +1,14 @@
 # This file is used as input for flextGLgen.py
 # It defines the targetted OpenGL version and lists the used extensions.
 
-version 4.3 compatibility
+version 4.4 compatibility
 
-extension ARB_buffer_storage required
 extension ARB_seamless_cubemap_per_texture required
 extension ARB_bindless_texture required
 extension ARB_sparse_texture required
 extension ARB_shader_draw_parameters required
 extension ARB_indirect_parameters required
 extension ARB_shader_group_vote required
-extension ARB_multi_bind required
-extension ARB_clear_texture required
 extension ARB_query_buffer_object required
 extension ARB_enhanced_layouts required
 extension ARB_texture_mirror_clamp_to_edge required
@@ -19,3 +16,4 @@ extension ARB_texture_stencil8 required
 extension ARB_compute_variable_group_size required
 extension ARB_vertex_type_10f_11f_11f_rev required
 extension EXT_direct_state_access required
+
