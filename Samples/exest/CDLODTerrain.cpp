@@ -81,20 +81,15 @@ void CDLODTerrain::initialize()
     glGenBuffers(1, &geomVBO);
     glGenBuffers(1, &ibo);
 
-    glGenVertexArrays(1, &vao);
-    glVertexArrayVertexAttribFormatEXT  (vao, ATTR_POSITION, 2, GL_FLOAT, GL_FALSE, 0);
-    glVertexArrayVertexAttribBindingEXT (vao, ATTR_POSITION, 0);
-    glVertexArrayVertexBindingDivisorEXT(vao, 0, 0);
+    graphics::VertexElement ve[3] = {
+        {0, 0, ATTR_POSITION,   GL_FLOAT, 2, GL_FALSE, GL_FALSE},
+        {1, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
+        {1, 8, ATTR_LEVEL,      GL_FLOAT, 1, GL_FALSE, GL_FALSE}
+    };
 
-    glVertexArrayVertexAttribIFormatEXT (vao, ATTR_PATCH_BASE, 2, GL_INT, 0);
-    glVertexArrayVertexAttribFormatEXT  (vao, ATTR_LEVEL, 2, GL_FLOAT, GL_FALSE, 8);
-    glVertexArrayVertexAttribBindingEXT (vao, ATTR_PATCH_BASE, 1);
-    glVertexArrayVertexAttribBindingEXT (vao, ATTR_LEVEL,      1);
-    glVertexArrayVertexBindingDivisorEXT(vao, 1, 1);
+    GLuint divs[2] = {0, 1};
 
-    glEnableVertexArrayAttribEXT(vao, ATTR_POSITION);
-    glEnableVertexArrayAttribEXT(vao, ATTR_LEVEL);
-    glEnableVertexArrayAttribEXT(vao, ATTR_PATCH_BASE);
+    vao = graphics::createVAO(3, ve, 2, divs);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);

@@ -62,6 +62,35 @@ namespace graphics
         frameID = (frameID + 1) % NUM_FRAMES_DELAY;
     }
 
+    GLuint createVAO(GLuint numEntries, VertexElement* entries, GLuint numStreams, GLuint* streamDivisors)
+    {
+        GLuint vao;
+
+        glGenVertexArrays(1, &vao);
+        for (GLuint i = 0; i < numEntries; ++i)
+        {
+            VertexElement& e = entries[i];
+            if (e.integer)
+            {
+                glVertexArrayVertexAttribIFormatEXT (vao, e.attrib, e.size, e.type, e.offset);
+            }
+            else
+            {
+                glVertexArrayVertexAttribFormatEXT  (vao, e.attrib, e.size, e.type, e.normalized, e.offset);
+            }
+            glVertexArrayVertexAttribBindingEXT (vao, e.attrib, e.stream);
+            glEnableVertexArrayAttribEXT(vao, e.attrib);
+        }
+
+        for (GLuint i = 0; i < numStreams; ++i)
+        {
+            glVertexArrayVertexBindingDivisorEXT(vao, i, streamDivisors ? streamDivisors[i] : 0);
+        }
+
+        return vao;
+    }
+
+    //TODO: implement guard logic in order to debug memory overwrites!!!!!
     void* allocDynVerts(GLsizeiptr size, GLsizei stride, GLuint* baseVertex)
     {
         void* verts;

@@ -14,6 +14,17 @@ namespace graphics
         GLint uboAlignment;
     };
 
+    struct VertexElement
+    {
+        GLuint     stream;
+        GLuint     offset;
+        GLuint     attrib;
+        GLenum     type       : 16;
+        GLint      size       : 2;
+        GLboolean  integer    : 1;
+        GLboolean  normalized : 1;
+    };
+
     extern gl_caps_t caps;
 
     extern GLuint dynBuffer;
@@ -24,6 +35,8 @@ namespace graphics
 
     void beginFrame();
     void endFrame();
+
+    GLuint createVAO(GLuint numEntries, VertexElement* entries, GLuint numStreams, GLuint* streamDivisors);
 
     void* allocDynVerts(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
     void* allocDynMem(GLsizeiptr size, GLuint align = 0, GLuint* offset = 0);
