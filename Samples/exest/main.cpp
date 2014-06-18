@@ -176,8 +176,6 @@ protected:
 
     void onPaint()
     {
-        GLenum err;
-
         glClearDepth(1.0);
 
         glMatrixMode(GL_PROJECTION);
@@ -256,8 +254,7 @@ protected:
         _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
         vg::drawString(ui::defaultFont, 25.0f, 119.0f, str, strlen(str));
 
-        err = glGetError();
-        assert(err==GL_NO_ERROR);
+        CHECK_GL_ERROR();
     }
 
     void onUpdate(float dt)

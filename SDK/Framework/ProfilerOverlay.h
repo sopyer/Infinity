@@ -50,4 +50,5 @@ private:
     GLuint vboRectData;
     GLuint vboColorData;
     GLint  uniMVP;
+    GLuint vao;
 };

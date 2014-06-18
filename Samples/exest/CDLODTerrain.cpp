@@ -77,7 +77,7 @@ void CDLODTerrain::initialize()
 
     glGenBuffers(1, &ibo);
 
-    graphics::VertexElement ve[2] = {
+    graphics::vertex_element_t ve[2] = {
         {0, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
         {0, 8, ATTR_LEVEL,      GL_FLOAT, 1, GL_FALSE, GL_FALSE}
     };
@@ -290,8 +290,8 @@ void CDLODTerrain::drawTerrain()
 
         {
             PROFILER_CPU_TIMESLICE("SetTextures");
-            glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, mHeightmapTex);
-            glBindMultiTextureEXT(GL_TEXTURE1, GL_TEXTURE_2D, mipTexture);
+            GLuint textureSet[2] = {mHeightmapTex, mipTexture};
+            glBindTextures(0, 2, textureSet);
         }
 
         {

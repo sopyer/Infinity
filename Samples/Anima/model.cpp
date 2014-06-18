@@ -4,6 +4,7 @@
 #include <math.h>
 #include <utils.h>
 #include <algorithm>
+#include <graphics.h>
 
 #include "md5.h"
 #include "mjson.h"
@@ -21,28 +22,13 @@ namespace Model
     GLuint prgDefault;
     material_t* mWireframe;
 
-    GLuint   ubo;
-    GLsizei  uboSize;
-    GLsizei  uniGlobal;
-    GLsizei  uniBones;
-    GLsizei  uniLighting;
-
-    struct SkinnedVertex
-    {
-        float   px, py, pz;
-        float   nx, ny, nz;
-        float   u, v;
-        float	w[4];
-        uint8_t b[4];
-    };
-
     struct mesh_t
     {
-        GLuint			vbo;
-        GLuint          ibo;
-        GLenum          idxFormat;
-        GLsizei         idxOffset;
-        GLsizei			numIndices;
+        GLuint    vbo;
+        GLuint    ibo;
+        GLenum    idxFormat;
+        GLsizei   idxOffset;
+        GLsizei   numIndices;
     };
 
     struct material_t
@@ -69,14 +55,7 @@ namespace Model
 
         prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
 
-        GLint align;
-        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-        --align;
-
-        uboSize   = 0;
-        uniGlobal   = uboSize; uboSize+=sizeof(float)*16;                uboSize += align; uboSize &=~align;
-        uniBones    = uboSize; uboSize+=MAX_BONES*sizeof(ml::dual_quat); uboSize += align; uboSize &=~align;
-        uniLighting = uboSize; uboSize+=10*sizeof(v128);                 uboSize += align; uboSize &=~align;
+#ifdef _DEBUG
         {
             GLint structSize;
             GLint uniGlobal, uniBones, uniLighting;
@@ -103,19 +82,13 @@ namespace Model
             glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==10*sizeof(v128));
         }
+#endif
 
-        glGenBuffers(1, &ubo);
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferData(GL_UNIFORM_BUFFER, uboSize, 0, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-        assert(glGetError()==GL_NO_ERROR);
+        GL_CHECK_ERROR();
     }
 
     void fini()
     {
-        glDeleteBuffers(1, &ubo);
-
         glDeleteProgram(prgLighting);
         glDeleteProgram(prgDefault);
 
@@ -153,18 +126,18 @@ namespace Model
 
     void md5CreateMesh(mesh_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
     {
-        SkinnedVertex* vertices;
+        vf::skinned_geom_t* vertices;
         size_t         vertexDataSize;
 
-        vertexDataSize = sizeof(SkinnedVertex)*md5Mesh->numVertices;
-        vertices = (SkinnedVertex*)malloc(vertexDataSize);
+        vertexDataSize = sizeof(vf::skinned_geom_t)*md5Mesh->numVertices;
+        vertices = (vf::skinned_geom_t*)malloc(vertexDataSize);
         memset(vertices, 0, vertexDataSize);
 
         for ( int i = 0; i < md5Mesh->numVertices; ++i )
         {
-            SkinnedVertex& vert        = vertices[i];
-            int            weightCount = md5Mesh->vertices[i].count;
-            int            startWeight = md5Mesh->vertices[i].start;
+            vf::skinned_geom_t& vert        = vertices[i];
+            int                 weightCount = md5Mesh->vertices[i].count;
+            int                 startWeight = md5Mesh->vertices[i].start;
 
             assert( weightCount <= 4 );
 
@@ -228,8 +201,8 @@ namespace Model
         // Now normalize all the normals
         for ( int i = 0; i < md5Mesh->numVertices; ++i )
         {
-            v128           n;
-            SkinnedVertex& vert = vertices[i];
+            v128                n;
+            vf::skinned_geom_t& vert = vertices[i];
 
             n = ml::load_vec3((ml::vec3*)&vert.nx);
             n = ml::normalize(n);
@@ -246,23 +219,14 @@ namespace Model
         glGenBuffers(1, &mesh->vbo);
         glGenBuffers(1, &mesh->ibo);
 
-        glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
-        glBufferData( GL_ARRAY_BUFFER, vertexDataSize, vertices, GL_STATIC_DRAW );
-
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->ibo );
-        glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * md5Mesh->numIndices, md5Mesh->indices, GL_STATIC_DRAW ); 
-
-        glBindBuffer( GL_ARRAY_BUFFER, 0 );
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+        glNamedBufferStorageEXT( mesh->vbo, vertexDataSize, vertices, 0 );
+        glNamedBufferStorageEXT( mesh->ibo, sizeof(uint16_t) * md5Mesh->numIndices, md5Mesh->indices, 0 ); 
 
         mesh->numIndices = md5Mesh->numIndices;
         mesh->idxFormat  = GL_UNSIGNED_SHORT;
         mesh->idxOffset  = 0;
 
-        {
-            GLuint err = glGetError();
-            assert(err==GL_NO_ERROR);
-        }
+        GL_CHECK_ERROR();
 
         free(vertices);
     }
@@ -440,47 +404,20 @@ cleanup:
         glUseProgram(material->program);
 
         // Position data
-        glBindBuffer( GL_ARRAY_BUFFER, mesh->vbo );
+        glBindVertexArray(vf::skinned_geom_t::vao);
+        glBindVertexBuffer(0, mesh->vbo, 0, sizeof(vf::skinned_geom_t));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
 
-        glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, px)));
-        glVertexAttribPointer (1, 3, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, nx)));
-        glVertexAttribPointer (2, 2, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, u)));
-        glVertexAttribIPointer(3, 4, GL_UNSIGNED_BYTE,   sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, b)));
-        glVertexAttribPointer (4, 4, GL_FLOAT, GL_FALSE, sizeof(SkinnedVertex), BUFFER_OFFSET(offsetof(SkinnedVertex, w)));
-
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glEnableVertexAttribArray(2);
-        glEnableVertexAttribArray(3);
-        glEnableVertexAttribArray(4);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, material->diffuse);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, material->normal);
+        GLuint textureSet[2] = {material->diffuse, material->normal};
+        glBindTextures(0, 2, textureSet);
 
         // Draw mesh from index buffer
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
         glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        glDisableVertexAttribArray(0);
-        glDisableVertexAttribArray(1);
-        glDisableVertexAttribArray(2);
-        glDisableVertexAttribArray(3);
-        glDisableVertexAttribArray(4);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
 
-        {
-            GLenum err = glGetError();
-            assert(err==GL_NO_ERROR);
-        }
+        GL_CHECK_ERROR();
     }
 
     void renderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
@@ -531,16 +468,25 @@ cleanup:
         glPopAttrib();
     }
 
-    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[9])
+    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[10])
     {
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   ubo, uniGlobal,   16*sizeof(float));
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    ubo, uniBones,    MAX_BONES*sizeof(ml::dual_quat));
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, ubo, uniLighting, 10*sizeof(v128));
+        GLuint offsetGlobal, offsetBones, offsetLighting;
+        
+        GLsizeiptr sizeGlobal   = 16*sizeof(float);
+        GLsizeiptr sizeBones    = skel->numJoints*sizeof(ml::dual_quat);
+        GLsizeiptr sizeLighting = 10*sizeof(v128);
 
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferSubData(GL_UNIFORM_BUFFER, uniGlobal,   16*sizeof(float), MVP);
-        glBufferSubData(GL_UNIFORM_BUFFER, uniBones,    skel->numJoints*sizeof(ml::dual_quat), &pose->boneTransforms[0].real.x);
-        glBufferSubData(GL_UNIFORM_BUFFER, uniLighting, 160, shPoly);
+        void* memGlobal   = graphics::dynbufAllocMem(sizeGlobal,   graphics::caps.uboAlignment, &offsetGlobal);
+        void* memBones    = graphics::dynbufAllocMem(sizeBones,    graphics::caps.uboAlignment, &offsetBones);
+        void* memLighting = graphics::dynbufAllocMem(sizeLighting, graphics::caps.uboAlignment, &offsetLighting);
+
+        memcpy(memGlobal,   MVP,                             sizeGlobal);
+        memcpy(memBones,    &pose->boneTransforms[0].real.x, sizeBones);
+        memcpy(memLighting, shPoly,                          sizeLighting);
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   graphics::dynBuffer, offsetGlobal,   sizeGlobal);
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    graphics::dynBuffer, offsetBones,    sizeBones);
+        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, graphics::dynBuffer, offsetLighting, sizeLighting);
 
         for (int i=0; i<model->numMeshes; ++i )
         {
@@ -548,8 +494,6 @@ cleanup:
         }
 
         renderSkeleton(skel->numJoints, skel->boneHierarchy, pose->pose);
-
-        glBindBuffer(GL_UNIFORM_BUFFER, 0);
     }
 
     void createPose(pose_t* pose, skeleton_t* skel)

@@ -3,6 +3,20 @@
 
 #include <opengl.h>
 
+namespace vf
+{
+    struct skinned_geom_t
+    {
+        float   px, py, pz;
+        float   nx, ny, xz;
+        float   u, v;
+        float   w[4];
+        uint8_t b[4];
+
+        static GLuint vao;
+    };
+}
+
 namespace graphics
 {
     static const GLuint64   GL_TIMEOUT_INFINITE = ~0ull;
@@ -14,7 +28,7 @@ namespace graphics
         GLint uboAlignment;
     };
 
-    struct VertexElement
+    struct vertex_element_t
     {
         GLuint     stream;
         GLuint     offset;
@@ -35,7 +49,7 @@ namespace graphics
     void beginFrame();
     void endFrame();
 
-    GLuint createVAO(GLuint numEntries, VertexElement* entries, GLuint numStreams, GLuint* streamDivisors);
+    GLuint createVAO(GLuint numEntries, vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors);
 
     bool  dynbufAlignMem(GLuint align, GLuint* offset);
     bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex);

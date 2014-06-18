@@ -11,10 +11,12 @@
 #include <vg/vg.h>
 #include <utils.h>
 
+#include <graphics.h>
+
 static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
 const char vsQuadSource[] = 
-	"#version 330                                                           \n"
+    "#version 330                                                           \n"
     "                                                                       \n"
     "layout(location=0) in vec4  aRect;                                     \n"
     "layout(location=1) in vec4  aColor;                                    \n"
@@ -31,7 +33,7 @@ const char vsQuadSource[] =
     "}                                                                      \n";
 
 const char fsQuadSource[] = 
-	"#version 330                                                           \n"
+    "#version 330                                                           \n"
     "                                                                       \n"
     "in vec4 vColor;                                                        \n"
     "                                                                       \n"
@@ -55,14 +57,14 @@ void ProfilerOverlay::init(int w, int h)
     mDoDrag = false;
     mOffsetX = 0.0f;
 
-	prgQuad = glCreateProgram();
-	resources::compileAndAttachShader(prgQuad, GL_VERTEX_SHADER,   sizeof(vsQuadSource)-1, vsQuadSource);
-	resources::compileAndAttachShader(prgQuad, GL_FRAGMENT_SHADER, sizeof(fsQuadSource)-1, fsQuadSource);
+    prgQuad = glCreateProgram();
+    resources::compileAndAttachShader(prgQuad, GL_VERTEX_SHADER,   sizeof(vsQuadSource)-1, vsQuadSource);
+    resources::compileAndAttachShader(prgQuad, GL_FRAGMENT_SHADER, sizeof(fsQuadSource)-1, fsQuadSource);
     glLinkProgram(prgQuad);
 
-    const size_t	LOG_STR_LEN = 1024;
-    char			infoLog[LOG_STR_LEN] = {0};
-    GLsizei			length;
+    const size_t LOG_STR_LEN = 1024;
+    char         infoLog[LOG_STR_LEN] = {0};
+    GLsizei      length;
 
     glGetProgramInfoLog(prgQuad, LOG_STR_LEN-1, &length, infoLog);
     infoLog[length] = 0;
@@ -73,10 +75,21 @@ void ProfilerOverlay::init(int w, int h)
     }
 
     uniMVP = glGetUniformLocation(prgQuad, "uMVP");
+
+    graphics::vertex_element_t ve[2] = {
+        {0, 0, 0, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
+        {1, 0, 1, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
+    };
+
+    GLuint divs[2] = {1, 1};
+
+    vao = graphics::createVAO(2, ve, 2, divs);
+    GL_CHECK_ERROR();
 }
 
 void ProfilerOverlay::fini()
 {
+    glDeleteVertexArrays(1, &vao);
     glDeleteProgram(prgQuad);
 }
 
@@ -178,26 +191,6 @@ void ProfilerOverlay::loadProfilerData()
     }
 }
 
-void drawRects(GLsizei count, float* rects, uint32_t* colors)
-{
-    glUseProgram(prgQuad);
-    
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribDivisor(0, 1);
-    glVertexAttribDivisor(1, 1);
-
-    glVertexAttribPointer(0, 4, GL_FLOAT,         GL_FALSE, 0, rects);
-    glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE,  0, colors);
-
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-
-    glVertexAttribDivisor(0, 0);
-    glVertexAttribDivisor(1, 0);
-    glDisableVertexAttribArray(0);
-    glDisableVertexAttribArray(1);
-}
-
 void ProfilerOverlay::drawBars(uint32_t* colorArray)
 {
     PROFILER_CPU_TIMESLICE("ProfilerOverlay::drawBars");
@@ -210,9 +203,31 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     glEnable(GL_SCISSOR_TEST);
     glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
 
-    drawRects(rectData.size()/4, &rectData[0], colorArray);
+    {
+    PROFILER_CPU_TIMESLICE("modern");
+    glUseProgram(prgQuad);
+
+    GLuint rectOffset, colOffset;
+
+    size_t count = colors.size();
+
+    float*   rectDst = (float*)  graphics::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
+    uint8_t* colDst  = (uint8_t*)graphics::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
+
+    memcpy(rectDst, &rectData[0], sizeof(float)*4*count);
+    memcpy(colDst,  colorArray,   sizeof(uint8_t)*4*count);
+
+    glBindVertexArray(vao);
+
+    glBindVertexBuffer(0, graphics::dynBuffer, rectOffset, sizeof(float)*4);
+    glBindVertexBuffer(1, graphics::dynBuffer, colOffset,  sizeof(uint8_t)*4);
+
+    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+    glBindVertexArray(0);
 
     glUseProgram(0);
+    }
 
     glPopMatrix();
 }
@@ -274,6 +289,7 @@ void ProfilerOverlay::updateUI()
 
 void ProfilerOverlay::renderFullscreen()
 {
+    PROFILER_CPU_TIMESLICE("ProfilerOverlay::renderFullscreen");
     glViewport(0, 0, mWidth, mHeight);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -316,7 +332,7 @@ void ProfilerOverlay::renderFullscreen()
         _snprintf(str, 256, "name     : %s", intervals[mSelection].name);
         vg::drawString(ui::defaultFont, 50, 550, str, strlen(str));
 
-        _snprintf(str, 256, "duration : %.2f", intervals[mSelection].duration);
+        _snprintf(str, 256, "duration : %.4f", intervals[mSelection].duration);
         vg::drawString(ui::defaultFont, 50, 565, str, strlen(str));
     }
 
