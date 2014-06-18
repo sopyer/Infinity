@@ -1,3 +1,5 @@
+#version 330
+
 in float vHeight;
 
 uniform uniGradient

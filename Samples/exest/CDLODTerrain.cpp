@@ -24,9 +24,8 @@ struct ViewData
     v128       uLODViewK;
 };
 
-#define ATTR_POSITION   0
-#define ATTR_PATCH_BASE 1
-#define ATTR_LEVEL      2
+#define ATTR_PATCH_BASE 0
+#define ATTR_LEVEL      1
 
 #define UNI_TERRAIN_BINDING 0
 #define UNI_VIEW_BINDING    1
@@ -35,8 +34,7 @@ struct ViewData
 void CDLODTerrain::initialize()
 {
     // Create instanced terrain program
-    const char* define = "#version 330\n#define ENABLE_INSTANCING\n";
-    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag", 1, &define);
+    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag");
 
 #ifdef _DEBUG
     {
@@ -60,7 +58,6 @@ void CDLODTerrain::initialize()
     glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
     glTextureStorage2DEXT(mipTexture, GL_TEXTURE_2D, 6, GL_RGBA8, 32, 32);
 
     uint32_t levelColor[6] = 
@@ -78,18 +75,16 @@ void CDLODTerrain::initialize()
         glClearTexImage(mipTexture, i, GL_RGBA, GL_UNSIGNED_BYTE, &levelColor[i]);
     }
 
-    glGenBuffers(1, &geomVBO);
     glGenBuffers(1, &ibo);
 
-    graphics::VertexElement ve[3] = {
-        {0, 0, ATTR_POSITION,   GL_FLOAT, 2, GL_FALSE, GL_FALSE},
-        {1, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
-        {1, 8, ATTR_LEVEL,      GL_FLOAT, 1, GL_FALSE, GL_FALSE}
+    graphics::VertexElement ve[2] = {
+        {0, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
+        {0, 8, ATTR_LEVEL,      GL_FLOAT, 1, GL_FALSE, GL_FALSE}
     };
 
-    GLuint divs[2] = {0, 1};
+    GLuint div = 1;
 
-    vao = graphics::createVAO(3, ve, 2, divs);
+    vao = graphics::createVAO(2, ve, 1, &div);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -98,8 +93,7 @@ void CDLODTerrain::initialize()
     glGenBuffers(1, &ubo);
     glNamedBufferDataEXT(ubo, sizeof(TerrainData), 0, GL_DYNAMIC_DRAW);
 
-    GLenum err = glGetError();
-    assert(err==GL_NO_ERROR);
+    GL_CHECK_ERROR();
 }
 
 void CDLODTerrain::reset()
@@ -110,7 +104,6 @@ void CDLODTerrain::cleanup()
 {
     glDeleteBuffers(1, &ubo);
     glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &geomVBO);
     glDeleteBuffers(1, &ibo);
     glDeleteProgram(prgTerrain);
     glDeleteTextures(1, &mHeightmapTex);
@@ -212,18 +205,6 @@ glm::vec4 colors[] =
 
 void CDLODTerrain::generateGeometry(size_t vertexCount)
 {
-    glNamedBufferDataEXT(geomVBO, sizeof(float)*2*vertexCount*vertexCount, 0, GL_STATIC_DRAW);
-    float* ptr = (float*)glMapNamedBufferRangeEXT(geomVBO, 0, sizeof(float)*2*vertexCount*vertexCount, GL_MAP_WRITE_BIT);
-    for (size_t y=0; y<vertexCount; ++y)
-    {
-        for (size_t x=0; x<vertexCount; ++x)
-        {
-            *ptr++ = (float)x;
-            *ptr++ = (float)y;
-        }
-    }
-    glUnmapNamedBufferEXT(geomVBO);
-
 #define INDEX_FOR_LOCATION(x, y) ((y)*vertexCount+(x))
 
     size_t quadsInRow = (vertexCount-1);
@@ -272,7 +253,7 @@ void CDLODTerrain::drawTerrain()
 
     GLuint baseInstance;
 
-    instData = (PatchData*)graphics::allocDynVerts(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
+    instData = (PatchData*)graphics::dynbufAllocVert(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
@@ -318,8 +299,7 @@ void CDLODTerrain::drawTerrain()
             GLuint    offset;
             ViewData* ptrViewData;
             
-            ptrViewData = (ViewData*) graphics::allocDynMem(sizeof(ViewData), graphics::caps.uboAlignment, &offset);
-            offset += graphics::dynBufferOffset;
+            ptrViewData = (ViewData*) graphics::dynbufAllocMem(sizeof(ViewData), graphics::caps.uboAlignment, &offset);
             memcpy(&ptrViewData->uMVP, &viewMVP, sizeof(viewMVP));
             ptrViewData->uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
@@ -330,8 +310,7 @@ void CDLODTerrain::drawTerrain()
         {
             PROFILER_CPU_TIMESLICE("BindGeom");
             glBindVertexArray(vao);
-            glBindVertexBuffer(0, geomVBO, 0, sizeof(float)*2);
-            glBindVertexBuffer(1, graphics::dynBuffer, graphics::dynBufferOffset, sizeof(PatchData));
+            glBindVertexBuffer(0, graphics::dynBuffer, 0, sizeof(PatchData));
         }
 
         {

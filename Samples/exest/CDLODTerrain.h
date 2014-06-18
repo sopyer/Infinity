@@ -36,7 +36,7 @@ public:
     GLsizei    idxCount;
 
     GLuint  prgTerrain;
-    GLuint  geomVBO, ibo, ubo;
+    GLuint  ibo, ubo;
     GLuint  mHeightmapTex;
     GLuint  mipTexture;
     GLuint  vao;

@@ -1,26 +1,23 @@
+#version 330
+
 layout(std140, column_major) uniform;
 
-#define ATTR_POSITION	0
-#define ATTR_PATCH_BASE	1
-#define ATTR_LEVEL		2
+#define ATTR_PATCH_BASE 0
+#define ATTR_LEVEL      1
 
 #define UNI_TERRAIN_BINDING  0
 #define UNI_VIEW_BINDING     1
 #define UNI_PATCH_BINDING    2
 
-layout(location = ATTR_POSITION)		in vec2		aVertex;
-
-#ifdef ENABLE_INSTANCING
 layout(location = ATTR_PATCH_BASE)		in vec2		aPatchBase;
 layout(location = ATTR_LEVEL)			in int  	aLevel;
-#else
+
 layout(binding = UNI_PATCH_BINDING) uniform uniPatch
 {
 	vec2  aPatchBase;
 	int   aLevel;
 	float padding; //Just in case, AMD seems to use actual size and does not pad uniform blocks :(
 };
-#endif
 
 #define MAX_LOD_COUNT 8
 

@@ -1,3 +1,5 @@
+#version 330
+
 in float vHeight;
 in vec3  vPos;
 in vec2  vUV;
