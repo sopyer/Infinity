@@ -20,7 +20,7 @@ namespace graphics
         GLuint     offset;
         GLuint     attrib;
         GLenum     type       : 16;
-        GLint      size       : 2;
+        GLint      size       : 4;
         GLboolean  integer    : 1;
         GLboolean  normalized : 1;
     };
@@ -28,7 +28,6 @@ namespace graphics
     extern gl_caps_t caps;
 
     extern GLuint dynBuffer;
-    extern GLint  dynBufferOffset;
 
     void init();
     void fini();
@@ -38,8 +37,46 @@ namespace graphics
 
     GLuint createVAO(GLuint numEntries, VertexElement* entries, GLuint numStreams, GLuint* streamDivisors);
 
-    void* allocDynVerts(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
-    void* allocDynMem(GLsizeiptr size, GLuint align = 0, GLuint* offset = 0);
+    bool  dynbufAlignMem(GLuint align, GLuint* offset);
+    bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex);
+    void* dynbufAlloc(GLsizeiptr size);
+    void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
+    void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset);
+
+/*------------- Immediate mode implementation --------------*/
+#define IM_BEGIN(VertexType, primitiveType)                               \
+    {                                                                     \
+        GLuint      primType = primitiveType;                             \
+        GLuint      numVertices = 0;                                      \
+        GLuint      baseVertex;                                           \
+        GLuint      vertexSize = sizeof(VertexType);                      \
+        VertexType  v = {0};                                              \
+        dynBufAlignVert(vertexSize, &baseVertex)                          \
+
+
+#define IM_ATTRIB(field, value)                                           \
+        v.(field) = (value);                                              \
+
+
+#define IM_ATTRIB_ISSUE(field, value)                                     \
+        v.(field) = (value);                                              \
+        VertexType* pv = (VertexType*)graphics::dynbufAlloc(vertexSize);  \
+        *pv = v;                                                          \
+        ++numVertices;                                                    \
+
+
+#define IM_END()                                                          \
+        glDrawArrays(primType, baseVertex, numVertices);                  \
+    }                                                                     \
+
+
+/*------------- Miscellaneous --------------*/
+#define GL_CHECK_ERROR()                              \
+    {                                                 \
+        GLenum err = glGetError();                    \
+        assert(err==GL_NO_ERROR);                     \
+    }
+
 }
 
 #endif

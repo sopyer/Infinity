@@ -48,7 +48,13 @@ namespace fwk
         SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, TRUE );
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 1 );
         SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 4 );
-        
+
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 4 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
+
         window = SDL_CreateWindow("", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                   1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 

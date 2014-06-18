@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include "graphics.h"
+#include "framework.h"
 
 namespace graphics
 {
@@ -15,9 +16,20 @@ namespace graphics
 
     gl_caps_t caps;
 
+    void APIENTRY glDebugCallback(
+        GLenum source, GLenum type, GLuint id,
+        GLenum severity, GLsizei length,
+        const GLchar *message, const void *userParam
+    )
+    {
+        logging::message("Message : %s\n", message);
+    }
+
     void init()
     {
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &caps.uboAlignment);
+
+        glDebugMessageCallback( glDebugCallback, NULL );
 
         GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
         GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
@@ -35,7 +47,7 @@ namespace graphics
 
     void beginFrame()
     {
-        assert(frameID > 0);
+        assert(frameID >= 0);
         assert(frameID < NUM_FRAMES_DELAY);
 
         if (frameSync[frameID])
@@ -54,7 +66,7 @@ namespace graphics
 
     void endFrame()
     {
-        assert(frameID > 0);
+        assert(frameID >= 0);
         assert(frameID < NUM_FRAMES_DELAY);
 
         frameSync[frameID] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -90,47 +102,62 @@ namespace graphics
         return vao;
     }
 
-    //TODO: implement guard logic in order to debug memory overwrites!!!!!
-    void* allocDynVerts(GLsizeiptr size, GLsizei stride, GLuint* baseVertex)
+    bool dynbufAlignMem(GLuint align, GLuint* offset)
     {
-        void* verts;
-
-        if (dynBufAllocated + size + stride > DYNAMIC_BUFFER_FRAME_SIZE)
-            return 0;
-
-        GLsizei rem = dynBufAllocated % stride;
-
-        dynBufAllocated += (rem == 0 ? 0 : stride - rem);
-        assert(dynBufAllocated % stride == 0);
-
-        verts = dynBufBasePtr + dynBufferOffset + dynBufAllocated;
-        if (baseVertex) *baseVertex = dynBufAllocated / stride;
-
-        dynBufAllocated += size;
-
-        return verts;
-    }
-
-    void* allocDynMem(GLsizeiptr size, GLuint align, GLuint* offset)
-    {
-        void* mem;
-
-        if (dynBufAllocated + size + align > DYNAMIC_BUFFER_FRAME_SIZE)
-            return 0;
-
-        if (align)
+        if (align != 0)
         {
-            GLsizei rem = dynBufAllocated % align;
+            GLsizei rem  = dynBufAllocated % align;
+            GLsizei aoff = rem == 0 ? 0 : align - rem;
 
-            dynBufAllocated += (rem == 0 ? 0 : align - rem);
+            if (dynBufAllocated + aoff > DYNAMIC_BUFFER_FRAME_SIZE)
+                return false;
+
+            dynBufAllocated += aoff;
             assert(dynBufAllocated % align == 0);
         }
 
-        mem = dynBufBasePtr + dynBufferOffset + dynBufAllocated;
-        if (offset) *offset = dynBufAllocated;
+        if (offset) *offset = dynBufferOffset + dynBufAllocated;
 
+        return true;
+    }
+
+    bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex)
+    {
+        GLuint offset;
+
+        if (!dynbufAlignMem(stride, &offset)) return false;
+
+        *baseVertex = offset / stride;
+
+        return true;
+    }
+
+    void* dynbufAlloc(GLsizeiptr size)
+    {
+        void* mem;
+
+        if (dynBufAllocated + size > DYNAMIC_BUFFER_FRAME_SIZE)
+            return 0;
+
+        mem = dynBufBasePtr + dynBufferOffset + dynBufAllocated;
         dynBufAllocated += size;
 
         return mem;
+    }
+
+    void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex)
+    {
+        if (!dynbufAlignVert(stride, baseVertex))
+            return 0;
+
+        return dynbufAlloc(size);
+    }
+
+    void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset)
+    {
+        if (!dynbufAlignMem(align, offset))
+            return 0;
+
+        return dynbufAlloc(size);
     }
 }
