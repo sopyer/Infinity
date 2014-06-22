@@ -206,4 +206,73 @@ namespace ut
     }
 }
 
+struct stack_mem_data_t;
+typedef stack_mem_data_t* stack_mem_t;
+
+void  stack_mem_init(stack_mem_t* stack, void* mem, size_t size);
+void* stack_mem_alloc(stack_mem_t stack, size_t size, size_t align = 0);
+void  stack_mem_reset(stack_mem_t stack, void* ptr);
+
+template<typename T>
+T* stack_mem_alloc(stack_mem_t stack, size_t count, size_t align = 0)
+{
+    return (T*)stack_mem_alloc(stack, count*sizeof(T), align);
+}
+
+#define STATIC_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
+
+namespace ut
+{
+    void init();
+    void fini();
+
+    //TODO: make mt!!!!!
+    stack_mem_t get_thread_data_stack();
+
+/*------------------ Ring buffer--------------------*/
+    template<typename T, size_t N>
+    struct ring_buffer_t
+    {
+        size_t head;
+        size_t tail;
+        T      storage[N];
+    };
+
+    template<typename T, size_t N>
+    void ring_buffer_reset(ring_buffer_t<T, N>& rb)
+    {
+        STATIC_ASSERT((N & (N-1)) == 0);
+        rb.head = rb.tail = 0;
+    }
+
+    template<typename T, size_t N>
+    size_t ring_buffer_used(ring_buffer_t<T, N>& rb)
+    {
+        return rb.head - rb.tail;
+    }
+
+    template<typename T, size_t N>
+    T* ring_buffer_alloc(ring_buffer_t<T, N>& rb)
+    {
+        assert(ring_buffer_used(rb) < N);
+        ++rb.head;
+        return &rb.storage[rb.head & (N-1)];
+    }
+
+    template<typename T, size_t N>
+    T* ring_buffer_back(ring_buffer_t<T, N>& rb)
+    {
+        assert(ring_buffer_used(rb) > 0);
+        return &rb.storage[rb.tail & (N-1)];
+    }
+
+    template<typename T, size_t N>
+    void ring_buffer_pop(ring_buffer_t<T, N>& rb)
+    {
+        assert(ring_buffer_used(rb) > 0);
+        ++rb.tail;
+    }
+
+};
+
 #endif

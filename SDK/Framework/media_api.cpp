@@ -18,40 +18,7 @@ extern "C"
 #include "profiler.h"
 #include "ResourceHelpers.h"
 
-//Simple ring buffer for AVPacket
-//Relies on overflow behaviour
 #define PACKET_BUFFER_SIZE 64
-struct AVPacketRingBuffer
-{
-    unsigned int head;
-    unsigned int tail;
-    AVPacket     buf[PACKET_BUFFER_SIZE];
-};
-
-void resetAVPackets(AVPacketRingBuffer* rbuf)
-{
-    rbuf->head = rbuf->tail = 0;
-}
-
-unsigned int usedAVPackets(AVPacketRingBuffer* rbuf)
-{
-    return rbuf->head-rbuf->tail;
-}
-
-AVPacket* allocAVPacket(AVPacketRingBuffer* rbuf)
-{
-    return (usedAVPackets(rbuf) < PACKET_BUFFER_SIZE) ? rbuf->buf + (rbuf->head++%PACKET_BUFFER_SIZE) : 0;
-}
-
-AVPacket* frontAVPacket(AVPacketRingBuffer* rbuf)
-{
-    return (usedAVPackets(rbuf) != 0) ? rbuf->buf+(rbuf->tail % PACKET_BUFFER_SIZE) : 0;
-}
-
-void popAVPacket(AVPacketRingBuffer* rbuf)
-{
-    if (usedAVPackets(rbuf) != 0) rbuf->tail++;
-}
 
 struct media_player_data_t
 {
@@ -70,18 +37,18 @@ struct media_player_data_t
     int              playback;
     int              streamEnd;
 
-    AVPacketRingBuffer aPackets;
-    AVPacketRingBuffer vPackets;
+    ut::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> aPackets;
+    ut::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> vPackets;
 
-    __int64 baseTime, timeShift, timeOfNextFrame, frameTime;
-    __int64 aBufferSize;
+    uint64_t baseTime, timeShift, timeOfNextFrame, frameTime;
+    uint64_t aBufferSize;
 
     GLuint texY[2];
     GLuint texU[2];
     GLuint texV[2];
 
-    ALuint		audioSource;
-    ALuint		audioBuffers[2];
+    ALuint  audioSource;
+    ALuint  audioBuffers[2];
 
     int bufSize;
 
@@ -213,9 +180,6 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     player->pFrame            = avcodec_alloc_frame();
     player->numBytes          = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
 
-    resetAVPackets(&player->aPackets);
-    resetAVPackets(&player->vPackets);
-
     player->width     = videoContext->width;
     player->height    = videoContext->height;
     player->srcFormat = videoContext->pix_fmt;
@@ -245,11 +209,11 @@ static void streamMediaData(media_player_t player)
     {
         if (packet.stream_index==player->audioStream)
         {
-            *allocAVPacket(&player->aPackets) = packet;
+            *ut::ring_buffer_alloc(player->aPackets) = packet;
         }
         else if (packet.stream_index==player->videoStream)
         {
-            *allocAVPacket(&player->vPackets) = packet;
+            *ut::ring_buffer_alloc(player->vPackets) = packet;
         }
     }
     else if (!player->streamEnd)
@@ -257,7 +221,7 @@ static void streamMediaData(media_player_t player)
         player->streamEnd = true;
         packet.data = 0;
         packet.size = 0;
-        *allocAVPacket(&player->vPackets) = packet;
+        *ut::ring_buffer_alloc(player->vPackets) = packet;
     }
 }
 
@@ -280,11 +244,11 @@ static void decodeAudio(media_player_t player)
 
     while((player->bufSize < player->aBufferSize) && audioDataAva)
     {
-        AVPacket* pkt = frontAVPacket(&player->aPackets);
-        if (pkt)
+        if (ut::ring_buffer_used(player->aPackets)>0)
         {
-            uint8_t*	inData     = pkt->data;
-            int			inSize     = pkt->size;
+            AVPacket*   pkt        = ut::ring_buffer_back(player->aPackets);
+            uint8_t*    inData     = pkt->data;
+            int         inSize     = pkt->size;
             int         bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
             while(inSize > 0)
@@ -304,12 +268,12 @@ static void decodeAudio(media_player_t player)
             }
 
             av_free_packet(pkt);
-            popAVPacket(&player->aPackets);
+            ut::ring_buffer_pop(player->aPackets);
         }
         else
             streamMediaData(player);
 
-        audioDataAva = !player->streamEnd || usedAVPackets(&player->aPackets)!=0;
+        audioDataAva = !player->streamEnd || ut::ring_buffer_used(player->aPackets)>0;
     }
 }
 
@@ -343,29 +307,30 @@ static void decodeVideo(media_player_t player)
 {
     PROFILER_CPU_TIMESLICE("decodeVideo");
 
-    int frameDone    = 0;
     int videoDataAva = 1;
 
     while(videoDataAva)
     {
-        AVPacket* pkt = frontAVPacket(&player->vPackets);
-        if (pkt)
+        if (ut::ring_buffer_used(player->vPackets)>0)
         {
+            AVPacket* pkt       = ut::ring_buffer_back(player->vPackets);
+            int       frameDone = 0;
+
             avcodec_decode_video(player->videoCodecContext, player->pFrame, &frameDone, pkt->data, pkt->size);
 
             av_free_packet(pkt);
-            popAVPacket(&player->vPackets);
+            ut::ring_buffer_pop(player->vPackets);
+
+            if(frameDone)
+            {
+                player->frameTime = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
+                break;
+            }
         }
         else
             streamMediaData(player);
 
-        if(frameDone)
-        {
-            player->frameTime = player->frameDuration.num*pkt->dts*1000000/player->frameDuration.den;
-            break;
-        }
-
-        videoDataAva = !player->streamEnd || usedAVPackets(&player->vPackets)!=0;
+        videoDataAva = !player->streamEnd || ut::ring_buffer_used(player->vPackets)>0;
     }
 }
 
@@ -431,6 +396,10 @@ media_player_t mediaCreatePlayer(const char* source)
     player->taskStarted = false;
     player->eventID     = mt::INVALID_HANDLE;
 
+
+    ut::ring_buffer_reset(player->aPackets);
+    ut::ring_buffer_reset(player->vPackets);
+
     return player;
 }
 
@@ -440,6 +409,9 @@ void mediaDestroyPlayer(media_player_t player)
     {
         mt::syncAndReleaseEvent(player->eventID);
     }
+
+    ut::ring_buffer_reset(player->aPackets);
+    ut::ring_buffer_reset(player->vPackets);
 
     closeAudioStream(player);
     closeVideoStream(player);
@@ -508,7 +480,7 @@ void mediaPlayerUpdate(media_player_t player)
 
     ALuint buffer;
 
-    player->playback = !player->streamEnd || usedAVPackets(&player->aPackets)!=0 || usedAVPackets(&player->vPackets)!=0;
+    player->playback = !player->streamEnd || ut::ring_buffer_used(player->aPackets)>0 || ut::ring_buffer_used(player->vPackets)>0;
 
     if (player->taskStarted)
     {

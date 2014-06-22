@@ -71,3 +71,74 @@ char* cpToUTF8(int cp, char* str)
     }
     return str;
 }
+
+struct stack_mem_data_t
+{
+    size_t  size;
+    size_t  allocated;
+    uint8_t data[1];
+};
+
+void  stack_mem_init(stack_mem_t* stack, void* mem, size_t size)
+{
+    *stack = (stack_mem_t)mem;
+
+    (*stack)->size = size;
+    (*stack)->allocated = 0;
+}
+
+void* stack_mem_alloc(stack_mem_t stack, size_t size, size_t align)
+{
+    if (align)
+    {
+        size_t rem = ((size_t)stack->data + stack->allocated) % align;
+        size_t off = rem ? align - rem : 0;
+        assert(stack->allocated+off<=stack->size);
+        stack->allocated += off;
+    }
+
+    assert(stack->allocated+size<=stack->size);
+
+    void* p = stack->data + stack->allocated;
+
+    stack->allocated += size;
+
+    return p;
+}
+
+void  stack_mem_reset(stack_mem_t stack, void* ptr)
+{
+    assert(ptr>=stack->data);
+    assert(ptr<stack->data+stack->allocated);
+
+    stack->allocated = (uint8_t*)ptr - stack->data;
+}
+
+namespace ut
+{
+    static const size_t THREAD_DATA_STACK_SIZE = 256 * (1<<10);
+
+    static stack_mem_t mainThreadDataStack = 0;
+    static uint8_t* threadDataStackMem;
+
+    void init()
+    {
+        threadDataStackMem = (uint8_t*)malloc(THREAD_DATA_STACK_SIZE);
+
+        stack_mem_init(&mainThreadDataStack, threadDataStackMem, THREAD_DATA_STACK_SIZE);
+    }
+
+    void fini()
+    {
+        free(threadDataStackMem);
+    }
+
+    //TODO: make mt!!!!!
+    stack_mem_t get_thread_data_stack()
+    {
+        assert(mainThreadDataStack);
+
+        return mainThreadDataStack;
+    }
+};
+
