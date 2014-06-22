@@ -13,24 +13,24 @@ layout(location = 0, index = 0) out vec4 outColor;
 
 layout(binding = UNI_LIGHTING) uniform uniLighting
 {
-	vec3 uSHcoef[10];
+    vec3 uSHcoef[10];
 };
 
 vec4 evalSHPoly(vec3 N, vec3 shCoef[10])
 {
     vec4 c;
-    
+
     c.rgb  = shCoef[9];
     c.rgb += N.x * (shCoef[0] * N.x + (shCoef[3] * N.y + shCoef[6]));
     c.rgb += N.y * (shCoef[1] * N.y + (shCoef[4] * N.z + shCoef[7]));
     c.rgb += N.z * (shCoef[2] * N.z + (shCoef[5] * N.x + shCoef[8]));
-    
+
     //c.rgb += N.x * shCoef[6];
     //c.rgb += N.y * shCoef[7];
     //c.rgb += N.z * shCoef[8];
-    
+
     c.a = 1.0;
-    
+
     return c;
 }
 

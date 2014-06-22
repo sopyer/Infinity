@@ -106,17 +106,17 @@ protected:
     }
 
 private:
-    GLuint		mTimeQuery;
-    bool		mIsDragging;
-    float		mOffsetX;
-    float		mOffsetY;
-    float		mScale;
+    GLuint      mTimeQuery;
+    bool        mIsDragging;
+    float       mOffsetX;
+    float       mOffsetY;
+    float       mScale;
 
-    float		mDrawTimeCPU;
-    float		mDrawTimeGPU;
+    float       mDrawTimeCPU;
+    float       mDrawTimeGPU;
 
-    std::vector<vg::Path>	mPaths;
-    std::vector<vg::Paint>	mPaints;	
+    std::vector<vg::Path>   mPaths;
+    std::vector<vg::Paint>  mPaints;
 };
 
 int main(int argc, char** argv)
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
         app.run();
     }
 
-    fwk::cleanup();
+    fwk::fini();
 
     return 0;
 }

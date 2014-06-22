@@ -38,7 +38,7 @@ public:
     ClockSample():
       mOffsetX(mWidth/2),
           mOffsetY(mHeight/2),
-#ifndef	RASTER_ACTORS
+#ifndef RASTER_ACTORS
           mScale(7),
 #else
           mScale(1),
@@ -52,7 +52,7 @@ public:
           {
               mTextures[i] = resources::createTexture2D(imageNames[i]);
           }
-#else			
+#else
           mRed = vg::createSolidPaint(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
           mBlack = vg::createSolidPaint(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
           mWhite = vg::createSolidPaint(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -74,7 +74,7 @@ public:
 
       ~ClockSample()
       {
-#ifdef	RASTER_ACTORS
+#ifdef  RASTER_ACTORS
           glDeleteTextures(IMG_COUNT, mTextures);
 #else
           for (size_t i=0; i<PATH_COUNT; ++i)
@@ -155,19 +155,19 @@ protected:
     }
 
 private:
-    bool		mIsDragging;
-    float		mOffsetX;
-    float		mOffsetY;
-    float		mScale;
+    bool        mIsDragging;
+    float       mOffsetX;
+    float       mOffsetY;
+    float       mScale;
 
 #ifdef	RASTER_ACTORS
-    GLuint		mTextures[IMG_COUNT];
+    GLuint      mTextures[IMG_COUNT];
 #else
-    vg::Path	mClockPaths[PATH_COUNT];
+    vg::Path    mClockPaths[PATH_COUNT];
 
-    vg::Paint	mWhite;
-    vg::Paint	mRed;
-    vg::Paint	mBlack;
+    vg::Paint   mWhite;
+    vg::Paint   mRed;
+    vg::Paint   mBlack;
 #endif
 };
 
@@ -180,7 +180,7 @@ int main(int argc, char** argv)
         app.run();
     }
 
-    fwk::cleanup();
+    fwk::fini();
 
     return 0;
 }

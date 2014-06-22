@@ -68,18 +68,20 @@ namespace fwk
 
         importOpenGL();
 
+        ut::init();
         vg::init();
         ui::init(1280, 720);
         mt::init(1, 128);
         graphics::init();
     }
 
-    void cleanup()
+    void fini()
     {
         graphics::fini();
         mt::fini();
-        ui::cleanup();
-        vg::cleanup();
+        ui::fini();
+        vg::fini();
+        ut::fini();
 
         SDL_GL_DeleteContext(context);
         SDL_DestroyWindow(window);

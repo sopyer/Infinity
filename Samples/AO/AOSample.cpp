@@ -384,7 +384,7 @@ extern "C" int main(int argc, char** argv)
         app.run();
     }
 
-    fwk::cleanup();
+    fwk::fini();
 
     return 0;
 }

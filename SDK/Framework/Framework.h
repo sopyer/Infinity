@@ -14,7 +14,7 @@
 //TODO: make shorter e.g. log
 namespace logging
 {
-	void message(const char *s,...);
+    void message(const char *s,...);
 }
 
 namespace fwk
@@ -23,7 +23,7 @@ namespace fwk
     extern SDL_GLContext    context;
 
     void init(const char* argv0);
-    void cleanup();
+    void fini();
 }
 
 #define CHECK_GL_ERROR()                \
@@ -31,5 +31,7 @@ namespace fwk
         GLenum err = glGetError();      \
         assert(err==GL_NO_ERROR);       \
     }
+
+
 
 #endif

@@ -6,6 +6,7 @@
 #include "CameraDirector.h"
 #include "ResourceHelpers.h"
 #include "Framework.h"
+#include <utils.h>
 
 namespace ui
 {
@@ -19,11 +20,6 @@ namespace ui
     static const uint32_t ID_CHECKBOX = 0x01000000;
     static const uint32_t ID_MASK     = 0xFF000000;
 
-    enum STATE_FLAGS
-    {
-        STATE_PRESSED = 1<<0,
-    };
-
     vg::Font defaultFont;
 
     int width;
@@ -35,14 +31,11 @@ namespace ui
     int   deltaX;
     int   deltaY;
     uint8_t  keyStatePrev[SDL_NUM_SCANCODES];
-    uint8_t  keyStateCur[SDL_NUM_SCANCODES];
+    uint8_t  keyStateCurr[SDL_NUM_SCANCODES];
     uint32_t mouseStatePrev;
-    uint32_t mouseStateCur;
+    uint32_t mouseStateCurr;
     bool     mouseWheelUp;
     bool     mouseWheelDown;
-
-    uint32_t activeID;
-    uint32_t activeIDState;
 
     struct CheckBox
     {
@@ -60,6 +53,25 @@ namespace ui
     void checkBoxUpdateAll();
     void checkBoxRenderAll();
 
+    int      findAreaByID(uint32_t id);
+    uint32_t findAreaID  (const point_t& p);
+
+    void reset()
+    {
+        memset(keyStateCurr, 0, SDL_NUM_SCANCODES);
+        memset(keyStatePrev, 0, SDL_NUM_SCANCODES);
+
+        mouseWheelUp = mouseWheelDown = false;
+
+        mouseStatePrev = 0;
+        mouseStateCurr = 0;
+
+        mouseX = mouseY = 0;
+        deltaX = deltaY = 0;
+
+        checkBoxCount = 0;
+    }
+
     void init(GLsizei w, GLsizei h)
     {
         //!!!! Refactor
@@ -67,74 +79,58 @@ namespace ui
         width      = w;
         height     = h;
 
-        checkBoxCount = 0;
-
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
-
-        memcpy(keyStateCur,  SDL_GetKeyboardState(NULL), SDL_NUM_SCANCODES);
-        memcpy(keyStatePrev, keyStateCur,                SDL_NUM_SCANCODES);
-
-        mouseStatePrev = SDL_GetMouseState(&mouseX, &mouseY);
-        mouseStateCur  = SDL_GetRelativeMouseState(&deltaX, &deltaY);
-        deltaX = 0;
-        deltaY = 0;
+        
+        reset();
     }
 
-    void cleanup()
+    void fini()
     {
         vg::destroyFont(defaultFont);
 
-        memset(keyStateCur,  0, SDL_NUM_SCANCODES);
-        memset(keyStatePrev, 0, SDL_NUM_SCANCODES);
-
-        mouseStatePrev = 0;
-        mouseStateCur  = 0;
-
-        deltaX = 0;
-        deltaY = 0;
+        reset();
     }
 
     void update()
     {
         PROFILER_CPU_TIMESLICE("ui->update");
 
-        memcpy(keyStatePrev, keyStateCur,                SDL_NUM_SCANCODES);
-        memcpy(keyStateCur,  SDL_GetKeyboardState(NULL), SDL_NUM_SCANCODES);
+        memcpy(keyStatePrev, keyStateCurr,               SDL_NUM_SCANCODES);
+        memcpy(keyStateCurr, SDL_GetKeyboardState(NULL), SDL_NUM_SCANCODES);
 
-        mouseStatePrev = mouseStateCur;
-        mouseStateCur  = SDL_GetMouseState(&mouseX, &mouseY);
+        mouseStatePrev = mouseStateCurr;
+        mouseStateCurr = SDL_GetMouseState(&mouseX, &mouseY);
         SDL_GetRelativeMouseState(&deltaX, &deltaY);
 
         mouseWheelUp = mouseWheelDown = false;
 
-        if (mouseWasPressed(SDL_BUTTON_LEFT)) activeIDState |= STATE_PRESSED;
-        if (mouseWasReleased(SDL_BUTTON_LEFT))
-        {
-            activeIDState |= ~STATE_PRESSED;
-            activeID = ID_INVALID;
-        }
-
         checkBoxUpdateAll();
     }
 
-    void setMouseActiveID(uint32_t id)
+    void refineEvents(refined_events_t* events, uint32_t activeArea)
     {
-        if (activeID==ID_INVALID) activeID = id;
-    }
+        assert(events);
 
-    bool isHighlightedID (uint32_t id)
-    {
-        return activeID==id;
-    }
+        events->eventMask &= ~(EVENT_LEFT_CLICK|EVENT_ACTIVATED);
 
-    bool isActiveID(uint32_t id)
-    {
-        return activeID==id && (activeIDState&STATE_PRESSED);
-    }
+        if (mouseWasPressed(SDL_BUTTON_LEFT))
+        {
+            events->eventMask |= EVENT_ACTIVATED|EVENT_ACTIVE;
+            events->activeArea = activeArea;
+        }
+        else if (mouseWasReleased(SDL_BUTTON_LEFT))
+        {
+            if (activeArea == events->activeArea)
+                events->eventMask |= EVENT_LEFT_CLICK;
+            else
+                events->activeArea = INVALID_ID;
 
-    bool wasLClickedID(uint32_t id)
-    {
-        return activeID==id && mouseWasReleased(SDL_BUTTON_LEFT);
+            events->eventMask &= ~(EVENT_ACTIVE);
+        }
+        else if (!mouseIsPressed(SDL_BUTTON_LEFT))
+        {
+            events->activeArea = activeArea;
+        }
     }
 
     void mouseCapture()
@@ -185,45 +181,45 @@ namespace ui
     bool keyIsPressed  (int key)
     {
         assert(key<SDL_NUM_SCANCODES);
-        return keyStateCur[key] != 0;
+        return keyStateCurr[key] != 0;
     }
 
     bool keyWasPressed (int key)
     {
         assert(key<SDL_NUM_SCANCODES);
-        return !keyStatePrev[key] && keyStateCur[key];
+        return !keyStatePrev[key] && keyStateCurr[key];
     }
 
     bool keyIsReleased (int key)
     {
         assert(key<SDL_NUM_SCANCODES);
-        return !keyStateCur[key];
+        return !keyStateCurr[key];
     }
 
     bool keyWasReleased(int key)
     {
         assert(key<SDL_NUM_SCANCODES);
-        return keyStatePrev[key] && !keyStateCur[key];
+        return keyStatePrev[key] && !keyStateCurr[key];
     }
 
     bool mouseIsPressed  (int button)
     {
-        return (mouseStateCur&SDL_BUTTON(button)) != 0;
+        return (mouseStateCurr&SDL_BUTTON(button)) != 0;
     }
 
     bool mouseWasPressed (int button)
     {
-        return !(mouseStatePrev&SDL_BUTTON(button)) && (mouseStateCur&SDL_BUTTON(button));
+        return !(mouseStatePrev&SDL_BUTTON(button)) && (mouseStateCurr&SDL_BUTTON(button));
     }
 
     bool mouseIsReleased (int button)
     {
-        return !(mouseStateCur&SDL_BUTTON(button));
+        return !(mouseStateCurr&SDL_BUTTON(button));
     }
 
     bool mouseWasReleased(int button)
     {
-        return (mouseStatePrev&SDL_BUTTON(button)) && !(mouseStateCur&SDL_BUTTON(button));
+        return (mouseStatePrev&SDL_BUTTON(button)) && !(mouseStateCurr&SDL_BUTTON(button));
     }
 
     void mouseRelOffset(int* dx, int* dy)

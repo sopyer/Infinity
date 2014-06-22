@@ -34,9 +34,9 @@ namespace resources
 
             mfree(&source);
 
-            const size_t	LOG_STR_LEN = 1024;
-            char			infoLog[LOG_STR_LEN] = {0};
-            GLsizei			length;
+            const size_t    LOG_STR_LEN = 1024;
+            char            infoLog[LOG_STR_LEN] = {0};
+            GLsizei         length;
 
             glGetShaderInfoLog(shader, LOG_STR_LEN-1, &length, infoLog);
             infoLog[length] = 0;
@@ -80,9 +80,9 @@ namespace resources
 
         glLinkProgram(program);
 
-        const size_t	LOG_STR_LEN = 1024;
-        char			infoLog[LOG_STR_LEN] = {0};
-        GLsizei			length;
+        const size_t    LOG_STR_LEN = 1024;
+        char            infoLog[LOG_STR_LEN] = {0};
+        GLsizei         length;
 
         glGetProgramInfoLog(program, LOG_STR_LEN-1, &length, infoLog);
         infoLog[length] = 0;

@@ -744,10 +744,10 @@ protected:
     }
 
 private:
-    bool		mIsDragging;
-    float		mOffsetX;
-    float		mOffsetY;
-    float		mScale;
+    bool        mIsDragging;
+    float       mOffsetX;
+    float       mOffsetY;
+    float       mScale;
 };
 
 extern "C" int main(int argc, char** argv)
@@ -759,7 +759,7 @@ extern "C" int main(int argc, char** argv)
         app.run();
     }
 
-    fwk::cleanup();
+    fwk::fini();
 
     return 0;
 }
