@@ -2,6 +2,8 @@
 #   define __FRAMEWORK_GRAPHICS_H_INCLUDED__
 
 #include <opengl.h>
+#include <stdint.h>
+#include <ml.h>
 
 namespace vf
 {
@@ -56,6 +58,23 @@ namespace graphics
     void* dynbufAlloc(GLsizeiptr size);
     void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
     void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset);
+
+    struct ubuffer_desc_data_t;
+    typedef ubuffer_desc_data_t* ubuffer_desc_t;
+
+    struct auto_vars_t
+    {
+        ml::mat4x4 matMVP;
+        ml::mat4x4 matMV;
+        ml::mat4x4 matP;
+        ml::vec3   shCoef[10];
+    };
+
+    extern auto_vars_t autoVars;
+
+    ubuffer_desc_t ubufCreateDesc (GLuint prg, const char* name);
+    void           ubufDestroyDesc(ubuffer_desc_t desc);
+    void           ubufUpdateData(ubuffer_desc_t desc, void* mem, size_t size);
 
 /*------------- Immediate mode implementation --------------*/
 #define IM_BEGIN(VertexType, primitiveType)                               \

@@ -1,5 +1,3 @@
-#include <assert.h>
-#include <stdint.h>
 #include "graphics.h"
 #include "framework.h"
 #include <utils.h>
@@ -177,4 +175,176 @@ namespace graphics
 
         return dynbufAlloc(size);
     }
+
+    auto_vars_t autoVars;
+
+    struct auto_var_desc_t
+    {
+        const char* name;
+        GLenum      type;
+        GLuint      arraySize;
+        GLint       offset;
+    };
+
+    static const size_t AUTO_VARS_COUNT = 2;
+
+    auto_var_desc_t autoVarDesc[AUTO_VARS_COUNT] = {
+        { "u_MVP",    GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMVP) },
+        { "u_SHcoef", GL_FLOAT_VEC3, 10, offsetof(auto_vars_t, shCoef) }
+    };
+
+    GLuint auto_var_get_index(const char* uname, GLenum type, GLint arraySize)
+    {
+        for (size_t i = 0; i < AUTO_VARS_COUNT; ++i)
+        {
+            if (autoVarDesc[i].type != type) continue;
+            if (arraySize > 1 && autoVarDesc[i].arraySize != arraySize) continue;
+            if (strncmp(autoVarDesc[i].name, uname, strlen(autoVarDesc[i].name)) != 0) continue;
+
+            return i;
+        }
+
+        return GL_INVALID_INDEX;
+    }
+
+    struct ubuffer_desc_data_t
+    {
+        GLint numVars;
+        GLint bufferSize;
+
+        struct mapping_t
+        {
+            GLuint index;
+            GLint  offset;
+            GLint  arrayStride;
+        } mappings[1];
+    };
+
+    static size_t ubufCalcSize(size_t numMappings)
+    {
+        return sizeof(ubuffer_desc_data_t) + (numMappings - 1) * sizeof(ubuffer_desc_data_t::mapping_t);
+    }
+
+    ubuffer_desc_t ubufCreateDesc(GLuint prg, const char* name)
+    {
+        stack_mem_t stalloc = ut::get_thread_data_stack();
+
+        GLint numBlocks = 0;
+
+        glGetProgramInterfaceiv(prg, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &numBlocks );
+
+        struct block_props_t
+        {
+            GLint numVars;
+            GLint bufferSize;
+        };
+        static const GLenum reqBlockProps[2] = {GL_NUM_ACTIVE_VARIABLES, GL_BUFFER_DATA_SIZE};
+
+        static const GLenum reqBlockUnis[1]  = {GL_ACTIVE_VARIABLES};
+
+        struct uni_props_t
+        {
+            GLint nameLen;
+            GLint type;
+            GLint arraySize;
+            GLint arrayStride;
+            GLint offset;
+        };
+        static const GLenum reqUniProps[5]   = {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE, GL_ARRAY_STRIDE, GL_OFFSET};
+
+        GLuint block = glGetProgramResourceIndex(prg, GL_UNIFORM_BLOCK, name);
+
+        if (block == GL_INVALID_INDEX) return 0;
+
+        block_props_t blockProps;
+        glGetProgramResourceiv(prg, GL_UNIFORM_BLOCK, block, 2, reqBlockProps, 2, NULL, (GLint*)&blockProps);
+
+        if (!blockProps.numVars) return 0;
+
+        GLint* uniIndices = stack_mem_alloc<GLint>(stalloc, blockProps.numVars);
+        glGetProgramResourceiv(prg, GL_UNIFORM_BLOCK, block, 1, reqBlockUnis, blockProps.numVars, NULL, uniIndices);
+
+        ubuffer_desc_data_t* descProto = (ubuffer_desc_data_t*)stack_mem_alloc(stalloc, ubufCalcSize(blockProps.numVars));
+
+        descProto->numVars = 0;
+        descProto->bufferSize = blockProps.bufferSize;
+
+        for(int uni = 0; uni < blockProps.numVars; ++uni)
+        {
+            uni_props_t uniProps;
+
+            glGetProgramResourceiv(prg, GL_UNIFORM, uniIndices[uni], 5, reqUniProps, 5, NULL, (GLint*)&uniProps);
+
+            char* uname = stack_mem_alloc<char>(stalloc, uniProps.nameLen);
+            glGetProgramResourceName(prg, GL_UNIFORM, uniIndices[uni], uniProps.nameLen, NULL, uname);
+
+            GLuint index = auto_var_get_index(uname, uniProps.type, uniProps.arraySize);
+            if (index != GL_INVALID_INDEX)
+            {
+                size_t i = descProto->numVars;
+
+                descProto->mappings[i].index       = index;
+                descProto->mappings[i].offset      = uniProps.offset;
+                descProto->mappings[i].arrayStride = uniProps.arrayStride;
+                ++descProto->numVars;
+            }
+
+            stack_mem_reset(stalloc, uname);
+        }
+
+        size_t descSize = ubufCalcSize(descProto->numVars);
+
+        ubuffer_desc_data_t* desc = (ubuffer_desc_data_t*)malloc(descSize);
+
+        memcpy(desc, descProto, descSize);
+
+        stack_mem_reset(stalloc, uniIndices);
+
+        return desc;
+    }
+
+    void ubufDestroyDesc(ubuffer_desc_t desc)
+    {
+        free(desc);
+    }
+
+    size_t gl_type_size(GLenum type)
+    {
+        switch (type)
+        {
+            case GL_FLOAT:
+                return sizeof(float);
+            case GL_FLOAT_VEC2:
+                return 2 * sizeof(float);
+            case GL_FLOAT_VEC3:
+                return 3 * sizeof(float);
+            case GL_FLOAT_VEC4:
+                return 4 * sizeof(float);
+            case GL_FLOAT_MAT4:
+                return 4 * 4 * sizeof(float);
+            default:
+                assert(0);
+        }
+        return 0;
+    }
+
+    void ubufUpdateData(ubuffer_desc_t desc, void* mem, size_t size)
+    {
+        assert(desc->bufferSize <= size);
+
+        uint8_t* dst = (uint8_t*)mem;
+        uint8_t* src = (uint8_t*)&autoVars;
+
+        for (GLint vi = 0; vi < desc->numVars; ++vi)
+        {
+            ubuffer_desc_data_t::mapping_t& m   = desc->mappings[vi];
+            auto_var_desc_t&                var = autoVarDesc[m.index];
+            size_t                          sz  = gl_type_size(var.type);
+            for (GLuint i = 0; i < var.arraySize; ++i)
+            {
+                memcpy(&dst[m.offset + m.arrayStride*i], &src[var.offset + sz*i], sz);
+            }
+        }
+    }
+
 }

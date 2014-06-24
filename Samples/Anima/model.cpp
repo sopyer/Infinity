@@ -22,6 +22,9 @@ namespace Model
     GLuint prgDefault;
     material_t* mWireframe;
 
+    graphics::ubuffer_desc_t ubufLighting;
+    graphics::ubuffer_desc_t ubufGlobal;
+
     struct mesh_t
     {
         GLuint    vbo;
@@ -54,6 +57,10 @@ namespace Model
         mWireframe->diffuse = mWireframe->normal = 0;
 
         prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
+
+
+        ubufLighting = graphics::ubufCreateDesc(prgDefault, "uniLighting");
+        ubufGlobal   = graphics::ubufCreateDesc(prgDefault, "uniGlobal");
 
 #ifdef _DEBUG
         {
@@ -91,6 +98,9 @@ namespace Model
     {
         glDeleteProgram(prgLighting);
         glDeleteProgram(prgDefault);
+
+        graphics::ubufDestroyDesc(ubufLighting);
+        graphics::ubufDestroyDesc(ubufGlobal);
 
         free(mWireframe);
     }
@@ -468,7 +478,7 @@ cleanup:
         glPopAttrib();
     }
 
-    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[10])
+    void render(model_t* model, skeleton_t* skel, pose_t* pose)
     {
         GLuint offsetGlobal, offsetBones, offsetLighting;
         
@@ -480,9 +490,10 @@ cleanup:
         void* memBones    = graphics::dynbufAllocMem(sizeBones,    graphics::caps.uboAlignment, &offsetBones);
         void* memLighting = graphics::dynbufAllocMem(sizeLighting, graphics::caps.uboAlignment, &offsetLighting);
 
-        memcpy(memGlobal,   MVP,                             sizeGlobal);
         memcpy(memBones,    &pose->boneTransforms[0].real.x, sizeBones);
-        memcpy(memLighting, shPoly,                          sizeLighting);
+
+        graphics::ubufUpdateData(ubufGlobal,   memGlobal,   sizeGlobal);
+        graphics::ubufUpdateData(ubufLighting, memLighting, sizeLighting);
 
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   graphics::dynBuffer, offsetGlobal,   sizeGlobal);
         glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    graphics::dynBuffer, offsetBones,    sizeBones);

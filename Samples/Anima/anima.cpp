@@ -2,20 +2,21 @@
 
 #include <framework.h>
 #include <SpectatorCamera.h>
+#include <graphics.h>
 
 #include "model.h"
 
-v128 shPoly[10] = {
-    { 0.09010f, -0.02145f, -0.12871f, 0.0f},
-    {-0.09010f,  0.02145f,  0.12871f, 0.0f},
-    {-0.11890f, -0.06688f, -0.11147f, 0.0f},
-    {-0.09438f, -0.04290f, -0.10298f, 0.0f},
-    {-0.22310f, -0.18878f, -0.40330f, 0.0f},
-    { 0.48052f,  0.18020f,  0.12014f, 0.0f},
-    {-0.29676f, -0.06140f,  0.01024f, 0.0f},
-    { 0.39910f,  0.35816f,  0.61400f, 0.0f},
-    {-0.34794f, -0.18420f, -0.27630f, 0.0f},
-    {-0.07239f, -0.01280f, -0.03463f, 1.0f},
+ml::vec3 shPoly_v3[10] = {
+    { 0.09010f, -0.02145f, -0.12871f},
+    {-0.09010f,  0.02145f,  0.12871f},
+    {-0.11890f, -0.06688f, -0.11147f},
+    {-0.09438f, -0.04290f, -0.10298f},
+    {-0.22310f, -0.18878f, -0.40330f},
+    { 0.48052f,  0.18020f,  0.12014f},
+    {-0.29676f, -0.06140f,  0.01024f},
+    { 0.39910f,  0.35816f,  0.61400f},
+    {-0.34794f, -0.18420f, -0.27630f},
+    {-0.07239f, -0.01280f, -0.03463f},
 };
 
 class Anima: public ui::Stage
@@ -93,8 +94,13 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
+        glm::mat4 MVP = mProj*vm;
+
+        memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
+        memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(float) * 16);
+
         gpuTimer.start();
-        Model::render(&model, &skel, &pose, mProj*vm, shPoly);
+        Model::render(&model, &skel, &pose);
         gpuTimer.stop();
 
         glMatrixMode(GL_PROJECTION);

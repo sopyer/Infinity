@@ -51,5 +51,5 @@ namespace Model
     void destroyPose     (pose_t*      pose );
 
     void update(float fDeltaTime, animation_t* anim, skeleton_t* skel, pose_t* pose);
-    void render(model_t* model, skeleton_t* skel, pose_t* pose, float* MVP, v128 shPoly[10]);
+    void render(model_t* model, skeleton_t* skel, pose_t* pose);
 };

@@ -91,7 +91,9 @@ void CDLODTerrain::initialize()
     glBindVertexArray(0);
 
     glGenBuffers(1, &ubo);
-    glNamedBufferDataEXT(ubo, sizeof(TerrainData), 0, GL_DYNAMIC_DRAW);
+    glNamedBufferStorageEXT(ubo, sizeof(TerrainData), 0, GL_MAP_WRITE_BIT);
+
+    ubufView = graphics::ubufCreateDesc(prgTerrain, "uniView");
 
     GL_CHECK_ERROR();
 }
@@ -108,6 +110,8 @@ void CDLODTerrain::cleanup()
     glDeleteProgram(prgTerrain);
     glDeleteTextures(1, &mHeightmapTex);
     glDeleteTextures(1, &mipTexture);
+
+    graphics::ubufDestroyDesc(ubufView);
 }
 
 void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
@@ -117,14 +121,6 @@ void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
     selectionMVP.r1 = vi_loadu(mat[2]);
     selectionMVP.r2 = vi_loadu(mat[1]);
     selectionMVP.r3 = vi_loadu(mat[3]);
-}
-
-void CDLODTerrain::setMVPMatrix(glm::mat4& mat)
-{
-    viewMVP.r0 = vi_loadu(mat[0]);
-    viewMVP.r1 = vi_loadu(mat[1]);
-    viewMVP.r2 = vi_loadu(mat[2]);
-    viewMVP.r3 = vi_loadu(mat[3]);
 }
 
 inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radius)
@@ -300,7 +296,8 @@ void CDLODTerrain::drawTerrain()
             ViewData* ptrViewData;
             
             ptrViewData = (ViewData*) graphics::dynbufAllocMem(sizeof(ViewData), graphics::caps.uboAlignment, &offset);
-            memcpy(&ptrViewData->uMVP, &viewMVP, sizeof(viewMVP));
+            //memcpy(&ptrViewData->uMVP, &viewMVP, sizeof(viewMVP));
+            graphics::ubufUpdateData(ubufView, ptrViewData, sizeof(ViewData));
             ptrViewData->uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
             glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING, ubo,                 0,      sizeof(TerrainData));

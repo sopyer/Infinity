@@ -6,6 +6,7 @@
 #include <glm/glm.h>
 #include <vi.h>
 #include <ml.h>
+#include <graphics.h>
 
 struct PatchData;
 
@@ -24,7 +25,6 @@ public:
 
     float LODRange  [MAX_LOD_COUNT];
 
-    ml::mat4x4 viewMVP;
     ml::mat4x4 selectionMVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
     glm::vec3  viewPoint;
     float      vertDistToTerrain;
@@ -35,7 +35,9 @@ public:
     size_t     maxPatchCount;
     GLsizei    idxCount;
 
-    GLuint  prgTerrain;
+    GLuint prgTerrain;
+    graphics::ubuffer_desc_t ubufView;
+
     GLuint  ibo, ubo;
     GLuint  mHeightmapTex;
     GLuint  mipTexture;
@@ -51,7 +53,6 @@ public:
     void reset();
 
     void setSelectMatrix(glm::mat4& mat);
-    void setMVPMatrix(glm::mat4& mat);
     void drawTerrain();
 
     CPUTimer cpuTimer;

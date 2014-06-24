@@ -217,7 +217,8 @@ protected:
             terrain.setSelectMatrix(VP);
         }
 
-        terrain.setMVPMatrix(mProj*vm);
+        glm::mat4 MVP = mProj*vm;
+        memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(ml::mat4x4));
 
         terrain.drawTerrain();
 
