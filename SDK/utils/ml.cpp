@@ -2,82 +2,52 @@
 
 namespace ml
 {
-    quat      identity_quat = {0, 0, 0, 1};
-    dual_quat identity_dual_quat = {{0, 0, 0, 1}, {0, 0, 0, 0}};
+#define MUL_MAT4_VEC4(r, m0, m1, m2, m3, v)         \
+    {                                               \
+        v128 swizzle;                               \
+                                                    \
+        swizzle = vi_swizzle<VI_SWIZZLE_WWWW>(v);   \
+        r = vi_mul(swizzle, m3);                    \
+        swizzle = vi_swizzle<VI_SWIZZLE_ZZZZ>(v);   \
+        r = vi_mad(swizzle, m2, r);                 \
+        swizzle = vi_swizzle<VI_SWIZZLE_YYYY>(v);   \
+        r = vi_mad(swizzle, m1, r);                 \
+        swizzle = vi_swizzle<VI_SWIZZLE_XXXX>(v);   \
+        r = vi_mad(swizzle, m0, r);                 \
+    }                                               \
 
-    v128 load_vec2(vec2* v2)
-    {
-        return _mm_castpd_ps(_mm_load_sd((double*)&v2->x));
-    }
 
-    v128 load_vec3(vec3* v3)
-    {
-        v128 r0, r1;
-
-        r0 = _mm_castpd_ps(_mm_load_sd((double*)&v3->x));
-        r1 = _mm_load_ss(&v3->z);
-        r1 = _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(r1), 8));
-
-        return _mm_xor_ps(r0, r1);
-    }
-
-    v128 load_vec4(vec4* v4)
-    {
-        return vi_loadu(v4);
-    }
-
-    v128 load_quat(quat* q)
-    {
-        return vi_loadu(q);
-    }
-
-    void store_vec2(vec2* v2, v128 v4)
-    {
-        _mm_store_sd((double*)&v2->x, _mm_castps_pd(v4));
-    }
-
-    void store_vec3(vec3* v3, v128 v4)
-    {
-        _mm_store_sd((double*)&v3->x, _mm_castps_pd(v4));
-        _mm_store_ss(&v3->z, _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(v4), 8)));
-    }
-
-    void store_quat(quat* q, v128 v4)
-    {
-        vi_storeu(q, v4);
-    }
-
+    //                                                  | w1   z1  -y1  x1|   |x0|
+    //                                                  |                 |   |  |
+    //                                                  |-z1   w1   x1  y1|   |y0|
+    //  q0 * q1 = (x0, y0, z0, w0) * (x1, y1, z1, w1) = |                 | * |  |
+    //                                                  | y1  -x1   w1  z1|   |z0|
+    //                                                  |                 |   |  |
+    //                                                  |-x1  -y1  -z1  w1|   |w0|
     v128 mul_quat(v128 q0, v128 q1)
     {
-        v128 op1, op2, m, r;
+        v128 r, m, s, m0, m1, m2;
 
-        m   = vi_set_x000_i32(0x80000000);
+        m  = vi_set_i000(0x80000000);
 
-        op1 = vi_swizzle<VI_SWIZZLE_WWWW>(q0);
-        r   = vi_mul(op1, q1);  
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
+        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q1);
+        m0 = vi_xor(s, m0);  
 
-        m   = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
-        op1 = vi_swizzle<VI_SWIZZLE_XXXX>(q0);
-        op1 = vi_xor(m, op1);  
-        op2 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q1);
-        r   = vi_mad(op1, op2, r);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
+        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q1);
+        m1 = vi_xor(s, m1);
 
-        m   = vi_swizzle<VI_SWIZZLE_MASK(2, 2, 3, 3)>(m);
-        op1 = vi_swizzle<VI_SWIZZLE_YYYY>(q0);
-        op1 = vi_xor(m, op1);
-        op2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(op2);
-        r   = vi_mad(op1, op2, r);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
+        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q1);
+        m2 = vi_xor(s, m2);
 
-        m   = vi_swizzle<VI_SWIZZLE_MASK(3, 0, 0, 3)>(m);
-        op1 = vi_swizzle<VI_SWIZZLE_ZZZZ>(q0);
-        op1 = vi_xor(m, op1);
-        op2 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(op2);
-        r   = vi_mad(op1, op2, r);
+        MUL_MAT4_VEC4(r, m0, m1, m2, q1, q0);
 
         return r;
     }
 
-    v128 rotate_quat_vec3(v128 q, v128 v)
+    v128 rotate_vec3_quat(v128 q, v128 v)
     {
         v128 r, two, wx4;
 
@@ -85,7 +55,7 @@ namespace ml
         wx4 = vi_swizzle<VI_SWIZZLE_WWWW>(q);
         r   = vi_mad(wx4, v, r);
         r   = vi_cross3(q, r);
-        two = vi_set_xxxx(2.0f);
+        two = vi_set_ffff(2.0f);
         r   = vi_mad(two, r, v);
 
         return r;
@@ -95,7 +65,7 @@ namespace ml
     {
         v128 mask, r;
         
-        mask = vi_set_x000_i32(0x80000000);
+        mask = vi_set_i000(0x80000000);
         mask = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(mask);
         r    = vi_xor(mask, q);
 
@@ -108,7 +78,7 @@ namespace ml
         
         r0 = vi_dot4(q0, q1);
 
-        if (vi_cmpx_lt(r0, vi_load_zero()))
+        if (vi_cmpx_lt(r0, vi_set_0000()))
         {
             q1 = vi_neg(q1);
         }
@@ -122,9 +92,9 @@ namespace ml
 
         r0 = vi_dot4(v, v);
 
-        if (_mm_comilt_ss(r0, vi_set_xxxx(VI_EPS7)))
+        if (_mm_comilt_ss(r0, vi_set_ffff(VI_EPS7)))
         {
-            r0 = vi_load_zero();
+            r0 = vi_set_0000();
         }
         else
         {
@@ -145,35 +115,35 @@ namespace ml
     {
         v128 r, q0, q1;
 
-        q0 = load_quat(a);
-        q1 = load_quat(b);
+        q0 = vi_loadu_v4(a);
+        q1 = vi_loadu_v4(b);
 
         r = mul_quat(q0, q1);
 
-        store_quat(result, r);
+        vi_storeu_v4(result, r);
     }
 
     void conjugate_quat(quat* result, quat* q)
     {
         v128 r, vq;
 
-        vq   = vi_load(q);
+        vq   = vi_loadu_v4(q);
 
         r = conjugate_quat(vq);
 
-        store_quat(result, r);
+        vi_storeu_v4(result, r);
     }
 
     void rotate_vec3_quat(vec3* result, quat* rot, vec3* pos)
     {
         v128 r, q, p;
 
-        q = load_quat(rot);
-        p = load_vec3(pos);
+        q = vi_loadu_v4(rot);
+        p = vi_load_v3(pos);
 
-        r = rotate_quat_vec3(q, p);
+        r = rotate_vec3_quat(q, p);
 
-        store_vec3(result, r);
+        vi_store_v3(result, r);
     }
 
     v128 translation_dual_quat(v128 rq, v128 dq)
@@ -185,15 +155,21 @@ namespace ml
         t = vi_mad(w, dq, t);
         w = vi_swizzle<VI_SWIZZLE_WWWW>(dq);
         t = vi_sub(t, vi_mul(w, rq));
-        t = vi_mul(vi_set_xxxx(2.0f), t);
+        t = vi_mul(vi_set_ffff(2.0f), t);
 
         return t;
     }
 
+    void set_identity_dual_quat(dual_quat* dq)
+    {
+        vi_storeu_v4(&dq->real, vi_set_0001f());
+        vi_storeu_v4(&dq->dual, vi_set_0000());
+    }
+
 #define COPY_QUAT(dst, src)                     \
     {                                           \
-        v128 t = vi_loadu(src);                 \
-        vi_storeu(dst, t);                      \
+        v128 t = vi_loadu_v4(src);                 \
+        vi_storeu_v4(dst, t);                      \
     }
 
     void create_dual_quat(dual_quat* result, quat* orient, vec3* offset)
@@ -202,28 +178,28 @@ namespace ml
 
         COPY_QUAT(&result->real, orient);
 
-        p = load_vec3(offset);
-        q = load_quat(orient);
+        p = vi_load_v3(offset);
+        q = vi_loadu_v4(orient);
 
         r = mul_quat(p, q);
-        c = vi_set_xxxx(0.5f);
-        store_quat(&result->dual, vi_mul(c, r));
+        c = vi_set_ffff(0.5f);
+        vi_storeu_v4(&result->dual, vi_mul(c, r));
     }
 
     void transform_vec3_dual_quat(vec3* result, dual_quat* dq, vec3* p)
     {
         v128 v, t, r, d;
 
-        v = load_vec3(p);
-        r = load_quat(&dq->real);
-        d = load_quat(&dq->dual);
+        v = vi_load_v3(p);
+        r = vi_loadu_v4(&dq->real);
+        d = vi_loadu_v4(&dq->dual);
 
-        v = rotate_quat_vec3(r, v);
+        v = rotate_vec3_quat(r, v);
         t = translation_dual_quat(r, d);
 
         t = vi_add(v, t);
         
-        store_vec3(result, t);
+        vi_store_v3(result, t);
     }
 
     void mul_dual_quat(dual_quat* result, dual_quat* dq0, dual_quat* dq1)
@@ -232,91 +208,126 @@ namespace ml
         v128 qr1, qd1;
         v128 r0, r1;
 
-        qr0 = load_quat(&dq0->real);
-        qd0 = load_quat(&dq0->dual);
-        qr1 = load_quat(&dq1->real);
-        qd1 = load_quat(&dq1->dual);
+        qr0 = vi_loadu_v4(&dq0->real);
+        qd0 = vi_loadu_v4(&dq0->dual);
+        qr1 = vi_loadu_v4(&dq1->real);
+        qd1 = vi_loadu_v4(&dq1->dual);
 
         r0 = mul_quat(qr0, qr1);
 
-        store_quat(&result->real, r0);
+        vi_storeu_v4(&result->real, r0);
 
         r0 = mul_quat(qd0, qr1);
         r1 = mul_quat(qr0, qd1);
         r0 = vi_add(r0, r1);
 
-        store_quat(&result->dual, r0);
+        vi_storeu_v4(&result->dual, r0);
     }
 
     void conjugate_dual_quat(dual_quat* result, dual_quat* dq)
     {
         v128 r, q;
 
-        q = load_quat(&dq->real);
+        q = vi_loadu_v4(&dq->real);
         r = conjugate_quat(q);
-        store_quat(&result->real, r);
+        vi_storeu_v4(&result->real, r);
 
-        q = load_quat(&dq->dual);
+        q = vi_loadu_v4(&dq->dual);
         r = conjugate_quat(q);
-        store_quat(&result->dual, r);
+        vi_storeu_v4(&result->dual, r);
     }
 
     void get_translation_from_dual_quat(vec3* result, dual_quat* dq)
     {
         v128 t, r, d;
 
-        r = load_quat(&dq->real);
-        d = load_quat(&dq->dual);
+        r = vi_loadu_v4(&dq->real);
+        d = vi_loadu_v4(&dq->dual);
 
         t = translation_dual_quat(r, d);
 
-        store_vec3(result, t);
+        vi_store_v3(result, t);
     }
 
-    void transpose(v128* transposed/*[4]*/, v128* mat/*[4]*/)
+    void transpose_mat4(v128* t/*[4]*/, v128* m/*[4]*/)
     {
-        __m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(mat[0]), _mm_castps_si128(mat[1]));
-        __m128i xmm1 = _mm_unpackhi_epi32(_mm_castps_si128(mat[0]), _mm_castps_si128(mat[1]));
-        __m128i xmm2 = _mm_unpacklo_epi32(_mm_castps_si128(mat[2]), _mm_castps_si128(mat[3]));
-        __m128i xmm3 = _mm_unpackhi_epi32(_mm_castps_si128(mat[2]), _mm_castps_si128(mat[3]));
+        __m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
+        __m128i xmm1 = _mm_unpackhi_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
+        __m128i xmm2 = _mm_unpacklo_epi32(_mm_castps_si128(m[2]), _mm_castps_si128(m[3]));
+        __m128i xmm3 = _mm_unpackhi_epi32(_mm_castps_si128(m[2]), _mm_castps_si128(m[3]));
 
-        transposed[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
-        transposed[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
-        transposed[2] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm1, xmm3));
-        transposed[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
+        t[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
+        t[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
+        t[2] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm1, xmm3));
+        t[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
     }
 
-#	define MUL_MAT4_VEC4(r, m, v)                    \
-    {                                                \
-        v128 xxxx = vi_swizzle<VI_SWIZZLE_XXXX>(v);  \
-        v128 yyyy = vi_swizzle<VI_SWIZZLE_YYYY>(v);  \
-        v128 zzzz = vi_swizzle<VI_SWIZZLE_ZZZZ>(v);  \
-        v128 wwww = vi_swizzle<VI_SWIZZLE_WWWW>(v);  \
-        r = vi_mul(xxxx, m[0]);                      \
-        r = vi_mad(yyyy, m[1], r);                   \
-        r = vi_mad(zzzz, m[2], r);                   \
-        r = vi_mad(wwww, m[3], r);                   \
-    }
-
-    void mul(v128* r, v128* m, v128 v)
+    v128 mul_mat4_vec4(v128* m/*4*/, v128 v)
     {
         v128 res;
-        MUL_MAT4_VEC4(res, m, v);
-        *r = res;
+        MUL_MAT4_VEC4(res, m[0], m[1], m[2], m[3], v);
+
+        return res;
     }
 
-    void mul(v128* r, v128* a, v128* b)
+    void mul_mat4(v128* r/*4*/, v128* a/*4*/, v128* b/*4*/)
     {
         v128 res;
-        MUL_MAT4_VEC4(res, a, b[0]);
+        MUL_MAT4_VEC4(res, a[0], a[1], a[2], a[3], b[0]);
         r[0] = res;
-        MUL_MAT4_VEC4(res, a, b[1]);
+        MUL_MAT4_VEC4(res, a[0], a[1], a[2], a[3], b[1]);
         r[1] = res;
-        MUL_MAT4_VEC4(res, a, b[2]);
+        MUL_MAT4_VEC4(res, a[0], a[1], a[2], a[3], b[2]);
         r[2] = res;
-        MUL_MAT4_VEC4(res, a, b[3]);
+        MUL_MAT4_VEC4(res, a[0], a[1], a[2], a[3], b[3]);
         r[3] = res;
     }
 
-#undef MUL_M4_V4
+    //  | a11   a12   a13  a14|   | w  z -y  x|   | w  z -y -x|
+    //  |                     |   |           |   |           |
+    //  | a21   a22   a23  a24|   |-z  w  x  y|   |-z  w  x -y|
+    //  |                     | = |           | * |           |
+    //  | a31   a32   a33  a34|   | y -x  w  z|   | y -x  w -z|
+    //  |                     |   |           |   |           |
+    //  | a41   a42   a43  a44|   |-x -y -z  w|   | x  y  z  w|
+    void quat_to_mat4x3(v128* mat/*[3]*/, v128 q)
+    {
+        v128 r, m, s, m0, m1, m2, v;
+
+        m  = vi_set_i000(0x80000000);
+
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
+        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q);
+        m0 = vi_xor(s, m0);  
+
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
+        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q);
+        m1 = vi_xor(s, m1);
+
+        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
+        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q);
+        m2 = vi_xor(s, m2);
+
+        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        v = vi_xor(m0, s);
+        MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
+        mat[0] = r;
+
+        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        v = vi_xor(m1, s);
+        MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
+        mat[1] = r;
+
+        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        v = vi_xor(m2, s);
+        MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
+        mat[2] = r;
+    }
+
+    void quat_to_mat4(v128* mat/*[4]*/, v128 q)
+    {
+        quat_to_mat4x3(mat, q);
+        mat[3] = vi_set_0001f();
+    }
+
 }

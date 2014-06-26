@@ -123,6 +123,7 @@ namespace Model
             *hierarchy = joints->parent;
 
             ml::create_dual_quat   (bindPose, &joints->rotation, &joints->location);
+
             ml::mul_quat           (&bindPose->real, &rotx, &bindPose->real);
             ml::mul_quat           (&bindPose->dual, &rotx, &bindPose->dual);
             ml::conjugate_dual_quat(invBindPose, bindPose);
@@ -153,7 +154,7 @@ namespace Model
 
             v128 pos;
 
-            pos = vi_load_zero();
+            pos = vi_set_0000();
 
             // Sum the position of the weights
             for ( int j = 0; j < weightCount; ++j )
@@ -163,15 +164,15 @@ namespace Model
 
                 v128 r, d, v, t;
 
-                r = ml::load_quat(&joint.real);
-                d = ml::load_quat(&joint.dual);
-                v = ml::load_vec3(&weight.location);
+                r = vi_loadu_v4(&joint.real);
+                d = vi_loadu_v4(&joint.dual);
+                v = vi_load_v3(&weight.location);
 
-                v = ml::rotate_quat_vec3(r, v);
+                v = ml::rotate_vec3_quat(r, v);
                 t = ml::translation_dual_quat(r, d);
                 t = vi_add(v, t);
 
-                pos = vi_mad(t, vi_set_xxxx(weight.bias), pos);
+                pos = vi_mad(t, vi_set_ffff(weight.bias), pos);
 
                 assert(weight.joint<256);
 
@@ -179,7 +180,7 @@ namespace Model
                 vert.w[j] = weight.bias;
             }
 
-            ml::store_vec3((ml::vec3*)&vert.px, pos);
+            vi_store_v3(&vert.px, pos);
         }
 
         // Loop through all triangles and calculate the normal of each triangle
@@ -189,23 +190,23 @@ namespace Model
             v128 n0, n1, n2;
             v128 n;
 
-            v0 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].px);
-            v1 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].px);
-            v2 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].px);
+            v0 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+0] ].px);
+            v1 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+1] ].px);
+            v2 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+2] ].px);
 
             n = vi_cross3(vi_sub(v2, v0), vi_sub(v1, v0));
 
-            n0 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].nx);
-            n1 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].nx);
-            n2 = ml::load_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].nx);
+            n0 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+0] ].nx);
+            n1 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+1] ].nx);
+            n2 = vi_load_v3(&vertices[ md5Mesh->indices[i*3+2] ].nx);
 
             n0 = vi_add(n0, n);
             n1 = vi_add(n1, n);
             n2 = vi_add(n2, n);
 
-            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+0] ].nx, n0);
-            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+1] ].nx, n1);
-            ml::store_vec3((ml::vec3*)&vertices[ md5Mesh->indices[i*3+2] ].nx, n2);
+            vi_store_v3(&vertices[ md5Mesh->indices[i*3+0] ].nx, n0);
+            vi_store_v3(&vertices[ md5Mesh->indices[i*3+1] ].nx, n1);
+            vi_store_v3(&vertices[ md5Mesh->indices[i*3+2] ].nx, n2);
         }
 
         // Now normalize all the normals
@@ -214,9 +215,9 @@ namespace Model
             v128                n;
             vf::skinned_geom_t& vert = vertices[i];
 
-            n = ml::load_vec3((ml::vec3*)&vert.nx);
+            n = vi_load_v3(&vert.nx);
             n = ml::normalize(n);
-            ml::store_vec3((ml::vec3*)&vert.nx, n);
+            vi_store_v3(&vert.nx, n);
         }
 
         // Copy texture coordinates
@@ -379,12 +380,12 @@ cleanup:
 
             for ( int i = 0; i < skel->numJoints; ++i )
             {
-                qr0 = ml::load_quat(&frame0Data[i].real);
-                qd0 = ml::load_quat(&frame0Data[i].dual);
-                qr1 = ml::load_quat(&frame1Data[i].real);
-                qd1 = ml::load_quat(&frame1Data[i].dual);
+                qr0 = vi_loadu_v4(&frame0Data[i].real);
+                qd0 = vi_loadu_v4(&frame0Data[i].dual);
+                qr1 = vi_loadu_v4(&frame1Data[i].real);
+                qd1 = vi_loadu_v4(&frame1Data[i].dual);
 
-                if (vi_cmpx_lt(vi_dot4(qr0, qr1), vi_load_zero()))
+                if (vi_cmpx_lt(vi_dot4(qr0, qr1), vi_set_0000()))
                 {
                     qr1 = vi_neg(qr1);
                     qd1 = vi_neg(qd1);
@@ -393,11 +394,11 @@ cleanup:
                 r  = vi_lerp(qr0, qr1, lerpK);
                 n  = ml::length_quat(r);
                 r  = vi_div(r, n);
-                ml::store_quat(&pose->pose[i].real, r);
+                vi_storeu_v4(&pose->pose[i].real, r);
 
                 r  = vi_lerp(qd0, qd1, lerpK);
                 r  = vi_div(r, n);
-                ml::store_quat(&pose->pose[i].dual, r);
+                vi_storeu_v4(&pose->pose[i].dual, r);
 
                 ml::mul_dual_quat(&pose->boneTransforms[i], &pose->pose[i], &skel->invBindPose[i]);
             }
@@ -405,7 +406,11 @@ cleanup:
         else
         {
             // No animation. Just use identity quaternions for each bone.
-            std::fill(pose->boneTransforms, pose->boneTransforms+skel->numJoints, ml::identity_dual_quat);
+            ml::dual_quat* bone = pose->boneTransforms;
+            for (int i = 0; i < skel->numJoints; ++i, ++bone)
+            {
+                ml::set_identity_dual_quat(bone);
+            }
         }
     }
 

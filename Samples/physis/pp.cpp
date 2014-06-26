@@ -65,7 +65,7 @@ void ppInit()
     {
         const  ProgramDesc&  desc = prgDesc[i];
         GLuint frag;
-            
+
         frag              = resources::createShaderFromFile(GL_FRAGMENT_SHADER, desc.srcPath);
         programs[desc.id] = resources::linkProgram(2, vert, frag);
         glDeleteShader(frag);
@@ -134,13 +134,13 @@ void ppEnd()
 
 void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
 
     glUseProgram(programs[PRG_LUM]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -152,26 +152,26 @@ void generateSinglePassBoxFilterBruteForce(FilterDesc* desc, int kernelWidth, fl
 {
     assert(kernelWidth%2==1);
     desc->sampleCount = kernelWidth*kernelWidth;
-        
-    v128 weight = vi_set_x000(1.0f/kernelWidth/kernelWidth);
+
+    v128 weight = vi_set_f000(1.0f/kernelWidth/kernelWidth);
     for(int i=0; i<kernelWidth*kernelWidth; ++i)
     {
-        vi_store(desc->weights+i, weight);
+        vi_store_v4(desc->weights+i, weight);
     }
-        
+
     float left  = -(float)(kernelWidth/2);
     float right =  (float)(kernelWidth/2+1);
 
     ml::vec2 iter;
     ml::vec2 texelSize        = {texelSizeU, texelSizeV};
-    v128     vecTexelSize     = ml::load_vec2(&texelSize);
+    v128     vecTexelSize     = vi_load_v2(&texelSize);
     v128*    data             = desc->offsets;
     for(iter.y = left; iter.y < right; iter.y += 1.0f)
     {
         for(iter.x = left; iter.x < right; iter.x += 1.0f)
         {
-            v128 offset = vi_mul(ml::load_vec2(&iter), vecTexelSize);
-            vi_store(data++, offset);
+            v128 offset = vi_mul(vi_load_v2(&iter), vecTexelSize);
+            vi_store_v4(data++, offset);
         }
     }
 }
@@ -190,26 +190,26 @@ void generateBoxFilterSinglePass(FilterDesc* desc, int kernelWidth, float texelS
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight4 = vi_set_x000(4.0f/kernelWidth/kernelWidth);
+    v128 weight4 = vi_set_f000(4.0f/kernelWidth/kernelWidth);
     for(int i=0; i<samples4; ++i, ++weightPtr)
     {
-        vi_store(weightPtr, weight4);
+        vi_store_v4(weightPtr, weight4);
     }
 
-    v128 weight2 = vi_set_x000(2.0f/kernelWidth/kernelWidth);
+    v128 weight2 = vi_set_f000(2.0f/kernelWidth/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
-        vi_store(weightPtr, weight2);
+        vi_store_v4(weightPtr, weight2);
     }
-        
-    v128 weight1 = vi_set_x000(1.0f/kernelWidth/kernelWidth);
-    vi_store(weightPtr, weight1);
-        
+
+    v128 weight1 = vi_set_f000(1.0f/kernelWidth/kernelWidth);
+    vi_store_v4(weightPtr, weight1);
+
 
     // Calculate bilinear sampling offsets
     ml::vec2 iter;
     ml::vec2 texelSize    = {texelSizeU, texelSizeV};
-    v128     vecTexelSize = ml::load_vec2(&texelSize);
+    v128     vecTexelSize = vi_load_v2(&texelSize);
 
     float left  = -(float)(kernelWidth / 2);
     float right =  (float)(kernelWidth / 2);
@@ -221,27 +221,27 @@ void generateBoxFilterSinglePass(FilterDesc* desc, int kernelWidth, float texelS
     {
         for(iter.x = left; iter.x < right; iter.x += 2.0f)
         {
-            v128 offset4 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset4);
-            vi_store(offsetPtr++, offset4);
+            v128 offset4 = vi_mad(vi_load_v2(&iter), vecTexelSize, sampleOffset4);
+            vi_store_v4(offsetPtr++, offset4);
         }
     }
-        
+
     v128 sampleOffset2y = vi_set(0.0f, 0.5f*texelSizeV, 0.0f, 0.0f);
     for(iter.y = left; iter.y < right; iter.y += 2.0f)
     {
-        v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2y);
-        vi_store(offsetPtr++, offset2);
+        v128 offset2 = vi_mad(vi_load_v2(&iter), vecTexelSize, sampleOffset2y);
+        vi_store_v4(offsetPtr++, offset2);
     }
 
     v128 sampleOffset2x = vi_set(0.5f*texelSizeU, 0.0f, 0.0f, 0.0f);
     for(iter.x = left; iter.x < right; iter.x += 2.0f)
     {
-        v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2x);
-        vi_store(offsetPtr++, offset2);
+        v128 offset2 = vi_mad(vi_load_v2(&iter), vecTexelSize, sampleOffset2x);
+        vi_store_v4(offsetPtr++, offset2);
     }
 
-    v128 offset1 = vi_mul(ml::load_vec2(&iter), vecTexelSize);
-    vi_store(offsetPtr++, offset1);
+    v128 offset1 = vi_mul(vi_load_v2(&iter), vecTexelSize);
+    vi_store_v4(offsetPtr++, offset1);
 }
 
 void generateBoxFilterHPass(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
@@ -257,20 +257,20 @@ void generateBoxFilterHPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight2 = vi_set_x000(2.0f/kernelWidth);
+    v128 weight2 = vi_set_f000(2.0f/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
-        vi_store(weightPtr, weight2);
+        vi_store_v4(weightPtr, weight2);
     }
-        
-    v128 weight1 = vi_set_x000(1.0f/kernelWidth);
-    vi_store(weightPtr, weight1);
-        
+
+    v128 weight1 = vi_set_f000(1.0f/kernelWidth);
+    vi_store_v4(weightPtr, weight1);
+
 
     // Calculate bilinear sampling offsets
     ml::vec2 iter;
     ml::vec2 texelSize    = {texelSizeU, texelSizeV};
-    v128     vecTexelSize = ml::load_vec2(&texelSize);
+    v128     vecTexelSize = vi_load_v2(&texelSize);
 
     float left  = -(float)(kernelWidth / 2);
     float right =  (float)(kernelWidth / 2);
@@ -281,12 +281,12 @@ void generateBoxFilterHPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     v128 sampleOffset2x = vi_set(0.5f*texelSizeU, 0.0f, 0.0f, 0.0f);
     for(iter.x = left; iter.x < right; iter.x += 2.0f)
     {
-        v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2x);
-        vi_store(offsetPtr++, offset2);
+        v128 offset2 = vi_mad(vi_load_v2(&iter), vecTexelSize, sampleOffset2x);
+        vi_store_v4(offsetPtr++, offset2);
     }
 
-    v128 offset1 = vi_mul(ml::load_vec2(&iter), vecTexelSize);
-    vi_store(offsetPtr++, offset1);
+    v128 offset1 = vi_mul(vi_load_v2(&iter), vecTexelSize);
+    vi_store_v4(offsetPtr++, offset1);
 }
 
 void generateBoxFilterVPass(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
@@ -302,20 +302,20 @@ void generateBoxFilterVPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight2 = vi_set_x000(2.0f/kernelWidth);
+    v128 weight2 = vi_set_f000(2.0f/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
-        vi_store(weightPtr, weight2);
+        vi_store_v4(weightPtr, weight2);
     }
-        
-    v128 weight1 = vi_set_x000(1.0f/kernelWidth);
-    vi_store(weightPtr, weight1);
-        
+
+    v128 weight1 = vi_set_f000(1.0f/kernelWidth);
+    vi_store_v4(weightPtr, weight1);
+
 
     // Calculate bilinear sampling offsets
     ml::vec2 iter;
     ml::vec2 texelSize    = {texelSizeU, texelSizeV};
-    v128     vecTexelSize = ml::load_vec2(&texelSize);
+    v128     vecTexelSize = vi_load_v2(&texelSize);
 
     float left  = -(float)(kernelWidth / 2);
     float right =  (float)(kernelWidth / 2);
@@ -326,22 +326,21 @@ void generateBoxFilterVPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     v128 sampleOffset2y = vi_set(0.0f, 0.5f*texelSizeV, 0.0f, 0.0f);
     for(iter.y = left; iter.y < right; iter.y += 2.0f)
     {
-        v128 offset2 = vi_mad(ml::load_vec2(&iter), vecTexelSize, sampleOffset2y);
-        vi_store(offsetPtr++, offset2);
+        v128 offset2 = vi_mad(vi_load_v2(&iter), vecTexelSize, sampleOffset2y);
+        vi_store_v4(offsetPtr++, offset2);
     }
 
-    v128 offset1 = vi_mul(ml::load_vec2(&iter), vecTexelSize);
-    vi_store(offsetPtr++, offset1);
+    v128 offset1 = vi_mul(vi_load_v2(&iter), vecTexelSize);
+    vi_store_v4(offsetPtr++, offset1);
 }
 
 void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei h)
 {
     FilterDesc* desc;
-	GLenum      buffers[] = {GL_COLOR_ATTACHMENT0};
-
+    GLenum      buffers[] = {GL_COLOR_ATTACHMENT0};
 
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
-          
+
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
     desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     generateBoxFilterSinglePass(desc, kernelWidth, 1.0f/w, 1.0f/h);
@@ -353,7 +352,7 @@ void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei 
     glUseProgram(programs[PRG_FILTER]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -363,14 +362,12 @@ void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei 
 
 void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei w, GLsizei h)
 {
-	FilterDesc* desc;
+    FilterDesc* desc;
     GLenum      buffers[] = {GL_COLOR_ATTACHMENT0};
-
 
     glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, sizeof(FilterDesc));
     glUseProgram(programs[PRG_FILTER]);
     glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-
 
     desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     generateBoxFilterHPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
@@ -378,11 +375,10 @@ void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei
 
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
 
     desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
     generateBoxFilterVPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
@@ -390,11 +386,10 @@ void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei
 
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, tmp);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
 
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     CHECK_GL_ERROR();

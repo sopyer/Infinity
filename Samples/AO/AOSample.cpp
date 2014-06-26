@@ -1,7 +1,7 @@
 #include <framework.h>
 #include <utils.h>
 
-float	cubeVertices[][3] = {
+float   cubeVertices[][3] = {
     //Top plane
     {-1,  1,  1}, { 1,  1,  1}, { 1,  1, -1}, {-1,  1, -1}, 
     //Bottom plane
@@ -16,7 +16,7 @@ float	cubeVertices[][3] = {
     {-1, -1, -1}, { 1, -1, -1}, { 1,  1, -1}, {-1,  1, -1},
 };
 
-float	cubeNormals[][3] = {
+float   cubeNormals[][3] = {
     //Top plane
     { 0,  1,  0}, { 0,  1,  0}, { 0,  1,  0}, { 0,  1,  0},
     //Bottom plane
@@ -40,36 +40,36 @@ uint32_t cubeIndices[] = {
     20, 21, 22, 20, 22, 23,
 };
 
-float	    planeVertices[][3] = {{-1, 0, -1}, {1, 0, -1}, {1, 0, 1}, {-1, 0, 1}};
-float	    planeNormals[][3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
-uint32_t	planeIndices[] = {0, 1, 2, 0, 2, 3};
+float       planeVertices[][3] = {{-1, 0, -1}, {1, 0, -1}, {1, 0, 1}, {-1, 0, 1}};
+float       planeNormals[][3] = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
+uint32_t    planeIndices[] = {0, 1, 2, 0, 2, 3};
 
 struct Mesh
 {
-    uint32_t		numVertices;
-    const float*	vertices;
-    const float*	normals;
-    uint32_t		numIndices;
-    uint32_t*		indices;
+    uint32_t        numVertices;
+    const float*    vertices;
+    const float*    normals;
+    uint32_t        numIndices;
+    uint32_t*       indices;
 
     //In debug should have vertex declaration && buffers in release should use VAO
     //Should have some helper to parse current VAO
     //Should have DIP parameters
 
-    void	setupArrays()
+    void    setupArrays()
     {
         glVertexPointer(3, GL_FLOAT, 0, vertices);
         glNormalPointer(GL_FLOAT, 0, normals);
     }
 
-    void	render()
+    void    render()
     {
         glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT, indices);
     }
 };
 
-Mesh	cube  = {0, (float*)cubeVertices, (float*)cubeNormals, ARRAY_SIZE(cubeIndices), cubeIndices};
-Mesh	plane = {0, (float*)planeVertices, (float*)planeNormals, ARRAY_SIZE(planeIndices), planeIndices};
+Mesh    cube  = {0, (float*)cubeVertices, (float*)cubeNormals, ARRAY_SIZE(cubeIndices), cubeIndices};
+Mesh    plane = {0, (float*)planeVertices, (float*)planeNormals, ARRAY_SIZE(planeIndices), planeIndices};
 
 class AOSample: public ui::Stage
 {
@@ -81,7 +81,6 @@ public:
 public:
     AOSample()
     {
-        vg::init();
         genVoxelLookupTexture();
         CHECK_GL_ERROR();
 
@@ -106,7 +105,6 @@ public:
         glDeleteProgram(mLightProgram);
         glDeleteProgram(mGBufferProgram);
         glDeleteTextures(1, &mVoxelLookupTexture);
-        vg::cleanup();
     }
 
 protected:
@@ -367,12 +365,12 @@ protected:
 
 private:
     ui::CheckBoxID  mRenderAsVoxels;
-    GLuint			mVoxelField[32][32];
-    GLint			mVoxelLookupTextureUniform;
-    GLuint			mVoxelLookupTexture;
-    GLuint			mLightProgram;
-    GLuint			mGBufferProgram;
-    GLuint			mVoxelizationProgram;
+    GLuint          mVoxelField[32][32];
+    GLint           mVoxelLookupTextureUniform;
+    GLuint          mVoxelLookupTexture;
+    GLuint          mLightProgram;
+    GLuint          mGBufferProgram;
+    GLuint          mVoxelizationProgram;
 };
 
 extern "C" int main(int argc, char** argv)

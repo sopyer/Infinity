@@ -44,28 +44,13 @@ namespace ml
         v128 min, max;
     };
 
-    extern quat      identity_quat;
-    extern dual_quat identity_dual_quat;
-
-    // loading math types to sse registers
-    v128 load_vec2(vec2* v2);
-    v128 load_vec3(vec3* v3);
-    v128 load_vec4(vec4* v4);
-    v128 load_quat(quat* q);
-
-    // storing sse registers into math types
-    void store_vec2(vec2* v2, v128 v4);
-    void store_vec3(vec3* v3, v128 v4);
-    void store_quat  (quat* q, v128 v4);
-
     // quaternions
     void mul_quat        (quat* result, quat* a, quat* b); // multiplies 2 quaternions, returns pointer to result
     void conjugate_quat  (quat* result, quat* q);
     void rotate_vec3_quat(vec3* result, quat* q, vec3* p);
 
     //v128 version of quaternion operations
-    v128 mul_quat             (v128 q0, v128 q1);
-    v128 rotate_quat_vec3     (v128 q, v128 v);
+    v128 rotate_vec3_quat     (v128 q, v128 v);
     v128 conjugate_quat       (v128 q);
     v128 lerp_quat            (v128 q0, v128 q1, float t);
     v128 translation_dual_quat(v128 rq, v128 dq);
@@ -76,6 +61,7 @@ namespace ml
     v128 length               (v128 v);
 
     // dual quaternions
+    void set_identity_dual_quat        (dual_quat* dq);
     void create_dual_quat              (dual_quat* result, quat* orient, vec3* offset);
     void mul_dual_quat                 (dual_quat* result, dual_quat* dq0, dual_quat* dq1);
     void conjugate_dual_quat           (dual_quat* result, dual_quat* dq);
@@ -83,9 +69,11 @@ namespace ml
     void get_translation_from_dual_quat(vec3* result, dual_quat* dq);
 
     // matrices
-    void transpose(v128* transposed/*[4]*/, v128* mat/*[4]*/);
-    void mul(v128* r, v128* m/*[4]*/, v128 v);
-    void mul(v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
+    v128 mul_mat4_vec4 (v128* m/*[4]*/, v128 v);
+    void transpose_mat4(v128* r/*[4]*/, v128* m/*[4]*/);
+    void mul_mat4      (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
+    void quat_to_mat4x3(v128* m/*[3]*/, v128 q);
+    void quat_to_mat4  (v128* m/*[4]*/, v128 q);
 }
 
 namespace ml
@@ -108,9 +96,9 @@ namespace ml
         v128  vdist;
 
         deltaMin = vi_sub(vmin, pt);
-        maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
         deltaMax = vi_sub(pt, vmax);
-        maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
         vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
 
         return vdist;
@@ -124,13 +112,13 @@ namespace ml
         float d;
 
         deltaMin = vi_sub(AABB->min, center);
-        maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
         deltaMax = vi_sub(center, AABB->max);
-        maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
         vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
         vdist    = vi_dot3(vdist, vdist);
 
-        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_load_zero())));
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_0000())));
         assert(vi_all(vi_cmp_eq(vdist, res)));
 
         _mm_store_ss(&d, vdist);
@@ -144,14 +132,14 @@ namespace ml
         v128 res;
 
         deltaMin = vi_sub(AABB->min, center);
-        maskMin  = vi_cmp_gt(deltaMin, vi_load_zero());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
         deltaMin = vi_and(maskMin, deltaMin);
         res = vi_dot3(deltaMin, deltaMin);
 
         deltaMax = vi_sub(center, AABB->max);
-        maskMax  = vi_cmp_gt(deltaMax, vi_load_zero());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
         //maskMax = vi_andnot(maskMax, maskMin);
-        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_load_zero())));
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_0000())));
         deltaMax = vi_and(maskMax, deltaMax);
         res = vi_add(res, vi_dot3(deltaMax, deltaMax));
 
