@@ -50,6 +50,7 @@ namespace ml
     void rotate_vec3_quat(vec3* result, quat* q, vec3* p);
 
     //v128 version of quaternion operations
+    v128 mul_quat             (v128 q0, v128 q1);
     v128 rotate_vec3_quat     (v128 q, v128 v);
     v128 conjugate_quat       (v128 q);
     v128 lerp_quat            (v128 q0, v128 q1, float t);

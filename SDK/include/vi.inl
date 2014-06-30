@@ -54,8 +54,7 @@ __forceinline v128 vi_set(float x, float y, float z, float w)
 
 __forceinline v128 vi_set_f000(float x)
 {
-    union {float f; int i;} c = {x};
-    return vi_set_i000(c.i);
+    return _mm_load_ss(&x);
 }
 
 __forceinline v128 vi_set_ffff(float x)
@@ -80,7 +79,7 @@ __forceinline v128 vi_set_0000()
 
 __forceinline v128 vi_set_0001f()
 {
-    return vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(vi_set_f000(1.0f));
+    return vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(vi_set_i000(FLOAT_1_0_AS_INT));
 }
 
 __forceinline v128 vi_load_x(void* m32)
@@ -222,7 +221,7 @@ __forceinline v128 vi_sub(v128 a, v128 b)
 
 __forceinline v128 vi_neg(v128 a)
 {
-    return _mm_xor_ps(a, vi_set_iiii(0x80000000));
+    return _mm_xor_ps(a, vi_set_iiii(FLOAT_SIGN));
 }
 
 __forceinline v128 vi_abs(v128 a)
@@ -232,8 +231,8 @@ __forceinline v128 vi_abs(v128 a)
 
 __forceinline v128 vi_sign(v128 a)
 {
-    v128 one = vi_and(vi_cmp_ne(a, vi_set_0000()), vi_set_iiii(0x3F800000));
-    v128 sign = vi_and(a, vi_set_iiii(0x80000000));
+    v128 one = vi_and(vi_cmp_ne(a, vi_set_0000()), vi_set_iiii(FLOAT_1_0_AS_INT));
+    v128 sign = vi_and(a, vi_set_iiii(FLOAT_SIGN));
     return vi_or(one, sign);
 }
 
@@ -264,7 +263,7 @@ __forceinline v128 vi_clamp(v128 value, v128 lower, v128 upper)
 
 __forceinline v128 vi_sat(v128 value)
 {
-    return vi_clamp(value, vi_set_0000(), vi_set_ffff(1.0f));
+    return vi_clamp(value, vi_set_0000(), vi_set_iiii(FLOAT_1_0_AS_INT));
 }
 
 __forceinline v128 vi_rcp(v128 a)

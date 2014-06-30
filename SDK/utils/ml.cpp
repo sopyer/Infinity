@@ -17,32 +17,32 @@ namespace ml
     }                                               \
 
 
-    //                                                  | w1   z1  -y1  x1|   |x0|
-    //                                                  |                 |   |  |
-    //                                                  |-z1   w1   x1  y1|   |y0|
-    //  q0 * q1 = (x0, y0, z0, w0) * (x1, y1, z1, w1) = |                 | * |  |
-    //                                                  | y1  -x1   w1  z1|   |z0|
-    //                                                  |                 |   |  |
-    //                                                  |-x1  -y1  -z1  w1|   |w0|
+    //                                                  | w0  -z0   y0  x0|   |x1|   | w1   z1  -y1  x1|   |x0|
+    //                                                  |                 |   |  |   |                 |   |  |
+    //                                                  | z0   w0  -x0  y0|   |y1|   |-z1   w1   x1  y1|   |y0|
+    //  q0 * q1 = (x0, y0, z0, w0) * (x1, y1, z1, w1) = |                 | * |  | = |                 | * |  |
+    //                                                  |-y0   x0   w0  z0|   |z1|   | y1  -x1   w1  z1|   |z0|
+    //                                                  |                 |   |  |   |                 |   |  |
+    //                                                  |-x0  -y0  -z0  w0|   |w1|   |-x1  -y1  -z1  w1|   |w0|
     v128 mul_quat(v128 q0, v128 q1)
     {
         v128 r, m, s, m0, m1, m2;
 
         m  = vi_set_i000(0x80000000);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
-        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q1);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
+        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q0);
         m0 = vi_xor(s, m0);  
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
-        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q1);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
+        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q0);
         m1 = vi_xor(s, m1);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
-        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q1);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
+        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q0);
         m2 = vi_xor(s, m2);
 
-        MUL_MAT4_VEC4(r, m0, m1, m2, q1, q0);
+        MUL_MAT4_VEC4(r, m0, m1, m2, q0, q1);
 
         return r;
     }
@@ -168,8 +168,8 @@ namespace ml
 
 #define COPY_QUAT(dst, src)                     \
     {                                           \
-        v128 t = vi_loadu_v4(src);                 \
-        vi_storeu_v4(dst, t);                      \
+        v128 t = vi_loadu_v4(src);              \
+        vi_storeu_v4(dst, t);                   \
     }
 
     void create_dual_quat(dual_quat* result, quat* orient, vec3* offset)
@@ -283,11 +283,11 @@ namespace ml
         r[3] = res;
     }
 
-    //  | a11   a12   a13  a14|   | w  z -y  x|   | w  z -y -x|
+    //  | a11   a12   a13  a14|   | w -z  y  x|   | w -z  y -x|
     //  |                     |   |           |   |           |
-    //  | a21   a22   a23  a24|   |-z  w  x  y|   |-z  w  x -y|
+    //  | a21   a22   a23  a24|   | z  w -x  y|   | z  w -x -y|
     //  |                     | = |           | * |           |
-    //  | a31   a32   a33  a34|   | y -x  w  z|   | y -x  w -z|
+    //  | a31   a32   a33  a34|   |-y  x  w  z|   |-y  x  w -z|
     //  |                     |   |           |   |           |
     //  | a41   a42   a43  a44|   |-x -y -z  w|   | x  y  z  w|
     void quat_to_mat4x3(v128* mat/*[3]*/, v128 q)
@@ -296,15 +296,15 @@ namespace ml
 
         m  = vi_set_i000(0x80000000);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
         m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q);
         m0 = vi_xor(s, m0);  
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
         m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q);
         m1 = vi_xor(s, m1);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
+        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
         m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q);
         m2 = vi_xor(s, m2);
 

@@ -22,6 +22,7 @@
 
 #include "SpectatorCamera.h"
 #include <math.h>
+#include <ml.h>
 
 const float SpectatorCamera::DEFAULT_ROTATION_SPEED = 0.3f;
 
@@ -307,13 +308,33 @@ void SpectatorCamera::getViewMatrix(glm::mat4& view)
 {
     // Reconstruct the view matrix.
 
+    v128 v[4];
+    v128 q = vi_loadu_v4((ml::quat*)&m_orientation.x);
+    ml::quat_to_mat4(v, ml::conjugate_quat(q));
+    glm::mat4* m = (glm::mat4*)v;
+
     view = glm::mat4GTX(m_orientation);
 
     glm::vec3 xAxis(view[0][0], view[1][0], view[2][0]);
     glm::vec3 yAxis(view[0][1], view[1][1], view[2][1]);
     glm::vec3 zAxis(view[0][2], view[1][2], view[2][2]);
 
+    v128 eye = vi_loadu_v4((ml::vec4*)(float*)glm::vec4(m_eye, 1.0f));
+
+    v128 t = ml::conjugate_quat(ml::rotate_vec3_quat(q, eye));
+
     view[3][0] = -glm::dot(xAxis, m_eye);
     view[3][1] = -glm::dot(yAxis, m_eye);
     view[3][2] = -glm::dot(zAxis, m_eye);
+}
+
+void SpectatorCamera::getViewMatrixSSE(v128* mat)
+{
+    // Reconstruct the view matrix.
+    v128 q   = vi_loadu_v4((ml::quat*)&m_orientation.x);
+    v128 eye = vi_loadu_v4((ml::vec4*)(float*)glm::vec4(m_eye, 1.0f));
+
+    ml::quat_to_mat4x3(mat, q);
+    mat[3] = ml::conjugate_quat(ml::rotate_vec3_quat(q, eye));
+
 }

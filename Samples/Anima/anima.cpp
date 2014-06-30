@@ -50,6 +50,8 @@ public:
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
 
+        memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
+
         CHECK_GL_ERROR();
     }
 
@@ -78,9 +80,10 @@ protected:
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
-        glm::mat4 vm;
-        camera.getViewMatrix(vm);
-        glLoadMatrixf(vm);
+        v128 m[4];
+        camera.getViewMatrixSSE(m);
+
+        glLoadMatrixf((float*)&m);
 
         glDisable(GL_CULL_FACE);
 
@@ -94,9 +97,9 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
+        glm::mat4& vm = *(glm::mat4*)&m;
         glm::mat4 MVP = mProj*vm;
 
-        memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
         memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(float) * 16);
 
         gpuTimer.start();
