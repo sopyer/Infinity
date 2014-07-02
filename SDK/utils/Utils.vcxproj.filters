@@ -28,10 +28,10 @@
     <ClInclude Include="..\include\vi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ml.h">
+    <ClInclude Include="..\include\mjson.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\mjson.h">
+    <ClInclude Include="..\include\ml.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

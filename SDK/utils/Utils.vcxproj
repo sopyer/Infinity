@@ -79,8 +79,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\mjson.h" />
+    <ClInclude Include="..\include\ml.h" />
     <ClInclude Include="..\include\vi.h" />
-    <ClInclude Include="ml.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>

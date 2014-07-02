@@ -40,8 +40,8 @@ typedef __m128  v128;
 #define VI_SWIZZLE_ZZZZ VI_SWIZZLE_MASK(2, 2, 2, 2)
 #define VI_SWIZZLE_WWWW VI_SWIZZLE_MASK(3, 3, 3, 3)
 
-#define FLOAT_1_0_AS_INT 0x3F800000
-#define FLOAT_SIGN       0x80000000
+#define FLT_1_0_ASINT  0x3F800000
+#define FLT_SIGN       0x80000000
 
 //Component rearrange functions
 template<unsigned int mask>

@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include <ml.h>
 
 void build_w_quat( ml::quat& quat )
 {
@@ -15,7 +15,7 @@ void build_w_quat( ml::quat& quat )
     }
     else
     {
-        quat.w = -sqrtf(t);
+        quat.w = -ml::sqrtf(t);
     }
 }
 

@@ -1,10 +1,11 @@
 #include "model.h"
 
 #include <ResourceHelpers.h>
-#include <math.h>
 #include <utils.h>
-#include <algorithm>
 #include <graphics.h>
+
+#include <memory.h>
+#include <string.h>
 
 #include "md5.h"
 #include "mjson.h"
@@ -362,14 +363,14 @@ cleanup:
             float lerpK;
 
             pose->animTime += fDeltaTime * (float)anim->frameRate;
-            pose->animTime  = fmodf(pose->animTime, (float)anim->numFrames);
+            pose->animTime  = ml::fmodf(pose->animTime, (float)anim->numFrames);
 
-            frame0 = (int)floorf( pose->animTime );
+            frame0 = (int)ml::floorf( pose->animTime );
             frame0 = frame0 % anim->numFrames;
             frame1 = frame0 + 1;
             frame1 = frame1 % anim->numFrames;
 
-            lerpK  = pose->animTime - floorf(pose->animTime);
+            lerpK  = pose->animTime - ml::floorf(pose->animTime);
 
             // I assume there is no zero quaternions in orientation data
             // so I do not check whether real quaternion norm is zero

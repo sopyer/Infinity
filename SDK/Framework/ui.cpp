@@ -80,7 +80,7 @@ namespace ui
         height     = h;
 
         defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
-        
+
         reset();
     }
 
@@ -161,10 +161,10 @@ namespace ui
     {
         switch(event.type)
         {
-            case SDL_MOUSEWHEEL:
-                mouseWheelUp   = event.wheel.y > 0;
-                mouseWheelDown = event.wheel.y < 0;
-                break;
+        case SDL_MOUSEWHEEL:
+            mouseWheelUp   = event.wheel.y > 0;
+            mouseWheelDown = event.wheel.y < 0;
+            break;
         }
     }
 
@@ -239,7 +239,7 @@ namespace ui
         bool LCTRL_Down_LALT_Released     = keyIsPressed  (SDL_SCANCODE_LCTRL) && keyWasReleased(SDL_SCANCODE_LALT );
         bool LALT_Down_LCTRL_Released     = keyIsPressed  (SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
         bool LALT_Released_LCTRL_Released = keyWasReleased(SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
-        
+
         bool actionReleaseMouse = LCTRL_Down_LALT_Released || LALT_Down_LCTRL_Released || LALT_Released_LCTRL_Released;
 
         if (mouseWasPressed(SDL_BUTTON_LEFT))
@@ -425,21 +425,21 @@ namespace ui
     {
         for (size_t i=0; i<checkBoxCount; ++i)
         {
-		    static const uint32_t colors[] = {
-			    0xFF232563,
-			    0xFF4547A5,
-			    0xFF3CE484,
-			    0xFF7FFDA3,
-		    };
+            static const uint32_t colors[] = {
+                0xFF232563,
+                0xFF4547A5,
+                0xFF3CE484,
+                0xFF7FFDA3,
+            };
 
             bool isChecked = checkBoxes[i].checked != 0;
             bool isHover   = checkBoxes[i].hover   != 0;
-            
+
             float x0 = checkBoxes[i].x0;
             float y0 = checkBoxes[i].y0;
             float x1 = checkBoxes[i].x1;
             float y1 = checkBoxes[i].y1;
-            
+
             vg::drawRoundedRect(x0, y0, x0+16.0f, y0+16.0f, 2.5f, 2.5f, colors[(isChecked<<1)+isHover], 0xFF00FF32);
         }
     }

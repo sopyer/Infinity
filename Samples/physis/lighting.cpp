@@ -1,6 +1,5 @@
 #include <opengl.h>
 #include <stdint.h>
-#include <math.h>
 #include <ml.h>
 #include <SOIL/SOIL.h>
 #include <utils.h>
@@ -87,14 +86,14 @@ namespace lighting
         }
 
         // Normalize vector
-        float len = sqrtf((*nx) * (*nx) + (*ny) * (*ny) + (*nz) * (*nz));
+        float len = ml::sqrtf((*nx) * (*nx) + (*ny) * (*ny) + (*nz) * (*nz));
 
         *nx /= len;	*ny /= len;	*nz /= len;
     }
 
     static float areaIntegral(float x, float y)
     {
-        return atan2(x * y, sqrt(x * x + y * y + 1));
+        return ml::atan2(x * y, sqrt(x * x + y * y + 1));
     }
 
     static float cubemapTexelSolidAngle(float nu, float nv, float texelSize)

@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "SpectatorCamera.h"
-#include <math.h>
 #include <ml.h>
 
 const float SpectatorCamera::DEFAULT_ROTATION_SPEED = 0.3f;
@@ -72,9 +71,12 @@ void SpectatorCamera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, cons
     viewMatrix[3][2] = -glm::dot(zAxis, eye);
 
     // Extract the pitch angle from the view matrix.
-    m_accumPitchDegrees = glm::degrees(asinf(viewMatrix[1][2]));
+    m_accumPitchDegrees = glm::degrees(ml::asinf(viewMatrix[1][2]));
     
-    m_orientation = glm::quatGTX(viewMatrix);
+    //m_orientation = glm::quatGTX(viewMatrix);
+
+    v128 q = ml::mat4x3_to_quat(viewMatrix);
+    vi_storeu_v4(&m_orientation, q);
 }
 
 void SpectatorCamera::move(float dx, float dy, float dz)

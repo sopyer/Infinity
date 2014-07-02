@@ -131,7 +131,7 @@ inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radi
     vdist = ml::distanceToAABB(vmin, vmax, vcenter);
     vdist = vi_dot2(vdist, vdist);
 
-    _mm_store_ss(&d2, vdist);
+    d2 = _mm_cvtss_f32(vdist);
 
     return d2<=radius*radius;
 }

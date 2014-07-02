@@ -1,7 +1,9 @@
 #pragma once
 
-#include <vi.h>
+#include <stdint.h>
 #include <assert.h>
+
+#include <vi.h>
 
 namespace ml
 {
@@ -75,6 +77,7 @@ namespace ml
     void mul_mat4      (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
     void quat_to_mat4x3(v128* m/*[3]*/, v128 q);
     void quat_to_mat4  (v128* m/*[4]*/, v128 q);
+    v128 mat4x3_to_quat(float* m/*[4]*/);
 }
 
 namespace ml
@@ -122,7 +125,7 @@ namespace ml
         assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_0000())));
         assert(vi_all(vi_cmp_eq(vdist, res)));
 
-        _mm_store_ss(&d, vdist);
+        d = _mm_cvtss_f32(vdist);
         return d<=radius*radius;
     }
 
@@ -144,8 +147,7 @@ namespace ml
         deltaMax = vi_and(maskMax, deltaMax);
         res = vi_add(res, vi_dot3(deltaMax, deltaMax));
 
-        float d2;
-        _mm_store_ss(&d2, res);
+        float d2 = _mm_cvtss_f32(res);
 
         bool res1 = d2<=radius*radius;
         bool res2 = sphereAABBTest2(AABB, center, radius, res);
@@ -225,4 +227,27 @@ namespace ml
 
         return nout?(allin?IT_INSIDE:IT_INTERSECT):IT_OUTSIDE;
     }
+}
+
+// Scalar math functions
+
+namespace ml
+{
+    static const float cf_pi          = 3.141592653589793f;
+    static const float cf_2_pi        = cf_pi * 2.0f;
+    static const float cf_1_over_pi   = 1.0f / cf_pi;
+    static const float cf_1_over_2_pi = 1.0f / cf_2_pi;
+
+    int32_t asint(float f);
+    float   asfloat(int32_t i);
+
+    float sqrtf(float x);
+    float asinf(float x);
+    float atan2(float y, float x);
+
+    float absf(float x);
+    float floorf(float x);
+    float ceilf(float x);
+
+    float fmodf(float x, float y);
 }

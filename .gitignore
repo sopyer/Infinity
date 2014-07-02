@@ -11,4 +11,6 @@ temp
 *.user
 *.opensdf
 *.sdf
+*.exp
+*.idb
 Tools/generated

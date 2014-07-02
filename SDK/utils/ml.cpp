@@ -28,7 +28,7 @@ namespace ml
     {
         v128 r, m, s, m0, m1, m2;
 
-        m  = vi_set_i000(0x80000000);
+        m  = vi_set_i000(FLT_SIGN);
 
         s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
         m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q0);
@@ -65,7 +65,7 @@ namespace ml
     {
         v128 mask, r;
         
-        mask = vi_set_i000(0x80000000);
+        mask = vi_set_i000(FLT_SIGN);
         mask = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(mask);
         r    = vi_xor(mask, q);
 
@@ -294,7 +294,7 @@ namespace ml
     {
         v128 r, m, s, m0, m1, m2, v;
 
-        m  = vi_set_i000(0x80000000);
+        m  = vi_set_i000(FLT_SIGN);
 
         s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
         m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q);
@@ -324,10 +324,100 @@ namespace ml
         mat[2] = r;
     }
 
-    void quat_to_mat4(v128* mat/*[4]*/, v128 q)
+    void quat_to_mat4(v128* m/*[4]*/, v128 q)
     {
-        quat_to_mat4x3(mat, q);
-        mat[3] = vi_set_0001f();
+        quat_to_mat4x3(m, q);
+        m[3] = vi_set_0001f();
     }
 
+    //  q.x = sign(m21 - m12) * 0.5 * sqrt( max( 0, 1 + m00 - m11 - m22 ) );
+    //  q.y = sign(m02 - m20) * 0.5 * sqrt( max( 0, 1 - m00 + m11 - m22 ) );
+    //  q.z = sign(m10 - m01) * 0.5 * sqrt( max( 0, 1 - m00 - m11 + m22 ) );
+    //  q.w =                   0.5 * sqrt( max( 0, 1 + m00 + m11 + m22 ) );
+    v128 mat4x3_to_quat(float* m/*[4]*/)
+    {
+        v128 s, q, sc, m00, m11, m22, ml, mr, cmp;
+
+        s = vi_set_i000(FLT_SIGN);
+
+        q  = vi_set_iiii(FLT_1_0_ASINT);
+
+        sc  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 0, 1)>(s);
+        m00 = vi_set_ffff(m[0*4+0]);
+        m00 = vi_xor(m00, sc);
+        q   = vi_add(m00, q);
+
+        sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 0, 1)>(s);
+        m11 = vi_set_ffff(m[4*1+1]);
+        m11 = vi_xor(m11, sc);
+        q   = vi_add(m11, q);
+
+        sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(s);
+        m22 = vi_set_ffff(m[4*2+2]);
+        m22 = vi_xor(m22, sc);
+        q   = vi_add(m22, q);
+
+        q = vi_mul(vi_set_ffff(0.5), vi_sqrt(q));
+
+        ml = vi_set(m[2+1*4], m[0+2*4], m[1+0*4], 0.0f);
+        mr = vi_set(m[1+2*4], m[2+0*4], m[0+1*4], 0.0f);
+
+        cmp = vi_cmp_lt(ml, mr);
+        sc  = vi_and(cmp, vi_set_iiii(FLT_SIGN));
+
+        q = vi_or(sc, q);
+
+        return q;
+    }
+}
+
+#include <math.h>
+
+// Scalar math functions
+namespace ml
+{
+    int32_t asint(float f)
+    {
+        return _mm_cvtsi128_si32(_mm_castps_si128(_mm_set_ss(f)));
+    }
+
+    float asfloat(int32_t i)
+    {
+        return _mm_cvtss_f32(_mm_castsi128_ps(_mm_cvtsi32_si128(i)));
+    }
+
+    float absf(float x)
+    {
+        return asfloat(asint(x) & 0x7FFFFFFF);
+    }
+
+    float sqrtf(float x)
+    {
+        return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));
+    }
+
+    float fmodf(float x, float y)
+    {
+        return ::fmodf(x, y);
+    }
+
+    float floorf(float x)
+    {
+        return ::floorf(x);
+    }
+
+    float ceilf(float x)
+    {
+        return ::ceilf(x);
+    }
+
+    float asinf(float x)
+    {
+        return ::asinf(x);
+    }
+
+    float atan2(float y, float x)
+    {
+        return ::atan2(y, x);
+    }
 }

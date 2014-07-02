@@ -6,8 +6,10 @@
 // switch to dlalloc and use mspaces
 #include <stdlib.h> 
 
-#define UNUSED(var)			((void)(var))
-#define ARRAY_SIZE(arr)		sizeof(arr)/sizeof(arr[0])
+#include <ml.h>
+
+#define UNUSED(var)         ((void)(var))
+#define ARRAY_SIZE(arr)     sizeof(arr)/sizeof(arr[0])
 #define BUFFER_OFFSET(i)    ((char*)NULL + (i))
 #define MEMORY_T_INITIALIZER  {0, 0, 0}
 
@@ -58,25 +60,6 @@ type* madvance(memory_t* mem)
     assert(mem->allocated<=mem->size);
 
     return (type*)var;
-}
-
-namespace ml
-{
-    static const float cf_pi          = 3.141592653589793f;
-    static const float cf_2_pi        = cf_pi * 2.0f;
-    static const float cf_1_over_pi   = 1.0f / cf_pi;
-    static const float cf_1_over_2_pi = 1.0f / cf_2_pi;
-
-    typedef union {float f; uint32_t u32;} f_u_conv_t;
-
-    inline float abs(float v)
-    {
-        f_u_conv_t conv = {v};
-
-        conv.u32 &= 0x7FFFFFFF;
-
-        return conv.f;
-    }
 }
 
 #define TRUE  1
@@ -144,7 +127,7 @@ namespace ut
 
         lambda = exp_avg_calcLambda(dt, filter->dcutoffFreq);
         filter->dxn_1 = exp_avg_filter(&filter->dxn_1, lambda, sample - filter->yn_1);
-        lambda = exp_avg_calcLambda(dt, filter->cutoffFreq + filter->dslope * ml::abs(filter->dxn_1));
+        lambda = exp_avg_calcLambda(dt, filter->cutoffFreq + filter->dslope * ml::absf(filter->dxn_1));
         filter->yn_1 = exp_avg_filter(&filter->yn_1, lambda, sample);
     }
 }
