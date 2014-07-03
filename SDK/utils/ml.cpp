@@ -92,7 +92,7 @@ namespace ml
 
         r0 = vi_dot4(v, v);
 
-        if (_mm_comilt_ss(r0, vi_set_ffff(VI_EPS7)))
+        if (vi_cmpx_lt(r0, vi_set_ffff(VI_EPS7)))
         {
             r0 = vi_set_0000();
         }
@@ -109,6 +109,17 @@ namespace ml
     {
         return vi_sqrt(vi_dot4(v, v));
 
+    }
+
+    v128 make_p3(v128 v)
+    {
+        return vi_xor(make_v3(v), vi_set_0001f());
+    }
+
+    v128 make_v3(v128 v)
+    {
+        v128 mask = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(vi_set_i000(0xFFFFFFFF));
+        return vi_and(v, mask);
     }
 
     void mul_quat(quat* result, quat* a, quat* b)
@@ -334,7 +345,7 @@ namespace ml
     //  q.y = sign(m02 - m20) * 0.5 * sqrt( max( 0, 1 - m00 + m11 - m22 ) );
     //  q.z = sign(m10 - m01) * 0.5 * sqrt( max( 0, 1 - m00 - m11 + m22 ) );
     //  q.w =                   0.5 * sqrt( max( 0, 1 + m00 + m11 + m22 ) );
-    v128 mat4x3_to_quat(float* m/*[4]*/)
+    v128 mat4x3_to_quat(v128* m/*[4]*/)
     {
         v128 s, q, sc, m00, m11, m22, ml, mr, cmp;
 
@@ -343,24 +354,24 @@ namespace ml
         q  = vi_set_iiii(FLT_1_0_ASINT);
 
         sc  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 0, 1)>(s);
-        m00 = vi_set_ffff(m[0*4+0]);
+        m00 = vi_set_ffff(m[0].m128_f32[0]);
         m00 = vi_xor(m00, sc);
         q   = vi_add(m00, q);
 
         sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 0, 1)>(s);
-        m11 = vi_set_ffff(m[4*1+1]);
+        m11 = vi_set_ffff(m[1].m128_f32[1]);
         m11 = vi_xor(m11, sc);
         q   = vi_add(m11, q);
 
         sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(s);
-        m22 = vi_set_ffff(m[4*2+2]);
+        m22 = vi_set_ffff(m[2].m128_f32[2]);
         m22 = vi_xor(m22, sc);
         q   = vi_add(m22, q);
 
         q = vi_mul(vi_set_ffff(0.5), vi_sqrt(q));
 
-        ml = vi_set(m[2+1*4], m[0+2*4], m[1+0*4], 0.0f);
-        mr = vi_set(m[1+2*4], m[2+0*4], m[0+1*4], 0.0f);
+        ml = vi_set(m[1].m128_f32[2], m[2].m128_f32[0], m[0].m128_f32[1], 0.0f);
+        mr = vi_set(m[2].m128_f32[1], m[0].m128_f32[2], m[1].m128_f32[0], 0.0f);
 
         cmp = vi_cmp_lt(ml, mr);
         sc  = vi_and(cmp, vi_set_iiii(FLT_SIGN));

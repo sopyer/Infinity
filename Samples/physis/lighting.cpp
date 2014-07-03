@@ -305,9 +305,9 @@ namespace lighting
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
-        glm::mat4 vm;
+        v128 vm[4];
         camera.getViewMatrix(vm);
-        glLoadMatrixf(vm);
+        glLoadMatrixf((float*)vm);
 
         glUseProgram(0);
         glBegin(GL_TRIANGLES);

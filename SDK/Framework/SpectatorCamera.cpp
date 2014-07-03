@@ -23,127 +23,65 @@
 #include "SpectatorCamera.h"
 #include <ml.h>
 
-const float SpectatorCamera::DEFAULT_ROTATION_SPEED = 0.3f;
-
-const glm::vec3 SpectatorCamera::WORLD_XAXIS(1.0f, 0.0f, 0.0f);
-const glm::vec3 SpectatorCamera::WORLD_YAXIS(0.0f, 1.0f, 0.0f);
-const glm::vec3 SpectatorCamera::WORLD_ZAXIS(0.0f, 0.0f, 1.0f);
+const float DEFAULT_ROTATION_SPEED = 0.3f;
 
 SpectatorCamera::SpectatorCamera()
 {
-    m_accumPitchDegrees = 0.0f;
-    
+    mPos          = vi_set_0001f();
+    mOrient       = vi_set_0001f();
+    mAccumPitch   = 0.0f;
     rotationSpeed = DEFAULT_ROTATION_SPEED;
 }
 
-SpectatorCamera::~SpectatorCamera()
+void SpectatorCamera::lookAt(v128 eye, v128 dir)
 {
-}
+    mPos = eye;
 
-void SpectatorCamera::lookAt(const glm::vec3 &eye, const glm::vec3 &target, const glm::vec3& up)
-{
-    m_eye = eye;
+    v128 xaxis, yaxis, zaxis;
 
-    glm::vec3 zAxis = eye - target;
-    zAxis = glm::normalize(zAxis);
+    zaxis = ml::normalize(dir);
 
-    glm::vec3 xAxis = glm::cross(up, zAxis);
-    xAxis = normalize(xAxis);
+    xaxis = vi_cross3(vi_set_0100f(), zaxis);
+    xaxis = ml::normalize(xaxis);
 
-    glm::vec3 yAxis = glm::cross(zAxis, xAxis);
-    yAxis= normalize(yAxis);
-    
-    glm::mat4 viewMatrix;
+    yaxis = vi_cross3(zaxis, xaxis);
+    yaxis = ml::normalize(yaxis);
 
-    viewMatrix[0][0] = xAxis.x;
-    viewMatrix[1][0] = xAxis.y;
-    viewMatrix[2][0] = xAxis.z;
-    viewMatrix[3][0] = -glm::dot(xAxis, eye);
-
-    viewMatrix[0][1] = yAxis.x;
-    viewMatrix[1][1] = yAxis.y;
-    viewMatrix[2][1] = yAxis.z;
-    viewMatrix[3][1] = -glm::dot(yAxis, eye);
-
-    viewMatrix[0][2] = zAxis.x;
-    viewMatrix[1][2] = zAxis.y;
-    viewMatrix[2][2] = zAxis.z;    
-    viewMatrix[3][2] = -glm::dot(zAxis, eye);
+    v128 m[3] = {xaxis, yaxis, zaxis};
 
     // Extract the pitch angle from the view matrix.
-    m_accumPitchDegrees = glm::degrees(ml::asinf(viewMatrix[1][2]));
-    
-    //m_orientation = glm::quatGTX(viewMatrix);
+    mAccumPitch = ml::asinf(m[2].m128_f32[1]);
 
-    v128 q = ml::mat4x3_to_quat(viewMatrix);
-    vi_storeu_v4(&m_orientation, q);
+    mOrient = ml::conjugate_quat(ml::mat4x3_to_quat(m));
 }
 
-void SpectatorCamera::move(float dx, float dy, float dz)
+void SpectatorCamera::rotateSmoothly(float heading, float pitch)
 {
-    // Moves the camera by dx world units to the left or right; dy
-    // world units upwards or downwards; and dz world units forwards
-    // or backwards.
+    v128 r;
 
-    glm::mat4 viewMatrix = glm::mat4GTX(m_orientation);
+    heading *= -rotationSpeed;
+    pitch   *= -rotationSpeed;
 
-    glm::vec3 eye = m_eye;
-    glm::vec3 xAxis(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-    glm::vec3 forwards(-viewMatrix[0][2], -viewMatrix[1][2], -viewMatrix[2][2]);
+    mAccumPitch += pitch;
 
-    eye += xAxis * dx;
-    eye += WORLD_YAXIS * dy;
-    eye += forwards * dz;
-
-    setPosition(eye);
-}
-
-void SpectatorCamera::rotateSmoothly(float headingDegrees, float pitchDegrees)
-{
-    // This method applies a scaling factor to the rotation angles prior to
-    // using these rotation angles to rotate the camera. This method is usually
-    // called when the camera is being rotated using an input device (such as a
-    // mouse or a joystick). 
-
-    headingDegrees *= -rotationSpeed;
-    pitchDegrees   *= -rotationSpeed;
-
-    // Implements the rotation logic for the first person style and
-    // spectator style camera behaviors. Roll is ignored.
-
-    m_accumPitchDegrees += pitchDegrees;
-
-    if (m_accumPitchDegrees > 90.0f)
+    if (mAccumPitch > FLT_PI_OVER_2)
     {
-        pitchDegrees = 90.0f - (m_accumPitchDegrees - pitchDegrees);
-        m_accumPitchDegrees = 90.0f;
+        pitch = FLT_PI_OVER_2 - (mAccumPitch - pitch);
+        mAccumPitch = FLT_PI_OVER_2;
     }
 
-    if (m_accumPitchDegrees < -90.0f)
+    if (mAccumPitch < -FLT_PI_OVER_2)
     {
-        pitchDegrees = -90.0f - (m_accumPitchDegrees - pitchDegrees);
-        m_accumPitchDegrees = -90.0f;
+        pitch = -FLT_PI_OVER_2 - (mAccumPitch - pitch);
+        mAccumPitch = -FLT_PI_OVER_2;
     }
-   
-    glm::__quatGTX rot;
 
-    // Rotate camera about the world y axis.
+    // Rotate camera first around y axis, then around x axis.
     // Note the order the quaternions are multiplied. That is important!
-    if (headingDegrees != 0.0f)
-    {
-        rot = glm::angleAxisGTX(headingDegrees, WORLD_YAXIS);
-        //m_orientation = rot * m_orientation;
-        m_orientation = glm::crossGTX(m_orientation, rot);
-    }
-
-    // Rotate camera about its local x axis.
-    // Note the order the quaternions are multiplied. That is important!
-    if (pitchDegrees != 0.0f)
-    {
-        rot = glm::angleAxisGTX(pitchDegrees, WORLD_XAXIS);
-        //m_orientation = m_orientation * rot;
-        m_orientation = glm::crossGTX(rot, m_orientation);
-    }
+    r = ml::axis_angle_to_quat(vi_set_0100f(), heading);
+    mOrient = ml::mul_quat(mOrient, r);
+    r = ml::axis_angle_to_quat(vi_set_1000f(), pitch);
+    mOrient = ml::mul_quat(r, mOrient);
 }
 
 void SpectatorCamera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec)
@@ -178,42 +116,19 @@ void SpectatorCamera::updatePosition(const glm::vec3 &direction, float elapsedTi
         if (direction.z == 0.0f && glm::equalEpsilonGTX(velocity.z, 0.0f, 1e-6f))
             displacement.z = 0.0f;
 
-        move(displacement.x, displacement.y, displacement.z);
+        v128 mat[3];
+
+        ml::quat_to_mat4x3(mat, ml::conjugate_quat(mOrient));
+
+        mPos = vi_mad(mat[0], vi_set_fff0(displacement.x), mPos);
+        mPos = vi_mad(vi_set_0100f(), vi_set_fff0(displacement.y), mPos);
+        mPos = vi_mad(mat[2], vi_set_fff0(-displacement.z), mPos);
     }
 
     // Continuously update the camera's velocity vector even if the camera
     // hasn't moved during this call. When the camera is no longer being moved
     // the camera is decelerating back to its stationary state.
 
-    updateVelocity(direction, elapsedTimeSec);
-}
-
-void SpectatorCamera::setOrientation(const glm::__quatGTX& newOrientation)
-{
-    glm::mat4 m = glm::mat4GTX(newOrientation);
-
-    // Store the pitch for this new orientation.
-    // First person and spectator behaviors limit pitching to
-    // 90 degrees straight up and down.
-
-    m_accumPitchDegrees = glm::degrees(asinf(m[1][2]));
-
-    m_orientation       = newOrientation;
-
-    // First person and spectator behaviors don't allow rolling.
-    // Negate any rolling that might be encoded in the new orientation.
-    glm::vec3 forwards(-m[0][2], -m[1][2], -m[2][2]);
-    lookAt(m_eye, m_eye + forwards);
-
-}
-
-void SpectatorCamera::setPosition(const glm::vec3 &newEye)
-{
-    m_eye = newEye;
-}
-
-void SpectatorCamera::updateVelocity(const glm::vec3 &direction, float elapsedTimeSec)
-{
     // Updates the camera's velocity based on the supplied movement direction
     // and the elapsed time (since this method was last called). The movement
     // direction is in the range [-1,1].
@@ -306,37 +221,25 @@ void SpectatorCamera::updateVelocity(const glm::vec3 &direction, float elapsedTi
     }
 }
 
-void SpectatorCamera::getViewMatrix(glm::mat4& view)
+void SpectatorCamera::setOrientation(v128 newOrient)
 {
-    // Reconstruct the view matrix.
+    v128 m[3];
 
-    v128 v[4];
-    v128 q = vi_loadu_v4((ml::quat*)&m_orientation.x);
-    ml::quat_to_mat4(v, ml::conjugate_quat(q));
-    glm::mat4* m = (glm::mat4*)v;
+    ml::quat_to_mat4x3(m, ml::conjugate_quat(newOrient));
 
-    view = glm::mat4GTX(m_orientation);
+    // First person and spectator behaviors don't allow rolling.
+    // Negate any rolling that might be encoded in the new orientation.
+    lookAt(mPos, m[2]);
+}
 
-    glm::vec3 xAxis(view[0][0], view[1][0], view[2][0]);
-    glm::vec3 yAxis(view[0][1], view[1][1], view[2][1]);
-    glm::vec3 zAxis(view[0][2], view[1][2], view[2][2]);
-
-    v128 eye = vi_loadu_v4((ml::vec4*)(float*)glm::vec4(m_eye, 1.0f));
-
-    v128 t = ml::conjugate_quat(ml::rotate_vec3_quat(q, eye));
-
-    view[3][0] = -glm::dot(xAxis, m_eye);
-    view[3][1] = -glm::dot(yAxis, m_eye);
-    view[3][2] = -glm::dot(zAxis, m_eye);
+void SpectatorCamera::setPosition(v128 newEye)
+{
+    mPos = newEye;
+    mPos.m128_i32[3] = FLT_1_0_ASINT;
 }
 
 void SpectatorCamera::getViewMatrix(v128* mat)
 {
-    // Reconstruct the view matrix.
-    v128 q   = vi_loadu_v4((ml::quat*)&m_orientation.x);
-    v128 eye = vi_loadu_v4((ml::vec4*)(float*)glm::vec4(m_eye, 1.0f));
-
-    ml::quat_to_mat4x3(mat, q);
-    mat[3] = ml::conjugate_quat(ml::rotate_vec3_quat(q, eye));
-
+    ml::quat_to_mat4x3(mat, mOrient);
+    mat[3] = ml::conjugate_quat(ml::rotate_vec3_quat(mOrient, mPos));
 }

@@ -207,7 +207,7 @@ protected:
 
         if (!fixedMode)
         {
-            *(glm::vec3*)&terrain.viewPoint = camera.getPosition();
+            vi_store_v3(&terrain.viewPoint, camera.getPosition());
             terrain.setSelectMatrix(MVP);
         }
         else
@@ -282,7 +282,7 @@ protected:
                 v128 vm[4];
                 camera.getViewMatrix(vm);
                 ml::mul_mat4(VP, mProj, vm);
-                *(glm::vec3*)&VPpp = camera.getPosition();
+                vi_store_v3(&VPpp, camera.getPosition());
             }
         }
 

@@ -54,7 +54,12 @@ __forceinline v128 vi_set(float x, float y, float z, float w)
 
 __forceinline v128 vi_set_f000(float x)
 {
-    return _mm_load_ss(&x);
+    return _mm_set_ss(x);
+}
+
+inline v128 vi_set_fff0 (float x)
+{
+    return vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(vi_set_f000(x));
 }
 
 __forceinline v128 vi_set_ffff(float x)

@@ -41,9 +41,9 @@ protected:
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
-        glm::mat4 vm;
+        v128 vm[4];
         camera.getViewMatrix(vm);
-        glLoadMatrixf(vm);
+        glLoadMatrixf((float*)vm);
 
         glDisable(GL_CULL_FACE);
 

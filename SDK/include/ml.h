@@ -71,6 +71,9 @@ namespace ml
     v128 normalize            (v128 v);
     v128 length               (v128 v);
 
+    v128 make_p3(v128 v);   // set v.w = 1.0f
+    v128 make_v3(v128 v);   // set v.w = 0.0f
+
     // dual quaternions
     void set_identity_dual_quat        (dual_quat* dq);
     void create_dual_quat              (dual_quat* result, quat* orient, vec3* offset);
@@ -85,7 +88,7 @@ namespace ml
     void mul_mat4          (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
     void quat_to_mat4x3    (v128* m/*[3]*/, v128 q);
     void quat_to_mat4      (v128* m/*[4]*/, v128 q);
-    v128 mat4x3_to_quat    (float* m/*[4]*/);
+    v128 mat4x3_to_quat    (v128* m/*[4]*/);
     v128 axis_angle_to_quat(v128 axis, float angle);
 }
 

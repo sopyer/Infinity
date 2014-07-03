@@ -81,9 +81,9 @@ protected:
         glPushMatrix();
 
         v128 m[4];
-        camera.getViewMatrixSSE(m);
+        camera.getViewMatrix(m);
 
-        glLoadMatrixf((float*)&m);
+        glLoadMatrixf((float*)m);
 
         glDisable(GL_CULL_FACE);
 

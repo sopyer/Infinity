@@ -2,16 +2,17 @@
 #   define __CAMERADIRECTOR_H_INCLUDED__
 
 #include <vector>
-#include <glm/glmext.h>
+#include <ml.h>
 
+//TODO: use circular queue!!!!
 struct CameraDirector
 {
     CameraDirector();
     ~CameraDirector();
 
-    std::vector<glm::__quatGTX> savedCamRotation;
-    std::vector<glm::vec3>      savedCamLocation;
-    int                         index;
+    std::vector<ml::vec4> savedCamRotation;
+    std::vector<ml::vec4> savedCamLocation;
+    int                   index;
 };
 
 #endif

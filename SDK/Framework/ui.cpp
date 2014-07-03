@@ -266,8 +266,8 @@ namespace ui
             heading += ui::keyIsPressed(SDL_SCANCODE_KP_4)?1.50f:0.0f;
             heading -= ui::keyIsPressed(SDL_SCANCODE_KP_6)?1.50f:0.0f;
 
-            camera->rotateSmoothly(heading, pitch);
-            camera->rotateSmoothly((float)-ui::deltaX, (float)-ui::deltaY);
+            camera->rotateSmoothly(heading * FLT_DEG_TO_RAD_SCALE, pitch * FLT_DEG_TO_RAD_SCALE);
+            camera->rotateSmoothly((float)-ui::deltaX * FLT_DEG_TO_RAD_SCALE, (float)-ui::deltaY * FLT_DEG_TO_RAD_SCALE);
             camera->updatePosition(direction, dt);
         }
     }
@@ -297,8 +297,13 @@ namespace ui
 
         if (ui::keyWasReleased(SDL_SCANCODE_0))
         {
-            camDirector->savedCamRotation.push_back(camera->getOrientation());
-            camDirector->savedCamLocation.push_back(camera->getPosition());
+            ml::vec4 p, q;
+
+            vi_storeu_v4(&p, camera->getPosition());
+            vi_storeu_v4(&q, camera->getOrientation());
+
+            camDirector->savedCamRotation.push_back(q);
+            camDirector->savedCamLocation.push_back(p);
         }
 
         if (ui::keyWasReleased(SDL_SCANCODE_EQUALS) &&
@@ -313,8 +318,8 @@ namespace ui
 
             camDirector->index = idx;
 
-            camera->setOrientation(camDirector->savedCamRotation[camDirector->index]);
-            camera->setPosition   (camDirector->savedCamLocation[camDirector->index]);
+            camera->setOrientation(vi_loadu_v4(&camDirector->savedCamRotation[camDirector->index]));
+            camera->setPosition   (vi_loadu_v4(&camDirector->savedCamLocation[camDirector->index]));
         }
 
         if (ui::keyWasReleased(SDL_SCANCODE_MINUS) &&
@@ -329,8 +334,8 @@ namespace ui
 
             camDirector->index = idx;
 
-            camera->setOrientation(camDirector->savedCamRotation[camDirector->index]);
-            camera->setPosition   (camDirector->savedCamLocation[camDirector->index]);
+            camera->setOrientation(vi_loadu_v4(&camDirector->savedCamRotation[camDirector->index]));
+            camera->setPosition   (vi_loadu_v4(&camDirector->savedCamLocation[camDirector->index]));
         }
     }
 
