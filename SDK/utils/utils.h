@@ -100,7 +100,7 @@ namespace ut
 
     inline float exp_avg_calcLambda(float dt, float cutoffFreq)
     {
-        return  1.0f / (1.0f + ml::cf_1_over_2_pi / (cutoffFreq * dt));
+        return  1.0f / (1.0f + FLT_1_OVER_2_PI / (cutoffFreq * dt));
     }
 
     inline float exp_avg_filter(float* yn_1, float lambda, float sample)

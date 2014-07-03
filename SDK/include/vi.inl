@@ -77,6 +77,21 @@ __forceinline v128 vi_set_0000()
     return _mm_setzero_ps();
 }
 
+__forceinline v128 vi_set_1000f()
+{
+    return vi_set_i000(FLT_1_0_ASINT);
+}
+
+__forceinline v128 vi_set_0100f()
+{
+    return vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 1)>(vi_set_i000(FLT_1_0_ASINT));
+}
+
+__forceinline v128 vi_set_0010f()
+{
+    return vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 1)>(vi_set_i000(FLT_1_0_ASINT));
+}
+
 __forceinline v128 vi_set_0001f()
 {
     return vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(vi_set_i000(FLT_1_0_ASINT));

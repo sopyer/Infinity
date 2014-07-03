@@ -1,6 +1,6 @@
 #include "pp.h"
 #include <framework.h>
-#include <utils/ml.h>
+#include <ml.h>
 
 static const size_t MAX_SAMPLE_COUNT = 64;
 

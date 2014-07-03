@@ -1,7 +1,7 @@
 #include "pp.h"
 #include <framework.h>
 #include <utils.h>
-#include <utils/ml.h>
+#include <ml.h>
 
 extern GLuint programs[PRG_ID_COUNT];
 extern GLint  uniEPS;

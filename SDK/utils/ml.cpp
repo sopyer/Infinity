@@ -369,6 +369,21 @@ namespace ml
 
         return q;
     }
+
+    v128 axis_angle_to_quat(v128 axis, float angle)
+    {
+        float a  = angle*0.5f;
+        v128  co;
+        v128  si;
+
+        co = vi_set_f000(cosf(a));
+        si = vi_set_f000(sinf(a));
+
+        co = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(co);
+        si = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 1)>(si);
+
+        return vi_xor(vi_mul(axis, si), co);
+    }
 }
 
 #include <math.h>
@@ -409,6 +424,16 @@ namespace ml
     float ceilf(float x)
     {
         return ::ceilf(x);
+    }
+
+    float sinf(float x)
+    {
+        return ::sinf(x);
+    }
+
+    float cosf(float x)
+    {
+        return ::cosf(x);
     }
 
     float asinf(float x)

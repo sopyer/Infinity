@@ -5,6 +5,14 @@
 
 #include <vi.h>
 
+#define FLT_PI               3.141592653589793f
+#define FLT_2_PI             6.283185307179586f
+#define FLT_PI_OVER_2        1.570796326794897f
+#define FLT_1_OVER_PI        0.318309886183791f
+#define FLT_1_OVER_2_PI      0.159154943091895f
+#define FLT_RAD_TO_DEG_SCALE 57.29577951308232f
+#define FLT_DEG_TO_RAD_SCALE 0.017453292519943f
+
 namespace ml
 {
     struct vec2
@@ -72,12 +80,13 @@ namespace ml
     void get_translation_from_dual_quat(vec3* result, dual_quat* dq);
 
     // matrices
-    v128 mul_mat4_vec4 (v128* m/*[4]*/, v128 v);
-    void transpose_mat4(v128* r/*[4]*/, v128* m/*[4]*/);
-    void mul_mat4      (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
-    void quat_to_mat4x3(v128* m/*[3]*/, v128 q);
-    void quat_to_mat4  (v128* m/*[4]*/, v128 q);
-    v128 mat4x3_to_quat(float* m/*[4]*/);
+    v128 mul_mat4_vec4     (v128* m/*[4]*/, v128 v);
+    void transpose_mat4    (v128* r/*[4]*/, v128* m/*[4]*/);
+    void mul_mat4          (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
+    void quat_to_mat4x3    (v128* m/*[3]*/, v128 q);
+    void quat_to_mat4      (v128* m/*[4]*/, v128 q);
+    v128 mat4x3_to_quat    (float* m/*[4]*/);
+    v128 axis_angle_to_quat(v128 axis, float angle);
 }
 
 namespace ml
@@ -230,18 +239,14 @@ namespace ml
 }
 
 // Scalar math functions
-
 namespace ml
 {
-    static const float cf_pi          = 3.141592653589793f;
-    static const float cf_2_pi        = cf_pi * 2.0f;
-    static const float cf_1_over_pi   = 1.0f / cf_pi;
-    static const float cf_1_over_2_pi = 1.0f / cf_2_pi;
-
     int32_t asint(float f);
     float   asfloat(int32_t i);
 
     float sqrtf(float x);
+    float sinf (float x);
+    float cosf (float x);
     float asinf(float x);
     float atan2(float y, float x);
 
