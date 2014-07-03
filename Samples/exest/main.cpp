@@ -15,11 +15,11 @@ class Exest: public ui::Stage
 private:
     SpectatorCamera camera;
 
-    glm::mat4 mProj;
-    
+    v128 mProj[4];
+
     bool      fixedMode;
-    glm::vec3 VPpp;
-    glm::mat4 VP;
+    ml::vec3  VPpp;
+    v128      VP[4];
 
     CDLODTerrain terrain;
 
@@ -32,20 +32,15 @@ public:
     {
         terrain.initialize();
 
-        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+        glm::mat4 proj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+
+        mProj[0] = vi_loadu_v4(proj[0]);
+        mProj[1] = vi_loadu_v4(proj[1]);
+        mProj[2] = vi_loadu_v4(proj[2]);
+        mProj[3] = vi_loadu_v4(proj[3]);
 
         camera.acceleration = glm::vec3(150, 150, 150);
         camera.maxVelocity  = glm::vec3(60, 60, 60);
-        //camera.viewMatrix = glm::mat4(-0.68835747f,   2.7175300e-008f,   0.72537768f,   0.0f,
-        //    0.094680540f,  0.99144882f,       0.089849062f,  0.0f,
-        //    -0.71917069f,   0.13052642f,      -0.68246961f,   0.0f,
-        //    0.0f,          0.0f,              0.0f,          1.0f);
-        //camera.pos = glm::vec3(-451.47745f,  45.857117f, -437.07669f);
-
-        glm::mat4 lookAt = glm::lookAtGTX<float>(glm::vec3(0, 0, 0), glm::vec3(0, 10, 0), glm::vec3(1, 0, 0));
-        glm::mat4 proj = glm::perspectiveGTX<float>(33.0f, 1.33333333f, 0.1f, 1200.0f);
-
-        VP = proj*lookAt;
 
         PHYSFS_File*    src = PHYSFS_openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system
@@ -86,9 +81,9 @@ public:
         terrain.cleanup();
     }
 
-    void drawFrustum(const glm::mat4& frustum)
+    void drawFrustum(v128 frustum[4])
     {
-        glm::mat4 inverted = glm::inverseGTX(frustum);
+        glm::mat4 inverted = glm::inverseGTX(*(glm::mat4*)frustum);
 
         static const glm::vec4 points[8] = {
             glm::vec4(-1, -1, -1, 1), 
@@ -180,13 +175,17 @@ protected:
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf(mProj);
+        glLoadMatrixf((float*)mProj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
-        glm::mat4 vm;
+        v128 vm[4];
         camera.getViewMatrix(vm);
-        glLoadMatrixf(vm);
+        glLoadMatrixf((float*)vm);
+
+        v128 MVP[4];
+        ml::mul_mat4(MVP, mProj, vm);
+        memcpy(&graphics::autoVars.matMVP, MVP, sizeof(v128)*4);
 
         glDisable(GL_CULL_FACE);
 
@@ -208,17 +207,14 @@ protected:
 
         if (!fixedMode)
         {
-            terrain.viewPoint = camera.getPosition();
-            terrain.setSelectMatrix(mProj*vm);
+            *(glm::vec3*)&terrain.viewPoint = camera.getPosition();
+            terrain.setSelectMatrix(MVP);
         }
         else
         {
             terrain.viewPoint = VPpp;
             terrain.setSelectMatrix(VP);
         }
-
-        glm::mat4 MVP = mProj*vm;
-        memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(ml::mat4x4));
 
         terrain.drawTerrain();
 
@@ -227,7 +223,7 @@ protected:
 
         if (fixedMode)
         {
-            drawFrustum(VP);
+            drawFrustum(MVP);
         }
 
         glDisable(GL_CULL_FACE);
@@ -283,10 +279,10 @@ protected:
             fixedMode = !fixedMode;
             if (fixedMode)
             {
-                glm::mat4 vm;
+                v128 vm[4];
                 camera.getViewMatrix(vm);
-                VP = mProj*vm;
-                VPpp = camera.getPosition();
+                ml::mul_mat4(VP, mProj, vm);
+                *(glm::vec3*)&VPpp = camera.getPosition();
             }
         }
 

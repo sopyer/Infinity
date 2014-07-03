@@ -330,7 +330,7 @@ void SpectatorCamera::getViewMatrix(glm::mat4& view)
     view[3][2] = -glm::dot(zAxis, m_eye);
 }
 
-void SpectatorCamera::getViewMatrixSSE(v128* mat)
+void SpectatorCamera::getViewMatrix(v128* mat)
 {
     // Reconstruct the view matrix.
     v128 q   = vi_loadu_v4((ml::quat*)&m_orientation.x);

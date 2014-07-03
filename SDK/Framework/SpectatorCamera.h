@@ -71,7 +71,7 @@ public:
     void updatePosition(const glm::vec3 &direction, float elapsedTimeSec);
 
     void getViewMatrix(glm::mat4& view);
-    void getViewMatrixSSE(v128* view);
+    void getViewMatrix(v128* view);
 
     const glm::vec3&      getPosition() const { return m_eye; } 
     const glm::__quatGTX& getOrientation() const { return m_orientation; }

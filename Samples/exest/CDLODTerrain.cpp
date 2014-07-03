@@ -114,13 +114,13 @@ void CDLODTerrain::cleanup()
     graphics::ubufDestroyDesc(ubufView);
 }
 
-void CDLODTerrain::setSelectMatrix(glm::mat4& mat)
+void CDLODTerrain::setSelectMatrix(v128 m[4])
 {
     // Attention! Column order is changed!
-    selectionMVP.r0 = vi_loadu_v4(mat[0]);
-    selectionMVP.r1 = vi_loadu_v4(mat[2]);
-    selectionMVP.r2 = vi_loadu_v4(mat[1]);
-    selectionMVP.r3 = vi_loadu_v4(mat[3]);
+    selectionMVP.r0 = m[0];
+    selectionMVP.r1 = m[2];
+    selectionMVP.r2 = m[1];
+    selectionMVP.r3 = m[3];
 }
 
 inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radius)

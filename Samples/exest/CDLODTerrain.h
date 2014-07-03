@@ -2,9 +2,6 @@
 #	define __CDLODTERRAIN_H_INCLUDED__
 
 #include <framework.h>
-#include <vector>
-#include <glm/glm.h>
-#include <vi.h>
 #include <ml.h>
 #include <graphics.h>
 
@@ -26,7 +23,7 @@ public:
     float LODRange  [MAX_LOD_COUNT];
 
     ml::mat4x4 selectionMVP; //matrix has changed column order (x, z, y, w) in order to simplify simd calculations
-    glm::vec3  viewPoint;
+    ml::vec3   viewPoint;
     float      vertDistToTerrain;
     size_t     maxLevel;
 
@@ -52,7 +49,7 @@ public:
     void cleanup();
     void reset();
 
-    void setSelectMatrix(glm::mat4& mat);
+    void setSelectMatrix(v128 m[4]);
     void drawTerrain();
 
     CPUTimer cpuTimer;
