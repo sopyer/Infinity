@@ -1,8 +1,6 @@
 #if !defined(FRAMEWORK_CAMERA_H)
 #define FRAMEWORK_CAMERA_H
 
-#include <glm/glm.h>
-#include <glm/glmext.h>
 #include <ml.h>
 
 class SpectatorCamera
@@ -13,7 +11,7 @@ public:
     void lookAt(v128 eye, v128 dir);
 
     void rotateSmoothly(float heading, float pitch);
-    void updatePosition(const glm::vec3 &direction, float elapsedTimeSec);
+    void updatePosition(float dx, float dy, float dz, float dt);
 
     void getViewMatrix(v128* view);
 
@@ -23,16 +21,16 @@ public:
     void setOrientation(v128 newOrient);
     void setPosition(v128 newEye);
 
-    glm::vec3 maxVelocity;
-    glm::vec3 acceleration;
-    glm::vec3 velocity;
-    float     rotationSpeed;
+    ml::vec3 maxVelocity;
+    ml::vec3 acceleration;
+    float    rotationSpeed;
 
 private:
     float mAccumPitch;
 
     v128 mPos;
     v128 mOrient;
+    v128 mVelocity;
 };
 
 #endif

@@ -252,14 +252,16 @@ namespace ui
         }
         else if (mouseIsCaptured())
         {
-            glm::vec3   direction(0.0f, 0.0f, 0.0f);
-            float       heading = 0.0f;
-            float       pitch   = 0.0f;
+            float   dx = 0.0f, dy = 0.0f, dz = 0.0f;
+            float   heading = 0.0f;
+            float   pitch   = 0.0f;
 
-            direction.z += ui::keyIsPressed(SDL_SCANCODE_W)?1.0f:0.0f;
-            direction.z -= ui::keyIsPressed(SDL_SCANCODE_S)?1.0f:0.0f;
-            direction.x -= ui::keyIsPressed(SDL_SCANCODE_A)?1.0f:0.0f;
-            direction.x += ui::keyIsPressed(SDL_SCANCODE_D)?1.0f:0.0f;
+            dx += ui::keyIsPressed(SDL_SCANCODE_D)?1.0f:0.0f;
+            dx -= ui::keyIsPressed(SDL_SCANCODE_A)?1.0f:0.0f;
+            dy += ui::keyIsPressed(SDL_SCANCODE_E)?1.0f:0.0f;
+            dy -= ui::keyIsPressed(SDL_SCANCODE_Q)?1.0f:0.0f;
+            dz += ui::keyIsPressed(SDL_SCANCODE_W)?1.0f:0.0f;
+            dz -= ui::keyIsPressed(SDL_SCANCODE_S)?1.0f:0.0f;
 
             pitch   += ui::keyIsPressed(SDL_SCANCODE_KP_8)?1.50f:0.0f;
             pitch   -= ui::keyIsPressed(SDL_SCANCODE_KP_5)?1.50f:0.0f;
@@ -268,7 +270,7 @@ namespace ui
 
             camera->rotateSmoothly(heading * FLT_DEG_TO_RAD_SCALE, pitch * FLT_DEG_TO_RAD_SCALE);
             camera->rotateSmoothly((float)-ui::deltaX * FLT_DEG_TO_RAD_SCALE, (float)-ui::deltaY * FLT_DEG_TO_RAD_SCALE);
-            camera->updatePosition(direction, dt);
+            camera->updatePosition(dx, dy, dz, dt);
         }
     }
 

@@ -39,8 +39,8 @@ public:
         mProj[2] = vi_loadu_v4(proj[2]);
         mProj[3] = vi_loadu_v4(proj[3]);
 
-        camera.acceleration = glm::vec3(150, 150, 150);
-        camera.maxVelocity  = glm::vec3(60, 60, 60);
+        camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
+        camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
         PHYSFS_File*    src = PHYSFS_openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system

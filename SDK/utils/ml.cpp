@@ -108,7 +108,6 @@ namespace ml
     v128 length(v128 v)
     {
         return vi_sqrt(vi_dot4(v, v));
-
     }
 
     v128 make_p3(v128 v)

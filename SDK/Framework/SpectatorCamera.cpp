@@ -29,6 +29,7 @@ SpectatorCamera::SpectatorCamera()
 {
     mPos          = vi_set_0001f();
     mOrient       = vi_set_0001f();
+    mVelocity     = vi_set_0000();
     mAccumPitch   = 0.0f;
     rotationSpeed = DEFAULT_ROTATION_SPEED;
 }
@@ -84,47 +85,8 @@ void SpectatorCamera::rotateSmoothly(float heading, float pitch)
     mOrient = ml::mul_quat(r, mOrient);
 }
 
-void SpectatorCamera::updatePosition(const glm::vec3 &direction, float elapsedTimeSec)
+void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
 {
-    // Moves the camera using Newton's second law of motion. Unit mass is
-    // assumed here to somewhat simplify the calculations. The direction vector
-    // is in the range [-1,1].
-
-    if (glm::length(velocity) != 0.0f)
-    {
-        // Only move the camera if the velocity vector is not of zero length.
-        // Doing this guards against the camera slowly creeping around due to
-        // floating point rounding errors.
-
-        glm::vec3 displacement = (velocity * elapsedTimeSec) +
-            (0.5f * acceleration * elapsedTimeSec * elapsedTimeSec);
-
-        // Floating point rounding errors will slowly accumulate and cause the
-        // camera to move along each axis. To prevent any unintended movement
-        // the displacement vector is clamped to zero for each direction that
-        // the camera isn't moving in. Note that the updateVelocity() method
-        // will slowly decelerate the camera's velocity back to a stationary
-        // state when the camera is no longer moving along that direction. To
-        // account for this the camera's current velocity is also checked.
-
-        if (direction.x == 0.0f && glm::equalEpsilonGTX(velocity.x, 0.0f, 1e-6f))
-            displacement.x = 0.0f;
-
-        if (direction.y == 0.0f && glm::equalEpsilonGTX(velocity.y, 0.0f, 1e-6f))
-            displacement.y = 0.0f;
-
-        if (direction.z == 0.0f && glm::equalEpsilonGTX(velocity.z, 0.0f, 1e-6f))
-            displacement.z = 0.0f;
-
-        v128 mat[3];
-
-        ml::quat_to_mat4x3(mat, ml::conjugate_quat(mOrient));
-
-        mPos = vi_mad(mat[0], vi_set_fff0(displacement.x), mPos);
-        mPos = vi_mad(vi_set_0100f(), vi_set_fff0(displacement.y), mPos);
-        mPos = vi_mad(mat[2], vi_set_fff0(-displacement.z), mPos);
-    }
-
     // Continuously update the camera's velocity vector even if the camera
     // hasn't moved during this call. When the camera is no longer being moved
     // the camera is decelerating back to its stationary state.
@@ -133,92 +95,41 @@ void SpectatorCamera::updatePosition(const glm::vec3 &direction, float elapsedTi
     // and the elapsed time (since this method was last called). The movement
     // direction is in the range [-1,1].
 
-    if (direction.x != 0.0f)
-    {
-        // SpectatorCamera is moving along the x axis.
-        // Linearly accelerate up to the camera's max speed.
+    v128 dir, delta, vp, mv, dv, a, mask;
 
-        velocity.x += direction.x * acceleration.x * elapsedTimeSec;
+    dir = vi_set(dx, dy, dz, 0.0f);
+    vp  = mVelocity;
+    mv  = vi_load_v3(&maxVelocity);
+    a   = vi_load_v3(&acceleration);
 
-        if (velocity.x > maxVelocity.x)
-            velocity.x = maxVelocity.x;
-        else if (velocity.x < -maxVelocity.x)
-            velocity.x = -maxVelocity.x;
-    }
-    else
-    {
-        // SpectatorCamera is no longer moving along the x axis.
-        // Linearly decelerate back to stationary state.
+    mask = vi_cmp_eq(dir, vi_set_0000());
 
-        if (velocity.x > 0.0f)
-        {
-            if ((velocity.x -= acceleration.x * elapsedTimeSec) < 0.0f)
-                velocity.x = 0.0f;
-        }
-        else
-        {
-            if ((velocity.x += acceleration.x * elapsedTimeSec) > 0.0f)
-                velocity.x = 0.0f;
-        }
-    }
+    // choose direction for deacceleration if corresponding delta==0
+    dir = vi_select(mask, dir, vi_neg(vi_sign(vp)));
 
-    if (direction.y != 0.0f)
-    {
-        // SpectatorCamera is moving along the y axis.
-        // Linearly accelerate up to the camera's max speed.
+    // calculate new velocity v = dir * a * dt + pv
+    dv        = vi_mul(vi_set_fff0(dt), a);
+    mVelocity = vi_mad(dir, dv, vp);
 
-        velocity.y += direction.y * acceleration.y * elapsedTimeSec;
-        
-        if (velocity.y > maxVelocity.y)
-            velocity.y = maxVelocity.y;
-        else if (velocity.y < -maxVelocity.y)
-            velocity.y = -maxVelocity.y;
-    }
-    else
-    {
-        // SpectatorCamera is no longer moving along the y axis.
-        // Linearly decelerate back to stationary state.
+    mask = vi_and(mask, vi_cmp_lt(vi_abs(vp), dv));
 
-        if (velocity.y > 0.0f)
-        {
-            if ((velocity.y -= acceleration.y * elapsedTimeSec) < 0.0f)
-                velocity.y = 0.0f;
-        }
-        else
-        {
-            if ((velocity.y += acceleration.y * elapsedTimeSec) > 0.0f)
-                velocity.y = 0.0f;
-        }
-    }
+    // in order to stop movement when deaccelerating
+    // make zero all coefficients accordingly to mask
+    mVelocity = vi_andnot(mVelocity, mask);
+    // and clip result to [-maxVelocity, maxVelocity]
+    // in order to not exceed maximum velocity
+    mVelocity = vi_clamp(mVelocity, vi_neg(mv), mv);
 
-    if (direction.z != 0.0f)
-    {
-        // SpectatorCamera is moving along the z axis.
-        // Linearly accelerate up to the camera's max speed.
+    // integrate distance using trapezoid rule(midpoint integration)
+    delta = vi_mul(vi_set_fff0(0.5f * dt), vi_add(vp, mVelocity));
 
-        velocity.z += direction.z * acceleration.z * elapsedTimeSec;
+    v128 mat[3];
 
-        if (velocity.z > maxVelocity.z)
-            velocity.z = maxVelocity.z;
-        else if (velocity.z < -maxVelocity.z)
-            velocity.z = -maxVelocity.z;
-    }
-    else
-    {
-        // SpectatorCamera is no longer moving along the z axis.
-        // Linearly decelerate back to stationary state.
+    ml::quat_to_mat4x3(mat, ml::conjugate_quat(mOrient));
 
-        if (velocity.z > 0.0f)
-        {
-            if ((velocity.z -= acceleration.z * elapsedTimeSec) < 0.0f)
-                velocity.z = 0.0f;
-        }
-        else
-        {
-            if ((velocity.z += acceleration.z * elapsedTimeSec) > 0.0f)
-                velocity.z = 0.0f;
-        }
-    }
+    mPos = vi_mad(mat[0],         vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(delta),         mPos);
+    mPos = vi_mad(vi_set_0100f(), vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 3)>(delta),         mPos);
+    mPos = vi_mad(mat[2],         vi_neg(vi_swizzle<VI_SWIZZLE_MASK(2, 2, 2, 3)>(delta)), mPos);
 }
 
 void SpectatorCamera::setOrientation(v128 newOrient)

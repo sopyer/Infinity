@@ -47,8 +47,8 @@ public:
 
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
-        camera.acceleration = glm::vec3(150, 150, 150);
-        camera.maxVelocity  = glm::vec3(60, 60, 60);
+        camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
+        camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
         memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
 

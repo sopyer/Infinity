@@ -5,7 +5,6 @@
 #include <utils.h>
 #include <framework.h>
 #include <SpectatorCamera.h>
-#include <glm/glm.h>
 
 #include "lighting.h"
 
@@ -204,8 +203,8 @@ namespace lighting
     {
         mProj = glm::perspectiveGTX(30.0f, 1280.0f/720.0f, 0.1f, 10000.0f);
 
-        camera.acceleration = glm::vec3(150, 150, 150);
-        camera.maxVelocity  = glm::vec3(60, 60, 60);
+        camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
+        camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
         prgSkybox = resources::createProgramFromFiles("skybox.vert", "skybox.frag");
         prgSH     = resources::createProgramFromFiles("box.vert", "wireframe.geom", "box.frag");

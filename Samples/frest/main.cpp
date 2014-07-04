@@ -221,8 +221,8 @@ public:
     {
         mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
-        camera.acceleration = glm::vec3(15, 15, 15);
-        camera.maxVelocity  = glm::vec3(6, 6, 6);
+        camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
+        camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
         m_geom = new rcMeshLoaderObj();
         m_geom->load("dungeon.obj");

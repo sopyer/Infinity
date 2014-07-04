@@ -251,8 +251,9 @@ __forceinline v128 vi_abs(v128 a)
 
 __forceinline v128 vi_sign(v128 a)
 {
-    v128 one = vi_and(vi_cmp_ne(a, vi_set_0000()), vi_set_iiii(FLT_1_0_ASINT));
+    v128 mask = vi_cmp_ne(a, vi_set_0000());
     v128 sign = vi_and(a, vi_set_iiii(FLT_SIGN));
+    v128 one  = vi_and(mask, vi_set_iiii(FLT_1_0_ASINT));
     return vi_or(one, sign);
 }
 
