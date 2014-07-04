@@ -8,23 +8,23 @@
 template<typename T>
 class Array: public std::vector<T>
 {
-	public:
-		T* begin() {return empty()?0:&*std::vector<T>::begin();}
-		T* end  () {return empty()?0:begin()+size();}
+public:
+    T* begin() {return empty()?0:&*std::vector<T>::begin();}
+    T* end  () {return empty()?0:begin()+size();}
 
-		const T* begin() const {return empty()?0:&*std::vector<T>::begin();}
-		const T* end  () const {return empty()?0:begin()+size();}
+    const T* begin() const {return empty()?0:&*std::vector<T>::begin();}
+    const T* end  () const {return empty()?0:begin()+size();}
 
-		void pushBack(const T& value) {push_back(value);}
+    void pushBack(const T& value) {push_back(value);}
 
-		template<typename I>
-		void pushBack(I itBegin, I itEnd) {insert(std::vector<T>::end(), itBegin, itEnd);}
+    template<typename I>
+    void pushBack(I itBegin, I itEnd) {insert(std::vector<T>::end(), itBegin, itEnd);}
 
-		T* expand(size_t count)
-		{
-			resize(size()+count);
-			return end()-count;
-		}
+    T* expand(size_t count)
+    {
+        resize(size()+count);
+        return end()-count;
+    }
 };
 
 #endif
