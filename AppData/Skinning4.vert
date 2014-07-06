@@ -11,7 +11,7 @@ layout(std140, column_major) uniform;
 
 layout(location=0) in vec3  aVertex;
 layout(location=1) in vec3  aNormal;
-layout(location=2) in vec2  aTexCoord0;
+layout(location=2) in vec2  aUV0;
 layout(location=3) in ivec4 aBoneIndices;
 layout(location=4) in vec4  aBoneWeights;
 
@@ -20,24 +20,26 @@ layout(binding = UNI_GLOBAL) uniform uniGlobal
     mat4 u_MVP;
 };
 
-layout(binding = UNI_BONES) uniform uniBones
+layout(std140, binding = UNI_BONES) buffer uniBones
 {
-    vec4 uBoneDualQuat[2*MAX_BONES];
+    struct dual_quat_t
+    {
+        vec4 real, dual;
+    } uBones[];
 };
 
 out vec3 vPosition;
 out vec3 vNormal;
 out vec2 vTexCoord0;
 
-
 void main()
 {
     float finalWeight = 1.0f - ( aBoneWeights.x + aBoneWeights.y + aBoneWeights.z );
 
-    mat2x4 dq0 = mat2x4(uBoneDualQuat[2*aBoneIndices.x], uBoneDualQuat[2*aBoneIndices.x+1]);
-    mat2x4 dq1 = mat2x4(uBoneDualQuat[2*aBoneIndices.y], uBoneDualQuat[2*aBoneIndices.y+1]);
-    mat2x4 dq2 = mat2x4(uBoneDualQuat[2*aBoneIndices.z], uBoneDualQuat[2*aBoneIndices.z+1]);
-    mat2x4 dq3 = mat2x4(uBoneDualQuat[2*aBoneIndices.w], uBoneDualQuat[2*aBoneIndices.w+1]);
+    mat2x4 dq0 = mat2x4(uBones[aBoneIndices.x].real, uBones[aBoneIndices.x].dual);
+    mat2x4 dq1 = mat2x4(uBones[aBoneIndices.y].real, uBones[aBoneIndices.y].dual);
+    mat2x4 dq2 = mat2x4(uBones[aBoneIndices.z].real, uBones[aBoneIndices.z].dual);
+    mat2x4 dq3 = mat2x4(uBones[aBoneIndices.w].real, uBones[aBoneIndices.w].dual);
 
     if (dot(dq0[0], dq1[0]) < 0.0) dq1 *= -1.0;
     if (dot(dq0[0], dq2[0]) < 0.0) dq2 *= -1.0;	
@@ -60,5 +62,5 @@ void main()
     gl_Position = u_MVP * vec4(position, 1.0);
     vPosition   = position;
     vNormal     = normal;
-    vTexCoord0  = aTexCoord0;
+    vTexCoord0  = aUV0;
 }

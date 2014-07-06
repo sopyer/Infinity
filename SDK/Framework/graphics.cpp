@@ -5,6 +5,15 @@
 namespace vf
 {
     GLuint skinned_geom_t::vao;
+
+    static const graphics::vertex_element_t descSkinnedGeom[5] = 
+    {
+        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, b),  3, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, w),  4, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
+    };
 }
 
 namespace graphics
@@ -31,20 +40,12 @@ namespace graphics
 
     void init()
     {
-        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &caps.uboAlignment);
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
+        glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
 
         glDebugMessageCallback( glDebugCallback, NULL );
 
-        vertex_element_t descSkinnedGeom[5] = 
-        {
-            {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-            {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-            {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-            {0, offsetof(vf::skinned_geom_t, b),  3, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE},
-            {0, offsetof(vf::skinned_geom_t, w),  4, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
-        };
-
-        vf::skinned_geom_t::vao = createVAO(5, descSkinnedGeom, 0, NULL);
+        vf::skinned_geom_t::vao = createVAO(5, vf::descSkinnedGeom, 0, NULL);
 
         GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
         GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
@@ -89,14 +90,14 @@ namespace graphics
         frameID = (frameID + 1) % NUM_FRAMES_DELAY;
     }
 
-    GLuint createVAO(GLuint numEntries, vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors)
+    GLuint createVAO(GLuint numEntries, const vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors)
     {
         GLuint vao;
 
         glGenVertexArrays(1, &vao);
         for (GLuint i = 0; i < numEntries; ++i)
         {
-            vertex_element_t& e = entries[i];
+            const vertex_element_t& e = entries[i];
             if (e.integer)
             {
                 glVertexArrayVertexAttribIFormatEXT (vao, e.attrib, e.size, e.type, e.offset);

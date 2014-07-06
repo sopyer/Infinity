@@ -28,6 +28,7 @@ namespace graphics
     struct gl_caps_t
     {
         GLint uboAlignment;
+        GLint ssboAlignment;
     };
 
     struct vertex_element_t
@@ -51,7 +52,7 @@ namespace graphics
     void beginFrame();
     void endFrame();
 
-    GLuint createVAO(GLuint numEntries, vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors);
+    GLuint createVAO(GLuint numEntries, const vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors);
 
     bool  dynbufAlignMem(GLuint align, GLuint* offset);
     bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex);

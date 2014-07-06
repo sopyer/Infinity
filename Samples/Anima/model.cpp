@@ -66,27 +66,21 @@ namespace Model
 #ifdef _DEBUG
         {
             GLint structSize;
-            GLint uniGlobal, uniBones, uniLighting;
+            GLint uniGlobal, uniLighting;
 
             uniGlobal    = glGetUniformBlockIndex(prgDefault, "uniGlobal");
-            uniBones     = glGetUniformBlockIndex(prgDefault, "uniBones");
             uniLighting  = glGetUniformBlockIndex(prgDefault, "uniLighting");
 
             glGetActiveUniformBlockiv(prgDefault, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==16*sizeof(float));
-            glGetActiveUniformBlockiv(prgDefault, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-            assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
             glGetActiveUniformBlockiv(prgDefault, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==10*sizeof(v128));
 
             uniGlobal   = glGetUniformBlockIndex(prgLighting, "uniGlobal");
-            uniBones    = glGetUniformBlockIndex(prgLighting, "uniBones");
             uniLighting = glGetUniformBlockIndex(prgLighting, "uniLighting");
 
             glGetActiveUniformBlockiv(prgLighting, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==16*sizeof(float));
-            glGetActiveUniformBlockiv(prgLighting, uniBones,    GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-            assert(structSize==MAX_BONES*sizeof(ml::dual_quat));
             glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==10*sizeof(v128));
         }
@@ -489,21 +483,20 @@ cleanup:
         GLuint offsetGlobal, offsetBones, offsetLighting;
         
         GLsizeiptr sizeGlobal   = 16*sizeof(float);
-        GLsizeiptr sizeBones    = skel->numJoints*sizeof(ml::dual_quat);
         GLsizeiptr sizeLighting = 10*sizeof(v128);
+        GLsizeiptr sizeBones    = skel->numJoints*sizeof(ml::dual_quat);
 
-        void* memGlobal   = graphics::dynbufAllocMem(sizeGlobal,   graphics::caps.uboAlignment, &offsetGlobal);
-        void* memBones    = graphics::dynbufAllocMem(sizeBones,    graphics::caps.uboAlignment, &offsetBones);
-        void* memLighting = graphics::dynbufAllocMem(sizeLighting, graphics::caps.uboAlignment, &offsetLighting);
+        void* memGlobal   = graphics::dynbufAllocMem(sizeGlobal,   graphics::caps.uboAlignment,  &offsetGlobal);
+        void* memLighting = graphics::dynbufAllocMem(sizeLighting, graphics::caps.uboAlignment,  &offsetLighting);
+        void* memBones    = graphics::dynbufAllocMem(sizeBones,    graphics::caps.ssboAlignment, &offsetBones);
 
-        memcpy(memBones,    &pose->boneTransforms[0].real.x, sizeBones);
-
+        memcpy(memBones, &pose->boneTransforms[0].real.x, sizeBones);
         graphics::ubufUpdateData(ubufGlobal,   memGlobal,   sizeGlobal);
         graphics::ubufUpdateData(ubufLighting, memLighting, sizeLighting);
 
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_GLOBAL,   graphics::dynBuffer, offsetGlobal,   sizeGlobal);
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_BONES,    graphics::dynBuffer, offsetBones,    sizeBones);
-        glBindBufferRange(GL_UNIFORM_BUFFER, UNI_LIGHTING, graphics::dynBuffer, offsetLighting, sizeLighting);
+        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_GLOBAL,   graphics::dynBuffer, offsetGlobal,   sizeGlobal);
+        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_LIGHTING, graphics::dynBuffer, offsetLighting, sizeLighting);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, UNI_BONES,    graphics::dynBuffer, offsetBones,    sizeBones);
 
         for (int i=0; i<model->numMeshes; ++i )
         {
