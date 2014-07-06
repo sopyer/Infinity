@@ -20,8 +20,9 @@ struct TerrainData
 
 struct ViewData
 {
-    ml::mat4x4 uMVP;
-    v128       uLODViewK;
+    ml::mat4x4  uMV;
+    v128        uProj;
+    v128        uLODViewK;
 };
 
 #define ATTR_PATCH_BASE 0

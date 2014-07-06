@@ -68,6 +68,7 @@ namespace graphics
         ml::mat4x4 matMVP;
         ml::mat4x4 matMV;
         ml::mat4x4 matP;
+        ml::vec4   projParams;
         ml::vec3   shCoef[10];
     };
 

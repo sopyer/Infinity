@@ -72,6 +72,11 @@ public:
         delete [] data;
 
         addPrograms(1, &terrain.prgTerrain);
+
+        graphics::autoVars.projParams.x = mProj[0].m128_f32[0];
+        graphics::autoVars.projParams.y = mProj[1].m128_f32[1];
+        graphics::autoVars.projParams.z = mProj[2].m128_f32[2];
+        graphics::autoVars.projParams.w = mProj[3].m128_f32[2];
     }
 
     ~Exest()
@@ -192,6 +197,7 @@ protected:
 
         v128 MVP[4];
         ml::mul_mat4(MVP, mProj, vm);
+        memcpy(&graphics::autoVars.matMV,  vm,  sizeof(v128)*4);
         memcpy(&graphics::autoVars.matMVP, MVP, sizeof(v128)*4);
 
         glDisable(GL_CULL_FACE);
