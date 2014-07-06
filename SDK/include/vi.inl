@@ -4,8 +4,6 @@ __forceinline v128 vi_swizzle(v128 a)
     return _mm_castsi128_ps(_mm_shuffle_epi32(_mm_castps_si128(a), mask));
 }
 
-#ifdef USE_SSE4
-
 template<unsigned int mask>
 __forceinline v128 vi_shuffle(v128 a, v128 b)
 {
@@ -14,34 +12,20 @@ __forceinline v128 vi_shuffle(v128 a, v128 b)
     return _mm_blend_ps(t1, t2, (mask>>8)&0xF);
 }
 
-#else
-
-template<unsigned int mask>
-__forceinline v128 vi_shuffle(v128 a, v128 b)
-{
-    v128 t1 = vi_swizzle<mask&0xFF>(a);
-    v128 t2 = vi_swizzle<mask&0xFF>(b);
-    v128 t3 = _mm_movelh_ps(t1, t2);
-    v128 t4 = _mm_movehl_ps(t2, t1);
-    return _mm_shuffle_ps(t3, t4, (mask>>8)|0x44);
-}
-
-#endif
-
 template<unsigned int mask>
 __forceinline v128 vi_select(v128 a, v128 b)
 {
     return _mm_blend_ps(a, b, mask);
 }
 
-#ifdef USE_SSE4
-__forceinline v128 vi_select(v128 mask, v128 a, v128 b)
+#if 1
+__forceinline v128 vi_select(v128 a, v128 b, v128 mask)
 {
     return _mm_blendv_ps(a, b, mask);
 }
 #else
-//untested: http://realtimecollisiondetection.net/blog/?p=90
-__forceinline v128 vi_select(v128 mask, v128 a, v128 b)
+// http://realtimecollisiondetection.net/blog/?p=90
+__forceinline v128 vi_select(v128 a, v128 bá v128 mask)
 {
     return vi_xor(vi_and(vi_xor(a, b), mask), a);
 }
@@ -118,9 +102,7 @@ __forceinline v128 vi_load_v3(void* m96)
 
     r0 = _mm_castpd_ps(_mm_load_sd((double*)m96));
     r1 = _mm_load_ss((float*)m96 + 2);
-    r1 = _mm_castsi128_ps(_mm_slli_si128(_mm_castps_si128(r1), 8));
-    //r1 = v1_swizzle<1, 1, 0, 1>(r1);
-    return _mm_xor_ps(r0, r1);
+    return _mm_movelh_ps(r0, r1);
 }
 
 __forceinline v128 vi_load_v4(void* m128)
@@ -146,7 +128,7 @@ __forceinline void vi_store_v2(void* m64,  v128 v)
 __forceinline void vi_store_v3(void* m96,  v128 v)
 {
     _mm_store_sd((double*)m96, _mm_castps_pd(v));
-    _mm_store_ss((float*)m96 + 2, _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(v), 8)));
+    _mm_store_ss((float*)m96 + 2, _mm_movehl_ps(v, v));
 }
 
 __forceinline void vi_store_v4(void* m128, v128 v)
@@ -159,29 +141,10 @@ __forceinline void vi_storeu_v4(void* m128, v128 v)
     _mm_storeu_ps((float*)m128, v);
 }
 
-
-#ifdef USE_SSE4
-
-__forceinline v128 vi_dot4(v128 a, v128 b)
-{
-    return _mm_dp_ps(a, b, 0xFF);
-}
-
-#else
-
 __forceinline v128 vi_dot2(v128 a, v128 b)
 {
     v128 res   = _mm_mul_ps(a, b);
     v128 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_W, VI_Z)>(res);
-    return _mm_add_ps(res, shuff);
-}
-
-__forceinline v128 vi_dot4(v128 a, v128 b)
-{
-    v128 res   = _mm_mul_ps(a, b);
-    v128 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_W, VI_Z)>(res);
-    res = _mm_add_ps(res, shuff);
-    shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Z, VI_W, VI_X, VI_Y)>(res);
     return _mm_add_ps(res, shuff);
 }
 
@@ -195,6 +158,20 @@ __forceinline v128 vi_dot3(v128 a, v128 b)
     return vi_swizzle<VI_SWIZZLE_XXXX>(res);
 }
 
+#if 1
+__forceinline v128 vi_dot4(v128 a, v128 b)
+{
+    return _mm_dp_ps(a, b, 0xFF);
+}
+#else
+__forceinline v128 vi_dot4(v128 a, v128 b)
+{
+    v128 res   = _mm_mul_ps(a, b);
+    v128 shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Y, VI_X, VI_W, VI_Z)>(res);
+    res = _mm_add_ps(res, shuff);
+    shuff = vi_swizzle<VI_SWIZZLE_MASK(VI_Z, VI_W, VI_X, VI_Y)>(res);
+    return _mm_add_ps(res, shuff);
+}
 #endif
 
 __forceinline v128 vi_cross3(v128 a, v128 b)

@@ -127,7 +127,7 @@ namespace ut
 
         lambda = exp_avg_calcLambda(dt, filter->dcutoffFreq);
         filter->dxn_1 = exp_avg_filter(&filter->dxn_1, lambda, sample - filter->yn_1);
-        lambda = exp_avg_calcLambda(dt, filter->cutoffFreq + filter->dslope * ml::absf(filter->dxn_1));
+        lambda = exp_avg_calcLambda(dt, filter->cutoffFreq + filter->dslope * ml::abs(filter->dxn_1));
         filter->yn_1 = exp_avg_filter(&filter->yn_1, lambda, sample);
     }
 }

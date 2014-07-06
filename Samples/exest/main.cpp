@@ -1,7 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <framework.h>
-#include <glm\glmext.h>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
 #include <SpectatorCamera.h>
@@ -9,6 +8,9 @@
 #include <utils.h>
 
 #include "CDLODTerrain.h"
+
+static const float zn = 0.1f;
+static const float zf = 10000.0f;
 
 class Exest: public ui::Stage
 {
@@ -20,6 +22,7 @@ private:
     bool      fixedMode;
     ml::vec3  VPpp;
     v128      VP[4];
+    v128      viewQuat;
 
     CDLODTerrain terrain;
 
@@ -28,16 +31,11 @@ private:
     bool drawWireframe;
 
 public:
-    Exest(): fixedMode(false), loc(0)
+    Exest(): fixedMode(false)
     {
         terrain.initialize();
 
-        glm::mat4 proj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
-
-        mProj[0] = vi_loadu_v4(proj[0]);
-        mProj[1] = vi_loadu_v4(proj[1]);
-        mProj[2] = vi_loadu_v4(proj[2]);
-        mProj[3] = vi_loadu_v4(proj[3]);
+        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, zn, zf);
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
@@ -49,9 +47,9 @@ public:
 
         //src.read(data, fileSize, 1);
 
-        //int	imgWidth, imgHeight, imgChannels;
-        //unsigned char*	pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
-        //	&imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
+        //int   imgWidth, imgHeight, imgChannels;
+        //unsigned char*    pixelsPtr = SOIL_load_image_from_memory(data, fileSize,
+        //  &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_L);
         //assert(imgChannels==1);
 
         //uint32_t blockCount, vertCount;
@@ -81,52 +79,65 @@ public:
         terrain.cleanup();
     }
 
-    void drawFrustum(v128 frustum[4])
+    void drawFrustum(float zn, float zf)
     {
-        glm::mat4 inverted = glm::inverseGTX(*(glm::mat4*)frustum);
+        float sx = 1.0f / mProj[0].m128_f32[0];
+        float sy = 1.0f / mProj[1].m128_f32[1];
 
-        static const glm::vec4 points[8] = {
-            glm::vec4(-1, -1, -1, 1), 
-            glm::vec4( 1, -1, -1, 1), 
-            glm::vec4( 1,  1, -1, 1), 
-            glm::vec4(-1,  1, -1, 1), 
-            glm::vec4(-1, -1,  1, 1), 
-            glm::vec4( 1, -1,  1, 1), 
-            glm::vec4( 1,  1,  1, 1), 
-            glm::vec4(-1,  1,  1, 1), 
+        v128 scale = vi_set(sx, sy, -1.0f, 0.0f);
+        v128 vzn   = vi_set_fff0(zn);
+        v128 vzf   = vi_set_fff0(zf);
+        v128 pn    = vi_mul(vzn, scale);
+        v128 pf    = vi_mul(vzf, scale);
+        v128 sign  = vi_set_i000(FLT_SIGN);
+
+        ml::vec3 frustumPoints[8];
+
+        v128 pts[8] = {
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(sign), pn),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 1)>(sign), pn),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 1)>(sign), pn),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 1)>(sign), pn),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(sign), pf),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 1)>(sign), pf),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 1)>(sign), pf),
+            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 1)>(sign), pf)
         };
 
-        static const int indices[30] = 
+        v128 pos = vi_load_v3(&VPpp);
+        for (size_t i=0; i<ARRAY_SIZE(frustumPoints); ++i)
+        {
+            v128 r = ml::rotate_vec3_quat(viewQuat, pts[i]);
+            vi_store_v3(&frustumPoints[i], vi_add(r, pos));
+        }
+
+        static const int indices[36] = 
         {
             0, 1, 3, 1, 2, 3,
             1, 0, 4, 1, 4, 5,
             3, 2, 7, 2, 6, 7,
             4, 0, 7, 0, 3, 7,
             1, 5, 2, 2, 5, 6,
+            4, 7, 5, 5, 7, 6,
         };
-
-        glm::vec4 wpoints[8];
-
-        for (size_t i=0; i<8; ++i)
-            wpoints[i] = inverted*points[i];
 
         glUseProgram(0);
         glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         glBegin(GL_LINES);
-        glVertex4fv(wpoints[0]); glVertex4fv(wpoints[1]);
-        glVertex4fv(wpoints[1]); glVertex4fv(wpoints[2]);
-        glVertex4fv(wpoints[2]); glVertex4fv(wpoints[3]);
-        glVertex4fv(wpoints[3]); glVertex4fv(wpoints[0]);
+        glVertex3fv((float*)&frustumPoints[0]); glVertex3fv((float*)&frustumPoints[1]);
+        glVertex3fv((float*)&frustumPoints[1]); glVertex3fv((float*)&frustumPoints[2]);
+        glVertex3fv((float*)&frustumPoints[2]); glVertex3fv((float*)&frustumPoints[3]);
+        glVertex3fv((float*)&frustumPoints[3]); glVertex3fv((float*)&frustumPoints[0]);
 
-        glVertex4fv(wpoints[4]); glVertex4fv(wpoints[5]);
-        glVertex4fv(wpoints[5]); glVertex4fv(wpoints[6]);
-        glVertex4fv(wpoints[6]); glVertex4fv(wpoints[7]);
-        glVertex4fv(wpoints[7]); glVertex4fv(wpoints[4]);
+        glVertex3fv((float*)&frustumPoints[4]); glVertex3fv((float*)&frustumPoints[5]);
+        glVertex3fv((float*)&frustumPoints[5]); glVertex3fv((float*)&frustumPoints[6]);
+        glVertex3fv((float*)&frustumPoints[6]); glVertex3fv((float*)&frustumPoints[7]);
+        glVertex3fv((float*)&frustumPoints[7]); glVertex3fv((float*)&frustumPoints[4]);
 
-        glVertex4fv(wpoints[0]); glVertex4fv(wpoints[4]);
-        glVertex4fv(wpoints[1]); glVertex4fv(wpoints[5]);
-        glVertex4fv(wpoints[2]); glVertex4fv(wpoints[6]);
-        glVertex4fv(wpoints[3]); glVertex4fv(wpoints[7]);
+        glVertex3fv((float*)&frustumPoints[0]); glVertex3fv((float*)&frustumPoints[4]);
+        glVertex3fv((float*)&frustumPoints[1]); glVertex3fv((float*)&frustumPoints[5]);
+        glVertex3fv((float*)&frustumPoints[2]); glVertex3fv((float*)&frustumPoints[6]);
+        glVertex3fv((float*)&frustumPoints[3]); glVertex3fv((float*)&frustumPoints[7]);
         glEnd();
 
         glEnable(GL_BLEND);
@@ -138,20 +149,20 @@ public:
         //Simple sorting for convex alpha object rendering
         //First render back faces
         //Then render front faces
-        glColor4f(1.0f, 0.5f, 0.0f, 0.8f);
+        glColor4f(1.0f, 0.5f, 0.0f, 0.5f);
         glCullFace(GL_FRONT);
         glBegin(GL_TRIANGLES);
-        for (int i=0; i<30; ++i)
+        for (int i=0; i<ARRAY_SIZE(indices); ++i)
         {
-            glVertex4fv(wpoints[indices[i]]);
+            glVertex3fv((float*)&frustumPoints[indices[i]]);
         }
         glEnd();
 
         glCullFace(GL_BACK);
         glBegin(GL_TRIANGLES);
-        for (int i=0; i<30; ++i)
+        for (int i=0; i<ARRAY_SIZE(indices); ++i)
         {
-            glVertex4fv(wpoints[indices[i]]);
+            glVertex3fv((float*)&frustumPoints[indices[i]]);
         }
         glEnd();
 
@@ -164,10 +175,6 @@ protected:
     {
         terrain.reset();
     }
-
-    std::vector<glm::__quatGTX> savedCamOrient;
-    std::vector<glm::vec3>      savedCamPos;
-    int                         loc;
 
     void onPaint()
     {
@@ -223,7 +230,7 @@ protected:
 
         if (fixedMode)
         {
-            drawFrustum(MVP);
+            drawFrustum(zn, 0.7f*zf);
         }
 
         glDisable(GL_CULL_FACE);
@@ -283,6 +290,7 @@ protected:
                 camera.getViewMatrix(vm);
                 ml::mul_mat4(VP, mProj, vm);
                 vi_store_v3(&VPpp, camera.getPosition());
+                viewQuat = ml::conjugate_quat(camera.getOrientation());
             }
         }
 

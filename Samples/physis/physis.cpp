@@ -353,31 +353,31 @@ protected:
         CHECK_GL_ERROR();
     }
 
-    glm::mat4 getHSCB(float hue, float saturation, float contrast, float brightness)
-    {
-        glm::mat4 brightnessMatrix = glm::scale3DGTX(glm::mat4(), brightness, brightness, brightness);
-        glm::mat4 contrastMatrix = glm::translate3DGTX(glm::mat4(), 0.5f, 0.5f, 0.5f)*
-            glm::scale3DGTX(glm::mat4(), contrast, contrast, contrast)*
-            glm::translate3DGTX(glm::mat4(), -0.5f, -0.5f, -0.5f);
+    //glm::mat4 getHSCB(float hue, float saturation, float contrast, float brightness)
+    //{
+    //    glm::mat4 brightnessMatrix = glm::scale3DGTX(glm::mat4(), brightness, brightness, brightness);
+    //    glm::mat4 contrastMatrix = glm::translate3DGTX(glm::mat4(), 0.5f, 0.5f, 0.5f)*
+    //        glm::scale3DGTX(glm::mat4(), contrast, contrast, contrast)*
+    //        glm::translate3DGTX(glm::mat4(), -0.5f, -0.5f, -0.5f);
 
-        //TODO:add hue and saturation matrices
+    //    //TODO:add hue and saturation matrices
 
-        glm::mat4 hueMatrix = glm::rotateGTX(hue, glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f)));
+    //    glm::mat4 hueMatrix = glm::rotateGTX(hue, glm::normalize(glm::vec3(1.0f, 1.0f, 1.0f)));
 
-        const float RED_EYE_SENSIBILITY = 0.3086f;
-        const float GREEN_EYE_SENSIBILITY = 0.6094f;
-        const float BLUE_EYE_SENSIBILITY = 0.0820f;
+    //    const float RED_EYE_SENSIBILITY = 0.3086f;
+    //    const float GREEN_EYE_SENSIBILITY = 0.6094f;
+    //    const float BLUE_EYE_SENSIBILITY = 0.0820f;
 
-        float s = saturation;
-        glm::mat4 saturationMatrix = glm::mat4(
-            glm::vec4((1.0f-s)*RED_EYE_SENSIBILITY + s, (1.0f-s)*RED_EYE_SENSIBILITY,       (1.0f-s)*RED_EYE_SENSIBILITY,       0.0f),
-            glm::vec4((1.0f-s)*GREEN_EYE_SENSIBILITY,   (1.0f-s)*GREEN_EYE_SENSIBILITY + s, (1.0f-s)*GREEN_EYE_SENSIBILITY,     0.0f),
-            glm::vec4((1.0f-s)*BLUE_EYE_SENSIBILITY,    (1.0f-s)*BLUE_EYE_SENSIBILITY,      (1.0f-s)*BLUE_EYE_SENSIBILITY + s,  0.0f),
-            glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
-            );
+    //    float s = saturation;
+    //    glm::mat4 saturationMatrix = glm::mat4(
+    //        glm::vec4((1.0f-s)*RED_EYE_SENSIBILITY + s, (1.0f-s)*RED_EYE_SENSIBILITY,       (1.0f-s)*RED_EYE_SENSIBILITY,       0.0f),
+    //        glm::vec4((1.0f-s)*GREEN_EYE_SENSIBILITY,   (1.0f-s)*GREEN_EYE_SENSIBILITY + s, (1.0f-s)*GREEN_EYE_SENSIBILITY,     0.0f),
+    //        glm::vec4((1.0f-s)*BLUE_EYE_SENSIBILITY,    (1.0f-s)*BLUE_EYE_SENSIBILITY,      (1.0f-s)*BLUE_EYE_SENSIBILITY + s,  0.0f),
+    //        glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
+    //        );
 
-        return brightnessMatrix*contrastMatrix;
-    }
+    //    return brightnessMatrix*contrastMatrix;
+    //}
 
     void generateTexture()
     {

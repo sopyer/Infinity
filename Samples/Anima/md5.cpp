@@ -15,7 +15,7 @@ void build_w_quat( ml::quat& quat )
     }
     else
     {
-        quat.w = -ml::sqrtf(t);
+        quat.w = -ml::sqrt(t);
     }
 }
 

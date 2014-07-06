@@ -182,7 +182,7 @@ namespace ml
         vi_storeu_v4(dst, t);                   \
     }
 
-    void create_dual_quat(dual_quat* result, quat* orient, vec3* offset)
+    void make_dual_quat(dual_quat* result, quat* orient, vec3* offset)
     {
         v128 r, c, q, p;
 
@@ -386,13 +386,87 @@ namespace ml
         v128  co;
         v128  si;
 
-        co = vi_set_f000(cosf(a));
-        si = vi_set_f000(sinf(a));
+        co = vi_set_f000(cos(a));
+        si = vi_set_f000(sin(a));
 
         co = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(co);
         si = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 1)>(si);
 
         return vi_xor(vi_mul(axis, si), co);
+    }
+
+    void make_perspective_mat4(v128* mat/*[4]*/, float fovy, float aspect, float zn, float zf)
+    {
+        float e = 1.0f / tan(0.5f * fovy);
+
+        mat[0] = vi_set_0000();
+        mat[1] = vi_set_0000();
+        mat[2] = vi_set_0000();
+        mat[3] = vi_set_0000();
+
+        mat[0].m128_f32[0] = e / aspect;
+        mat[1].m128_f32[1] = e;
+        mat[2].m128_f32[2] = -(zf + zn) / (zf - zn);
+        mat[2].m128_f32[3] = -1;
+        mat[3].m128_f32[2] = -2.0f * zn * zf / (zf - zn);
+    }
+
+    void make_inf_perspective_mat4(v128* mat/*[4]*/, float fovy, float aspect, float zn)
+    {
+        float e = 1.0f / tan(0.5f * fovy);
+
+        mat[0] = vi_set_0000();
+        mat[1] = vi_set_0000();
+        mat[2] = vi_set_0000();
+        mat[3] = vi_set_0000();
+
+        mat[0].m128_f32[0] = e / aspect;
+        mat[1].m128_f32[1] = e;
+        mat[2].m128_f32[2] = -1;
+        mat[2].m128_f32[3] = -1;
+        mat[3].m128_f32[2] = -2.0f * zn;
+    }
+
+    void make_ortho2D_mat4(v128* mat/*[4]*/, float left, float right, float bottom, float top)
+    {
+        mat[0] = vi_set_0000();
+        mat[1] = vi_set_0000();
+        mat[2] = vi_set_0010f();
+        mat[3] = vi_set_0001f();
+
+        mat[0].m128_f32[0] = 2.0f / (right - left);
+        mat[1].m128_f32[1] = 2.0f / (top - bottom);
+        mat[3].m128_f32[0] = -(right + left) / (right - left);
+        mat[3].m128_f32[1] = -(top + bottom) / (top - bottom);
+    }
+
+    void make_ortho3D_mat4(v128* mat/*[4]*/, float left, float right, float bottom, float top, float zn, float zf)
+    {
+        mat[0] = vi_set_0000();
+        mat[1] = vi_set_0000();
+        mat[2] = vi_set_0010f();
+        mat[3] = vi_set_0001f();
+
+        mat[0].m128_f32[0] = 2.0f / (right - left);
+        mat[1].m128_f32[1] = 2.0f / (top - bottom);
+        mat[2].m128_f32[2] = 2.0f / (zf - zn);
+        mat[3].m128_f32[0] = -(right + left) / (right - left);
+        mat[3].m128_f32[1] = -(top + bottom) / (top - bottom);
+        mat[3].m128_f32[2] = -(zf + zn) / (zf - zn);
+    }
+
+    void make_identity_mat4(v128* mat/*[4]*/)
+    {
+        mat[0] = vi_set_1000f();
+        mat[1] = vi_set_0100f();
+        mat[2] = vi_set_0010f();
+        mat[3] = vi_set_0001f();
+    }
+
+    void quat_vec3_to_mat4(v128* m/*[4]*/, v128 quat, v128 pos)
+    {
+        ml::quat_to_mat4x3(m, quat);
+        m[3] = ml::conjugate_quat(ml::rotate_vec3_quat(quat, pos));
     }
 }
 
@@ -411,42 +485,47 @@ namespace ml
         return _mm_cvtss_f32(_mm_castsi128_ps(_mm_cvtsi32_si128(i)));
     }
 
-    float absf(float x)
+    float abs(float x)
     {
         return asfloat(asint(x) & 0x7FFFFFFF);
     }
 
-    float sqrtf(float x)
+    float sqrt(float x)
     {
         return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));
     }
 
-    float fmodf(float x, float y)
+    float mod(float x, float y)
     {
         return ::fmodf(x, y);
     }
 
-    float floorf(float x)
+    float floor(float x)
     {
         return ::floorf(x);
     }
 
-    float ceilf(float x)
+    float ceil(float x)
     {
         return ::ceilf(x);
     }
 
-    float sinf(float x)
+    float sin(float x)
     {
         return ::sinf(x);
     }
 
-    float cosf(float x)
+    float cos(float x)
     {
         return ::cosf(x);
     }
 
-    float asinf(float x)
+    float tan(float x)
+    {
+        return ::tan(x);
+    }
+
+    float asin(float x)
     {
         return ::asinf(x);
     }

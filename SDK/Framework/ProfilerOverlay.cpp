@@ -1,16 +1,14 @@
-#include <windows.h>
 #include <opengl.h>
-#include <vg/vg.h>
+#include <algorithm>
 
 #include "ProfilerOverlay.h"
 #include "profiler.h"
 #include <ResourceHelpers.h>
 #include <Framework.h>
 
-#include "ui.h"
+#include <ui.h>
 #include <vg/vg.h>
 #include <utils.h>
-
 #include <graphics.h>
 
 static const uint32_t profilerIntervalMask = 0xFEDC0000;

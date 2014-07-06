@@ -29,7 +29,7 @@ const float w = 540;
 const float h = 540;
 
 #else
-#	include "ClockData.h"
+#   include "ClockData.h"
 #endif
 
 class ClockSample: public ui::Stage
@@ -53,9 +53,9 @@ public:
               mTextures[i] = resources::createTexture2D(imageNames[i]);
           }
 #else
-          mRed = vg::createSolidPaint(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
-          mBlack = vg::createSolidPaint(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
-          mWhite = vg::createSolidPaint(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+          mRed   = vg::createSolidPaint(0xFF0000FF);
+          mBlack = vg::createSolidPaint(0xFF000000);
+          mWhite = vg::createSolidPaint(0xFFFFFFFF);
 
           float x1, y1, x2, y2;
 

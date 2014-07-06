@@ -187,16 +187,16 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
     }
 }
 
-glm::vec4 colors[] = 
+ml::vec4 colors[] = 
 {
-    glm::vec4(0.5f, 0.0f, 1.0f, 1.0f),
-    glm::vec4(1.0f, 1.0f, 0.0f, 1.0f),
-    glm::vec4(1.0f, 0.6f, 0.6f, 1.0f),
-    glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
-    glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-    glm::vec4(1.0f, 0.2f, 0.2f, 1.0f),
-    glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-    glm::vec4(0.0f, 1.0f, 1.0f, 1.0f)
+    {0.5f, 0.0f, 1.0f, 1.0f},
+    {1.0f, 1.0f, 0.0f, 1.0f},
+    {1.0f, 0.6f, 0.6f, 1.0f},
+    {1.0f, 0.0f, 1.0f, 1.0f},
+    {0.0f, 0.0f, 1.0f, 1.0f},
+    {1.0f, 0.2f, 0.2f, 1.0f},
+    {0.0f, 1.0f, 0.0f, 1.0f},
+    {0.0f, 1.0f, 1.0f, 1.0f}
 };
 
 void CDLODTerrain::generateGeometry(size_t vertexCount)

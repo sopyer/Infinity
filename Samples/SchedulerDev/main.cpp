@@ -16,12 +16,12 @@ class SchedulerTest: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
-    glm::mat4	mProj;
+    v128                mProj[4];
 
 public:
     SchedulerTest()
     {
-        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, 0.1f, 10000.0f);
     }
 
     ~SchedulerTest()
@@ -37,7 +37,7 @@ protected:
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf(mProj);
+        glLoadMatrixf((float*)mProj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 

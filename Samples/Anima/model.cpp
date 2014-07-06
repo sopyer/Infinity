@@ -123,7 +123,7 @@ namespace Model
         {
             *hierarchy = joints->parent;
 
-            ml::create_dual_quat   (bindPose, &joints->rotation, &joints->location);
+            ml::make_dual_quat   (bindPose, &joints->rotation, &joints->location);
 
             ml::mul_quat           (&bindPose->real, &rotx, &bindPose->real);
             ml::mul_quat           (&bindPose->dual, &rotx, &bindPose->dual);
@@ -259,7 +259,7 @@ namespace Model
         {
             for (int i=0; i<skel->numJoints; ++i)
             {
-                ml::create_dual_quat(&framePoses[i], &animData[i].rotation, &animData[i].location);
+                ml::make_dual_quat(&framePoses[i], &animData[i].rotation, &animData[i].location);
 
                 int parent = hierarchy[i];
                 if( parent > -1 )
@@ -363,14 +363,14 @@ cleanup:
             float lerpK;
 
             pose->animTime += fDeltaTime * (float)anim->frameRate;
-            pose->animTime  = ml::fmodf(pose->animTime, (float)anim->numFrames);
+            pose->animTime  = ml::mod(pose->animTime, (float)anim->numFrames);
 
-            frame0 = (int)ml::floorf( pose->animTime );
+            frame0 = (int)ml::floor( pose->animTime );
             frame0 = frame0 % anim->numFrames;
             frame1 = frame0 + 1;
             frame1 = frame1 % anim->numFrames;
 
-            lerpK  = pose->animTime - ml::floorf(pose->animTime);
+            lerpK  = pose->animTime - ml::floor(pose->animTime);
 
             // I assume there is no zero quaternions in orientation data
             // so I do not check whether real quaternion norm is zero

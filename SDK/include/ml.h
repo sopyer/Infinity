@@ -76,7 +76,7 @@ namespace ml
 
     // dual quaternions
     void set_identity_dual_quat        (dual_quat* dq);
-    void create_dual_quat              (dual_quat* result, quat* orient, vec3* offset);
+    void make_dual_quat                (dual_quat* result, quat* orient, vec3* offset);
     void mul_dual_quat                 (dual_quat* result, dual_quat* dq0, dual_quat* dq1);
     void conjugate_dual_quat           (dual_quat* result, dual_quat* dq);
     void transform_vec3_dual_quat      (vec3* result, dual_quat* dq, vec3* p);
@@ -88,8 +88,15 @@ namespace ml
     void mul_mat4          (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
     void quat_to_mat4x3    (v128* m/*[3]*/, v128 q);
     void quat_to_mat4      (v128* m/*[4]*/, v128 q);
+    void quat_vec3_to_mat4 (v128* m/*[4]*/, v128 quat, v128 pos);
     v128 mat4x3_to_quat    (v128* m/*[4]*/);
     v128 axis_angle_to_quat(v128 axis, float angle);
+
+    void make_perspective_mat4    (v128* mat/*[4]*/, float fovy, float aspect, float zn, float zf);
+    void make_inf_perspective_mat4(v128* mat/*[4]*/, float fovy, float aspect, float zn);
+    void make_ortho2D_mat4        (v128* mat/*[4]*/, float left, float right, float bottom, float top);
+    void make_ortho3D_mat4        (v128* mat/*[4]*/, float left, float right, float bottom, float top, float zn, float zf);
+    void make_identity_mat4       (v128* mat/*[4]*/);
 }
 
 namespace ml
@@ -247,15 +254,16 @@ namespace ml
     int32_t asint(float f);
     float   asfloat(int32_t i);
 
-    float sqrtf(float x);
-    float sinf (float x);
-    float cosf (float x);
-    float asinf(float x);
+    float sqrt (float x);
+    float sin  (float x);
+    float cos  (float x);
+    float tan  (float x);
+    float asin (float x);
     float atan2(float y, float x);
 
-    float absf(float x);
-    float floorf(float x);
-    float ceilf(float x);
+    float abs  (float x);
+    float floor(float x);
+    float ceil (float x);
 
-    float fmodf(float x, float y);
+    float mod(float x, float y);
 }

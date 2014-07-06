@@ -23,7 +23,7 @@ class Anima: public ui::Stage
 {
 private:
     SpectatorCamera     camera;
-    glm::mat4           mProj;
+    v128                mProj[4];
 
     Model::model_t      model;
     Model::skeleton_t   skel;
@@ -45,7 +45,7 @@ public:
 
         Model::createPose(&pose, &skel);
 
-        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, 0.1f, 10000.0f);
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
@@ -76,7 +76,7 @@ protected:
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf(mProj);
+        glLoadMatrixf((float*)mProj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
@@ -97,8 +97,8 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        glm::mat4& vm = *(glm::mat4*)&m;
-        glm::mat4 MVP = mProj*vm;
+        v128 MVP[4];
+        ml::mul_mat4(MVP, mProj, m);
 
         memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(float) * 16);
 

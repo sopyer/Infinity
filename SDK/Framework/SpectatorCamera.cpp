@@ -51,7 +51,7 @@ void SpectatorCamera::lookAt(v128 eye, v128 dir)
     v128 m[3] = {xaxis, yaxis, zaxis};
 
     // Extract the pitch angle from the view matrix.
-    mAccumPitch = ml::asinf(m[2].m128_f32[1]);
+    mAccumPitch = ml::asin(m[2].m128_f32[1]);
 
     mOrient = ml::conjugate_quat(ml::mat4x3_to_quat(m));
 }
@@ -97,7 +97,7 @@ void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
 
     v128 dir, delta, vp, mv, dv, a, mask;
 
-    dir = vi_set(dx, dy, dz, 0.0f);
+    dir = vi_set(dx, dy, -dz, 0.0f);
     vp  = mVelocity;
     mv  = vi_load_v3(&maxVelocity);
     a   = vi_load_v3(&acceleration);
@@ -105,7 +105,7 @@ void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
     mask = vi_cmp_eq(dir, vi_set_0000());
 
     // choose direction for deacceleration if corresponding delta==0
-    dir = vi_select(mask, dir, vi_neg(vi_sign(vp)));
+    dir = vi_select(dir, vi_neg(vi_sign(vp)), mask);
 
     // calculate new velocity v = dir * a * dt + pv
     dv        = vi_mul(vi_set_fff0(dt), a);
@@ -123,13 +123,14 @@ void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
     // integrate distance using trapezoid rule(midpoint integration)
     delta = vi_mul(vi_set_fff0(0.5f * dt), vi_add(vp, mVelocity));
 
-    v128 mat[3];
-
-    ml::quat_to_mat4x3(mat, ml::conjugate_quat(mOrient));
-
-    mPos = vi_mad(mat[0],         vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(delta),         mPos);
-    mPos = vi_mad(vi_set_0100f(), vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 3)>(delta),         mPos);
-    mPos = vi_mad(mat[2],         vi_neg(vi_swizzle<VI_SWIZZLE_MASK(2, 2, 2, 3)>(delta)), mPos);
+    mPos = vi_add(
+        ml::rotate_vec3_quat(
+            ml::conjugate_quat(mOrient),
+            vi_swizzle<VI_SWIZZLE_MASK(0, 3, 2, 3)>(delta)
+        ),
+        mPos
+    );
+    mPos.m128_f32[1] += delta.m128_f32[1];
 }
 
 void SpectatorCamera::setOrientation(v128 newOrient)

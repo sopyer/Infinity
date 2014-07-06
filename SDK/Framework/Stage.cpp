@@ -43,7 +43,7 @@ namespace ui
         mWidth = 1280;
         mHeight = 720;
 
-        setProjection(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f));
+        ml::make_ortho2D_mat4(mProj, 0, mWidth, mHeight, 0);
 
         SDL_SysWMinfo info = {0, SDL_SYSWM_UNKNOWN, {0}};
         SDL_GetWindowWMInfo(fwk::window, &info);
@@ -122,7 +122,7 @@ namespace ui
                         break;
                 }
                 break;
-            case SDL_KEYUP:		
+            case SDL_KEYUP:
                 if (E.key.keysym.sym==SDLK_ESCAPE)
                 {
                     close();
@@ -234,30 +234,6 @@ namespace ui
         }
     }
 
-    Stage& Stage::setProjection(float* mat4x4)
-    {
-        mProjection = glm::mat4(
-            mat4x4[0],  mat4x4[1],  mat4x4[2],  mat4x4[3], 
-            mat4x4[4],  mat4x4[5],  mat4x4[6],  mat4x4[7], 
-            mat4x4[8],  mat4x4[9],  mat4x4[10], mat4x4[11], 
-            mat4x4[12], mat4x4[13], mat4x4[14], mat4x4[15]
-        );
-        return *this;
-    }
-    
-    //!!!!!!!!!!!Refactor
-    void setupUIViewMatrix(const glm::mat4& proj, float width, float height)
-    {
-        glm::mat4 inv = glm::inverseGTX(proj);
-        glm::vec4 ur = inv*glm::vec4(1, 1, -1, 1);
-        ur/=ur.w;
-
-        glLoadIdentity();
-        glScalef(ur.x, ur.y, 1);
-        glTranslatef(-1, 1, -0.1f/*z_near*/);
-        glScalef(2.0f/width, -2.0f/height, 1.0f/width);
-    }
-
     void Stage::renderActors()
     {
         PROFILER_CPU_TIMESLICE("renderActors");
@@ -271,10 +247,10 @@ namespace ui
         glDepthFunc(GL_LEQUAL);
 
         glMatrixMode(GL_PROJECTION);
-        glLoadMatrixf(glm::perspectiveGTX(60.0f, mWidth/mHeight, 0.1f, 600.0f)/*mProjection*/);
+        glLoadMatrixf((float*)mProj);
 
         glMatrixMode(GL_MODELVIEW);
-        setupUIViewMatrix(mProjection, mWidth, mHeight);
+        glLoadIdentity();
 
         glPushMatrix();
         onPaint();

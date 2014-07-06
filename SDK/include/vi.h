@@ -19,19 +19,11 @@ typedef __m128  v128;
 #define VI_A_Z  0x02
 #define VI_A_W  0x03
 
-#ifdef USE_SSE4
-#	define VI_B_X   0x10
-#	define VI_B_Y   0x11
-#	define VI_B_Z   0x12
-#	define VI_B_W   0x13
-#	define VI_COMPONENT(c, p) (((c&0x10)<<(p+4))|((c&0x3)<<(p*2)))
-#else
-#	define VI_B_X   0x20
-#	define VI_B_Y   0x21
-#	define VI_B_Z   0x22
-#	define VI_B_W   0x23
-#	define VI_COMPONENT(c, p) (((c&0x30)<<(2*p+4))|((c&0x3)<<(p*2)))
-#endif
+#define VI_B_X   0x10
+#define VI_B_Y   0x11
+#define VI_B_Z   0x12
+#define VI_B_W   0x13
+#define VI_COMPONENT(c, p) (((c&0x10)<<(p+4))|((c&0x3)<<(p*2)))
 
 #define VI_SHUFFLE_MASK(xmask, ymask, zmask, wmask) (VI_COMPONENT(wmask, 3)|VI_COMPONENT(zmask, 2)|VI_COMPONENT(ymask, 1)|VI_COMPONENT(xmask, 0))
 #define VI_SWIZZLE_MASK(x, y, z, w) _MM_SHUFFLE(w, z, y, x)
@@ -49,7 +41,7 @@ inline v128 vi_swizzle(v128 a);
 //select components from 2 source vectors
 template<unsigned int mask>
 inline v128 vi_shuffle(v128 a, v128 b);
-inline v128 vi_select (v128 mask, v128 a, v128 b);
+inline v128 vi_select (v128 a, v128 b, v128 mask);
 
 //load/store functions
 inline v128 vi_set      (float x, float y, float z, float w);

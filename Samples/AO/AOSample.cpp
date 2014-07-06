@@ -264,11 +264,9 @@ protected:
 
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
-            glLoadMatrixf(glm::ortho3DGTX<float>(
-                rangeLeft, rangeRight,
-                rangeBottom, rangeTop,
-                rangeFront, rangeBack)
-                );
+            v128 orthoProj[4];
+            ml::make_ortho3D_mat4(orthoProj, rangeLeft, rangeRight, rangeBottom, rangeTop, rangeFront, rangeBack);
+            glLoadMatrixf((float*)orthoProj);
             glPushAttrib(GL_ALL_ATTRIB_BITS);
 
             glClearColor(0, 0, 0, 0);

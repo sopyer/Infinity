@@ -1,11 +1,10 @@
 #ifndef __STAGE_H_INCLUDED__
-#	define __STAGE_H_INCLUDED__
+#   define __STAGE_H_INCLUDED__
 
-#	include <Scheduler.h>
-#	include <queue>
+#   include <Scheduler.h>
+#   include <queue>
 #   include <Events.h>
-#   include <glm/glm.h>
-#   include <glm/glmext.h>
+#   include <ml.h>
 
 struct SDL_Surface;
 
@@ -35,16 +34,16 @@ namespace ui
         virtual void onPaint() {}
 
     protected:
-        bool	mFullscreen;
-		float   mWidth, mHeight;
+        bool    mFullscreen;
+        float   mWidth, mHeight;
 
     private:
         void renderActors();
         void handleInput();
 
     private:
-        glm::mat4   mProjection;
-        bool        mRunLoop;
+        v128 mProj[4];
+        bool mRunLoop;
 #if defined(DEBUG) || defined(_DEBUG)
         int dumpPickImage:1;
 #endif

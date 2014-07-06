@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <framework.h>
-#include <glm\glmext.h>
+#include <ml.h>
 #include <cassert>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
@@ -212,14 +212,14 @@ class Frest: public ui::Stage
 private:
     SpectatorCamera     camera;
 
-    glm::mat4	mProj;
+    v128   mProj[4];
 
     rcMeshLoaderObj* m_geom;
 
 public:
     Frest()
     {
-        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
+        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, 0.1f, 10000.0f);
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
@@ -247,7 +247,7 @@ protected:
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf(mProj);
+        glLoadMatrixf((float*)mProj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 

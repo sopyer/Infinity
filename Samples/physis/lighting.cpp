@@ -85,14 +85,14 @@ namespace lighting
         }
 
         // Normalize vector
-        float len = ml::sqrtf((*nx) * (*nx) + (*ny) * (*ny) + (*nz) * (*nz));
+        float len = ml::sqrt((*nx) * (*nx) + (*ny) * (*ny) + (*nz) * (*nz));
 
         *nx /= len;	*ny /= len;	*nz /= len;
     }
 
     static float areaIntegral(float x, float y)
     {
-        return ml::atan2(x * y, sqrt(x * x + y * y + 1));
+        return ml::atan2(x * y, ml::sqrt(x * x + y * y + 1));
     }
 
     static float cubemapTexelSolidAngle(float nu, float nv, float texelSize)
@@ -197,11 +197,11 @@ namespace lighting
     v128   shPoly[10];
 
     SpectatorCamera     camera;
-    glm::mat4           mProj;
+    v128                proj[4];
 
     void init()
     {
-        mProj = glm::perspectiveGTX(30.0f, 1280.0f/720.0f, 0.1f, 10000.0f);
+        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, 1280.0f/720.0f, 0.1f, 10000.0f);
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
@@ -300,7 +300,7 @@ namespace lighting
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf(mProj);
+        glLoadMatrixf((float*)proj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
