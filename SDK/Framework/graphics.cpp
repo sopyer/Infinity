@@ -196,13 +196,14 @@ namespace graphics
         { "u_SHcoef", GL_FLOAT_VEC3, 10, offsetof(auto_vars_t, shCoef)     }
     };
 
-    GLuint auto_var_get_index(const char* uname, GLenum type, GLint arraySize)
+    GLuint auto_var_get_index(size_t nameLen, const char* uname, GLenum type, GLint arraySize)
     {
         for (size_t i = 0; i < AUTO_VARS_COUNT; ++i)
         {
+            assert(arraySize<2 || nameLen>3);
             if (autoVarDesc[i].type != type) continue;
             if (arraySize > 1 && autoVarDesc[i].arraySize != arraySize) continue;
-            if (strncmp(autoVarDesc[i].name, uname, strlen(autoVarDesc[i].name)) != 0) continue;
+            if (strncmp(autoVarDesc[i].name, uname, arraySize>1 ? nameLen-3 : nameLen) != 0) continue;
 
             return i;
         }
@@ -281,7 +282,7 @@ namespace graphics
             char* uname = stack_mem_alloc<char>(stalloc, uniProps.nameLen);
             glGetProgramResourceName(prg, GL_UNIFORM, uniIndices[uni], uniProps.nameLen, NULL, uname);
 
-            GLuint index = auto_var_get_index(uname, uniProps.type, uniProps.arraySize);
+            GLuint index = auto_var_get_index(uniProps.nameLen-1, uname, uniProps.type, uniProps.arraySize);
             if (index != GL_INVALID_INDEX)
             {
                 size_t i = descProto->numVars;
