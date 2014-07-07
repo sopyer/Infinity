@@ -13,7 +13,7 @@ layout(location = 0, index = 0) out vec4 outColor;
 
 layout(binding = UNI_LIGHTING) uniform uniLighting
 {
-    vec3 u_SHcoef[10];
+    vec3 au_SHcoef[10];
 };
 
 vec4 evalSH2(vec3 N, vec3 shCoef[10])
@@ -60,7 +60,7 @@ void main()
     N.y = -N.y;
     N   = normalize(TBN * N);
 
-    vec4 c = evalSH2(N, u_SHcoef);
+    vec4 c = evalSH2(N, au_SHcoef);
 
     c = 4.0*c*texture2D(samDiffuse, vTexCoord0)+0.1;
 

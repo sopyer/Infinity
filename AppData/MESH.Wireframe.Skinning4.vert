@@ -15,7 +15,7 @@ layout(location=4) in vec4  aBoneWeights;
 
 layout(binding = UNI_GLOBAL) uniform uniGlobal
 {
-    mat4 u_MVP;
+    mat4 au_MVP;
 };
 
 layout(std140, binding = UNI_BONES) buffer uniBones
@@ -54,6 +54,6 @@ void main()
     vec3 trans    = 2.0*(blendDQ[0].w*blendDQ[1].xyz - blendDQ[1].w*blendDQ[0].xyz + cross(blendDQ[0].xyz, blendDQ[1].xyz));
     position += trans;
 
-    gl_Position = u_MVP * vec4(position, 1.0);
+    gl_Position = au_MVP * vec4(position, 1.0);
     gaPosition  = position;
 }

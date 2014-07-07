@@ -29,8 +29,8 @@ layout(binding = UNI_TERRAIN_BINDING) uniform uniTerrain
 
 layout(binding = UNI_VIEW_BINDING) uniform uniView
 {
-    mat4    u_MV;
-    vec4    u_Proj;
+    mat4    au_MV;
+    vec4    au_Proj;
     vec4    uLODViewK;
 };
 
@@ -65,11 +65,11 @@ void main()
 
     vertexPos.y   = h*uHeightXform.x+uHeightXform.y;
 
+    vec4 viewPos = au_MV*vec4(vertexPos, 1);
+
     //Varyings
 
-    vec4 viewPos = u_MV*vec4(vertexPos, 1);
-
-    gl_Position = vec4(viewPos.xy * u_Proj.xy, u_Proj.z*viewPos.z+u_Proj.w, -viewPos.z); //projection
+    gl_Position = vec4(viewPos.xy * au_Proj.xy, au_Proj.z*viewPos.z+au_Proj.w, -viewPos.z); //projection
     vHeight     = h;
     vPos        = vertexPos;
     vColor      = uColors[aLevel.x];

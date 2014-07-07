@@ -190,10 +190,10 @@ namespace graphics
     static const size_t AUTO_VARS_COUNT = 4;
 
     auto_var_desc_t autoVarDesc[AUTO_VARS_COUNT] = {
-        { "u_Proj",   GL_FLOAT_VEC4,  1, offsetof(auto_vars_t, projParams) },
-        { "u_MV",     GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMV)      },
-        { "u_MVP",    GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMVP)     },
-        { "u_SHcoef", GL_FLOAT_VEC3, 10, offsetof(auto_vars_t, shCoef)     }
+        { "au_Proj",   GL_FLOAT_VEC4,  1, offsetof(auto_vars_t, projParams) },
+        { "au_MV",     GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMV)      },
+        { "au_MVP",    GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMVP)     },
+        { "au_SHcoef", GL_FLOAT_VEC3, 10, offsetof(auto_vars_t, shCoef)     }
     };
 
     GLuint auto_var_get_index(size_t nameLen, const char* uname, GLenum type, GLint arraySize)
@@ -334,7 +334,7 @@ namespace graphics
 
     void ubufUpdateData(ubuffer_desc_t desc, void* mem, size_t size)
     {
-        assert(desc->bufferSize <= size);
+        assert((size_t)desc->bufferSize <= size);
 
         uint8_t* dst = (uint8_t*)mem;
         uint8_t* src = (uint8_t*)&autoVars;
