@@ -5,6 +5,7 @@
 namespace vf
 {
     GLuint skinned_geom_t::vao;
+    GLuint empty_geom_t::vao;
 
     static const graphics::vertex_element_t descSkinnedGeom[5] = 
     {
@@ -20,6 +21,10 @@ namespace graphics
 {
     static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
     static int        frameID = 0;
+
+    GLuint prgLine;
+
+    GLuint width, height;
 
     GLuint dynBuffer;
     GLint  dynBufferOffset;
@@ -40,12 +45,20 @@ namespace graphics
 
     void init()
     {
+        //HACK!!!!!
+        width  = 1280;
+        height = 720;
+
+        prgLine = resources::createProgramFromFiles("MESH.Line.vert", "MESH.Color.frag");
+
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
 
         glDebugMessageCallback( glDebugCallback, NULL );
 
-        vf::skinned_geom_t::vao = createVAO(5, vf::descSkinnedGeom, 0, NULL);
+        vf::skinned_geom_t::vao = createVAO(ARRAY_SIZE(vf::descSkinnedGeom), vf::descSkinnedGeom, 0, NULL);
+
+        glGenVertexArrays(1, &vf::empty_geom_t::vao);
 
         GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
         GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
@@ -57,6 +70,8 @@ namespace graphics
 
     void fini()
     {
+        glDeleteProgram(prgLine);
+
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);
     }
@@ -175,6 +190,38 @@ namespace graphics
             return 0;
 
         return dynbufAlloc(size);
+    }
+
+    struct line_global_t
+    {
+        v128  uColor;
+        v128  uPixelScale;
+        v128  uMV[4];
+        v128  uProj;
+    };
+
+    void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size)
+    {
+        GLuint offsetGlobal;
+        GLsizeiptr     sizeGlobal = sizeof(line_global_t);
+        line_global_t* global     = (line_global_t*)graphics::dynbufAllocMem(sizeGlobal, graphics::caps.uboAlignment, &offsetGlobal);
+
+        global->uColor = color;
+        global->uPixelScale = vi_set_f000(1.0f / autoVars.projParams.x / width);
+        memcpy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
+        global->uProj = vi_loadu_v4(&autoVars.projParams);
+
+        assert(sizeof(line_t)*count <= (size_t)size);
+
+        glUseProgram(prgLine);
+
+        glBindBufferRange(GL_UNIFORM_BUFFER,        0, dynBuffer, offsetGlobal, sizeGlobal);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
+
+        glBindVertexArray(vf::empty_geom_t::vao);
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+        glUseProgram(0);
     }
 
     auto_vars_t autoVars;

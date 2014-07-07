@@ -17,6 +17,11 @@ namespace vf
 
         static GLuint vao;
     };
+
+    struct empty_geom_t
+    {
+        static GLuint vao;
+    };
 }
 
 namespace graphics
@@ -112,6 +117,12 @@ namespace graphics
         assert(err==GL_NO_ERROR);                     \
     }
 
+    struct line_t
+    {
+        v128 p0, p1;
+    };
+
+    void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
 }
 
 #endif

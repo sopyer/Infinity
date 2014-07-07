@@ -52,6 +52,11 @@ public:
 
         memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
 
+        graphics::autoVars.projParams.x = mProj[0].m128_f32[0];
+        graphics::autoVars.projParams.y = mProj[1].m128_f32[1];
+        graphics::autoVars.projParams.z = mProj[2].m128_f32[2];
+        graphics::autoVars.projParams.w = mProj[3].m128_f32[2];
+
         CHECK_GL_ERROR();
     }
 
@@ -100,6 +105,7 @@ protected:
         v128 MVP[4];
         ml::mul_mat4(MVP, mProj, m);
 
+        memcpy(&graphics::autoVars.matMV,  (float*)m,   sizeof(float) * 16);
         memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(float) * 16);
 
         gpuTimer.start();

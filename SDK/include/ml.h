@@ -81,6 +81,7 @@ namespace ml
     void conjugate_dual_quat           (dual_quat* result, dual_quat* dq);
     void transform_vec3_dual_quat      (vec3* result, dual_quat* dq, vec3* p);
     void get_translation_from_dual_quat(vec3* result, dual_quat* dq);
+    v128 transform_vec3_dual_quat      (dual_quat* dq, v128 p);
 
     // matrices
     v128 mul_mat4_vec4     (v128* m/*[4]*/, v128 v);

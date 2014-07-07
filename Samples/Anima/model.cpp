@@ -71,7 +71,7 @@ namespace Model
             uniLighting  = glGetUniformBlockIndex(prgDefault, "uniLighting");
 
             glGetActiveUniformBlockiv(prgDefault, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-            assert(structSize==16*sizeof(float));
+            assert(structSize==20*sizeof(float));
             glGetActiveUniformBlockiv(prgDefault, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==10*sizeof(v128));
 
@@ -79,7 +79,7 @@ namespace Model
             uniLighting = glGetUniformBlockIndex(prgLighting, "uniLighting");
 
             glGetActiveUniformBlockiv(prgLighting, uniGlobal,   GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
-            assert(structSize==16*sizeof(float));
+            assert(structSize==20*sizeof(float));
             glGetActiveUniformBlockiv(prgLighting, uniLighting, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
             assert(structSize==10*sizeof(v128));
         }
@@ -454,25 +454,24 @@ cleanup:
         }
         glEnd();
 
-        // Draw the bones
-        glColor3f( 0.0f, 1.0f, 0.0f );
-        glBegin( GL_LINES );
+        GLuint  offset;
+        GLuint  size = sizeof(graphics::line_t) * (numJoints - 1);
+        v128* pts = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
+        for ( int i = 0; i < numJoints; ++i )
         {
-            for ( int i = 0; i < numJoints; ++i )
-            {
-                ml::vec3 pos0, pos1;
+            v128 p0, p1;
 
-                ml::get_translation_from_dual_quat(&pos0, &joints[i]);
-                const int    parent = hierarchy[i];
-                if ( parent != -1 )
-                {
-                    ml::get_translation_from_dual_quat(&pos1, &joints[parent]);
-                    glVertex3fv( &pos0.x );
-                    glVertex3fv( &pos1.x );
-                }
+            p1 = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
+
+            const int parent = hierarchy[i];
+            if ( parent != -1 )
+            {
+                p0 = ml::translation_dual_quat(vi_loadu_v4(&joints[parent].real), vi_loadu_v4(&joints[parent].dual));
+                *pts++ = p0;
+                *pts++ = p1;
             }
         }
-        glEnd();
+        graphics::drawLines(vi_set(0.0f, 1.0f, 0.0f, 1.0f), numJoints - 1, graphics::dynBuffer, offset, size);
 
         glPopAttrib();
     }
@@ -481,7 +480,7 @@ cleanup:
     {
         GLuint offsetGlobal, offsetBones, offsetLighting;
         
-        GLsizeiptr sizeGlobal   = 16*sizeof(float);
+        GLsizeiptr sizeGlobal   = 20*sizeof(float);
         GLsizeiptr sizeLighting = 10*sizeof(v128);
         GLsizeiptr sizeBones    = skel->numJoints*sizeof(ml::dual_quat);
 

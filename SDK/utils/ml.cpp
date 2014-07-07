@@ -259,6 +259,19 @@ namespace ml
         vi_store_v3(result, t);
     }
 
+    v128 transform_vec3_dual_quat(dual_quat* dq, v128 p)
+    {
+        v128 v, t, r, d;
+
+        r = vi_loadu_v4(&dq->real);
+        d = vi_loadu_v4(&dq->dual);
+
+        v = rotate_vec3_quat(r, p);
+        t = translation_dual_quat(r, d);
+
+        return vi_add(v, t);
+    }
+
     void transpose_mat4(v128* t/*[4]*/, v128* m/*[4]*/)
     {
         __m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
