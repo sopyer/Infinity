@@ -34,19 +34,19 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\AppData\SHLighting.frag">
+    <None Include="..\..\AppData\MESH.SHLighting.frag">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\AppData\wireframe.geom">
+    <None Include="..\..\AppData\MESH.Skinning4.vert">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\AppData\Skinning4.vert">
+    <None Include="..\..\AppData\MESH.Wireframe.geom">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\AppData\Skinning4_wireframe.vert">
+    <None Include="..\..\AppData\MESH.Wireframe.SHLighting.frag">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="..\..\AppData\SHLighting_wireframe.frag">
+    <None Include="..\..\AppData\MESH.Wireframe.Skinning4.vert">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

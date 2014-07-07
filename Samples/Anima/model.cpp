@@ -51,14 +51,13 @@ namespace Model
 
     void init()
     {
-        prgDefault = resources::createProgramFromFiles("Skinning4_wireframe.vert", "wireframe.geom", "SHLighting_wireframe.frag");
+        prgDefault = resources::createProgramFromFiles("MESH.Wireframe.Skinning4.vert", "MESH.Wireframe.geom", "MESH.Wireframe.SHLighting.frag");
 
         mWireframe = (material_t*)malloc(sizeof(material_t));
         mWireframe->program = prgDefault;
         mWireframe->diffuse = mWireframe->normal = 0;
 
-        prgLighting = resources::createProgramFromFiles("Skinning4.vert", "SHLighting.frag");
-
+        prgLighting = resources::createProgramFromFiles("MESH.Skinning4.vert", "MESH.SHLighting.frag");
 
         ubufLighting = graphics::ubufCreateDesc(prgDefault, "uniLighting");
         ubufGlobal   = graphics::ubufCreateDesc(prgDefault, "uniGlobal");
