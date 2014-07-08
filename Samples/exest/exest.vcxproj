@@ -94,7 +94,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CDLODTerrain.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="exest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CDLODTerrain.h" />
