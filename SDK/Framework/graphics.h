@@ -117,12 +117,18 @@ namespace graphics
         assert(err==GL_NO_ERROR);                     \
     }
 
+    struct point_t
+    {
+        v128 p;
+    };
+
     struct line_t
     {
         v128 p0, p1;
     };
 
     void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
 }
 
 #endif

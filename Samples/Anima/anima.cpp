@@ -102,22 +102,16 @@ protected:
         glVertex3f( 0, 4, -10);
         glEnd();
 
-        v128 MVP[4];
-        ml::mul_mat4(MVP, mProj, m);
-
-        memcpy(&graphics::autoVars.matMV,  (float*)m,   sizeof(float) * 16);
-        memcpy(&graphics::autoVars.matMVP, (float*)MVP, sizeof(float) * 16);
-
-        gpuTimer.start();
-        Model::render(&model, &skel, &pose);
-        gpuTimer.stop();
-
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
 
-        glDisable(GL_BLEND);
+        memcpy(&graphics::autoVars.matMV, (float*)m, sizeof(float) * 16);
+
+        gpuTimer.start();
+        Model::render(&model, &skel, &pose);
+        gpuTimer.stop();
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, cpuTime, gpuTime);
 

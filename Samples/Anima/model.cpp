@@ -431,49 +431,34 @@ cleanup:
 
     void renderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)
     {
-        glUseProgram(0);
+        GLuint  offset;
+        GLuint  size;
+        v128*   vertices;
 
-        glPointSize( 5.0f );
-        glColor3f( 1.0f, 0.0f, 0.0f );
-
-        glPushAttrib( GL_ENABLE_BIT );
-
-        glDisable(GL_LIGHTING );
         glDisable( GL_DEPTH_TEST );
 
-        // Draw the joint positions
-        glBegin( GL_POINTS );
-        {
-            for ( int i = 0; i < numJoints; ++i )
-            {
-                ml::vec3 pos;
-
-                ml::get_translation_from_dual_quat(&pos, &joints[i]);
-                glVertex3fv( &pos.x );
-            }
-        }
-        glEnd();
-
-        GLuint  offset;
-        GLuint  size = sizeof(graphics::line_t) * (numJoints - 1);
-        v128* pts = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
+        size     = sizeof(graphics::line_t) * (numJoints - 1);
+        vertices = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
         for ( int i = 0; i < numJoints; ++i )
         {
-            v128 p0, p1;
-
-            p1 = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
-
             const int parent = hierarchy[i];
             if ( parent != -1 )
             {
-                p0 = ml::translation_dual_quat(vi_loadu_v4(&joints[parent].real), vi_loadu_v4(&joints[parent].dual));
-                *pts++ = p0;
-                *pts++ = p1;
+                *vertices++ = ml::translation_dual_quat(vi_loadu_v4(&joints[parent].real), vi_loadu_v4(&joints[parent].dual));
+                *vertices++ = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
             }
         }
         graphics::drawLines(vi_set(0.0f, 1.0f, 0.0f, 1.0f), numJoints - 1, graphics::dynBuffer, offset, size);
 
-        glPopAttrib();
+        size     = sizeof(graphics::point_t) * numJoints;
+        vertices = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
+        for ( int i = 0; i < numJoints; ++i )
+        {
+            *vertices++ = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
+        }
+        graphics::drawPoints(5.0f, vi_set(1.0f, 0.0f, 0.0f, 1.0f), numJoints, graphics::dynBuffer, offset, size);
+
+        glEnable(GL_DEPTH_TEST);
     }
 
     void render(model_t* model, skeleton_t* skel, pose_t* pose)

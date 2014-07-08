@@ -22,7 +22,7 @@ namespace graphics
     static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
     static int        frameID = 0;
 
-    GLuint prgLine;
+    GLuint prgLine, prgPoint;
 
     GLuint width, height;
 
@@ -49,7 +49,8 @@ namespace graphics
         width  = 1280;
         height = 720;
 
-        prgLine = resources::createProgramFromFiles("MESH.Line.vert", "MESH.Color.frag");
+        prgLine  = resources::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
+        prgPoint = resources::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
 
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
@@ -212,8 +213,34 @@ namespace graphics
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 
         assert(sizeof(line_t)*count <= (size_t)size);
+        assert(offset % caps.ssboAlignment == 0);
 
         glUseProgram(prgLine);
+
+        glBindBufferRange(GL_UNIFORM_BUFFER,        0, dynBuffer, offsetGlobal, sizeGlobal);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
+
+        glBindVertexArray(vf::empty_geom_t::vao);
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+        glUseProgram(0);
+    }
+
+    void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size)
+    {
+        GLuint offsetGlobal;
+        GLsizeiptr     sizeGlobal = sizeof(line_global_t);
+        line_global_t* global     = (line_global_t*)graphics::dynbufAllocMem(sizeGlobal, graphics::caps.uboAlignment, &offsetGlobal);
+
+        global->uColor = color;
+        global->uPixelScale = vi_set_f000(ptsize / autoVars.projParams.x / width);
+        memcpy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
+        global->uProj = vi_loadu_v4(&autoVars.projParams);
+
+        assert(sizeof(point_t)*count <= (size_t)size);
+        assert(offset % caps.ssboAlignment == 0);
+
+        glUseProgram(prgPoint);
 
         glBindBufferRange(GL_UNIFORM_BUFFER,        0, dynBuffer, offsetGlobal, sizeGlobal);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
