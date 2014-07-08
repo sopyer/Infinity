@@ -50,12 +50,12 @@ public:
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
-        memcpy(&graphics::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
+        memcpy(&gfx::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
 
-        graphics::autoVars.projParams.x = mProj[0].m128_f32[0];
-        graphics::autoVars.projParams.y = mProj[1].m128_f32[1];
-        graphics::autoVars.projParams.z = mProj[2].m128_f32[2];
-        graphics::autoVars.projParams.w = mProj[3].m128_f32[2];
+        gfx::autoVars.projParams.x = mProj[0].m128_f32[0];
+        gfx::autoVars.projParams.y = mProj[1].m128_f32[1];
+        gfx::autoVars.projParams.z = mProj[2].m128_f32[2];
+        gfx::autoVars.projParams.w = mProj[3].m128_f32[2];
 
         CHECK_GL_ERROR();
     }
@@ -107,7 +107,7 @@ protected:
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
 
-        memcpy(&graphics::autoVars.matMV, (float*)m, sizeof(float) * 16);
+        memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
 
         gpuTimer.start();
         Model::render(&model, &skel, &pose);

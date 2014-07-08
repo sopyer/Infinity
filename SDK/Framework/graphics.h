@@ -24,7 +24,7 @@ namespace vf
     };
 }
 
-namespace graphics
+namespace gfx
 {
     static const GLuint64   GL_TIMEOUT_INFINITE = ~0ull;
     static const GLuint     NUM_FRAMES_DELAY = 2; //2 * number of GPUs
@@ -65,8 +65,8 @@ namespace graphics
     void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
     void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset);
 
-    struct ubuffer_desc_data_t;
-    typedef ubuffer_desc_data_t* ubuffer_desc_t;
+    struct ubo_desc_data_t;
+    typedef ubo_desc_data_t* ubo_desc_t;
 
     struct auto_vars_t
     {
@@ -79,9 +79,9 @@ namespace graphics
 
     extern auto_vars_t autoVars;
 
-    ubuffer_desc_t ubufCreateDesc (GLuint prg, const char* name);
-    void           ubufDestroyDesc(ubuffer_desc_t desc);
-    void           ubufUpdateData(ubuffer_desc_t desc, void* mem, size_t size);
+    ubo_desc_t createUBODesc (GLuint prg, const char* name);
+    void       destroyUBODesc(ubo_desc_t desc);
+    void       updateUBO     (ubo_desc_t desc, void* mem, size_t size);
 
 /*------------- Immediate mode implementation --------------*/
 #define IM_BEGIN(VertexType, primitiveType)                               \

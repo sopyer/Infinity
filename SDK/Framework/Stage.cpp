@@ -179,10 +179,10 @@ namespace ui
                 mProfilerOverlay->loadProfilerData();
             }
             PROFILER_CPU_TIMESLICE("Frame");
-        
+
             {
                 PROFILER_CPU_TIMESLICE("Frame sync");
-                graphics::beginFrame();
+                gfx::beginFrame();
             }
 
             glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
@@ -190,7 +190,7 @@ namespace ui
             //TODO: Merge all three
             handleInput();
             ui::update();
- 
+
             if (mState==STATE_PROFILER)
             {
                 PROFILER_CPU_TIMESLICE("mProfilerOverlay->updateUI");
@@ -205,7 +205,7 @@ namespace ui
                 onUpdate((time-mPrevTime)*0.000001f);
                 mPrevTime = time;
             }
-        
+
             if (mShaderEditOverlay->requireReset())
             {
                 PROFILER_CPU_TIMESLICE("onShaderRecompile");
@@ -224,8 +224,8 @@ namespace ui
                 PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
                 mShaderEditOverlay->renderFullscreen();
             }
-        
-            graphics::endFrame();
+
+            gfx::endFrame();
 
             {
                 PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");

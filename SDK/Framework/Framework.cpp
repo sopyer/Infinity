@@ -72,12 +72,12 @@ namespace fwk
         vg::init();
         ui::init(1280, 720);
         mt::init(1, 128);
-        graphics::init();
+        gfx::init();
     }
 
     void fini()
     {
-        graphics::fini();
+        gfx::fini();
         mt::fini();
         ui::fini();
         vg::fini();

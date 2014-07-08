@@ -23,8 +23,8 @@ namespace Model
     GLuint prgDefault;
     material_t* mWireframe;
 
-    graphics::ubuffer_desc_t ubufLighting;
-    graphics::ubuffer_desc_t ubufGlobal;
+    gfx::ubo_desc_t ubufLighting;
+    gfx::ubo_desc_t ubufGlobal;
 
     struct mesh_t
     {
@@ -59,8 +59,8 @@ namespace Model
 
         prgLighting = resources::createProgramFromFiles("MESH.Skinning4.vert", "MESH.SHLighting.frag");
 
-        ubufLighting = graphics::ubufCreateDesc(prgDefault, "uniLighting");
-        ubufGlobal   = graphics::ubufCreateDesc(prgDefault, "uniGlobal");
+        ubufLighting = gfx::createUBODesc(prgDefault, "uniLighting");
+        ubufGlobal   = gfx::createUBODesc(prgDefault, "uniGlobal");
 
 #ifdef _DEBUG
         {
@@ -93,8 +93,8 @@ namespace Model
         glDeleteProgram(prgLighting);
         glDeleteProgram(prgDefault);
 
-        graphics::ubufDestroyDesc(ubufLighting);
-        graphics::ubufDestroyDesc(ubufGlobal);
+        gfx::destroyUBODesc(ubufLighting);
+        gfx::destroyUBODesc(ubufGlobal);
 
         free(mWireframe);
     }
@@ -437,8 +437,8 @@ cleanup:
 
         glDisable( GL_DEPTH_TEST );
 
-        size     = sizeof(graphics::line_t) * (numJoints - 1);
-        vertices = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
+        size     = sizeof(gfx::line_t) * (numJoints - 1);
+        vertices = (v128*)gfx::dynbufAllocMem(size, gfx::caps.ssboAlignment, &offset);
         for ( int i = 0; i < numJoints; ++i )
         {
             const int parent = hierarchy[i];
@@ -448,15 +448,15 @@ cleanup:
                 *vertices++ = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
             }
         }
-        graphics::drawLines(vi_set(0.0f, 1.0f, 0.0f, 1.0f), numJoints - 1, graphics::dynBuffer, offset, size);
+        gfx::drawLines(vi_set(0.0f, 1.0f, 0.0f, 1.0f), numJoints - 1, gfx::dynBuffer, offset, size);
 
-        size     = sizeof(graphics::point_t) * numJoints;
-        vertices = (v128*)graphics::dynbufAllocMem(size, graphics::caps.ssboAlignment, &offset);
+        size     = sizeof(gfx::point_t) * numJoints;
+        vertices = (v128*)gfx::dynbufAllocMem(size, gfx::caps.ssboAlignment, &offset);
         for ( int i = 0; i < numJoints; ++i )
         {
             *vertices++ = ml::translation_dual_quat(vi_loadu_v4(&joints[i].real), vi_loadu_v4(&joints[i].dual));
         }
-        graphics::drawPoints(5.0f, vi_set(1.0f, 0.0f, 0.0f, 1.0f), numJoints, graphics::dynBuffer, offset, size);
+        gfx::drawPoints(5.0f, vi_set(1.0f, 0.0f, 0.0f, 1.0f), numJoints, gfx::dynBuffer, offset, size);
 
         glEnable(GL_DEPTH_TEST);
     }
@@ -469,19 +469,19 @@ cleanup:
         GLsizeiptr sizeLighting = 10*sizeof(v128);
         GLsizeiptr sizeBones    = skel->numJoints*sizeof(ml::dual_quat);
 
-        void* memGlobal   = graphics::dynbufAllocMem(sizeGlobal,   graphics::caps.uboAlignment,  &offsetGlobal);
-        void* memLighting = graphics::dynbufAllocMem(sizeLighting, graphics::caps.uboAlignment,  &offsetLighting);
-        void* memBones    = graphics::dynbufAllocMem(sizeBones,    graphics::caps.ssboAlignment, &offsetBones);
+        void* memGlobal   = gfx::dynbufAllocMem(sizeGlobal,   gfx::caps.uboAlignment,  &offsetGlobal);
+        void* memLighting = gfx::dynbufAllocMem(sizeLighting, gfx::caps.uboAlignment,  &offsetLighting);
+        void* memBones    = gfx::dynbufAllocMem(sizeBones,    gfx::caps.ssboAlignment, &offsetBones);
 
         memcpy(memBones, &pose->boneTransforms[0].real.x, sizeBones);
-        graphics::ubufUpdateData(ubufGlobal,   memGlobal,   sizeGlobal);
-        graphics::ubufUpdateData(ubufLighting, memLighting, sizeLighting);
+        gfx::updateUBO(ubufGlobal,   memGlobal,   sizeGlobal);
+        gfx::updateUBO(ubufLighting, memLighting, sizeLighting);
 
-        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_GLOBAL,   graphics::dynBuffer, offsetGlobal,   sizeGlobal);
-        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_LIGHTING, graphics::dynBuffer, offsetLighting, sizeLighting);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, UNI_BONES,    graphics::dynBuffer, offsetBones,    sizeBones);
+        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_GLOBAL,   gfx::dynBuffer, offsetGlobal,   sizeGlobal);
+        glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_LIGHTING, gfx::dynBuffer, offsetLighting, sizeLighting);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, UNI_BONES,    gfx::dynBuffer, offsetBones,    sizeBones);
 
-        for (int i=0; i<model->numMeshes; ++i )
+        for (int i=0; i<model->numMeshes; ++i)
         {
             renderMesh( &model->meshes[i], &model->materials[i] );
         }

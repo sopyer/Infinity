@@ -74,14 +74,14 @@ void ProfilerOverlay::init(int w, int h)
 
     uniMVP = glGetUniformLocation(prgQuad, "uMVP");
 
-    graphics::vertex_element_t ve[2] = {
+    gfx::vertex_element_t ve[2] = {
         {0, 0, 0, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
         {1, 0, 1, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
     };
 
     GLuint divs[2] = {1, 1};
 
-    vao = graphics::createVAO(2, ve, 2, divs);
+    vao = gfx::createVAO(2, ve, 2, divs);
     GL_CHECK_ERROR();
 }
 
@@ -209,16 +209,16 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
 
     size_t count = colors.size();
 
-    float*   rectDst = (float*)  graphics::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
-    uint8_t* colDst  = (uint8_t*)graphics::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
+    float*   rectDst = (float*)  gfx::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
+    uint8_t* colDst  = (uint8_t*)gfx::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
 
     memcpy(rectDst, &rectData[0], sizeof(float)*4*count);
     memcpy(colDst,  colorArray,   sizeof(uint8_t)*4*count);
 
     glBindVertexArray(vao);
 
-    glBindVertexBuffer(0, graphics::dynBuffer, rectOffset, sizeof(float)*4);
-    glBindVertexBuffer(1, graphics::dynBuffer, colOffset,  sizeof(uint8_t)*4);
+    glBindVertexBuffer(0, gfx::dynBuffer, rectOffset, sizeof(float)*4);
+    glBindVertexBuffer(1, gfx::dynBuffer, colOffset,  sizeof(uint8_t)*4);
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
 

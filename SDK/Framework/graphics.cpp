@@ -7,7 +7,7 @@ namespace vf
     GLuint skinned_geom_t::vao;
     GLuint empty_geom_t::vao;
 
-    static const graphics::vertex_element_t descSkinnedGeom[5] = 
+    static const gfx::vertex_element_t descSkinnedGeom[5] = 
     {
         {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
         {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
@@ -17,7 +17,7 @@ namespace vf
     };
 }
 
-namespace graphics
+namespace gfx
 {
     static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
     static int        frameID = 0;
@@ -205,7 +205,7 @@ namespace graphics
     {
         GLuint offsetGlobal;
         GLsizeiptr     sizeGlobal = sizeof(line_global_t);
-        line_global_t* global     = (line_global_t*)graphics::dynbufAllocMem(sizeGlobal, graphics::caps.uboAlignment, &offsetGlobal);
+        line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
         global->uPixelScale = vi_set_f000(1.0f / autoVars.projParams.x / width);
@@ -230,7 +230,7 @@ namespace graphics
     {
         GLuint offsetGlobal;
         GLsizeiptr     sizeGlobal = sizeof(line_global_t);
-        line_global_t* global     = (line_global_t*)graphics::dynbufAllocMem(sizeGlobal, graphics::caps.uboAlignment, &offsetGlobal);
+        line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
         global->uPixelScale = vi_set_f000(ptsize / autoVars.projParams.x / width);
@@ -285,7 +285,7 @@ namespace graphics
         return GL_INVALID_INDEX;
     }
 
-    struct ubuffer_desc_data_t
+    struct ubo_desc_data_t
     {
         GLint numVars;
         GLint bufferSize;
@@ -300,10 +300,10 @@ namespace graphics
 
     static size_t ubufCalcSize(size_t numMappings)
     {
-        return sizeof(ubuffer_desc_data_t) + (numMappings - 1) * sizeof(ubuffer_desc_data_t::mapping_t);
+        return sizeof(ubo_desc_data_t) + (numMappings - 1) * sizeof(ubo_desc_data_t::mapping_t);
     }
 
-    ubuffer_desc_t ubufCreateDesc(GLuint prg, const char* name)
+    ubo_desc_t createUBODesc(GLuint prg, const char* name)
     {
         stack_mem_t stalloc = ut::get_thread_data_stack();
 
@@ -342,7 +342,7 @@ namespace graphics
         GLint* uniIndices = stack_mem_alloc<GLint>(stalloc, blockProps.numVars);
         glGetProgramResourceiv(prg, GL_UNIFORM_BLOCK, block, 1, reqBlockUnis, blockProps.numVars, NULL, uniIndices);
 
-        ubuffer_desc_data_t* descProto = (ubuffer_desc_data_t*)stack_mem_alloc(stalloc, ubufCalcSize(blockProps.numVars));
+        ubo_desc_data_t* descProto = (ubo_desc_data_t*)stack_mem_alloc(stalloc, ubufCalcSize(blockProps.numVars));
 
         descProto->numVars = 0;
         descProto->bufferSize = blockProps.bufferSize;
@@ -372,7 +372,7 @@ namespace graphics
 
         size_t descSize = ubufCalcSize(descProto->numVars);
 
-        ubuffer_desc_data_t* desc = (ubuffer_desc_data_t*)malloc(descSize);
+        ubo_desc_data_t* desc = (ubo_desc_data_t*)malloc(descSize);
 
         memcpy(desc, descProto, descSize);
 
@@ -381,7 +381,7 @@ namespace graphics
         return desc;
     }
 
-    void ubufDestroyDesc(ubuffer_desc_t desc)
+    void destroyUBODesc(ubo_desc_t desc)
     {
         free(desc);
     }
@@ -406,7 +406,7 @@ namespace graphics
         return 0;
     }
 
-    void ubufUpdateData(ubuffer_desc_t desc, void* mem, size_t size)
+    void updateUBO(ubo_desc_t desc, void* mem, size_t size)
     {
         assert((size_t)desc->bufferSize <= size);
 
@@ -415,9 +415,9 @@ namespace graphics
 
         for (GLint vi = 0; vi < desc->numVars; ++vi)
         {
-            ubuffer_desc_data_t::mapping_t& m   = desc->mappings[vi];
-            auto_var_desc_t&                var = autoVarDesc[m.index];
-            size_t                          sz  = gl_type_size(var.type);
+            ubo_desc_data_t::mapping_t& m   = desc->mappings[vi];
+            auto_var_desc_t&            var = autoVarDesc[m.index];
+            size_t                      sz  = gl_type_size(var.type);
             for (GLuint i = 0; i < var.arraySize; ++i)
             {
                 memcpy(&dst[m.offset + m.arrayStride*i], &src[var.offset + sz*i], sz);

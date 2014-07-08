@@ -33,7 +33,7 @@ public:
     GLsizei    idxCount;
 
     GLuint prgTerrain;
-    graphics::ubuffer_desc_t ubufView;
+    gfx::ubo_desc_t ubufView;
 
     GLuint  ibo, ubo;
     GLuint  mHeightmapTex;

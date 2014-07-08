@@ -78,14 +78,14 @@ void CDLODTerrain::initialize()
 
     glGenBuffers(1, &ibo);
 
-    graphics::vertex_element_t ve[2] = {
+    gfx::vertex_element_t ve[2] = {
         {0, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
         {0, 8, ATTR_LEVEL,      GL_FLOAT, 1, GL_FALSE, GL_FALSE}
     };
 
     GLuint div = 1;
 
-    vao = graphics::createVAO(2, ve, 1, &div);
+    vao = gfx::createVAO(2, ve, 1, &div);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -94,7 +94,7 @@ void CDLODTerrain::initialize()
     glGenBuffers(1, &ubo);
     glNamedBufferStorageEXT(ubo, sizeof(TerrainData), 0, GL_MAP_WRITE_BIT);
 
-    ubufView = graphics::ubufCreateDesc(prgTerrain, "uniView");
+    ubufView = gfx::createUBODesc(prgTerrain, "uniView");
 
     GL_CHECK_ERROR();
 }
@@ -112,7 +112,7 @@ void CDLODTerrain::cleanup()
     glDeleteTextures(1, &mHeightmapTex);
     glDeleteTextures(1, &mipTexture);
 
-    graphics::ubufDestroyDesc(ubufView);
+    gfx::destroyUBODesc(ubufView);
 }
 
 void CDLODTerrain::setSelectMatrix(v128 m[4])
@@ -250,7 +250,7 @@ void CDLODTerrain::drawTerrain()
 
     GLuint baseInstance;
 
-    instData = (PatchData*)graphics::dynbufAllocVert(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
+    instData = (PatchData*)gfx::dynbufAllocVert(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
 
     vertDistToTerrain = std::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = std::max(vertDistToTerrain, 0.0f);
@@ -296,19 +296,19 @@ void CDLODTerrain::drawTerrain()
             GLuint    offset;
             ViewData* ptrViewData;
             
-            ptrViewData = (ViewData*) graphics::dynbufAllocMem(sizeof(ViewData), graphics::caps.uboAlignment, &offset);
+            ptrViewData = (ViewData*) gfx::dynbufAllocMem(sizeof(ViewData), gfx::caps.uboAlignment, &offset);
             //memcpy(&ptrViewData->uMVP, &viewMVP, sizeof(viewMVP));
-            graphics::ubufUpdateData(ubufView, ptrViewData, sizeof(ViewData));
+            gfx::updateUBO(ubufView, ptrViewData, sizeof(ViewData));
             ptrViewData->uLODViewK = vi_set(-viewPoint.x, vertDistToTerrain, -viewPoint.z, 0.0f);
 
-            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING, ubo,                 0,      sizeof(TerrainData));
-            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,    graphics::dynBuffer, offset, sizeof(ViewData));
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_TERRAIN_BINDING, ubo,                 0, sizeof(TerrainData));
+            glBindBufferRange(GL_UNIFORM_BUFFER, UNI_VIEW_BINDING,    gfx::dynBuffer, offset, sizeof(ViewData));
         }
 
         {
             PROFILER_CPU_TIMESLICE("BindGeom");
             glBindVertexArray(vao);
-            glBindVertexBuffer(0, graphics::dynBuffer, 0, sizeof(PatchData));
+            glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(PatchData));
         }
 
         {
