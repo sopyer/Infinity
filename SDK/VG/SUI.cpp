@@ -16,7 +16,7 @@ namespace vg
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
 
         glUseProgram(simpleUIProgram);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
@@ -45,7 +45,7 @@ namespace vg
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
 
         glUseProgram(simpleUIProgram);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
@@ -141,7 +141,7 @@ namespace vg
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         v128 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
 
         glUseProgram(simpleUIProgram);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&translucentF);
@@ -233,24 +233,19 @@ namespace vg
     //   void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
 
     void drawImage(float x0, float y0, float x1, float y1, GLuint texture)
-	{
-		glUseProgram(0);
-		glColor4f(1, 1, 1, 1);
-		glActiveTexture(GL_TEXTURE0);
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glBegin(GL_QUADS);
-			glTexCoord2f(0, 1);
-			glVertex2f(x0, y0);
-			glTexCoord2f(1, 1);
-			glVertex2f(x1, y0);
-			glTexCoord2f(1, 0);
-			glVertex2f(x1, y1);
-			glTexCoord2f(0, 0);
-			glVertex2f(x0, y1);
-		glEnd();
-		glDisable(GL_TEXTURE_2D);
-	}
+    {
+        glUseProgram(0);
+        glColor4f(1, 1, 1, 1);
+        glEnable(GL_TEXTURE_2D);
+        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, texture);
+        glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBegin(GL_QUADS);
+            glTexCoord2f(0, 1); glVertex2f(x0, y0);
+            glTexCoord2f(1, 1); glVertex2f(x1, y0);
+            glTexCoord2f(1, 0); glVertex2f(x1, y1);
+            glTexCoord2f(0, 0); glVertex2f(x0, y1);
+        glEnd();
+        glDisable(GL_TEXTURE_2D);
+    }
 }

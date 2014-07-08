@@ -1,4 +1,4 @@
-#version 330
+#version 440
 
 in vec2 vUV;
 
@@ -9,7 +9,11 @@ layout(binding=3) uniform sampler2D samMeanIr_r;
 layout(binding=4) uniform sampler2D samMeanIg_g;
 layout(binding=5) uniform sampler2D samMeanIb_b;
 
-uniform float uEPS;
+layout (location = 0) uniform float uEPS;
+
+layout(location = 0) out vec4 fragData0;
+layout(location = 1) out vec4 fragData1;
+layout(location = 2) out vec4 fragData2;
 
 void main(void)
 {
@@ -33,13 +37,13 @@ void main(void)
         cov_xy,      cov_yy+uEPS, cov_yz,
         cov_xz,      cov_yz,      cov_zz+uEPS
     );
-  
+
     sigma = inverse(sigma);
     
     vec3  covIr = meanIr_r.xyz - meanIr_r.w * meanI;
     vec3  Ar    = covIr * sigma;
     float Br    = meanIr_r.w - dot(Ar, meanI);
-    
+
     vec3  covIg = meanIg_g.xyz - meanIg_g.w * meanI;
     vec3  Ag    = covIg * sigma;
     float Bg    = meanIg_g.w - dot(Ag, meanI);
@@ -48,7 +52,7 @@ void main(void)
     vec3  Ab    = covIb * sigma;
     float Bb    = meanIb_b.w - dot(Ab, meanI);
 
-    gl_FragData[0] = vec4(Ar, Br);
-    gl_FragData[1] = vec4(Ag, Bg);
-    gl_FragData[2] = vec4(Ab, Bb);
+    fragData0 = vec4(Ar, Br);
+    fragData1 = vec4(Ag, Bg);
+    fragData2 = vec4(Ab, Bb);
 }

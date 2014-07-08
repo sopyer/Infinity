@@ -4,20 +4,19 @@
 #include <ml.h>
 
 extern GLuint programs[PRG_ID_COUNT];
-extern GLint  uniEPS;
 
 void guidedFilterPack(GLuint pI, GLuint pIII, GLuint src, GLuint guide, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src  );
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, guide);
+    GLuint textures[2] = {src, guide};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_GUIDED_PACK]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pI,   0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, pIII, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -27,17 +26,17 @@ void guidedFilterPack(GLuint pI, GLuint pIII, GLuint src, GLuint guide, GLsizei 
 
 void guidedFilterAB(GLuint A, GLuint B, GLuint src, GLuint guide, float eps, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src  );
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, guide);
+    GLuint textures[2] = {src, guide};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_GUIDED_AB]);
-    glUniform1f(uniEPS, eps);
+    glUniform1f(0, eps);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, A, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, B, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -47,16 +46,15 @@ void guidedFilterAB(GLuint A, GLuint B, GLuint src, GLuint guide, float eps, GLs
 
 void guidedFilterAI_B(GLuint res, GLuint A, GLuint B, GLuint guide, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, A    );
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, B    );
-    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, guide);
+    GLuint textures[3] = {A, B, guide};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_GUIDED_AI_B]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);

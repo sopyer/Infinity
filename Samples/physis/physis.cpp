@@ -107,36 +107,35 @@ RTDesc rtDesc[] =
     {TEX_COMBINED4,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_LUMINANCE,           0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_GUIDED_RESULT,       0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_TMP0,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP1,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP2,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP3,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP4,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP5,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP6,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP7,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP8,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP9,                0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP10,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP11,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP12,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP13,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP14,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP15,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP16,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP17,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP18,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP19,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP20,               0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP_BOXF,            0,       0, GL_RGBA8,       GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP0,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP1,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP2,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP3,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP4,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP5,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP6,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP7,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP8,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP9,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP10,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP11,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP12,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP13,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP14,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP15,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP16,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP17,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP18,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP19,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP20,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP_BOXF,            0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
 };
 
 extern GLuint programs[PRG_ID_COUNT];
 
 class PhysisDemo: public ui::Stage
 {
-
-    GLuint textures[TEX_ID_COUNT];
+    GLuint mTextures[TEX_ID_COUNT];
 
     GLint vp[4];
 
@@ -146,11 +145,11 @@ class PhysisDemo: public ui::Stage
 
     GLint  uniInvTexDim;
 
-    GLint	uniOctaves;
-    GLint	uniAmp;
-    GLint	uniAmpScale;
-    GLint	uniFreq;
-    GLint	uniFreqScale;
+    GLint uniOctaves;
+    GLint uniAmp;
+    GLint uniAmpScale;
+    GLint uniFreq;
+    GLint uniFreqScale;
 
     GLuint samNearestRepeat;
 
@@ -158,7 +157,7 @@ class PhysisDemo: public ui::Stage
 public:
     void allocTextures()
     {
-        glGenTextures(TEX_ID_COUNT, textures);
+        glGenTextures(TEX_ID_COUNT, mTextures);
 
         for (size_t i=0; i<ARRAY_SIZE(rtDesc); ++i)
         {
@@ -166,32 +165,32 @@ public:
 
             assert(desc.width!=0 && desc.height!=0);
 
-            glBindTexture(GL_TEXTURE_2D, textures[desc.id]);
-            glTexImage2D(GL_TEXTURE_2D, 0, desc.internalFmt,
-                         desc.width, desc.height, 0,
-                         desc.channels, desc.type, 0);
+            glTextureImage2DEXT(mTextures[desc.id], GL_TEXTURE_2D, 0, desc.internalFmt,
+                                desc.width, desc.height, 0,
+                                desc.channels, desc.type, 0);
+
+
+
             CHECK_GL_ERROR();
         }
-
-        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void CreatePerlinNoiseGtor()
     {
         perlinGtorProg = resources::createProgramFromFiles(0, NULL, 3,
-                             GL_VERTEX_SHADER,   "PP.common.vert",
+                             GL_VERTEX_SHADER,   "MESH.ScreenTri.UV.vert",
                              GL_FRAGMENT_SHADER, "Perlin.Noise.frag",
                              GL_FRAGMENT_SHADER, "TextureGtor.Perlin.frag"
                          );
 
         CHECK_GL_ERROR();
 
-        uniInvTexDim    = glGetUniformLocation(perlinGtorProg, "invTexDim");
-        uniOctaves		= glGetUniformLocation(perlinGtorProg, "uOctaves");
-        uniAmp			= glGetUniformLocation(perlinGtorProg, "uAmp");
-        uniAmpScale		= glGetUniformLocation(perlinGtorProg, "uAmpScale");
-        uniFreq			= glGetUniformLocation(perlinGtorProg, "uFreq");
-        uniFreqScale	= glGetUniformLocation(perlinGtorProg, "uFreqScale");
+        uniInvTexDim = glGetUniformLocation(perlinGtorProg, "invTexDim");
+        uniOctaves   = glGetUniformLocation(perlinGtorProg, "uOctaves");
+        uniAmp       = glGetUniformLocation(perlinGtorProg, "uAmp");
+        uniAmpScale  = glGetUniformLocation(perlinGtorProg, "uAmpScale");
+        uniFreq      = glGetUniformLocation(perlinGtorProg, "uFreq");
+        uniFreqScale = glGetUniformLocation(perlinGtorProg, "uFreqScale");
 
         CHECK_GL_ERROR();
 
@@ -205,17 +204,14 @@ public:
         glGenTextures(9, permTex);
         for (size_t i=0; i<9; ++i)
         {
-            glBindTexture(GL_TEXTURE_1D, permTex[i]);
-            glTexImage1D(GL_TEXTURE_1D, 0, GL_R8, PERMUTATION_DIM, 0, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
+            glTextureImage1DEXT(permTex[i], GL_TEXTURE_1D, 0, GL_R8, PERMUTATION_DIM, 0, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
         }
 
         glGenTextures(1, &gradTex);
-        glBindTexture(GL_TEXTURE_1D, gradTex);
-        glTexImage1D(GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glTextureImage1DEXT(gradTex, GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
 
         addPrograms(PRG_ID_COUNT, programs);
+        addPrograms(1, &perlinGtorProg);
     }
 
     GLint uniSamplerInput, uniRotationScale, uniTranslate;
@@ -244,7 +240,7 @@ public:
         glGetIntegerv(GL_VIEWPORT, vp);
 
         texGtorProg     = resources::createProgramFromFiles(
-                              "PP.common.vert",
+                              "MESH.ScreenTri.UV.vert",
                               "TextureGtor.Metal.frag"
                           );
 
@@ -267,8 +263,8 @@ public:
 
     int currentTab;
 
-    CPUTimer	mCPUTimer;
-    GPUTimer	mGPUTimer;
+    CPUTimer mCPUTimer;
+    GPUTimer mGPUTimer;
 
     double mCPUTime;
     double mGPUTime;
@@ -278,7 +274,7 @@ public:
         lighting::fini();
 
         glDeleteSamplers(1, &samNearestRepeat);
-        glDeleteTextures(TEX_ID_COUNT, textures);
+        glDeleteTextures(TEX_ID_COUNT, mTextures);
         glDeleteProgram(texGtorProg);
         glDeleteProgram(perlinGtorProg);
         glDeleteTextures(1, &texSource);
@@ -290,10 +286,10 @@ public:
 
 protected:
 
-	void initLightingResources();
-	void finiLightingResources();
+    void initLightingResources();
+    void finiLightingResources();
 
-	void renderLightingScene();
+    void renderLightingScene();
 
     void onShaderRecompile()
     {
@@ -304,29 +300,28 @@ protected:
     {
         CHECK_GL_ERROR();
 
-        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN0]);
-        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN1]);
-        glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN2]);
-        glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN3]);
-        glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN4]);
-        glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN5]);
-        glActiveTexture(GL_TEXTURE6); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN6]);
-        glActiveTexture(GL_TEXTURE7); glBindTexture(GL_TEXTURE_2D, textures[TEX_PERLIN7]);
+        GLuint textures[] = {
+            mTextures[TEX_PERLIN0], mTextures[TEX_PERLIN1],
+            mTextures[TEX_PERLIN2], mTextures[TEX_PERLIN3],
+            mTextures[TEX_PERLIN4], mTextures[TEX_PERLIN5],
+            mTextures[TEX_PERLIN6], mTextures[TEX_PERLIN7]
+        };
+        glBindTextures(0, ARRAY_SIZE(textures), textures);
 
         glUseProgram(texGtorProg);
         //glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
 
-        generateTexture(textures[dest], texSize);
+        generateTexture(mTextures[dest], texSize);
 
         CHECK_GL_ERROR();
     }
 
     void generateTexture(GLuint texID, GLsizei texSize)
     {
-		GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+        GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
-		glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glDrawBuffers(ARRAY_SIZE(buffers), buffers);
         glViewport(0, 0, texSize, texSize);
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -334,11 +329,12 @@ protected:
 
     void generatePerlin(TextureIDs dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale)
     {
-        glBindSampler(0, samNearestRepeat);
-        glBindSampler(1, samNearestRepeat);
+        GLuint samplers[] = {samNearestRepeat, samNearestRepeat};
+        glBindSamplers(0, ARRAY_SIZE(samplers), samplers);
+
         CHECK_GL_ERROR();
-        glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_1D, permTex[seed%9]);
-        glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_1D, gradTex);
+        GLuint textures[] = {permTex[seed%9], gradTex};
+        glBindTextures(0, ARRAY_SIZE(textures), textures);
 
         glUseProgram(perlinGtorProg);
 
@@ -348,7 +344,7 @@ protected:
         glUniform1f(uniFreq,      freq);
         glUniform1f(uniFreqScale, freqScale);
 
-        generateTexture(textures[dest], texSize);
+        generateTexture(mTextures[dest], texSize);
 
         CHECK_GL_ERROR();
     }
@@ -399,45 +395,44 @@ protected:
         //boxFilter2Pass(textures[TEX_TMP1], textures[TEX_LUMINANCE], textures[TEX_TMP0], 7, 256, 256);
 
         GLuint tmp[19] = {
-            textures[TEX_TMP0],  textures[TEX_TMP1],
-            textures[TEX_TMP2],  textures[TEX_TMP3],
-            textures[TEX_TMP4],  textures[TEX_TMP5],
-            textures[TEX_TMP6],  textures[TEX_TMP7],
-            textures[TEX_TMP8],  textures[TEX_TMP9],
-            textures[TEX_TMP10], textures[TEX_TMP11],
-            textures[TEX_TMP12], textures[TEX_TMP13],
-            textures[TEX_TMP14], textures[TEX_TMP15],
-            textures[TEX_TMP16], textures[TEX_TMP17],
-            textures[TEX_TMP_BOXF]
+            mTextures[TEX_TMP0],  mTextures[TEX_TMP1],
+            mTextures[TEX_TMP2],  mTextures[TEX_TMP3],
+            mTextures[TEX_TMP4],  mTextures[TEX_TMP5],
+            mTextures[TEX_TMP6],  mTextures[TEX_TMP7],
+            mTextures[TEX_TMP8],  mTextures[TEX_TMP9],
+            mTextures[TEX_TMP10], mTextures[TEX_TMP11],
+            mTextures[TEX_TMP12], mTextures[TEX_TMP13],
+            mTextures[TEX_TMP14], mTextures[TEX_TMP15],
+            mTextures[TEX_TMP16], mTextures[TEX_TMP17],
+            mTextures[TEX_TMP_BOXF]
         };
 
-        colorGuidedFilter(textures[TEX_GUIDED_RESULT], texSource, texSource, tmp, 7, 0.04f, imgWidth, imgHeight);
+        colorGuidedFilter(mTextures[TEX_GUIDED_RESULT], texSource, texSource, tmp, 7, 0.04f, imgWidth, imgHeight);
     }
 
     void generateGuided()
     {
-        convertToLuminance(textures[TEX_LUMINANCE], texSource, imgWidth, imgHeight);
+        convertToLuminance(mTextures[TEX_LUMINANCE], texSource, imgWidth, imgHeight);
 
         //boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
         //boxFilter2Pass(textures[TEX_TMP1], textures[TEX_LUMINANCE], textures[TEX_TMP0], 7, 256, 256);
 
         GLuint tmp[9] = {
-            textures[TEX_TMP0], textures[TEX_TMP1],
-            textures[TEX_TMP2], textures[TEX_TMP3],
-            textures[TEX_TMP4], textures[TEX_TMP5],
-            textures[TEX_TMP6], textures[TEX_TMP7],
-            textures[TEX_TMP_BOXF]
+            mTextures[TEX_TMP0], mTextures[TEX_TMP1],
+            mTextures[TEX_TMP2], mTextures[TEX_TMP3],
+            mTextures[TEX_TMP4], mTextures[TEX_TMP5],
+            mTextures[TEX_TMP6], mTextures[TEX_TMP7],
+            mTextures[TEX_TMP_BOXF]
         };
 
-        guidedFilter(textures[TEX_GUIDED_RESULT], texSource, textures[TEX_LUMINANCE], tmp, 7, 0.04f, imgWidth, imgHeight);
+        guidedFilter(mTextures[TEX_GUIDED_RESULT], texSource, mTextures[TEX_LUMINANCE], tmp, 7, 0.04f, imgWidth, imgHeight);
     }
 
     void drawStrings(size_t count, TextDesc* strings)
     {
         for (size_t i = 0; i < count; ++i)
         {
-            vg::drawString(ui::defaultFont, strings[i].x, strings[i].y,
-                           strings[i].text, strlen(strings[i].text));
+            vg::drawString(ui::defaultFont, strings[i].x, strings[i].y, strings[i].text, strlen(strings[i].text));
         }
     }
 
@@ -445,8 +440,7 @@ protected:
     {
         for (size_t i = 0; i < count; ++i)
         {
-            glBindTexture(GL_TEXTURE_2D, images[i].tex);
-            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
+            glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
 
             vg::drawImage(
                 images[i].x, images[i].y,
@@ -455,8 +449,7 @@ protected:
                 images[i].tex
             );
 
-            glBindTexture(GL_TEXTURE_2D, images[i].tex);
-            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+            glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
         }
     }
 
@@ -512,45 +505,45 @@ protected:
         drawStrings(ARRAY_SIZE(strings), strings);
 
         ImageDesc images[] = {
-            { 450.0f,   25.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
-            { 750.0f,   25.0f, 256.0f, 256.0f, textures[TEX_GUIDED_RESULT], swizzleRGBA},
-            {1050.0f,   25.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
+            { 450.0f,   25.0f, 256.0f, 256.0f, texSource,                    swizzleRGBA},
+            { 750.0f,   25.0f, 256.0f, 256.0f, mTextures[TEX_GUIDED_RESULT], swizzleRGBA},
+            {1050.0f,   25.0f, 256.0f, 256.0f, mTextures[TEX_TMP5],          swizzleRGBA},
 
-            {   0.0f,  325.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
-            { 300.0f,  325.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
-            { 600.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleRGBA},
-            { 900.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleRGBA},
-            {1200.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
-            {1500.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleR001},
-            {1800.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleRGBA},
-            {2100.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzle0G01},
-            {2400.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzleRGBA},
-            {2700.0f,  325.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzle00B1},
+            {   0.0f,  325.0f, 256.0f, 256.0f, texSource,                    swizzleRGBA},
+            { 300.0f,  325.0f, 256.0f, 256.0f, texSource,                    swizzleRGBA},
+            { 600.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP0],          swizzleRGBA},
+            { 900.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP1],          swizzleRGBA},
+            {1200.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP2],          swizzleRGBA},
+            {1500.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP2],          swizzleR001},
+            {1800.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP3],          swizzleRGBA},
+            {2100.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP3],          swizzle0G01},
+            {2400.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP4],          swizzleRGBA},
+            {2700.0f,  325.0f, 256.0f, 256.0f, mTextures[TEX_TMP4],          swizzle00B1},
 
-            {   0.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
-            { 300.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP6],          swizzleRGBA},
-            { 600.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP7],          swizzleRGBA},
-            { 900.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP8],          swizzleRGBA},
-            {1200.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP9],          swizzleRGBA},
-            {1500.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP9],          swizzleR001},
-            {1800.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP10],         swizzleRGBA},
-            {2100.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP10],         swizzle0G01},
-            {2400.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP11],         swizzleRGBA},
-            {2700.0f,  625.0f, 256.0f, 256.0f, textures[TEX_TMP11],         swizzle00B1},
+            {   0.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP5],          swizzleRGBA},
+            { 300.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP6],          swizzleRGBA},
+            { 600.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP7],          swizzleRGBA},
+            { 900.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP8],          swizzleRGBA},
+            {1200.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP9],          swizzleRGBA},
+            {1500.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP9],          swizzleR001},
+            {1800.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP10],         swizzleRGBA},
+            {2100.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP10],         swizzle0G01},
+            {2400.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP11],         swizzleRGBA},
+            {2700.0f,  625.0f, 256.0f, 256.0f, mTextures[TEX_TMP11],         swizzle00B1},
 
-            {   0.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP12],         swizzleRGBA},
-            { 300.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP12],         swizzleAAA1},
-            { 600.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP13],         swizzleRGBA},
-            { 900.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP13],         swizzleAAA1},
-            {1200.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP14],         swizzleRGBA},
-            {1500.0f,  925.0f, 256.0f, 256.0f, textures[TEX_TMP14],         swizzleAAA1},
+            {   0.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP12],         swizzleRGBA},
+            { 300.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP12],         swizzleAAA1},
+            { 600.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP13],         swizzleRGBA},
+            { 900.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP13],         swizzleAAA1},
+            {1200.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP14],         swizzleRGBA},
+            {1500.0f,  925.0f, 256.0f, 256.0f, mTextures[TEX_TMP14],         swizzleAAA1},
 
-            {   0.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP15],         swizzleRGBA},
-            { 300.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP15],         swizzleAAA1},
-            { 600.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP16],         swizzleRGBA},
-            { 900.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP16],         swizzleAAA1},
-            {1200.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP17],         swizzleRGBA},
-            {1500.0f, 1225.0f, 256.0f, 256.0f, textures[TEX_TMP17],         swizzleAAA1},
+            {   0.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP15],         swizzleRGBA},
+            { 300.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP15],         swizzleAAA1},
+            { 600.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP16],         swizzleRGBA},
+            { 900.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP16],         swizzleAAA1},
+            {1200.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP17],         swizzleRGBA},
+            {1500.0f, 1225.0f, 256.0f, 256.0f, mTextures[TEX_TMP17],         swizzleAAA1},
         };
 
         drawImages(ARRAY_SIZE(images), images);
@@ -586,23 +579,23 @@ protected:
         drawStrings(ARRAY_SIZE(strings), strings);
 
         ImageDesc images[] = {
-            { 450.0f,  25.0f, 256.0f, 256.0f, texSource,                   swizzleRGBA},
-            { 750.0f,  25.0f, 256.0f, 256.0f, textures[TEX_GUIDED_RESULT], swizzleRGBA},
-            {1050.0f,  25.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
-            {   0.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleRGBA},
-            { 300.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP0],          swizzleAAA1},
-            { 600.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleRGBA},
-            { 900.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP1],          swizzleAAA1},
-            {1200.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP4],          swizzleRGBA},
-            {1500.0f, 325.0f, 256.0f, 256.0f, textures[TEX_TMP5],          swizzleRGBA},
-            {   0.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleRGBA},
-            { 300.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP2],          swizzleAAA1},
-            { 600.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleRGBA},
-            { 900.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP3],          swizzleAAA1},
-            {1200.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP6],          swizzleRGBA},
-            {1500.0f, 625.0f, 256.0f, 256.0f, textures[TEX_TMP7],          swizzleRGBA},
+            { 450.0f,  25.0f, 256.0f, 256.0f, texSource,                    swizzleRGBA},
+            { 750.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_GUIDED_RESULT], swizzleRGBA},
+            {1050.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_TMP2],          swizzleRGBA},
+            {   0.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP0],          swizzleRGBA},
+            { 300.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP0],          swizzleAAA1},
+            { 600.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP1],          swizzleRGBA},
+            { 900.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP1],          swizzleAAA1},
+            {1200.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP4],          swizzleRGBA},
+            {1500.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_TMP5],          swizzleRGBA},
+            {   0.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP2],          swizzleRGBA},
+            { 300.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP2],          swizzleAAA1},
+            { 600.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP3],          swizzleRGBA},
+            { 900.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP3],          swizzleAAA1},
+            {1200.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP6],          swizzleRGBA},
+            {1500.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_TMP7],          swizzleRGBA},
         };
-        
+
         drawImages(ARRAY_SIZE(images), images);
 
         glPopMatrix();
@@ -612,19 +605,22 @@ protected:
     {
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
-        glLoadIdentity();
-        glTranslatef(0, 0, -10);
+        glTranslatef(mOffsetX, mOffsetY, 0);
+        glScalef(mScale, mScale, 1);
 
-        vg::drawImage( -8,  2, -6,  0, textures[TEX_PERLIN0]);
-        vg::drawImage( -5,  2, -3,  0, textures[TEX_PERLIN1]);
-        vg::drawImage( -2,  2,  0,  0, textures[TEX_PERLIN2]);
-        vg::drawImage(  1,  2,  3,  0, textures[TEX_PERLIN3]);
-        vg::drawImage(  4,  2,  6,  0, textures[TEX_PERLIN4]);
-        vg::drawImage(  7,  2,  9,  0, textures[TEX_PERLIN5]);
+        ImageDesc images[] = {
+            {  0.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN0],   swizzleRGBA},
+            {300.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN1],   swizzleRGBA},
+            {600.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN2],   swizzleRGBA},
+            {900.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN3],   swizzleRGBA},
+            {  0.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN4],   swizzleRGBA},
+            {300.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN5],   swizzleRGBA},
+            {600.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN6],   swizzleRGBA},
+            {900.0f, 325.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN7],   swizzleRGBA},
+            {450.0f, 625.0f, 256.0f, 256.0f, mTextures[TEX_COMBINED0], swizzleRGBA},
+        };
 
-        vg::drawImage( -8, -1, -6, -3, textures[TEX_PERLIN6]);
-        vg::drawImage( -5, -1, -3, -3, textures[TEX_PERLIN7]);
-        vg::drawImage( -2, -1,  0, -3, textures[TEX_COMBINED0]);
+        drawImages(ARRAY_SIZE(images), images);
 
         glPopMatrix();
     }
@@ -677,6 +673,7 @@ protected:
             "LIGHTING"
         };
 
+        glColor3f(1.0f, 1.0f, 1.0f);
         for (uint32_t i = 0; i < count; ++i)
         {
             if (i > 0)

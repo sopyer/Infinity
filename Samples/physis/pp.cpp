@@ -1,46 +1,32 @@
 #include "pp.h"
 #include <framework.h>
 #include <ml.h>
+#include <graphics.h>
 
 static const size_t MAX_SAMPLE_COUNT = 64;
-
-struct ProgramDesc
-{
-    GLuint      id;
-    const char* srcPath; 
-};
 
 struct FilterDesc
 {
     int   sampleCount;
     int   pad[3];
-	v128  weights[MAX_SAMPLE_COUNT];
-	v128  offsets[MAX_SAMPLE_COUNT];
+    v128  weights[MAX_SAMPLE_COUNT];
+    v128  offsets[MAX_SAMPLE_COUNT];
 };
 
-const ProgramDesc prgDesc[] = 
+const char* programFSPath[PRG_ID_COUNT] = 
 {
-    {PRG_LUM,                     "PP.Luminance.frag"                  },
-    {PRG_FILTER,                  "PP.Filter.frag"                     },
-    {PRG_GUIDED_PACK,             "PP.GuidedFilter.Pack.frag"          },
-    {PRG_GUIDED_AB,               "PP.GuidedFilter.ab.frag"            },
-    {PRG_GUIDED_AI_B,             "PP.GuidedFilter.aI+b.frag"          },
-    {PRG_COLOR_GUIDED_PACK_VARI,  "PP.ColorGuidedFilter.PackVarI.frag" },
-    {PRG_COLOR_GUIDED_PACK_VARIP, "PP.ColorGuidedFilter.PackVarIp.frag"},
-    {PRG_COLOR_GUIDED_AB,         "PP.ColorGuidedFilter.ab.frag"       },
-    {PRG_COLOR_GUIDED_AI_B,       "PP.ColorGuidedFilter.aI+b.frag"     },
-};
-
-
-static const float triVertices[6] = {
-    -1,  1, 3,  1, -1, -3,
+    "PP.Luminance.frag"                  ,
+    "PP.Filter.frag"                     ,
+    "PP.GuidedFilter.Pack.frag"          ,
+    "PP.GuidedFilter.ab.frag"            ,
+    "PP.GuidedFilter.aI+b.frag"          ,
+    "PP.ColorGuidedFilter.PackVarI.frag" ,
+    "PP.ColorGuidedFilter.PackVarIp.frag",
+    "PP.ColorGuidedFilter.ab.frag"       ,
+    "PP.ColorGuidedFilter.aI+b.frag"     ,
 };
 
 GLuint programs[PRG_ID_COUNT];
-GLint  uniEPS;
-GLint  uniEPS3ch;
-GLuint ubo;
-GLint  uboAlignment;
 GLuint samLinearClamp;
 GLuint fbo;
 
@@ -48,26 +34,14 @@ void ppInit()
 {
     glGenFramebuffers(1, &fbo);
 
-    // Assumption - align is power of 2
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &uboAlignment);
-    --uboAlignment;
+    GLuint vert = resources::createShaderFromFile(GL_VERTEX_SHADER, "Mesh.ScreenTri.UV.vert");
 
-
-    glGenBuffers(1, &ubo);
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    glBufferData(GL_UNIFORM_BUFFER, 
-                    (sizeof(FilterDesc)|uboAlignment)+1,
-                    0, GL_DYNAMIC_DRAW);
-
-    GLuint vert = resources::createShaderFromFile(GL_VERTEX_SHADER, "PP.common.vert");
-
-    for (size_t i=0; i<ARRAY_SIZE(prgDesc); ++i)
+    for (size_t i=0; i<PRG_ID_COUNT; ++i)
     {
-        const  ProgramDesc&  desc = prgDesc[i];
         GLuint frag;
 
-        frag              = resources::createShaderFromFile(GL_FRAGMENT_SHADER, desc.srcPath);
-        programs[desc.id] = resources::linkProgram(2, vert, frag);
+        frag        = resources::createShaderFromFile(GL_FRAGMENT_SHADER, programFSPath[i]);
+        programs[i] = resources::linkProgram(2, vert, frag);
         glDeleteShader(frag);
 
         CHECK_GL_ERROR();
@@ -92,8 +66,6 @@ void ppOnShaderReload()
     GLint uniFilterDesc;
   
     uniFilterDesc  = glGetUniformBlockIndex(programs[PRG_FILTER], "uFilterDesc");
-    uniEPS         = glGetUniformLocation(programs[PRG_GUIDED_AB],    "uEPS");
-    uniEPS3ch      = glGetUniformLocation(programs[PRG_COLOR_GUIDED_AB], "uEPS");
 
     glGetActiveUniformBlockiv(programs[PRG_FILTER], uniFilterDesc, GL_UNIFORM_BLOCK_DATA_SIZE, &structSize);
     assert(structSize==sizeof(FilterDesc));
@@ -103,7 +75,7 @@ void ppFini()
 {
     for (size_t i=0; i<PRG_ID_COUNT; ++i)
         glDeleteProgram(programs[i]);
-    glDeleteBuffers(1, &ubo);
+
     glDeleteSamplers(1, &samLinearClamp);
     glDeleteFramebuffers(1, &fbo);
 }
@@ -112,30 +84,24 @@ void ppBegin()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, triVertices);
+    glBindVertexArray(vf::empty_geom_t::vao);
 
-    glBindSampler(0, samLinearClamp);
-    glBindSampler(1, samLinearClamp);
-    glBindSampler(2, samLinearClamp);
-    glBindSampler(3, samLinearClamp);
+    GLuint samplers[4] = {samLinearClamp, samLinearClamp, samLinearClamp, samLinearClamp};
+    glBindSamplers(0, ARRAY_SIZE(samplers), samplers);
 }
 
 void ppEnd()
 {
-    glBindSampler(0, 0);
-    glBindSampler(1, 0);
-    glBindSampler(2, 0);
-    glBindSampler(3, 0);
+    GLuint samplers[4] = {0, 0, 0, 0};
+    glBindSamplers(0, ARRAY_SIZE(samplers), samplers);
 
-    glActiveTexture(GL_TEXTURE0);
-    glDisableVertexAttribArray(0);
+    glBindVertexArray(0);
 }
 
 void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h)
 {
     GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
+    glBindTextures(0, 1, &src);
 
     glUseProgram(programs[PRG_LUM]);
 
@@ -337,19 +303,16 @@ void generateBoxFilterVPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
 void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei h)
 {
     FilterDesc* desc;
+    GLuint      offset;
     GLenum      buffers[] = {GL_COLOR_ATTACHMENT0};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
-
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-    desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    generateBoxFilterSinglePass(desc, kernelWidth, 1.0f/w, 1.0f/h);
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, sizeof(FilterDesc));
-
     glUseProgram(programs[PRG_FILTER]);
+
+    glBindTextures(0, 1, &src);
+
+    desc = (FilterDesc*)gfx::dynbufAllocMem(sizeof(FilterDesc), gfx::caps.uboAlignment, &offset);
+    generateBoxFilterSinglePass(desc, kernelWidth, 1.0f/w, 1.0f/h);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, gfx::dynBuffer, offset, sizeof(FilterDesc));
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
     glDrawBuffers(ARRAY_SIZE(buffers), buffers);
@@ -363,35 +326,35 @@ void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei 
 void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei w, GLsizei h)
 {
     FilterDesc* desc;
+    GLuint      offset;
     GLenum      buffers[] = {GL_COLOR_ATTACHMENT0};
 
-    glBindBufferRange(GL_UNIFORM_BUFFER, 0, ubo, 0, sizeof(FilterDesc));
     glUseProgram(programs[PRG_FILTER]);
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
 
-    desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    generateBoxFilterHPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, src);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tmp, 0);
     glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
+    glBindTextures(0, 1, &src);
+
+    desc = (FilterDesc*)gfx::dynbufAllocMem(sizeof(FilterDesc), gfx::caps.uboAlignment, &offset);
+    generateBoxFilterHPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, gfx::dynBuffer, offset, sizeof(FilterDesc));
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    desc = (FilterDesc*)glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    generateBoxFilterVPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
-    glUnmapBuffer(GL_UNIFORM_BUFFER);
-
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, tmp);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
     glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
+    glBindTextures(0, 1, &tmp);
+
+    desc = (FilterDesc*)gfx::dynbufAllocMem(sizeof(FilterDesc), gfx::caps.uboAlignment, &offset);
+    generateBoxFilterVPass(desc, kernelWidth, 1.0f/w, 1.0f/h);
+    glBindBufferRange(GL_UNIFORM_BUFFER, 0, gfx::dynBuffer, offset, sizeof(FilterDesc));
+
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, 0);
     CHECK_GL_ERROR();
 }
 

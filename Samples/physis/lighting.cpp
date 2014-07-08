@@ -207,7 +207,7 @@ namespace lighting
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
         prgSkybox = resources::createProgramFromFiles("skybox.vert", "skybox.frag");
-        prgSH     = resources::createProgramFromFiles("box.vert", "wireframe.geom", "box.frag");
+        prgSH     = resources::createProgramFromFiles("box.vert", "MESH.Wireframe.geom", "box.frag");
 
         memory_t dataPosX = {0, 0, 0};
         memory_t dataPosY = {0, 0, 0};
@@ -367,8 +367,7 @@ namespace lighting
         glUseProgram(prgSkybox);
 
         glBindSampler(0, smpSkybox);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
+        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_CUBE_MAP, cubemap);
 
         drawBox();
 

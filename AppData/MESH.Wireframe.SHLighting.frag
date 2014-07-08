@@ -1,5 +1,7 @@
 #version 330
 
+layout(std140, column_major) uniform;
+
 #define UNI_LIGHTING  2
 
 in vec3 vPosition;

@@ -3,19 +3,18 @@
 #include <utils.h>
 
 extern GLuint programs[PRG_ID_COUNT];
-extern GLint  uniEPS3ch;
 
 void colorGuidedFilterPackVarI(GLuint I_xx_yy_zz, GLuint I_xy_xz_yz, GLuint guide, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, guide);
+    glBindTextures(0, 1, &guide);
 
     glUseProgram(programs[PRG_COLOR_GUIDED_PACK_VARI]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, I_xx_yy_zz, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, I_xy_xz_yz, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -29,17 +28,17 @@ void colorGuidedFilterPackVarIp(GLuint Ir_r, GLuint Ig_g, GLuint Ib_b,
                                 GLuint source, GLuint guide,
                                 GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, source);
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, guide);
+    GLuint textures[2] = {source, guide};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_COLOR_GUIDED_PACK_VARIP]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Ir_r, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, Ig_g, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, Ib_b, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -55,22 +54,18 @@ void colorGuidedFilterAB(GLuint ABx, GLuint ABy, GLuint ABz,
     GLuint Ir_r, GLuint Ig_g, GLuint Ib_b,
     float eps, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, guide     );
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, I_xx_yy_zz);
-    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, I_xy_xz_yz);
-    glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, Ir_r      );
-    glActiveTexture(GL_TEXTURE4); glBindTexture(GL_TEXTURE_2D, Ig_g      );
-    glActiveTexture(GL_TEXTURE5); glBindTexture(GL_TEXTURE_2D, Ib_b      );
+    GLuint textures[6] = {guide, I_xx_yy_zz, I_xy_xz_yz, Ir_r, Ig_g, Ib_b};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_COLOR_GUIDED_AB]);
-    glUniform1f(uniEPS3ch, eps);
+    glUniform1f(0, eps);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ABx, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ABy, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, ABz, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -81,17 +76,15 @@ void colorGuidedFilterAB(GLuint ABx, GLuint ABy, GLuint ABz,
 
 void colorGuidedFilterAI_B(GLuint res, GLuint guide, GLuint ABx, GLuint ABy, GLuint ABz, GLsizei w, GLsizei h)
 {
-	GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+    GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, guide);
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, ABx  );
-    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, ABy  );
-    glActiveTexture(GL_TEXTURE3); glBindTexture(GL_TEXTURE_2D, ABz  );
+    GLuint textures[4] = {guide, ABx, ABy, ABz};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_COLOR_GUIDED_AI_B]);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, res, 0);
-	glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+    glDrawBuffers(ARRAY_SIZE(buffers), buffers);
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
