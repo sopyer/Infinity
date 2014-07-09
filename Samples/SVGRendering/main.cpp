@@ -1,7 +1,8 @@
 #include "nanosvg.h"
 #include <framework.h>
 #include "ResourceHelpers.h"
-#include <time.h>
+#include <timer.h>
+#include <graphics.h>
 #include <vector>
 
 class SVGSample: public ui::Stage
@@ -11,9 +12,7 @@ public:
           mOffsetX(128/*mWidth/2*/),
           mOffsetY(-18/*mHeight/2*/),
           mScale(2.5f),
-          mIsDragging(false),
-          mDrawTimeCPU(0.0f),
-          mDrawTimeGPU(0.0f)
+          mIsDragging(false)
     {
 
         SVGPath* plist;
@@ -35,7 +34,7 @@ public:
 
         mAAEnabled = ui::checkBoxAdd(25.0f, 83.0f, 41.0f, 99.0f, FALSE);
 
-        glGenQueries(1, &mTimeQuery);
+        gfx::gpu_timer_init(&gpuTimer);
 
         setCaption("GPU accelerated SVG rendering");
     }
@@ -44,7 +43,7 @@ public:
 
     ~SVGSample()
     {
-        glDeleteQueries(1, &mTimeQuery);
+        gfx::gpu_timer_fini(&gpuTimer);
 
         struct DeletePath
         {void operator ()(vg::Path path) {vg::destroyPath(path);}};
@@ -65,10 +64,8 @@ protected:
 
     void onPaint()
     {
-        CPUTimer drawTimer;
-        drawTimer.start();
-
-        glBeginQuery(GL_TIME_ELAPSED, mTimeQuery);
+        cpu_timer_start(&cpuTimer);
+        gfx::gpu_timer_start(&gpuTimer);
 
         glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -91,29 +88,28 @@ protected:
         }
 
         glPopMatrix();
-        glEndQuery(GL_TIME_ELAPSED);
 
-        mDrawTimeCPU = (float)(0.8f*drawTimer.elapsed()+0.2f*mDrawTimeCPU);
+        cpu_timer_stop(&cpuTimer);
+        gfx::gpu_timer_stop(&gpuTimer);
 
-        GLuint64EXT result;
-        glGetQueryObjectui64v(mTimeQuery, GL_QUERY_RESULT, &result);
-        mDrawTimeGPU = 0.8f*result/1000.0f/1000.0f+0.2f*mDrawTimeGPU;
-
-        ui::displayStats(10.0f, 10.0f, 300.0f, 100.0f, mDrawTimeCPU, mDrawTimeGPU);
+        ui::displayStats(
+            10.0f, 10.0f, 300.0f, 100.0f,
+            cpu_timer_measured(&cpuTimer) / 1000.0f,
+            gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
+        );
 
         glColor3f(1.0f, 1.0f, 1.0f);
         vg::drawString(ui::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
     }
 
 private:
-    GLuint      mTimeQuery;
+    cpu_timer_t      cpuTimer;
+    gfx::gpu_timer_t gpuTimer;
+
     bool        mIsDragging;
     float       mOffsetX;
     float       mOffsetY;
     float       mScale;
-
-    float       mDrawTimeCPU;
-    float       mDrawTimeGPU;
 
     std::vector<vg::Path>   mPaths;
     std::vector<vg::Paint>  mPaints;

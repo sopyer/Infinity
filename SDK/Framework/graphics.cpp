@@ -425,4 +425,36 @@ namespace gfx
         }
     }
 
+    void gpu_timer_init(gpu_timer_t* timer)
+    {
+        glGenQueries(NUM_FRAMES_DELAY, timer->queries);
+        //Work around in order to avoid getting GL error when querying timer before it was issued
+        for (size_t i = 0; i < NUM_FRAMES_DELAY; ++i)
+        {
+            glBeginQuery(GL_TIME_ELAPSED, timer->queries[i]);
+            glEndQuery(GL_TIME_ELAPSED);
+        }
+        timer->measuredTime = 0;
+    }
+
+    void gpu_timer_fini(gpu_timer_t* timer)
+    {
+        glDeleteQueries(NUM_FRAMES_DELAY, timer->queries);
+    }
+
+    void gpu_timer_start(gpu_timer_t* timer)
+    {
+        glGetQueryObjectui64v(timer->queries[frameID], GL_QUERY_RESULT, &timer->measuredTime);
+        glBeginQuery(GL_TIME_ELAPSED, timer->queries[frameID]);
+    }
+
+    void gpu_timer_stop(gpu_timer_t* timer)
+    {
+        glEndQuery(GL_TIME_ELAPSED);
+    }
+
+    uint64_t gpu_timer_measured(gpu_timer_t* timer)
+    {
+        return timer->measuredTime / 1000;
+    }
 }

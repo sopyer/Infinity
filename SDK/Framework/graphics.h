@@ -129,6 +129,18 @@ namespace gfx
 
     void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
     void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
+
+    struct gpu_timer_t
+    {
+        GLuint   queries[NUM_FRAMES_DELAY];
+        uint64_t measuredTime;
+    };
+
+    void     gpu_timer_init    (gpu_timer_t* timer);
+    void     gpu_timer_fini    (gpu_timer_t* timer);
+    void     gpu_timer_start   (gpu_timer_t* timer);
+    void     gpu_timer_stop    (gpu_timer_t* timer);
+    uint64_t gpu_timer_measured(gpu_timer_t* timer);
 }
 
 #endif

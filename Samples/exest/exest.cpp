@@ -249,14 +249,18 @@ protected:
         glDisable(GL_BLEND);
 
         //Draw ui
-        ui::displayStats(10.0f, 10.0f, 300.0f, 120.0f, terrain.getCPUTime(), terrain.getGPUTime());
+        ui::displayStats(
+            10.0f, 10.0f, 300.0f, 120.0f,
+            cpu_timer_measured(&terrain.cpuTimer) / 1000.0f,
+            gfx::gpu_timer_measured(&terrain.gpuTimer) / 1000.0f
+        );
 
         char str[256];
         
-        _snprintf(str, 256, "CPU select time - %f ms", terrain.getCPUSelectTime());
+        _snprintf(str, 256, "CPU select time - %f ms", cpu_timer_measured(&terrain.cpuSelectTimer) / 1000.0f);
         vg::drawString(ui::defaultFont, 25.0f, 83.0f, str, strlen(str));
         
-        _snprintf(str, 256, "CPU draw time - %f ms", terrain.getCPUDrawTime());
+        _snprintf(str, 256, "CPU draw time - %f ms", cpu_timer_measured(&terrain.cpuRenderTimer) / 1000.0f);
         vg::drawString(ui::defaultFont, 25.0f, 101.0f, str, strlen(str));
         
         int patches = terrain.patchCount;

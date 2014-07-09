@@ -32,8 +32,8 @@ private:
     bool                mHasAnimation;
 
 
-    CPUTimer            cpuTimer;
-    GPUTimer            gpuTimer;
+    cpu_timer_t        cpuTimer;
+    gfx::gpu_timer_t   gpuTimer;
 
 public:
     Anima()
@@ -57,11 +57,15 @@ public:
         gfx::autoVars.projParams.z = mProj[2].m128_f32[2];
         gfx::autoVars.projParams.w = mProj[3].m128_f32[2];
 
+        gfx::gpu_timer_init(&gpuTimer);
+
         CHECK_GL_ERROR();
     }
 
     ~Anima()
     {
+        gfx::gpu_timer_fini(&gpuTimer);
+
         Model::destroyModel    (&model);
         Model::destroyAnimation(&anim);
         Model::destroySkeleton (&skel);
@@ -109,29 +113,26 @@ protected:
 
         memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
 
-        gpuTimer.start();
+        gpu_timer_start(&gpuTimer);
         Model::render(&model, &skel, &pose);
-        gpuTimer.stop();
+        gpu_timer_stop(&gpuTimer);
 
-        ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, cpuTime, gpuTime);
+        ui::displayStats(
+            10.0f, 10.0f, 300.0f, 70.0f,
+            cpu_timer_measured(&cpuTimer) / 1000.0f,
+            gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
+        );
 
         CHECK_GL_ERROR();
     }
-
-    float cpuTime, gpuTime;
 
     void onUpdate(float dt)
     {
         static const float maxTimeStep = 0.03333f;
 
-        cpuTimer.start();
-
+        cpu_timer_start(&cpuTimer);
         Model::update(std::min(dt, maxTimeStep), &anim, &skel, &pose);
-
-        cpuTime = (float)cpuTimer.elapsed();
-        cpuTimer.stop();
-
-        gpuTime = (float)gpuTimer.getResult();
+        cpu_timer_stop(&cpuTimer);
 
         ui::processCameraInput(&camera, dt);
     }

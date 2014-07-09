@@ -96,6 +96,8 @@ void CDLODTerrain::initialize()
 
     ubufView = gfx::createUBODesc(prgTerrain, "uniView");
 
+    gfx::gpu_timer_init(&gpuTimer);
+
     GL_CHECK_ERROR();
 }
 
@@ -105,6 +107,8 @@ void CDLODTerrain::reset()
 
 void CDLODTerrain::cleanup()
 {
+    gfx::gpu_timer_fini(&gpuTimer);
+
     glDeleteBuffers(1, &ubo);
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &ibo);
@@ -246,7 +250,7 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
 void CDLODTerrain::drawTerrain()
 {
     PROFILER_CPU_TIMESLICE("CDLODTerrain");
-    cpuTimer.start();
+    cpu_timer_start(&cpuTimer);
 
     GLuint baseInstance;
 
@@ -262,18 +266,17 @@ void CDLODTerrain::drawTerrain()
 
     {
         PROFILER_CPU_TIMESLICE("Select");
-        cpuSelectTimer.start();
+        cpu_timer_start(&cpuSelectTimer);
         patchCount = 0;
         size_t level = LODCount-1;
         for (float bz=minZ; bz<maxZ; bz+=chunkSize)
             for (float bx=minX; bx<maxX; bx+=chunkSize)
                 selectQuadsForDrawing(level, bx, bz, chunkSize);
-        cpuSelectTime = cpuSelectTimer.elapsed();
-        cpuSelectTimer.stop();
+        cpu_timer_stop(&cpuSelectTimer);
     }
 
-    cpuDrawTimer.start();
-    gpuTimer.start();
+    cpu_timer_start(&cpuRenderTimer);
+    gfx::gpu_timer_start(&gpuTimer);
 
     patchCount = std::min(patchCount, maxPatchCount);
     if (patchCount)
@@ -323,12 +326,9 @@ void CDLODTerrain::drawTerrain()
        }
     }
 
-    cpuDrawTime = cpuDrawTimer.elapsed();
-    cpuDrawTimer.stop();
-    gpuTimer.stop();
-    cpuTime = cpuTimer.elapsed();
-    gpuTime = gpuTimer.getResult();
-    cpuTimer.stop();
+    gfx::gpu_timer_stop(&gpuTimer);
+    cpu_timer_stop(&cpuRenderTimer);
+    cpu_timer_stop(&cpuTimer);
 }
 
 void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)

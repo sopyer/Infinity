@@ -5,6 +5,7 @@
 #include "pp.h"
 #include "Perlin.h"
 #include "lighting.h"
+#include <graphics.h>
 
 static const int texSize = 1024;
 
@@ -214,8 +215,6 @@ public:
         addPrograms(1, &perlinGtorProg);
     }
 
-    GLint uniSamplerInput, uniRotationScale, uniTranslate;
-
     GLuint texSource;
 
     PhysisDemo():
@@ -259,18 +258,19 @@ public:
         CHECK_GL_ERROR();
 
         currentTab = 1;
+
+        gfx::gpu_timer_init(&gpuTimer);
     }
 
     int currentTab;
 
-    CPUTimer mCPUTimer;
-    GPUTimer mGPUTimer;
-
-    double mCPUTime;
-    double mGPUTime;
+    cpu_timer_t      cpuTimer;
+    gfx::gpu_timer_t gpuTimer;
 
     ~PhysisDemo()
     {
+        gfx::gpu_timer_fini(&gpuTimer);
+
         lighting::fini();
 
         glDeleteSamplers(1, &samNearestRepeat);
@@ -627,8 +627,8 @@ protected:
 
     virtual void onPaint()
     {
-        mCPUTimer.start();
-        mGPUTimer.start();
+        cpu_timer_start(&cpuTimer);
+        gfx::gpu_timer_start(&gpuTimer);
 
         ppBegin();
 
@@ -647,10 +647,8 @@ protected:
 
         ppEnd();
 
-        mGPUTimer.stop();
-        mCPUTime = mCPUTimer.elapsed();
-        mGPUTime = mGPUTimer.getResult();
-        mCPUTimer.stop();
+        cpu_timer_stop(&cpuTimer);
+        gfx::gpu_timer_stop(&gpuTimer);
 
         CHECK_GL_ERROR();
 
@@ -706,7 +704,11 @@ protected:
 
         CHECK_GL_ERROR();
 
-        ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, (float)mCPUTime, (float)mGPUTime);
+        ui::displayStats(
+            10.0f, 10.0f, 300.0f, 70.0f,
+            cpu_timer_measured(&cpuTimer) / 1000.0f,
+            gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
+        );
     }
 
     void onUpdate(float dt)

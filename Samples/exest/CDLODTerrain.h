@@ -52,20 +52,10 @@ public:
     void setSelectMatrix(v128 m[4]);
     void drawTerrain();
 
-    CPUTimer cpuTimer;
-    CPUTimer cpuSelectTimer;
-    CPUTimer cpuDrawTimer;
-    GPUTimer gpuTimer;
-
-    double cpuTime;
-    double cpuSelectTime;
-    double cpuDrawTime;
-    double gpuTime;
-
-    float getCPUTime() {return (float)cpuTime;}
-    float getCPUSelectTime() {return (float)cpuSelectTime;}
-    float getCPUDrawTime() {return (float)cpuDrawTime;}
-    float getGPUTime() {return (float)gpuTime;}
+    cpu_timer_t      cpuTimer;
+    cpu_timer_t      cpuSelectTimer;
+    cpu_timer_t      cpuRenderTimer;
+    gfx::gpu_timer_t gpuTimer;
 };
 
 #endif

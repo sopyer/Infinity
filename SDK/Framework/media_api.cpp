@@ -13,6 +13,7 @@ extern "C"
 }
 
 #include "Timer.h"
+#include "Scheduler.h"
 #include "profiler.h"
 #include "ResourceHelpers.h"
 
