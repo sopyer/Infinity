@@ -5,8 +5,6 @@
 #include <al/al.h>
 #include <al/alc.h>
 
-#include <SDL2/SDL.h>
-
 extern "C"
 {
 #include <libavformat/avformat.h>
@@ -17,6 +15,8 @@ extern "C"
 #include "Timer.h"
 #include "profiler.h"
 #include "ResourceHelpers.h"
+
+#include <graphics.h>
 
 #define PACKET_BUFFER_SIZE 64
 
@@ -83,9 +83,6 @@ const char srcYUV2RGB[] =
     "}                                                                                              \n";
 
 GLuint progYUV2RGB;
-
-//TODO: implement pool, maybe fixed at first!!!!
-media_player_data_t hack;
 
 static void closeAudioStream(media_player_t player)
 {
@@ -155,13 +152,12 @@ static void closeVideoStream(media_player_t player)
 
 static void initTexture(GLuint tex, GLuint width, GLuint height)
 {
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE8, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureImage2DEXT(tex, GL_TEXTURE_2D, 0, GL_LUMINANCE8, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 }
 
 static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
@@ -281,26 +277,20 @@ static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLu
 {
     PROFILER_CPU_TIMESLICE("uploadVideoData");
 
-    glBindTexture(GL_TEXTURE_2D, texY);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
+    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
 
-    glBindTexture(GL_TEXTURE_2D, texU);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
+    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
 
-    glBindTexture(GL_TEXTURE_2D, texV);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
+    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
     player->timeOfNextFrame = player->frameTime;
 
-    GLenum err = glGetError();
-    assert(err == GL_NO_ERROR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_CHECK_ERROR()
 }
 
 static void decodeVideo(media_player_t player)
@@ -476,7 +466,7 @@ void mediaPlayerUpdate(media_player_t player)
     if (!player->playback)
         return;
 
-    __int64 currentTime = timerAbsoluteTime()-player->baseTime;
+    uint64_t currentTime = timerAbsoluteTime()-player->baseTime;
 
     ALuint buffer;
 
@@ -517,7 +507,7 @@ void mediaPlayerUpdate(media_player_t player)
         }
     }
 
-    int64_t time = currentTime+player->timeShift;
+    uint64_t time = currentTime+player->timeShift;
     if (time>=player->timeOfNextFrame)
     {
         std::swap(player->texY[0], player->texY[1]);
@@ -538,24 +528,15 @@ void mediaPlayerPrepareRender(media_player_t player)
 {
     glUseProgram(progYUV2RGB);
 
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, player->texY[0]);
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, player->texU[0]);
-    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, player->texV[0]);
+    GLuint textures[] = {player->texY[0], player->texU[0], player->texV[0]};
+    glBindTextures(0, ARRAY_SIZE(textures), textures);
 
-    glActiveTexture(GL_TEXTURE0);
-#ifdef _DEBUG
-    GLenum err = glGetError();
-    assert(err==GL_NO_ERROR);
-#endif
+    GL_CHECK_ERROR();
 }
 
 void mediaPlayerRender(media_player_t player)
 {
-    glUseProgram(progYUV2RGB);
-
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, player->texY[0]);
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D, player->texU[0]);
-    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_2D, player->texV[0]);
+    mediaPlayerPrepareRender(player);
 
     glBegin(GL_QUADS);
     glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f,  1.0f);
@@ -566,8 +547,5 @@ void mediaPlayerRender(media_player_t player)
 
     glUseProgram(0);
 
-#ifdef _DEBUG
-    GLenum err = glGetError();
-    assert(err==GL_NO_ERROR);
-#endif
+    GL_CHECK_ERROR();
 }

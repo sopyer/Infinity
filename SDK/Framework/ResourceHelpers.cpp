@@ -115,10 +115,10 @@ namespace resources
 #define MAX_INFOLOG_LENGTH 4096
     bool compileAndAttachShader(GLuint program, GLenum type, GLsizei len, const char* source)
     {
-        GLint	status, length;
-        char	logStr[MAX_INFOLOG_LENGTH];
+        GLint   status, length;
+        char    logStr[MAX_INFOLOG_LENGTH];
 
-        GLuint	shader = glCreateShader(type);
+        GLuint  shader = glCreateShader(type);
 
         glShaderSource(shader, 1, &source, &len);
         glCompileShader(shader);
@@ -139,8 +139,8 @@ namespace resources
 
     GLuint createProgram(GLenum type, const char* source)
     {
-        GLchar	logStr[MAX_INFOLOG_LENGTH];
-        GLint	status, length;
+        GLchar  logStr[MAX_INFOLOG_LENGTH];
+        GLint   status, length;
 
         GLuint program = glCreateProgram();
 
@@ -187,9 +187,9 @@ namespace resources
 
         glLinkProgram(program);
 
-        const size_t	LOG_STR_LEN = 1024;
-        char			infoLog[LOG_STR_LEN] = {0};
-        GLsizei			length;
+        const size_t    LOG_STR_LEN = 1024;
+        char            infoLog[LOG_STR_LEN] = {0};
+        GLsizei         length;
 
         glGetProgramInfoLog(program, LOG_STR_LEN-1, &length, infoLog);
         infoLog[length] = 0;
@@ -222,17 +222,16 @@ namespace resources
 
         if (texData.buffer)
         {
-            int	imgWidth, imgHeight, imgChannels;
-            unsigned char*	pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
+            int imgWidth, imgHeight, imgChannels;
+            unsigned char*  pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
                 &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
 
-            glBindTexture(GL_TEXTURE_2D, texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+            glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
+            glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+            glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
             CHECK_GL_ERROR();
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
+            glTextureImage2DEXT(texture, GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
             CHECK_GL_ERROR();
 
             SOIL_free_image_data(pixelsPtr);
@@ -255,12 +254,11 @@ namespace resources
 
         glGenTextures(1, &texture);
 
-        glBindTexture(GL_TEXTURE_1D, texture);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexImage1D(GL_TEXTURE_1D, 0, internalFormat, width, 0, format, type, pixels);
+        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
+        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureImage1DEXT(texture, GL_TEXTURE_1D, 0, internalFormat, width, 0, format, type, pixels);
 
         return texture;
     }
@@ -274,8 +272,8 @@ namespace resources
         GLint x = vp[0], y = vp[1], w = vp[2], h = vp[3];
 
         uint8_t* p = new uint8_t[w*h*4];
-        glReadPixels (x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
-        SOIL_save_image(imageName, SOIL_SAVE_TYPE_TGA, w, h, 4, p);		
+        glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, p);
+        SOIL_save_image(imageName, SOIL_SAVE_TYPE_TGA, w, h, 4, p);
         delete [] p;
     }
 
@@ -283,9 +281,7 @@ namespace resources
     {
         GLuint rbo;
         glGenRenderbuffers(1, &rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glNamedRenderbufferStorageEXT(rbo, type, width, height);
 
         GLenum err = glGetError();
         assert(err==GL_NO_ERROR);
