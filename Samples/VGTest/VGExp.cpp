@@ -96,7 +96,6 @@ void drawAlphaQuad()
 	glEnable(GL_BLEND);
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-	GLenum err = glGetError();
 
 	glColor4f(1, 1, 1, 1);//glCallList(paint.mHandle);
 	glBegin(GL_QUADS);

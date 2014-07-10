@@ -169,10 +169,6 @@ public:
             glTextureImage2DEXT(mTextures[desc.id], GL_TEXTURE_2D, 0, desc.internalFmt,
                                 desc.width, desc.height, 0,
                                 desc.channels, desc.type, 0);
-
-
-
-            CHECK_GL_ERROR();
         }
     }
 
@@ -184,8 +180,6 @@ public:
                              GL_FRAGMENT_SHADER, "TextureGtor.Perlin.frag"
                          );
 
-        CHECK_GL_ERROR();
-
         uniInvTexDim = glGetUniformLocation(perlinGtorProg, "invTexDim");
         uniOctaves   = glGetUniformLocation(perlinGtorProg, "uOctaves");
         uniAmp       = glGetUniformLocation(perlinGtorProg, "uAmp");
@@ -193,13 +187,9 @@ public:
         uniFreq      = glGetUniformLocation(perlinGtorProg, "uFreq");
         uniFreqScale = glGetUniformLocation(perlinGtorProg, "uFreqScale");
 
-        CHECK_GL_ERROR();
-
         glUseProgram(perlinGtorProg);
         glUniform1f(uniInvTexDim, 1.0f/PERMUTATION_DIM);
         glUseProgram(0);
-
-        CHECK_GL_ERROR();
 
         //Gen perlin permutation and gradient textures
         glGenTextures(9, permTex);
@@ -243,8 +233,6 @@ public:
                               "TextureGtor.Metal.frag"
                           );
 
-        CHECK_GL_ERROR();
-
         CreatePerlinNoiseGtor();
 
         glGenSamplers(1, &samNearestRepeat);
@@ -254,8 +242,6 @@ public:
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_T,     GL_REPEAT );
 
         lighting::init();
-
-        CHECK_GL_ERROR();
 
         currentTab = 1;
 
@@ -298,8 +284,6 @@ protected:
 
     void generateTextureCombined(TextureIDs dest)
     {
-        CHECK_GL_ERROR();
-
         GLuint textures[] = {
             mTextures[TEX_PERLIN0], mTextures[TEX_PERLIN1],
             mTextures[TEX_PERLIN2], mTextures[TEX_PERLIN3],
@@ -312,8 +296,6 @@ protected:
         //glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
 
         generateTexture(mTextures[dest], texSize);
-
-        CHECK_GL_ERROR();
     }
 
     void generateTexture(GLuint texID, GLsizei texSize)
@@ -332,7 +314,6 @@ protected:
         GLuint samplers[] = {samNearestRepeat, samNearestRepeat};
         glBindSamplers(0, ARRAY_SIZE(samplers), samplers);
 
-        CHECK_GL_ERROR();
         GLuint textures[] = {permTex[seed%9], gradTex};
         glBindTextures(0, ARRAY_SIZE(textures), textures);
 
@@ -345,8 +326,6 @@ protected:
         glUniform1f(uniFreqScale, freqScale);
 
         generateTexture(mTextures[dest], texSize);
-
-        CHECK_GL_ERROR();
     }
 
     //glm::mat4 getHSCB(float hue, float saturation, float contrast, float brightness)
@@ -650,8 +629,6 @@ protected:
         cpu_timer_stop(&cpuTimer);
         gfx::gpu_timer_stop(&gpuTimer);
 
-        CHECK_GL_ERROR();
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(vp[0], vp[1], vp[2], vp[3]);
 
@@ -701,8 +678,6 @@ protected:
                 lighting::draw();
                 break;
         }
-
-        CHECK_GL_ERROR();
 
         ui::displayStats(
             10.0f, 10.0f, 300.0f, 70.0f,

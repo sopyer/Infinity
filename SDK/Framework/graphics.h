@@ -111,12 +111,6 @@ namespace gfx
 
 
 /*------------- Miscellaneous --------------*/
-#define GL_CHECK_ERROR()                              \
-    {                                                 \
-        GLenum err = glGetError();                    \
-        assert(err==GL_NO_ERROR);                     \
-    }
-
     struct point_t
     {
         v128 p;

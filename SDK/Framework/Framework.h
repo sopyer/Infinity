@@ -1,5 +1,5 @@
 #ifndef _FRAMEWORK_H_INCLUDED_
-#	define _FRAMEWORK_H_INCLUDED_
+#   define _FRAMEWORK_H_INCLUDED_
 
 #include <SDL2/SDL.h>
 #include <opengl.h>
@@ -25,13 +25,5 @@ namespace fwk
     void init(const char* argv0);
     void fini();
 }
-
-#define CHECK_GL_ERROR()                \
-    {                                   \
-        GLenum err = glGetError();      \
-        assert(err==GL_NO_ERROR);       \
-    }
-
-
 
 #endif

@@ -20,8 +20,6 @@ void colorGuidedFilterPackVarI(GLuint I_xx_yy_zz, GLuint I_xy_xz_yz, GLuint guid
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
-
-    CHECK_GL_ERROR();
 }
 
 void colorGuidedFilterPackVarIp(GLuint Ir_r, GLuint Ig_g, GLuint Ib_b,
@@ -45,8 +43,6 @@ void colorGuidedFilterPackVarIp(GLuint Ir_r, GLuint Ig_g, GLuint Ib_b,
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, 0, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, 0, 0);
-
-    CHECK_GL_ERROR();
 }
 
 void colorGuidedFilterAB(GLuint ABx, GLuint ABy, GLuint ABz,
@@ -113,6 +109,4 @@ void colorGuidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[19], int
     boxFilter2Pass(tmp[17], tmp[14], tmp[18], kernelWidth, w, h);
 
     colorGuidedFilterAI_B(dst, guide, tmp[15], tmp[16], tmp[17], w, h);
-
-    CHECK_GL_ERROR();
 }

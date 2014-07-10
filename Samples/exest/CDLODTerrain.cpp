@@ -97,8 +97,6 @@ void CDLODTerrain::initialize()
     ubufView = gfx::createUBODesc(prgTerrain, "uniView");
 
     gfx::gpu_timer_init(&gpuTimer);
-
-    GL_CHECK_ERROR();
 }
 
 void CDLODTerrain::reset()
@@ -408,7 +406,4 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-    GLenum err = glGetError();
-    assert(err==GL_NO_ERROR);
 }

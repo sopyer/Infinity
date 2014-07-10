@@ -58,8 +58,6 @@ public:
         gfx::autoVars.projParams.w = mProj[3].m128_f32[2];
 
         gfx::gpu_timer_init(&gpuTimer);
-
-        CHECK_GL_ERROR();
     }
 
     ~Anima()
@@ -122,8 +120,6 @@ protected:
             cpu_timer_measured(&cpuTimer) / 1000.0f,
             gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
         );
-
-        CHECK_GL_ERROR();
     }
 
     void onUpdate(float dt)

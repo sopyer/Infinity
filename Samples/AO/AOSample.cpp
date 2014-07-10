@@ -82,15 +82,12 @@ public:
     AOSample()
     {
         genVoxelLookupTexture();
-        CHECK_GL_ERROR();
 
         mLightProgram        = resources::createProgramFromFiles("SimpleLight.vert",  "SimpleLight.frag");
         mVoxelizationProgram = resources::createProgramFromFiles("Voxelization.vert", "Voxelization.frag");
         mGBufferProgram      = resources::createProgramFromFiles("SimpleGBuffer.vert", "SimpleGBuffer.frag");
-        CHECK_GL_ERROR();
 
         mVoxelLookupTextureUniform = glGetUniformLocation(mVoxelizationProgram, "uVoxelLookupTexture");
-        CHECK_GL_ERROR();
 
         mRenderAsVoxels = ui::checkBoxAdd(5.0f, 5.0f, 21.0f, 21.0f, FALSE);
 
@@ -233,8 +230,6 @@ protected:
 
     virtual void onPaint()
     {
-        CHECK_GL_ERROR();
-
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -243,12 +238,12 @@ protected:
         glRotatef(25, 1, 0, 0);
         glRotatef(40, 0, 1, 0);
 
-        const GLfloat	rangeLeft=-4, rangeRight=4,
-            rangeBottom=-4, rangeTop=4,
-            rangeFront=-6, rangeBack=-14,
-            stepX = (rangeRight-rangeLeft)/VOXEL_DIM_X,
-            stepY = (rangeTop-rangeBottom)/VOXEL_DIM_Y,
-            stepZ = (rangeBack-rangeFront)/VOXEL_DIM_Z;
+        const GLfloat rangeLeft   = -4, rangeRight =   4,
+                      rangeBottom = -4, rangeTop   =   4,
+                      rangeFront  = -6, rangeBack  = -14,
+                      stepX = (rangeRight-rangeLeft)/VOXEL_DIM_X,
+                      stepY = (rangeTop-rangeBottom)/VOXEL_DIM_Y,
+                      stepZ = (rangeBack-rangeFront)/VOXEL_DIM_Z;
 
         glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -350,8 +345,6 @@ protected:
         glPopAttrib();
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
-
-        CHECK_GL_ERROR();
 
         glColor3f(1.0f, 1.0f, 1.0f);
         vg::drawString(ui::defaultFont, 25.0, 18.0f, "Render as voxels", 16);

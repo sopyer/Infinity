@@ -282,9 +282,6 @@ protected:
         glDisable(GL_BLEND);
 
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, 0.0f, 0.0f);
-
-        err = glGetError();
-        assert(err==GL_NO_ERROR);
     }
 
     void onUpdate(float dt)

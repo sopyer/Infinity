@@ -73,6 +73,4 @@ void guidedFilter(GLuint dst, GLuint src, GLuint guide, GLuint tmp[9], int kerne
     boxFilter2Pass(tmp[7], tmp[5], tmp[8], kernelWidth, w, h);
         
     guidedFilterAI_B(dst, tmp[6], tmp[7], guide, w, h);
-
-    CHECK_GL_ERROR();
 }

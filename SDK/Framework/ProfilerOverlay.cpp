@@ -82,7 +82,6 @@ void ProfilerOverlay::init(int w, int h)
     GLuint divs[2] = {1, 1};
 
     vao = gfx::createVAO(2, ve, 2, divs);
-    GL_CHECK_ERROR();
 }
 
 void ProfilerOverlay::fini()

@@ -43,8 +43,6 @@ void ppInit()
         frag        = resources::createShaderFromFile(GL_FRAGMENT_SHADER, programFSPath[i]);
         programs[i] = resources::linkProgram(2, vert, frag);
         glDeleteShader(frag);
-
-        CHECK_GL_ERROR();
     }
 
     glDeleteShader(vert);
@@ -56,8 +54,6 @@ void ppInit()
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
-
-    CHECK_GL_ERROR();
 }
 
 void ppOnShaderReload()
@@ -110,8 +106,6 @@ void convertToLuminance(GLuint dst, GLuint src, GLsizei w, GLsizei h)
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    CHECK_GL_ERROR();
 }
 
 void generateSinglePassBoxFilterBruteForce(FilterDesc* desc, int kernelWidth, float texelSizeU, float texelSizeV)
@@ -319,8 +313,6 @@ void boxFilter1Pass(GLuint dst, GLuint src, int kernelWidth, GLsizei w, GLsizei 
     glViewport(0, 0, w, h);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    CHECK_GL_ERROR();
 }
 
 void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei w, GLsizei h)
@@ -354,7 +346,5 @@ void boxFilter2Pass(GLuint dst, GLuint src, GLuint tmp, int kernelWidth, GLsizei
     glBindBufferRange(GL_UNIFORM_BUFFER, 0, gfx::dynBuffer, offset, sizeof(FilterDesc));
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    CHECK_GL_ERROR();
 }
 

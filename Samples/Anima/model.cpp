@@ -84,8 +84,6 @@ namespace Model
             assert(structSize==10*sizeof(v128));
         }
 #endif
-
-        GL_CHECK_ERROR();
     }
 
     void fini()
@@ -230,8 +228,6 @@ namespace Model
         mesh->numIndices = md5Mesh->numIndices;
         mesh->idxFormat  = GL_UNSIGNED_SHORT;
         mesh->idxOffset  = 0;
-
-        GL_CHECK_ERROR();
 
         free(vertices);
     }
@@ -425,8 +421,6 @@ cleanup:
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-
-        GL_CHECK_ERROR();
     }
 
     void renderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints)

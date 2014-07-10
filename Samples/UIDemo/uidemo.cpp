@@ -2,7 +2,6 @@
 
 #include <framework.h>
 #include <utils.h>
-#include <SpectatorCamera.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -732,18 +731,15 @@ ui::AreaDesc cancelButton = {         0, "Cancel",  {0, 0, 110, 28}, 0};
 class UIDemo: public ui::Stage
 {
 private:
-    SpectatorCamera     camera;
-    glm::mat4	mProj;
     int images[12];
-    int fontNormal, fontBold, fontIcons; 
+    int fontNormal, fontBold, fontIcons;
+
     memory_t f1, f2, f3;
 
 public:
     UIDemo()
     {
         memory_t fileData;
-
-        mProj = glm::perspectiveGTX(30.0f, mWidth/mHeight, 0.1f, 10000.0f);
 
         for (size_t i = 0; i < 12; i++)
         {
@@ -909,8 +905,6 @@ protected:
 
         glEnable(GL_DEPTH_TEST);
         glPopAttrib();
-
-        CHECK_GL_ERROR();
     }
 
     int dsx, dsy;
@@ -1056,7 +1050,7 @@ int main(int argc, char** argv)
         app.run();
     }
 
-    fwk::cleanup();
+    fwk::fini();
 
     return 0;
 }

@@ -290,8 +290,6 @@ static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLu
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
     player->timeOfNextFrame = player->frameTime;
-
-    GL_CHECK_ERROR()
 }
 
 static void decodeVideo(media_player_t player)
@@ -531,8 +529,6 @@ void mediaPlayerPrepareRender(media_player_t player)
 
     GLuint textures[] = {player->texY[0], player->texU[0], player->texV[0]};
     glBindTextures(0, ARRAY_SIZE(textures), textures);
-
-    GL_CHECK_ERROR();
 }
 
 void mediaPlayerRender(media_player_t player)
@@ -547,6 +543,4 @@ void mediaPlayerRender(media_player_t player)
     glEnd();
 
     glUseProgram(0);
-
-    GL_CHECK_ERROR();
 }

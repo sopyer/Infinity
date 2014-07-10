@@ -336,7 +336,6 @@ namespace lighting
         glPopMatrix();
 
         glDisable(GL_BLEND);
-        CHECK_GL_ERROR();
     }
 
     void update(float dt)
@@ -347,17 +346,12 @@ namespace lighting
 
     void drawBox()
     {
-        CHECK_GL_ERROR();
         glEnableVertexAttribArray(0);
-        CHECK_GL_ERROR();
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
-        CHECK_GL_ERROR();
 
         glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
-        CHECK_GL_ERROR();
 
         glDisableVertexAttribArray(0);
-        CHECK_GL_ERROR();
     }
 
     void drawSkybox(GLuint cubemap)
@@ -375,6 +369,5 @@ namespace lighting
         glBindSampler(0, 0);
 
         glCullFace(GL_BACK);
-
     }
 }

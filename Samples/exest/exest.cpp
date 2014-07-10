@@ -267,8 +267,6 @@ protected:
         int vtx = patches*terrain.patchDim*terrain.patchDim;
         _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
         vg::drawString(ui::defaultFont, 25.0f, 119.0f, str, strlen(str));
-
-        CHECK_GL_ERROR();
     }
 
     void onUpdate(float dt)
