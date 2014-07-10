@@ -24,8 +24,8 @@ extern "C"
 struct media_player_data_t
 {
     AVFormatContext* formatContext;
-    AVCodecContext*  videoCodecContext;
     AVCodecContext*  audioCodecContext;
+    AVCodecContext*  videoCodecContext;
     unsigned int     videoStream;
     unsigned int     audioStream;
     AVFrame*         pFrame; 
@@ -85,19 +85,8 @@ const char srcYUV2RGB[] =
 
 GLuint progYUV2RGB;
 
-static void closeAudioStream(media_player_t player)
-{
-    if (player->audioCodecContext)
-    {
-        avcodec_close(player->audioCodecContext);
-
-        alSourceStop(player->audioSource);
-        alDeleteBuffers(2, player->audioBuffers);
-        alDeleteSources(1, &player->audioSource);
-
-        player->audioCodecContext = 0;
-    }
-}
+static void closeAudioStream(media_player_t player);
+static void closeVideoStream(media_player_t player);
 
 static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
 {
@@ -135,19 +124,17 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
     return 1;
 }
 
-static void closeVideoStream(media_player_t player)
+static void closeAudioStream(media_player_t player)
 {
-    if (player->videoCodecContext)
+    if (player->audioCodecContext)
     {
-        av_free(player->pFrame);
+        avcodec_close(player->audioCodecContext);
 
-        avcodec_close(player->videoCodecContext);
+        alSourceStop(player->audioSource);
+        alDeleteBuffers(2, player->audioBuffers);
+        alDeleteSources(1, &player->audioSource);
 
-        glDeleteTextures(2, player->texY );
-        glDeleteTextures(2, player->texU);
-        glDeleteTextures(2, player->texV);
-
-        player->videoCodecContext = 0;
+        player->audioCodecContext = 0;
     }
 }
 
@@ -196,6 +183,22 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     return 1;
 }
 
+static void closeVideoStream(media_player_t player)
+{
+    if (player->videoCodecContext)
+    {
+        av_free(player->pFrame);
+
+        avcodec_close(player->videoCodecContext);
+
+        glDeleteTextures(2, player->texY );
+        glDeleteTextures(2, player->texU);
+        glDeleteTextures(2, player->texV);
+
+        player->videoCodecContext = 0;
+    }
+}
+
 static void streamMediaData(media_player_t player)
 {
     PROFILER_CPU_TIMESLICE("streamMediaData");
@@ -220,14 +223,6 @@ static void streamMediaData(media_player_t player)
         packet.size = 0;
         *ut::ring_buffer_alloc(player->vPackets) = packet;
     }
-}
-
-static void uploadAudioData(media_player_t player, ALuint buffer)
-{
-    PROFILER_CPU_TIMESLICE("uploadAudioData");
-
-    alBufferData(buffer, player->mAudioFormat, player->audioBuf, player->bufSize, player->audioCodecContext->sample_rate);
-    alSourceQueueBuffers(player->audioSource, 1, &buffer);
 }
 
 static void decodeAudio(media_player_t player)
@@ -274,24 +269,6 @@ static void decodeAudio(media_player_t player)
     }
 }
 
-static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLuint texV)
-{
-    PROFILER_CPU_TIMESLICE("uploadVideoData");
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
-
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-    player->timeOfNextFrame = player->frameTime;
-}
-
 static void decodeVideo(media_player_t player)
 {
     PROFILER_CPU_TIMESLICE("decodeVideo");
@@ -323,9 +300,31 @@ static void decodeVideo(media_player_t player)
     }
 }
 
-#ifdef _DEBUG
-char errBuf[2048];
-#endif
+static void uploadAudioData(media_player_t player, ALuint buffer)
+{
+    PROFILER_CPU_TIMESLICE("uploadAudioData");
+
+    alBufferData(buffer, player->mAudioFormat, player->audioBuf, player->bufSize, player->audioCodecContext->sample_rate);
+    alSourceQueueBuffers(player->audioSource, 1, &buffer);
+}
+
+static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLuint texV)
+{
+    PROFILER_CPU_TIMESLICE("uploadVideoData");
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
+    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
+    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
+    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
+
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+
+    player->timeOfNextFrame = player->frameTime;
+}
 
 void mediaInit()
 {
@@ -384,7 +383,6 @@ media_player_t mediaCreatePlayer(const char* source)
 
     player->taskStarted = false;
     player->eventID     = mt::INVALID_HANDLE;
-
 
     ut::ring_buffer_reset(player->aPackets);
     ut::ring_buffer_reset(player->vPackets);
