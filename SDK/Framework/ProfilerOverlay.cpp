@@ -1,5 +1,4 @@
 #include <opengl.h>
-#include <algorithm>
 
 #include "ProfilerOverlay.h"
 #include "profiler.h"
@@ -44,13 +43,15 @@ const char fsQuadSource[] =
 
 GLuint prgQuad;
 
+#define INVALID_SELECTION 0xFFFFFFFF
+
 void ProfilerOverlay::init(int w, int h)
 {
     mWidth = (float)w; mHeight=(float)h;
 
     float w1=mWidth-60.0f, h1=mHeight-60.0f;/*60=30+30*/
 
-    mSelection = -1;
+    mSelection = INVALID_SELECTION;
     mScale = 1.0f;
     mDoDrag = false;
     mOffsetX = 0.0f;
@@ -102,26 +103,26 @@ void ProfilerOverlay::loadProfilerData()
 
     rectData.resize(numEvents * 4);
 
-    __int64 minTime = events[0].timestamp,
-            maxTime = events[0].timestamp;
+    uint64_t minTime = events[0].timestamp,
+             maxTime = events[0].timestamp;
 
     for (size_t i = 1; i < numEvents; ++i)
     {
-        minTime = std::min(minTime, events[i].timestamp);
-        maxTime = std::max(maxTime, events[i].timestamp);
+        minTime = ut::min(minTime, events[i].timestamp);
+        maxTime = ut::max(maxTime, events[i].timestamp);
     }
 
     int     stackTop[MAX_THREAD_COUNT] = {-1, -1, -1, -1, -1, -1, -1, -1};
     struct
     {
-        size_t  id;
-        __int64 sliceBegin;
+        size_t   id;
+        uint64_t sliceBegin;
     } stack[MAX_THREAD_COUNT][MAX_STACK_DEPTH];
 
     float scale = (mWidth-70.0f) / float(maxTime-minTime);
 
     ut::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
-    ut::index_t<__int64, 32>                        threadMap = {0};
+    ut::index_t<uint64_t, 32>                       threadMap = {0};
 
     rectData.clear();
     intervals.clear();
@@ -201,40 +202,43 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
 
     {
-    PROFILER_CPU_TIMESLICE("modern");
-    glUseProgram(prgQuad);
+        PROFILER_CPU_TIMESLICE("ModernGL");
+        glUseProgram(prgQuad);
 
-    GLuint rectOffset, colOffset;
+        GLuint rectOffset, colOffset;
+        size_t count = colors.size();
 
-    size_t count = colors.size();
+        float*   rectDst = (float*)  gfx::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
+        uint8_t* colDst  = (uint8_t*)gfx::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
 
-    float*   rectDst = (float*)  gfx::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
-    uint8_t* colDst  = (uint8_t*)gfx::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
+        {
+            PROFILER_CPU_TIMESLICE("Data copy");
+            memcpy(rectDst, &rectData[0], sizeof(float)*4*count);
+            memcpy(colDst,  colorArray,   sizeof(uint8_t)*4*count);
+        }
 
-    memcpy(rectDst, &rectData[0], sizeof(float)*4*count);
-    memcpy(colDst,  colorArray,   sizeof(uint8_t)*4*count);
+        glBindVertexArray(vao);
 
-    glBindVertexArray(vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, rectOffset, sizeof(float)*4);
+        glBindVertexBuffer(1, gfx::dynBuffer, colOffset,  sizeof(uint8_t)*4);
 
-    glBindVertexBuffer(0, gfx::dynBuffer, rectOffset, sizeof(float)*4);
-    glBindVertexBuffer(1, gfx::dynBuffer, colOffset,  sizeof(uint8_t)*4);
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
 
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+        glBindVertexArray(0);
 
-    glBindVertexArray(0);
-
-    glUseProgram(0);
+        glUseProgram(0);
     }
 
     glPopMatrix();
 }
 
-void ProfilerOverlay::updateUI()
+void ProfilerOverlay::updateUI(float delta)
 {
     int offx;
 
-    static const float scaleUp   = 1.25;
-    static const float scaleDown = 1.0f / 1.25f;
+    float scaleSpeed = 0.50f; // (increase/s)
+    float scaleUp    = 1.0f + scaleSpeed * delta;
+    float scaleDown  = 1.0f / scaleUp;
 
     int x, y;
 
@@ -254,14 +258,14 @@ void ProfilerOverlay::updateUI()
         }
     }
 
-    if (ui::keyWasReleased(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
+    if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
     {
         ui::mouseAbsOffset(&offx, NULL);
         mScale*=scaleUp;
         offx -= 30;
         mOffsetX = (1.0f-scaleUp) * offx + scaleUp * mOffsetX;
     }
-    if (ui::keyWasReleased(SDL_SCANCODE_MINUS) || ui::mouseWasWheelDown())
+    if (ui::keyIsPressed(SDL_SCANCODE_MINUS) || ui::mouseWasWheelDown())
     {
         ui::mouseAbsOffset(&offx, NULL);
         mScale*=scaleDown;
@@ -319,7 +323,7 @@ void ProfilerOverlay::renderFullscreen()
     if (!rectData.empty())
         drawBars(&colors[0]);
 
-    if (mSelection >= 0 && mSelection < intervals.size())
+    if (mSelection != INVALID_SELECTION && mSelection < intervals.size())
     {
         char str[256];
 

@@ -1,5 +1,8 @@
 #include <windows.h>
-#include <cstdlib>
+
+#undef min
+#undef max
+
 #include "Framework.h"
 #include <SDL2/SDL.h>
 #include "scheduler.h"
@@ -15,7 +18,7 @@ namespace logging
         va_start(vl, s);
         vsnprintf(str, 4096, s, vl);
         WriteConsole(GetStdHandle(STD_OUTPUT_HANDLE), str, strlen(str), &written, 0);
-        OutputDebugString(str);
+        OutputDebugStringA(str);
         va_end(vl);
     }
 }

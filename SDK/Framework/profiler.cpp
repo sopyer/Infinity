@@ -1,44 +1,57 @@
-#include <SDL2/SDL.h>
-#include <algorithm>
 #include <assert.h>
-#include <windows.h>
+#include <SDL2/SDL.h>
+#include <utils.h>
 #include "profiler.h"
 
 #define MAX_PROFILER_EVENTS     16384
 
 extern "C"
 {
-    static volatile long		numEvents = 0;
-    static profiler_event_t	    events[MAX_PROFILER_EVENTS];
-    static volatile long        captureInProgress = FALSE;
+    static volatile long        numEvents = 0;
+    static profiler_event_t     events[MAX_PROFILER_EVENTS];
+    static volatile long        doCapture = FALSE;
+    static long                 captureActive = FALSE;
 
-    void profilerBeginDataCapture()
+    void profilerStartCapture()
     {
-        numEvents         = 0;
-        captureInProgress = TRUE;
+        numEvents     = 0;
+        captureActive = TRUE;
     }
 
-    void profilerEndDataCapture()
+    void profilerStopCapture()
     {
-        captureInProgress = FALSE;
+        captureActive = FALSE;
+    }
 
-        __int64 ticksPerSecond = SDL_GetPerformanceFrequency();
+    int profilerIsCaptureActive()
+    {
+        return captureActive;
+    }
 
-        // convert timestamps to microseconds
-        for (long i = 0; i < numEvents; ++i)
+    void profilerStartSyncPoint()
+    {
+        doCapture = captureActive;
+    }
+
+    void profilerStopSyncPoint()
+    {
+        if (!captureActive)
         {
-            events[i].timestamp = events[i].timestamp * 1000000 / ticksPerSecond;
-        }
-    }
+            doCapture = FALSE;
 
-    int profilerIsCaptureInProgress ()
-    {
-        return captureInProgress;
+            uint64_t ticksPerSecond = SDL_GetPerformanceFrequency();
+
+            // convert timestamps to microseconds
+            for (long i = 0; i < numEvents; ++i)
+            {
+                events[i].timestamp = events[i].timestamp * 1000000 / ticksPerSecond;
+            }
+        }
     }
 
     void profilerAddCPUEvent(size_t id, size_t eventPhase)
     {
-        if (!captureInProgress) return;
+        if (!doCapture) return;
 
         size_t count = _InterlockedIncrement(&numEvents);
         if (count<=MAX_PROFILER_EVENTS)
@@ -60,6 +73,7 @@ extern "C"
 
     void profilerGetData(size_t* numEvents, const profiler_event_t** events)
     {
+        assert(!captureActive && !doCapture);
         *numEvents = ::numEvents;
         *events    = ::events;
     }

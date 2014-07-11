@@ -23,16 +23,20 @@ enum
     STATE_PROFILER
 };
 
+enum
+{
+    PROF_STATE_NO_CAPTURE,
+    PROF_STATE_FRAME_CAPTURE,
+    PROF_STATE_TIMESLICE_CAPTURE,
+    PROF_STATE_DATA_RETRIEVAL
+};
+
 namespace ui
 {
     Stage::Stage():
         mState(STATE_DEFAULT),
-        doFrameCapture(false),
-        doTimesliceCapture(false),
+        mProfilerState(PROF_STATE_NO_CAPTURE),
         mRunLoop(true)
-#if defined(DEBUG) || defined(_DEBUG)
-        ,dumpPickImage(0)
-#endif
     {
         ////!!!! Refactor
         mFullscreen = false;
@@ -79,22 +83,52 @@ namespace ui
     {
         PROFILER_CPU_TIMESLICE("handleInput");
 
-        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_T))
+        if (mProfilerState == PROF_STATE_DATA_RETRIEVAL)
         {
-            doTimesliceCapture = !doTimesliceCapture;
+            mProfilerState = PROF_STATE_NO_CAPTURE;
+            mProfilerOverlay->loadProfilerData();
         }
-        else if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_F))
+        else if (
+            mProfilerState==PROF_STATE_TIMESLICE_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE) &&
+            ui::keyWasReleased(SDL_SCANCODE_T)
+        )
         {
-            doFrameCapture = !doTimesliceCapture;
+            mProfilerState = PROF_STATE_DATA_RETRIEVAL;
+            profilerStopCapture();
+        }
+        else if (mProfilerState == PROF_STATE_FRAME_CAPTURE)
+        {
+            mProfilerState = PROF_STATE_DATA_RETRIEVAL;
+            profilerStopCapture();
+        }
+        else if (
+            mProfilerState==PROF_STATE_NO_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE)  &&
+            ui::keyWasReleased(SDL_SCANCODE_T)
+        )
+        {
+            mProfilerState = PROF_STATE_TIMESLICE_CAPTURE;
+            profilerStartCapture();
+        }
+        else if (
+            mProfilerState==PROF_STATE_NO_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE)  &&
+            ui::keyWasReleased(SDL_SCANCODE_F)
+        )
+        {
+            mProfilerState = PROF_STATE_FRAME_CAPTURE;
+            profilerStartCapture();
+        }
+        else if (
+            mProfilerState!=PROF_STATE_NO_CAPTURE &&
+            mProfilerState!=PROF_STATE_TIMESLICE_CAPTURE
+        )
+        {
+            assert(!"Invalid state");
         }
 
-#if defined(DEBUG) || defined(_DEBUG)
-        if (ui::keyIsPressed(SDL_SCANCODE_GRAVE) && ui::keyWasReleased(SDL_SCANCODE_P))
-        {
-            dumpPickImage = true;
-        }
-#endif
-        SDL_Event	E;
+        SDL_Event   E;
         while (SDL_PollEvent(&E))
         {
             switch(E.type)
@@ -105,7 +139,6 @@ namespace ui
             case SDL_TEXTINPUT:
                  if (mState==STATE_SHADER_EDIT) mShaderEditOverlay->inputText(E.text.text);
                 break;
-
             case SDL_KEYDOWN:
                 switch (mState)
                 {
@@ -149,80 +182,61 @@ namespace ui
     {
         while (mRunLoop)
         {
-            static const char* strFrame = "Frame";
+            profilerStartSyncPoint();
+            {
+                PROFILER_CPU_TIMESLICE("Frame");
 
-            if (doFrameCapture && !profilerIsCaptureInProgress())
-            {
-                profilerBeginDataCapture();
-            }
-            else if (doFrameCapture && profilerIsCaptureInProgress())
-            {
-                profilerEndDataCapture();
-                mProfilerOverlay->loadProfilerData();
-                doFrameCapture = false;
-            }
-            else if (doTimesliceCapture && !profilerIsCaptureInProgress())
-            {
-                profilerBeginDataCapture();
-            }
-            else if (!doTimesliceCapture && profilerIsCaptureInProgress())
-            {
-                profilerEndDataCapture();
-                mProfilerOverlay->loadProfilerData();
-            }
-            PROFILER_CPU_TIMESLICE("Frame");
+                {
+                    PROFILER_CPU_TIMESLICE("Frame sync");
+                    gfx::beginFrame();
+                }
 
-            {
-                PROFILER_CPU_TIMESLICE("Frame sync");
-                gfx::beginFrame();
-            }
+                glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
-            glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
-
-            //TODO: Merge all three
-            handleInput();
-            ui::update();
-
-            if (mState==STATE_PROFILER)
-            {
-                PROFILER_CPU_TIMESLICE("mProfilerOverlay->updateUI");
-                mProfilerOverlay->updateUI();
-            }
-            else if (mState==STATE_DEFAULT)
-            {
-                PROFILER_CPU_TIMESLICE("onUpdate");
                 uint64_t time;
-
                 time = timerAbsoluteTime();
-                onUpdate((time-mPrevTime)*0.000001f);
+                //TODO: Merge all three
+                handleInput();
+                ui::update();
+                if (mState==STATE_PROFILER)
+                {
+                    PROFILER_CPU_TIMESLICE("mProfilerOverlay->updateUI");
+                    mProfilerOverlay->updateUI((time-mPrevTime)*0.000001f);
+                }
+                else if (mState==STATE_DEFAULT)
+                {
+                    PROFILER_CPU_TIMESLICE("onUpdate");
+                    onUpdate((time-mPrevTime)*0.000001f);
+                }
+                if (mShaderEditOverlay->requireReset())
+                {
+                    PROFILER_CPU_TIMESLICE("onShaderRecompile");
+                    onShaderRecompile();
+                }
                 mPrevTime = time;
-            }
 
-            if (mShaderEditOverlay->requireReset())
-            {
-                PROFILER_CPU_TIMESLICE("onShaderRecompile");
-                onShaderRecompile();
-            }
+                renderActors();
 
-            renderActors();
+                ui::render();
+                if (mState==STATE_PROFILER)
+                {
+                    PROFILER_CPU_TIMESLICE("mProfilerOverlay->renderFullscreen");
+                    mProfilerOverlay->renderFullscreen();
+                }
+                if (mState==STATE_SHADER_EDIT)
+                {
+                    PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
+                    mShaderEditOverlay->renderFullscreen();
+                }
 
-            if (mState==STATE_PROFILER)
-            {
-                PROFILER_CPU_TIMESLICE("mProfilerOverlay->renderFullscreen");
-                mProfilerOverlay->renderFullscreen();
-            }
-            if (mState==STATE_SHADER_EDIT)
-            {
-                PROFILER_CPU_TIMESLICE("mShaderEditOverlay->renderFullscreen");
-                mShaderEditOverlay->renderFullscreen();
-            }
+                gfx::endFrame();
 
-            gfx::endFrame();
-
-            {
-                PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
-                SDL_GL_SwapWindow(fwk::window);
+                {
+                    PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
+                    SDL_GL_SwapWindow(fwk::window);
+                }
             }
+            profilerStopSyncPoint();
         }
     }
 
@@ -247,9 +261,5 @@ namespace ui
         glPushMatrix();
         onPaint();
         glPopMatrix();
-
-        ui::render();
-
-        glFlush();
     }
 }

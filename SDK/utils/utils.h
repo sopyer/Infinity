@@ -212,6 +212,18 @@ namespace ut
     //TODO: make mt!!!!!
     stack_mem_t get_thread_data_stack();
 
+    template<typename T>
+    inline T min(T x, T y)
+    {
+        return (x < y) ? x : y;
+    }
+
+    template<typename T>
+    inline T max(T x, T y)
+    {
+        return (x > y) ? x : y;
+    }
+
 /*------------------ Ring buffer--------------------*/
     template<typename T, size_t N>
     struct ring_buffer_t

@@ -1,6 +1,8 @@
 #ifndef __FRAMEWORK_PROFILER_H_INCLUDED__
 #	define __FRAMEWORK_PROFILER_H_INCLUDED__
 
+#include <stdint.h>
+
 #   ifdef __cplusplus
 extern "C"
 {
@@ -16,10 +18,10 @@ enum EventPhase
 
 struct profiler_event_t
 {
-    size_t  id;
-    size_t  phase;
-    __int64	timestamp;
-    __int64 threadID;
+    size_t   id;
+    size_t   phase;
+    uint64_t timestamp;
+    uint64_t threadID;
 };
 
 struct profiler_desc_t
@@ -27,11 +29,15 @@ struct profiler_desc_t
     const char* name;
 };
 
-void profilerBeginDataCapture    ();
-void profilerEndDataCapture      ();
-int  profilerIsCaptureInProgress ();
-void profilerAddCPUEvent         (size_t id, size_t eventPhase);
-void profilerGetData             (size_t* numEvents, const profiler_event_t** events);
+void profilerStartCapture   ();
+void profilerStopCapture    ();
+int  profilerIsCaptureActive();
+
+void profilerStartSyncPoint();
+void profilerStopSyncPoint ();
+
+void profilerAddCPUEvent(size_t id, size_t eventPhase);
+void profilerGetData    (size_t* numEvents, const profiler_event_t** events);
 
 #   ifdef __cplusplus
 }

@@ -41,19 +41,14 @@ namespace ui
     private:
         v128 mProj[4];
         bool mRunLoop;
-#if defined(DEBUG) || defined(_DEBUG)
-        int dumpPickImage:1;
-#endif
 
         size_t              mState;
+        size_t              mProfilerState;
 
         uint64_t            mPrevTime;
 
         ShaderEditOverlay*  mShaderEditOverlay;
         ProfilerOverlay*    mProfilerOverlay;
-
-        bool doFrameCapture;
-        bool doTimesliceCapture;
     };
 }
 

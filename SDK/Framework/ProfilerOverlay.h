@@ -29,7 +29,7 @@ public:
     void loadProfilerData();
 
     void renderFullscreen();
-    void updateUI();
+    void updateUI(float delta);
 
 private:
     void drawBars(uint32_t* colorArray);
@@ -42,10 +42,10 @@ private:
     float mWidth;
     float mHeight;
 
-    int   mSelection;
-    float mScale;
-    bool  mDoDrag;
-    float mOffsetX;
+    size_t mSelection;
+    float  mScale;
+    bool   mDoDrag;
+    float  mOffsetX;
 
     GLuint vboRectData;
     GLuint vboColorData;
