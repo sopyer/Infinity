@@ -238,10 +238,10 @@ static void decodeAudio(media_player_t player)
     {
         if (ut::ring_buffer_used(player->aPackets)>0)
         {
-            AVPacket*   pkt        = ut::ring_buffer_back(player->aPackets);
-            uint8_t*    inData     = pkt->data;
-            int         inSize     = pkt->size;
-            int         bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+            AVPacket* pkt        = ut::ring_buffer_back(player->aPackets);
+            uint8_t*  inData     = pkt->data;
+            int       inSize     = pkt->size;
+            int       bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
 
             while(inSize > 0)
             {
@@ -252,8 +252,8 @@ static void decodeAudio(media_player_t player)
                     break;
                 }
 
-                inData     += processed;
-                inSize     -= processed;
+                inData += processed;
+                inSize -= processed;
 
                 assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
                 player->bufSize += bufSizeAva;

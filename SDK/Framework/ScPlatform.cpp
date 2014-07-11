@@ -58,13 +58,11 @@ void Platform::Assert(const char *c, const char *file, int line) {
 #include <winuser.h>
 #include <wtypes.h>
 
-HWND hClipWnd; //Clipboard window
 CLIPFORMAT cfColumnSelect;
 CLIPFORMAT cfLineSelect;
 
-void Platform_Initialise(HWND hWnd)
+void Platform_Initialise()
 {
-	hClipWnd = hWnd;
 	// There does not seem to be a real standard for indicating that the clipboard
 	// contains a rectangular selection, so copy Developer Studio.
 	cfColumnSelect = static_cast<CLIPFORMAT>(
@@ -129,7 +127,7 @@ int IsClipboardTextAvailable(AdditionalTextFormat fmt)
 
 void SetClipboardTextUTF8(const char* text, size_t len, int additionalFormat)
 {
-	if (!::OpenClipboard(hClipWnd))
+	if (!::OpenClipboard(NULL))
 		return;
 	::EmptyClipboard();
 
@@ -156,7 +154,7 @@ void SetClipboardTextUTF8(const char* text, size_t len, int additionalFormat)
 
 int GetClipboardTextUTF8(char* text, size_t len)
 {
-	if (!::OpenClipboard(hClipWnd))
+	if (!::OpenClipboard(NULL))
 		return 0;
 
 	unsigned int clipLen = 0;

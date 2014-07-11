@@ -1,10 +1,6 @@
-#define GLEW_STATIC
-#include <windows.h>
 #include <cstdlib>
 #include <opengl.h>
-#include <SOIL.h> // remove later
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
 #include <utils.h>
 #include <vg/vg.h>
 #include <vg/impl/SharedResources.h>
@@ -17,7 +13,7 @@
 #include "Stage.h"
 #include "graphics.h"
 
-void Platform_Initialise(HWND hWnd);
+void Platform_Initialise();
 void Platform_Finalise();
 
 enum
@@ -44,10 +40,6 @@ namespace ui
         mHeight = 720;
 
         ml::make_ortho2D_mat4(mProj, 0, mWidth, mHeight, 0);
-
-        SDL_SysWMinfo info = {0, SDL_SYSWM_UNKNOWN, {0}};
-        SDL_GetWindowWMInfo(fwk::window, &info);
-        Platform_Initialise(info.info.win.window);
 
         mShaderEditOverlay = new ShaderEditOverlay;
         mShaderEditOverlay->initialise(mWidth, mHeight);
