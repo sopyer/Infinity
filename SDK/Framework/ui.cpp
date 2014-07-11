@@ -398,6 +398,12 @@ namespace ui
 
     void processCameraInput(SpectatorCamera* camera, float dt)
     {
+        if (uiState != STATE_DEFAULT)
+        {
+            if (mouseIsCaptured()) mouseRelease();
+            return;
+        }
+
         bool LCTRL_Down_LALT_Released     = keyIsPressed  (SDL_SCANCODE_LCTRL) && keyWasReleased(SDL_SCANCODE_LALT );
         bool LALT_Down_LCTRL_Released     = keyIsPressed  (SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
         bool LALT_Released_LCTRL_Released = keyWasReleased(SDL_SCANCODE_LALT ) && keyWasReleased(SDL_SCANCODE_LCTRL);
