@@ -201,8 +201,8 @@ public:
         glGenTextures(1, &gradTex);
         glTextureImage1DEXT(gradTex, GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
 
-        addPrograms(PRG_ID_COUNT, programs);
-        addPrograms(1, &perlinGtorProg);
+        ui::addPrograms(PRG_ID_COUNT, programs);
+        ui::addPrograms(1, &perlinGtorProg);
     }
 
     GLuint texSource;

@@ -330,6 +330,11 @@ namespace ui
         }
     }
 
+    void addPrograms(size_t count, GLuint* programs)
+    {
+        overlayShaderEdit->addPrograms(count, programs);
+    }
+
     bool mouseWasWheelUp()
     {
         return mouseWheelUp;

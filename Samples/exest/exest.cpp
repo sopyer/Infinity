@@ -71,7 +71,7 @@ public:
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
 
-        addPrograms(1, &terrain.prgTerrain);
+        ui::addPrograms(1, &terrain.prgTerrain);
 
         gfx::autoVars.projParams.x = mProj[0].m128_f32[0];
         gfx::autoVars.projParams.y = mProj[1].m128_f32[1];

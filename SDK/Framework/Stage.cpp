@@ -31,13 +31,6 @@ namespace ui
         mPrevTime = timerAbsoluteTime();
     }
 
-    void Stage::addPrograms(size_t count, GLuint* programs)
-    {
-        overlayShaderEdit->addPrograms(count, programs);
-    }
-
-    void onSDLEvent(SDL_Event& event);
-
     void Stage::run()
     {
         while (fwk::runLoop)

@@ -16,8 +16,6 @@ namespace ui
 
     protected:
         //Debug functions and callbacks
-        void addPrograms(size_t count, GLuint* programs);
-
         virtual void onShaderRecompile() {}
         virtual void onUpdate(float /*dt*/) {}
         virtual void onPaint() {}
