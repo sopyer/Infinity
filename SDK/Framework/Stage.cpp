@@ -28,8 +28,6 @@ namespace ui
         mWidth = 1280;
         mHeight = 720;
 
-        ml::make_ortho2D_mat4(mProj, 0, mWidth, mHeight, 0);
-
         mPrevTime = timerAbsoluteTime();
     }
 
@@ -54,11 +52,9 @@ namespace ui
                 PROFILER_CPU_TIMESLICE("Frame");
 
                 {
-                    PROFILER_CPU_TIMESLICE("Frame sync");
+                    PROFILER_CPU_TIMESLICE("Frame sync and gfx init");
                     gfx::beginFrame();
                 }
-
-                glViewport(0, 0, (GLsizei)mWidth, (GLsizei)mHeight);
 
                 uint64_t time = timerAbsoluteTime();
                 float dt = (time-mPrevTime)*0.000001f;
@@ -73,7 +69,10 @@ namespace ui
                     onShaderRecompile();
                 }
 
-                renderActors();
+                {
+                    PROFILER_CPU_TIMESLICE("onPaint");
+                    onPaint();
+                }
                 ui::render();
 
                 gfx::endFrame();
@@ -85,28 +84,5 @@ namespace ui
             }
             profilerStopSyncPoint();
         }
-    }
-
-    void Stage::renderActors()
-    {
-        PROFILER_CPU_TIMESLICE("renderActors");
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClearDepth(1.0);
-        glClearStencil(0);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadMatrixf((float*)mProj);
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-
-        glPushMatrix();
-        onPaint();
-        glPopMatrix();
     }
 }

@@ -31,7 +31,6 @@ namespace ui
         void renderActors();
 
     private:
-        v128 mProj[4];
 
         uint64_t            mPrevTime;
     };

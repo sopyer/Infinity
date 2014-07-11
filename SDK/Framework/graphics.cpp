@@ -32,6 +32,8 @@ namespace gfx
     static uint8_t*   dynBufBasePtr;
     static GLsizeiptr dynBufAllocated;
 
+    v128 uiProj[4];
+
     gl_caps_t caps;
 
     static const char* glString(GLenum value)
@@ -97,6 +99,8 @@ namespace gfx
         width  = 1280;
         height = 720;
 
+        ml::make_ortho2D_mat4(uiProj, 0, (float)width, (float)height, 0);
+
         prgLine  = resources::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
         prgPoint = resources::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
 
@@ -144,6 +148,24 @@ namespace gfx
 
         dynBufferOffset = frameID * DYNAMIC_BUFFER_FRAME_SIZE;
         dynBufAllocated = 0;
+
+        glClearDepth(1.0);
+        glClearStencil(0x00);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        glViewport(0, 0, width, height);
+
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadMatrixf((float*)uiProj);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
     }
 
     void endFrame()
