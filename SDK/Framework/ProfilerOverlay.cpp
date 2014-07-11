@@ -236,9 +236,8 @@ void ProfilerOverlay::updateUI(float delta)
 {
     int offx;
 
-    float scaleSpeed = 0.50f; // (increase/s)
-    float scaleUp    = 1.0f + scaleSpeed * delta;
-    float scaleDown  = 1.0f / scaleUp;
+    float keybScaleSpeed  = 0.50f; // (increase/s)
+    float mouseScaleSpeed = 0.10f; // (increase/s)
 
     int x, y;
 
@@ -260,13 +259,17 @@ void ProfilerOverlay::updateUI(float delta)
 
     if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
     {
+        float scaleUp = 1.0f + (ui::mouseWasWheelUp() ? mouseScaleSpeed : keybScaleSpeed * delta);
+
         ui::mouseAbsOffset(&offx, NULL);
-        mScale*=scaleUp;
+        mScale *= scaleUp;
         offx -= 30;
         mOffsetX = (1.0f-scaleUp) * offx + scaleUp * mOffsetX;
     }
     if (ui::keyIsPressed(SDL_SCANCODE_MINUS) || ui::mouseWasWheelDown())
     {
+        float scaleDown  = 1.0f / (1.0f + (ui::mouseWasWheelDown() ? mouseScaleSpeed : keybScaleSpeed * delta));
+
         ui::mouseAbsOffset(&offx, NULL);
         mScale*=scaleDown;
         offx -= 30;
