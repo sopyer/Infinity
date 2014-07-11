@@ -34,13 +34,61 @@ namespace gfx
 
     gl_caps_t caps;
 
-    void APIENTRY glDebugCallback(
-        GLenum source, GLenum type, GLuint id,
-        GLenum severity, GLsizei length,
-        const GLchar *message, const void *userParam
+    static const char* glString(GLenum value)
+    {
+        switch (value)
+        {
+            case GL_DEBUG_SOURCE_API:
+                return "API";
+            case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+                return "WINSYS";
+            case GL_DEBUG_SOURCE_SHADER_COMPILER:
+                return "SHADERCOMPILER";
+            case GL_DEBUG_SOURCE_THIRD_PARTY:
+                return "3RDPARTY";
+            case GL_DEBUG_SOURCE_APPLICATION:
+                return "APP";
+            case GL_DEBUG_SOURCE_OTHER:
+                return "OTHER";
+            case GL_DEBUG_TYPE_ERROR:
+                return "ERROR";
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+                return "DEPRECATED";
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+                return "UNDEFINED";
+            case GL_DEBUG_TYPE_PORTABILITY:
+                return "PORTABILITY";
+            case GL_DEBUG_TYPE_PERFORMANCE:
+                return "PERFORMANCE";
+            case GL_DEBUG_TYPE_OTHER:
+                return "OTHER";
+            case GL_DEBUG_TYPE_MARKER:
+                return "MARKER";
+            case GL_DEBUG_TYPE_PUSH_GROUP:
+                return "PUSHGROUP";
+            case GL_DEBUG_TYPE_POP_GROUP:
+                return "POPGROUP";
+            case GL_DEBUG_SEVERITY_HIGH:
+                return "HIGH";
+            case GL_DEBUG_SEVERITY_MEDIUM:
+                return "MEDIUM";
+            case GL_DEBUG_SEVERITY_LOW:
+                return "LOW";
+            case GL_DEBUG_SEVERITY_NOTIFICATION:
+                return "NOTIFY";
+        }
+
+        return "UNKNOWN";
+    }
+
+    void APIENTRY debugCallback(
+        GLenum source, GLenum type,
+        GLuint id, GLenum severity,
+        GLsizei length, const GLchar *message,
+        const void *userParam
     )
     {
-        logging::message("Message : %s\n", message);
+        logging::message("SRC[%s] TYPE[%s] SEV[%s] : %s\n", glString(source), glString(type), glString(severity), message);
     }
 
     void init()
@@ -55,7 +103,9 @@ namespace gfx
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
 
-        glDebugMessageCallback( glDebugCallback, NULL );
+        glDebugMessageCallback(debugCallback, NULL);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
         vf::skinned_geom_t::vao = createVAO(ARRAY_SIZE(vf::descSkinnedGeom), vf::descSkinnedGeom, 0, NULL);
 
