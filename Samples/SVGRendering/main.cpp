@@ -36,7 +36,7 @@ public:
 
         gfx::gpu_timer_init(&gpuTimer);
 
-        setCaption("GPU accelerated SVG rendering");
+        fwk::setCaption("GPU accelerated SVG rendering");
     }
 
     ui::CheckBoxID mAAEnabled;

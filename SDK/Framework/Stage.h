@@ -13,7 +13,6 @@ namespace ui
         Stage();
 
         void run();
-        void setCaption(const char* caption);
 
     protected:
         //Debug functions and callbacks

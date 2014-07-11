@@ -107,4 +107,9 @@ namespace fwk
     {
         recompileGLPrograms = true;
     }
+
+    void setCaption(const char* caption)
+    {
+        SDL_SetWindowTitle(fwk::window, caption);
+    }
 }

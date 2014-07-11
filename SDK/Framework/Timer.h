@@ -1,8 +1,7 @@
 #ifndef _TIMER_H_INCLUDED_
 #   define _TIMER_H_INCLUDED_
 
-#include <SDL2/SDL.h>
-#include <utils.h>
+#include <stdint.h>
 
 struct cpu_timer_t
 {

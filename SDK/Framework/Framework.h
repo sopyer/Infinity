@@ -25,8 +25,8 @@ namespace fwk
     void init(const char* argv0);
     void fini();
 
+    void setCaption(const char* caption);
     void recompilePrograms();
-
     void exit();
 }
 

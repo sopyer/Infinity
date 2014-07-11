@@ -1,6 +1,3 @@
-#include <vector>
-#include <cassert>
-
 #include <opengl.h>
 #include <al/al.h>
 #include <al/alc.h>
@@ -17,6 +14,7 @@ extern "C"
 #include "profiler.h"
 #include "ResourceHelpers.h"
 
+#include <utils.h>
 #include <graphics.h>
 
 #define PACKET_BUFFER_SIZE 64
@@ -507,9 +505,9 @@ void mediaPlayerUpdate(media_player_t player)
     uint64_t time = currentTime+player->timeShift;
     if (time>=player->timeOfNextFrame)
     {
-        std::swap(player->texY[0], player->texY[1]);
-        std::swap(player->texU[0], player->texU[1]);
-        std::swap(player->texV[0], player->texV[1]);
+        ut::swap(player->texY[0], player->texY[1]);
+        ut::swap(player->texU[0], player->texU[1]);
+        ut::swap(player->texV[0], player->texV[1]);
 
         player->subTasks |= MEDIA_DECODE_VIDEO;
     }

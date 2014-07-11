@@ -224,6 +224,14 @@ namespace ut
         return (x > y) ? x : y;
     }
 
+    template<typename T>
+    inline void swap(T& x, T& y)
+    {
+        T tmp = x;
+        x = y;
+        y = tmp;
+    }
+
 /*------------------ Ring buffer--------------------*/
     template<typename T, size_t N>
     struct ring_buffer_t

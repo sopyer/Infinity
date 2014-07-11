@@ -38,11 +38,6 @@ namespace ui
 
     void onSDLEvent(SDL_Event& event);
 
-    void Stage::setCaption(const char* caption)
-    {
-        SDL_SetWindowTitle(fwk::window, caption);
-    }
-
     void Stage::run()
     {
         while (fwk::runLoop)
