@@ -758,20 +758,6 @@ protected:
         _snprintf(zoomStr, 256, "Zoom level %f", zoom);
         vg::drawString(ui::defaultFont, 300, 10, zoomStr, strlen(zoomStr));
     }
-
-    void onUntouch(const ButtonEvent& event)
-    {
-        doMove = false;
-    }
-
-    void onMotion(const MotionEvent& event)
-    {
-        if (doMove)
-        {
-            offsetX += event.xrel;
-            offsetY += event.yrel;
-        }
-    }
 };
 
 int main(int argc, char** argv)

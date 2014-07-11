@@ -28,6 +28,9 @@ namespace fwk
     SDL_Window*      window;
     SDL_GLContext    context;
 
+    bool runLoop;
+    bool recompileGLPrograms;
+
     void init(const char* argv0)
     {
         PHYSFS_init(argv0);
@@ -39,7 +42,7 @@ namespace fwk
         if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)
         {
             logging::message("Unable to open SDL: %s\n", SDL_GetError() );
-            exit(1);
+            ::exit(1);
         }
 
         SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
@@ -64,7 +67,7 @@ namespace fwk
         if(!window)
         {
             logging::message("Unable to create window: %s\n", SDL_GetError() );
-            exit(1);
+            ::exit(1);
         }
 
         context = SDL_GL_CreateContext(window);
@@ -76,6 +79,8 @@ namespace fwk
         ui::init(1280, 720);
         mt::init(1, 128);
         gfx::init();
+
+        runLoop = true;
     }
 
     void fini()
@@ -91,5 +96,15 @@ namespace fwk
         SDL_Quit();
 
         PHYSFS_deinit();
+    }
+
+    void exit()
+    {
+        runLoop = false;
+    }
+
+    void recompilePrograms()
+    {
+        recompileGLPrograms = true;
     }
 }

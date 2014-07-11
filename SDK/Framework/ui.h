@@ -24,7 +24,7 @@ namespace ui
     //TODO: Refactor!!!!!!
     void     init(GLsizei width, GLsizei height); //Refactor later to add support for resolution change!!!!
     void     fini();
-    void     update();
+    void     update(float dt);
     void     render();
 
     bool     keyIsPressed  (int key);

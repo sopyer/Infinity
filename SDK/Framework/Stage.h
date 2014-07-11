@@ -5,21 +5,14 @@
 #   include <queue>
 #   include <ml.h>
 
-struct SDL_Surface;
-
-class  ShaderEditOverlay;
-class  ProfilerOverlay;
-
 namespace ui
 {
     class Stage
     {
     public:
         Stage();
-        ~Stage();
 
         void run();
-        void close();
         void setCaption(const char* caption);
 
     protected:
@@ -36,19 +29,11 @@ namespace ui
 
     private:
         void renderActors();
-        void handleInput();
 
     private:
         v128 mProj[4];
-        bool mRunLoop;
-
-        size_t              mState;
-        size_t              mProfilerState;
 
         uint64_t            mPrevTime;
-
-        ShaderEditOverlay*  mShaderEditOverlay;
-        ProfilerOverlay*    mProfilerOverlay;
     };
 }
 

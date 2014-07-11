@@ -24,6 +24,10 @@ namespace fwk
 
     void init(const char* argv0);
     void fini();
+
+    void recompilePrograms();
+
+    void exit();
 }
 
 #endif

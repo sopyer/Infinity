@@ -3,10 +3,16 @@
 #include <SDL2/SDL.h>
 #include "DefaultFontData.h"
 #include "SpectatorCamera.h"
+#include "ShaderEditOverlay.h"
+#include "ProfilerOverlay.h"
 #include "CameraDirector.h"
 #include "ResourceHelpers.h"
 #include "Framework.h"
 #include <utils.h>
+#include <vg/impl/SharedResources.h>
+
+void Platform_Initialise();
+void Platform_Finalise();
 
 namespace ui
 {
@@ -37,6 +43,27 @@ namespace ui
     bool     mouseWheelUp;
     bool     mouseWheelDown;
 
+    ShaderEditOverlay*  overlayShaderEdit;
+    ProfilerOverlay*    overlayProfiler;
+
+    enum
+    {
+        STATE_DEFAULT,
+        STATE_SHADER_EDIT,
+        STATE_PROFILER
+    };
+
+    enum
+    {
+        PROF_STATE_NO_CAPTURE,
+        PROF_STATE_FRAME_CAPTURE,
+        PROF_STATE_TIMESLICE_CAPTURE,
+        PROF_STATE_DATA_RETRIEVAL
+    };
+
+    size_t uiState;
+    size_t profilerState;
+
     struct CheckBox
     {
         float x0, y0, x1, y1;
@@ -56,6 +83,51 @@ namespace ui
     int      findAreaByID(uint32_t id);
     uint32_t findAreaID  (const point_t& p);
 
+    void processSDLEvents();
+
+    void reset();
+
+    void init(GLsizei w, GLsizei h)
+    {
+        //!!!! Refactor
+        fullscreen = false;
+        width      = w;
+        height     = h;
+
+        defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
+
+        reset();
+
+        overlayShaderEdit = new ShaderEditOverlay;
+        overlayShaderEdit->initialise(width, height);
+
+        overlayProfiler = new ProfilerOverlay;
+        overlayProfiler->init(width, height);
+
+        GLuint programs[] = {
+            impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
+            impl::stencilCubicAreaAAProgram, impl::stencilCubicAreaProgram, impl::linGradProgram
+        };
+
+        overlayShaderEdit->addPrograms(ARRAY_SIZE(programs), programs);
+
+        //TODO: HACK!!!!!
+        SDL_StartTextInput();
+
+    }
+
+    void fini()
+    {
+        delete overlayShaderEdit;
+        overlayProfiler->fini();
+        delete overlayProfiler;
+        Platform_Finalise();
+
+        vg::destroyFont(defaultFont);
+
+        reset();
+    }
+
     void reset()
     {
         memset(keyStateCurr, 0, SDL_NUM_SCANCODES);
@@ -70,28 +142,12 @@ namespace ui
         deltaX = deltaY = 0;
 
         checkBoxCount = 0;
+
+        uiState       = STATE_DEFAULT;
+        profilerState = PROF_STATE_NO_CAPTURE;
     }
 
-    void init(GLsizei w, GLsizei h)
-    {
-        //!!!! Refactor
-        fullscreen = false;
-        width      = w;
-        height     = h;
-
-        defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
-
-        reset();
-    }
-
-    void fini()
-    {
-        vg::destroyFont(defaultFont);
-
-        reset();
-    }
-
-    void update()
+    void update(float dt)
     {
         PROFILER_CPU_TIMESLICE("ui->update");
 
@@ -104,7 +160,84 @@ namespace ui
 
         mouseWheelUp = mouseWheelDown = false;
 
+        processSDLEvents();
+
+        if (profilerState == PROF_STATE_DATA_RETRIEVAL)
+        {
+            profilerState = PROF_STATE_NO_CAPTURE;
+            overlayProfiler->loadProfilerData();
+        }
+        else if (
+            profilerState==PROF_STATE_TIMESLICE_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE) &&
+            ui::keyWasReleased(SDL_SCANCODE_T)
+        )
+        {
+            profilerState = PROF_STATE_DATA_RETRIEVAL;
+            profilerStopCapture();
+        }
+        else if (profilerState == PROF_STATE_FRAME_CAPTURE)
+        {
+            profilerState = PROF_STATE_DATA_RETRIEVAL;
+            profilerStopCapture();
+        }
+        else if (
+            profilerState==PROF_STATE_NO_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE) &&
+            ui::keyWasReleased(SDL_SCANCODE_T)
+        )
+        {
+            profilerState = PROF_STATE_TIMESLICE_CAPTURE;
+            profilerStartCapture();
+        }
+        else if (
+            profilerState==PROF_STATE_NO_CAPTURE &&
+            ui::keyIsPressed(SDL_SCANCODE_GRAVE) &&
+            ui::keyWasReleased(SDL_SCANCODE_F)
+        )
+        {
+            profilerState = PROF_STATE_FRAME_CAPTURE;
+            profilerStartCapture();
+        }
+        else if (
+            profilerState!=PROF_STATE_NO_CAPTURE &&
+            profilerState!=PROF_STATE_TIMESLICE_CAPTURE
+        )
+        {
+            assert(!"Invalid state");
+        }
+
+        if (uiState==STATE_PROFILER)
+        {
+            PROFILER_CPU_TIMESLICE("mProfilerOverlay->updateUI");
+            overlayProfiler->updateUI(dt);
+        }
+        else if (uiState==STATE_DEFAULT)
+        {
+            PROFILER_CPU_TIMESLICE("onUpdate");
+        }
+        if (overlayShaderEdit->requireReset())
+        {
+            PROFILER_CPU_TIMESLICE("onShaderRecompile");
+            fwk::recompilePrograms();
+        }
+
         checkBoxUpdateAll();
+    }
+
+    void render()
+    {
+        if (uiState==STATE_PROFILER)
+        {
+            PROFILER_CPU_TIMESLICE("overlayProfiler->renderFullscreen");
+            overlayProfiler->renderFullscreen();
+        }
+        if (uiState==STATE_SHADER_EDIT)
+        {
+            PROFILER_CPU_TIMESLICE("overlayShaderEdit->renderFullscreen");
+            overlayShaderEdit->renderFullscreen();
+        }
+        checkBoxRenderAll();
     }
 
     void refineEvents(refined_events_t* events, uint32_t activeArea)
@@ -152,19 +285,48 @@ namespace ui
         return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
     }
 
-    void render()
+    void processSDLEvents()
     {
-        checkBoxRenderAll();
-    }
-
-    void onSDLEvent(SDL_Event& event)
-    {
-        switch(event.type)
+        PROFILER_CPU_TIMESLICE("ui::processSDLEvents");
+        SDL_Event   E;
+        while (SDL_PollEvent(&E))
         {
-        case SDL_MOUSEWHEEL:
-            mouseWheelUp   = event.wheel.y > 0;
-            mouseWheelDown = event.wheel.y < 0;
-            break;
+            switch(E.type)
+            {
+                case SDL_QUIT:
+                    fwk::exit();
+                    break;
+                case SDL_MOUSEWHEEL:
+                    mouseWheelUp   = E.wheel.y > 0;
+                    mouseWheelDown = E.wheel.y < 0;
+                    break;
+                case SDL_TEXTINPUT:
+                     if (uiState==STATE_SHADER_EDIT) overlayShaderEdit->inputText(E.text.text);
+                    break;
+                case SDL_KEYDOWN:
+                    switch (uiState)
+                    {
+                        case STATE_SHADER_EDIT:
+                            overlayShaderEdit->handleKeyDown(E.key);
+                            break;
+                    }
+                    break;
+                case SDL_KEYUP:
+                    if (E.key.keysym.sym==SDLK_ESCAPE)
+                    {
+                        fwk::exit();
+                    }
+                    else if (E.key.keysym.sym==SDLK_F5)
+                    {
+                        uiState = uiState==STATE_SHADER_EDIT?STATE_DEFAULT:STATE_SHADER_EDIT;
+                        if (uiState==STATE_SHADER_EDIT) overlayShaderEdit->reset();
+                    }
+                    else if (E.key.keysym.sym==SDLK_F4)
+                    {
+                        uiState = uiState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
+                    }
+                    break;
+            }
         }
     }
 
