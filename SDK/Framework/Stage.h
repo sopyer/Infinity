@@ -18,8 +18,6 @@ namespace ui
         Stage();
         ~Stage();
 
-        Stage& setProjection(float* mat4x4);
-
         void run();
         void close();
         void setCaption(const char* caption);
