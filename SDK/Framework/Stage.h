@@ -3,7 +3,6 @@
 
 #   include <Scheduler.h>
 #   include <queue>
-#   include <Events.h>
 #   include <ml.h>
 
 struct SDL_Surface;
