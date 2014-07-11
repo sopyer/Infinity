@@ -87,6 +87,7 @@
     <ClCompile Include="..\..\SDK\VG\impl\Math.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\SDK\include\sput.h" />
     <ClInclude Include="..\..\SDK\VG\impl\Math.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
