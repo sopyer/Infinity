@@ -16,17 +16,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "SDK\utils\Utils.vc
 		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGResearch", "Samples\VGResearch\VGResearch.vcxproj", "{21FAE24E-0F31-412F-A277-0043B1F69AA8}"
-	ProjectSection(ProjectDependencies) = postProject
-		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
-		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
-		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "frest", "Samples\frest\frest.vcxproj", "{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
@@ -53,13 +42,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VG", "SDK\VG\VG.vcxproj", "
 	ProjectSection(WebsiteProperties) = preProject
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.Debug = "False"
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SchedulerDev", "Samples\SchedulerDev\SchedulerDev.vcxproj", "{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}"
-	ProjectSection(ProjectDependencies) = postProject
-		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
-		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
-		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AO", "Samples\AO\AO.vcxproj", "{F9605E64-D3F7-48DA-8D15-4CBF362161D1}"
@@ -146,10 +128,6 @@ Global
 		{176B584F-06B8-4986-A800-7B02CF813062}.Debug|Win32.Build.0 = Debug|Win32
 		{176B584F-06B8-4986-A800-7B02CF813062}.Release|Win32.ActiveCfg = Release|Win32
 		{176B584F-06B8-4986-A800-7B02CF813062}.Release|Win32.Build.0 = Release|Win32
-		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Debug|Win32.ActiveCfg = Debug|Win32
-		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Debug|Win32.Build.0 = Debug|Win32
-		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Release|Win32.ActiveCfg = Release|Win32
-		{21FAE24E-0F31-412F-A277-0043B1F69AA8}.Release|Win32.Build.0 = Release|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Debug|Win32.ActiveCfg = Debug|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Debug|Win32.Build.0 = Debug|Win32
 		{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}.Release|Win32.ActiveCfg = Release|Win32
@@ -162,10 +140,6 @@ Global
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Debug|Win32.Build.0 = Debug|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release|Win32.ActiveCfg = Release|Win32
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}.Release|Win32.Build.0 = Release|Win32
-		{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}.Debug|Win32.ActiveCfg = Debug|Win32
-		{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}.Debug|Win32.Build.0 = Debug|Win32
-		{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}.Release|Win32.ActiveCfg = Release|Win32
-		{FFD5DFED-36DA-4941-AA69-C4BBA5ADC754}.Release|Win32.Build.0 = Release|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Debug|Win32.Build.0 = Debug|Win32
 		{F9605E64-D3F7-48DA-8D15-4CBF362161D1}.Release|Win32.ActiveCfg = Release|Win32
