@@ -99,7 +99,6 @@
     <ClCompile Include="SOIL\SOIL.c" />
     <ClCompile Include="SOIL\stb_image_aug.c" />
     <ClCompile Include="SpectatorCamera.cpp" />
-    <ClCompile Include="Stage.cpp" />
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="Framework.cpp" />
@@ -121,9 +120,7 @@
     <ClInclude Include="SOIL\stb_image_aug.h" />
     <ClInclude Include="SOIL\stbi_DDS_aug.h" />
     <ClInclude Include="SOIL\stbi_DDS_aug_c.h" />
-    <ClInclude Include="Events.h" />
     <ClInclude Include="SpectatorCamera.h" />
-    <ClInclude Include="Stage.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />

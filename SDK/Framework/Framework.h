@@ -8,13 +8,22 @@
 #include <ResourceHelpers.h>
 #include <profiler.h>
 #include <physfs/physfs.h>
-#include <Stage.h>
 #include <Timer.h>
 
 //TODO: make shorter e.g. log
 namespace logging
 {
     void message(const char *s,...);
+}
+
+namespace app
+{
+    void init();
+    void fini();
+    void update(float dt);
+    void render();
+    void recompilePrograms();
+    void resize(int width, int height);
 }
 
 namespace fwk
@@ -24,6 +33,8 @@ namespace fwk
 
     void init(const char* argv0);
     void fini();
+
+    void run();
 
     void setCaption(const char* caption);
     void recompilePrograms();

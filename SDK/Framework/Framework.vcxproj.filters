@@ -7,9 +7,6 @@
     <Filter Include="SOIL">
       <UniqueIdentifier>{fb02f643-94e2-4580-8679-2aa94e7fcfcc}</UniqueIdentifier>
     </Filter>
-    <Filter Include="UI\Misc">
-      <UniqueIdentifier>{9e8926cb-3d3b-4465-969d-7d8d4f7be82b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SOIL\image_DXT.c">
@@ -24,34 +21,29 @@
     <ClCompile Include="SOIL\stb_image_aug.c">
       <Filter>SOIL</Filter>
     </ClCompile>
-    <ClCompile Include="Stage.cpp">
-      <Filter>UI</Filter>
-    </ClCompile>
-    <ClCompile Include="UI.cpp">
-      <Filter>UI</Filter>
-    </ClCompile>
     <ClCompile Include="Framework.cpp" />
     <ClCompile Include="Scheduler.cpp" />
     <ClCompile Include="ResourceHelpers.cpp" />
-    <ClCompile Include="DefaultFontData.cpp">
-      <Filter>UI\Misc</Filter>
-    </ClCompile>
     <ClCompile Include="opengl.c" />
-    <ClCompile Include="ScPlatform.cpp">
-      <Filter>UI\Misc</Filter>
-    </ClCompile>
-    <ClCompile Include="ShaderEditOverlay.cpp">
-      <Filter>UI\Misc</Filter>
-    </ClCompile>
     <ClCompile Include="profiler.cpp" />
-    <ClCompile Include="ProfilerOverlay.cpp">
-      <Filter>UI\Misc</Filter>
-    </ClCompile>
     <ClCompile Include="Timer.cpp" />
     <ClCompile Include="media_api.cpp" />
     <ClCompile Include="SpectatorCamera.cpp" />
     <ClCompile Include="CameraDirector.cpp" />
     <ClCompile Include="graphics.cpp" />
+    <ClCompile Include="ui.cpp" />
+    <ClCompile Include="DefaultFontData.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ProfilerOverlay.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ScPlatform.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderEditOverlay.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="SOIL\image_DXT.h">
@@ -72,35 +64,27 @@
     <ClInclude Include="SOIL\stbi_DDS_aug_c.h">
       <Filter>SOIL</Filter>
     </ClInclude>
-    <ClInclude Include="Events.h">
-      <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="Stage.h">
-      <Filter>UI</Filter>
-    </ClInclude>
-    <ClInclude Include="UI.h">
-      <Filter>UI</Filter>
-    </ClInclude>
     <ClInclude Include="Framework.h" />
     <ClInclude Include="Scheduler.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="ResourceHelpers.h" />
-    <ClInclude Include="DefaultFontData.h">
-      <Filter>UI\Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderEditOverlay.h">
-      <Filter>UI\Misc</Filter>
-    </ClInclude>
     <ClInclude Include="profiler.h" />
-    <ClInclude Include="ProfilerOverlay.h">
-      <Filter>UI\Misc</Filter>
-    </ClInclude>
     <ClInclude Include="media_api.h" />
     <ClInclude Include="SpectatorCamera.h" />
     <ClInclude Include="CameraDirector.h" />
-    <ClInclude Include="RainbowTables.h">
-      <Filter>UI\Misc</Filter>
-    </ClInclude>
     <ClInclude Include="graphics.h" />
+    <ClInclude Include="ui.h" />
+    <ClInclude Include="ShaderEditOverlay.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="DefaultFontData.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ProfilerOverlay.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="RainbowTables.h">
+      <Filter>UI</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

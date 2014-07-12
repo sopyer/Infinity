@@ -22,7 +22,7 @@ namespace ui
     static const uint32_t INVALID_ID  = 0xFFFFFFFF;
 
     //TODO: Refactor!!!!!!
-    void     init(GLsizei width, GLsizei height); //Refactor later to add support for resolution change!!!!
+    void     init(int width, int height); //Refactor later to add support for resolution change!!!!
     void     fini();
     void     update(float dt);
     void     render();

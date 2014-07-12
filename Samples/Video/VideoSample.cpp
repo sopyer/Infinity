@@ -4,14 +4,13 @@
 
 #include <media_api.h>
 
-class VideoSample: public ui::Stage
+namespace app
 {
-public:
     ALCdevice*     mAudioDevice;
     ALCcontext*    mAudioContext;
     media_player_t player;
 
-    VideoSample()
+    void init()
     {
         mediaInit();
 
@@ -23,7 +22,7 @@ public:
         player = mediaCreatePlayer("d:\\bin\\Shadowgrounds\\Data\\Videos\\logo.wmv");
     }
 
-    ~VideoSample()
+    void fini()
     {
         mediaDestroyPlayer(player);
         mediaShutdown();
@@ -31,8 +30,8 @@ public:
         alcDestroyContext(mAudioContext);
         alcCloseDevice(mAudioDevice);
     }
-protected:
-    virtual void onPaint()
+
+    void render()
     {
         static bool firstTime = true;
         if (firstTime)
@@ -99,18 +98,8 @@ protected:
 
         glDisable(GL_BLEND);
     }
-};
 
-extern "C" int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        VideoSample app;
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
+    void update(float){}
+    void resize(int, int) {}
+    void recompilePrograms() {}
 }

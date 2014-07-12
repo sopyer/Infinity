@@ -1,10 +1,13 @@
+#include <SDL2/SDL.h>
 #include <windows.h>
 
 #undef min
 #undef max
 
+#include <stdio.h>
+#include <stdarg.h>
+
 #include "Framework.h"
-#include <SDL2/SDL.h>
 #include "scheduler.h"
 #include "graphics.h"
 
@@ -28,8 +31,9 @@ namespace fwk
     SDL_Window*      window;
     SDL_GLContext    context;
 
-    bool runLoop;
-    bool recompileGLPrograms;
+    uint64_t prevTime;
+    bool     runLoop;
+    bool     recompileGLPrograms;
 
     void init(const char* argv0)
     {
@@ -75,20 +79,68 @@ namespace fwk
         importOpenGL();
 
         ut::init();
+        mt::init(1, 128);
         vg::init();
         ui::init(1280, 720);
-        mt::init(1, 128);
-        gfx::init();
+        gfx::init(1280, 720);
+        app::init();
+        app::resize(1280, 720);
 
-        runLoop = true;
+        prevTime = timerAbsoluteTime();
+        runLoop  = true;
+        recompileGLPrograms = false;
+    }
+
+    void run()
+    {
+        while (runLoop)
+        {
+            profilerStartSyncPoint();
+            {
+                PROFILER_CPU_TIMESLICE("Frame");
+
+                {
+                    PROFILER_CPU_TIMESLICE("Frame sync and gfx init");
+                    gfx::beginFrame();
+                }
+
+                uint64_t time = timerAbsoluteTime();
+                float dt = (time-prevTime)*0.000001f;
+                prevTime = time;
+
+                ui::update(dt);
+                app::update(dt);
+
+                if (recompileGLPrograms)
+                {
+                    recompileGLPrograms = false;
+                    app::recompilePrograms();
+                }
+
+                {
+                    PROFILER_CPU_TIMESLICE("onPaint");
+                    app::render();
+                }
+                ui::render();
+
+                gfx::endFrame();
+
+                {
+                    PROFILER_CPU_TIMESLICE("SDL_GL_SwapBuffers");
+                    SDL_GL_SwapWindow(window);
+                }
+            }
+            profilerStopSyncPoint();
+        }
     }
 
     void fini()
     {
+        app::fini();
         gfx::fini();
-        mt::fini();
         ui::fini();
         vg::fini();
+        mt::fini();
         ut::fini();
 
         SDL_GL_DeleteContext(context);
@@ -110,6 +162,17 @@ namespace fwk
 
     void setCaption(const char* caption)
     {
-        SDL_SetWindowTitle(fwk::window, caption);
+        SDL_SetWindowTitle(window, caption);
     }
+}
+
+int main(int argc, char** argv)
+{
+    fwk::init(argv[0]);
+
+    fwk::run();
+ 
+    fwk::fini();
+
+    return 0;
 }

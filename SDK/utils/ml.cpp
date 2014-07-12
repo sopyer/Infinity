@@ -503,6 +503,16 @@ namespace ml
         return asfloat(asint(x) & 0x7FFFFFFF);
     }
 
+    float exp  (float x)
+    {
+        return ::exp(x);
+    }
+
+    float pow  (float x, float y)
+    {
+        return ::pow(x, y);
+    }
+
     float sqrt(float x)
     {
         return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));

@@ -19,11 +19,10 @@ ml::vec3 shPoly_v3[10] = {
     {-0.07239f, -0.01280f, -0.03463f},
 };
 
-class Anima: public ui::Stage
+namespace app
 {
-private:
     SpectatorCamera     camera;
-    v128                mProj[4];
+    v128                proj[4];
 
     Model::model_t      model;
     Model::skeleton_t   skel;
@@ -35,8 +34,7 @@ private:
     cpu_timer_t        cpuTimer;
     gfx::gpu_timer_t   gpuTimer;
 
-public:
-    Anima()
+    void init()
     {
         Model::init();
 
@@ -45,22 +43,15 @@ public:
 
         Model::createPose(&pose, &skel);
 
-        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, 0.1f, 10000.0f);
-
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
-        camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
+        camera.maxVelocity.x  = camera.maxVelocity.y  = camera.maxVelocity.z  =  60;
 
         memcpy(&gfx::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
-
-        gfx::autoVars.projParams.x = mProj[0].m128_f32[0];
-        gfx::autoVars.projParams.y = mProj[1].m128_f32[1];
-        gfx::autoVars.projParams.z = mProj[2].m128_f32[2];
-        gfx::autoVars.projParams.w = mProj[3].m128_f32[2];
 
         gfx::gpu_timer_init(&gpuTimer);
     }
 
-    ~Anima()
+    void fini()
     {
         gfx::gpu_timer_fini(&gpuTimer);
 
@@ -72,8 +63,7 @@ public:
         Model::fini();
     }
 
-protected:
-    void onPaint()
+    void render()
     {
         glClearDepth(1.0);
 
@@ -83,7 +73,7 @@ protected:
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf((float*)mProj);
+        glLoadMatrixf((float*)proj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
@@ -122,28 +112,26 @@ protected:
         );
     }
 
-    void onUpdate(float dt)
+    void update(float dt)
     {
         static const float maxTimeStep = 0.03333f;
 
         cpu_timer_start(&cpuTimer);
-        Model::update(std::min(dt, maxTimeStep), &anim, &skel, &pose);
+        Model::update(ut::min(dt, maxTimeStep), &anim, &skel, &pose);
         cpu_timer_stop(&cpuTimer);
 
         ui::processCameraInput(&camera, dt);
     }
-};
 
-int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
+    void recompilePrograms() {}
 
+    void resize(int width, int height)
     {
-        Anima app;
-        app.run();
+        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
+
+        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
+        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
+        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
+        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
     }
-
-    fwk::fini();
-
-    return 0;
 }

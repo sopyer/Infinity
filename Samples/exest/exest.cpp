@@ -12,14 +12,13 @@
 static const float zn = 0.1f;
 static const float zf = 10000.0f;
 
-class Exest: public ui::Stage
+namespace app
 {
-private:
     SpectatorCamera camera;
 
-    v128 mProj[4];
+    v128 proj[4];
 
-    bool      fixedMode;
+    bool      fixedMode = false;
     ml::vec3  VPpp;
     v128      VP[4];
     v128      viewQuat;
@@ -30,12 +29,9 @@ private:
 
     bool drawWireframe;
 
-public:
-    Exest(): fixedMode(false)
+    void init()
     {
         terrain.initialize();
-
-        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, zn, zf);
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
@@ -72,22 +68,17 @@ public:
         delete [] data;
 
         ui::addPrograms(1, &terrain.prgTerrain);
-
-        gfx::autoVars.projParams.x = mProj[0].m128_f32[0];
-        gfx::autoVars.projParams.y = mProj[1].m128_f32[1];
-        gfx::autoVars.projParams.z = mProj[2].m128_f32[2];
-        gfx::autoVars.projParams.w = mProj[3].m128_f32[2];
     }
 
-    ~Exest()
+    void fini()
     {
         terrain.cleanup();
     }
 
     void drawFrustum(float zn, float zf)
     {
-        float sx = 1.0f / mProj[0].m128_f32[0];
-        float sy = 1.0f / mProj[1].m128_f32[1];
+        float sx = 1.0f / proj[0].m128_f32[0];
+        float sy = 1.0f / proj[1].m128_f32[1];
 
         v128 scale = vi_set(sx, sy, -1.0f, 0.0f);
         v128 vzn   = vi_set_fff0(zn);
@@ -175,19 +166,28 @@ public:
         glDisable(GL_CULL_FACE);
     }
 
-protected:
-    void onShaderRecompile()
+    void recompilePrograms()
     {
         terrain.reset();
     }
 
-    void onPaint()
+    void resize(int width, int height)
+    {
+        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
+
+        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
+        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
+        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
+        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
+    }
+
+    void render()
     {
         glClearDepth(1.0);
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf((float*)mProj);
+        glLoadMatrixf((float*)proj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
@@ -196,7 +196,7 @@ protected:
         glLoadMatrixf((float*)vm);
 
         v128 MVP[4];
-        ml::mul_mat4(MVP, mProj, vm);
+        ml::mul_mat4(MVP, proj, vm);
         memcpy(&gfx::autoVars.matMV,  vm,  sizeof(v128)*4);
         memcpy(&gfx::autoVars.matMVP, MVP, sizeof(v128)*4);
 
@@ -269,7 +269,7 @@ protected:
         vg::drawString(ui::defaultFont, 25.0f, 119.0f, str, strlen(str));
     }
 
-    void onUpdate(float dt)
+    void update(float dt)
     {
         ui::processCameraInput(&camera, dt);
         ui::processCameraDirectorInput(&camDirector, &camera);
@@ -296,7 +296,7 @@ protected:
             {
                 v128 vm[4];
                 camera.getViewMatrix(vm);
-                ml::mul_mat4(VP, mProj, vm);
+                ml::mul_mat4(VP, proj, vm);
                 vi_store_v3(&VPpp, camera.getPosition());
                 viewQuat = ml::conjugate_quat(camera.getOrientation());
             }
@@ -307,18 +307,4 @@ protected:
             drawWireframe = !drawWireframe;
         }
     }
-};
-
-int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        Exest app;
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
 }

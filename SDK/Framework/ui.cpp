@@ -87,7 +87,7 @@ namespace ui
 
     void reset();
 
-    void init(GLsizei w, GLsizei h)
+    void init(int w, int h)
     {
         //!!!! Refactor
         fullscreen = false;

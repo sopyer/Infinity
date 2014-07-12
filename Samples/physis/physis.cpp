@@ -134,7 +134,7 @@ RTDesc rtDesc[] =
 
 extern GLuint programs[PRG_ID_COUNT];
 
-class PhysisDemo: public ui::Stage
+namespace app
 {
     GLuint mTextures[TEX_ID_COUNT];
 
@@ -155,7 +155,17 @@ class PhysisDemo: public ui::Stage
     GLuint samNearestRepeat;
 
     GLint imgWidth, imgHeight;
-public:
+
+    bool  mIsDragging = false;
+    float mOffsetX = 0.0f;
+    float mOffsetY = 0.0f;
+    float mScale   = 1.0f;
+
+    int currentTab;
+
+    cpu_timer_t      cpuTimer;
+    gfx::gpu_timer_t gpuTimer;
+
     void allocTextures()
     {
         glGenTextures(TEX_ID_COUNT, mTextures);
@@ -207,11 +217,7 @@ public:
 
     GLuint texSource;
 
-    PhysisDemo():
-          mOffsetX(0.0f),
-          mOffsetY(0.0f),
-          mScale(1.0f),
-          mIsDragging(false)
+    void init()
     {
         ppInit();
  
@@ -248,12 +254,7 @@ public:
         gfx::gpu_timer_init(&gpuTimer);
     }
 
-    int currentTab;
-
-    cpu_timer_t      cpuTimer;
-    gfx::gpu_timer_t gpuTimer;
-
-    ~PhysisDemo()
+    void fini()
     {
         gfx::gpu_timer_fini(&gpuTimer);
 
@@ -270,16 +271,20 @@ public:
         ppFini();
     }
 
-protected:
-
     void initLightingResources();
     void finiLightingResources();
 
     void renderLightingScene();
 
-    void onShaderRecompile()
+    void generateTexture(GLuint texID, GLsizei texSize)
     {
-        ppOnShaderReload();
+        GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
+        glDrawBuffers(ARRAY_SIZE(buffers), buffers);
+        glViewport(0, 0, texSize, texSize);
+
+        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
     void generateTextureCombined(TextureIDs dest)
@@ -296,17 +301,6 @@ protected:
         //glUniformMatrix4fv(uniHSCB, 1, false, getHSCB(0.0f, 1.0f, 1.375f, 2.5f));
 
         generateTexture(mTextures[dest], texSize);
-    }
-
-    void generateTexture(GLuint texID, GLsizei texSize)
-    {
-        GLenum buffers[] = {GL_COLOR_ATTACHMENT0};
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texID, 0);
-        glDrawBuffers(ARRAY_SIZE(buffers), buffers);
-        glViewport(0, 0, texSize, texSize);
-
-        glDrawArrays(GL_TRIANGLES, 0, 3);
     }
 
     void generatePerlin(TextureIDs dest, int seed, int octaves, float amp, float ampScale, float freq, float freqScale)
@@ -604,7 +598,7 @@ protected:
         glPopMatrix();
     }
 
-    virtual void onPaint()
+    void render()
     {
         cpu_timer_start(&cpuTimer);
         gfx::gpu_timer_start(&gpuTimer);
@@ -686,7 +680,7 @@ protected:
         );
     }
 
-    void onUpdate(float dt)
+    void update(float dt)
     {
         const float     size   = 118.0f;
         const float     margin = 2.0f;
@@ -717,23 +711,10 @@ protected:
         }
     }
 
-private:
-    bool        mIsDragging;
-    float       mOffsetX;
-    float       mOffsetY;
-    float       mScale;
-};
-
-extern "C" int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
+    void recompilePrograms()
     {
-        PhysisDemo app;
-        app.run();
+        ppOnShaderReload();
     }
 
-    fwk::fini();
-
-    return 0;
+    void resize(int, int) {}
 }

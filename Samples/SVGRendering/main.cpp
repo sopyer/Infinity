@@ -4,17 +4,26 @@
 #include <timer.h>
 #include <graphics.h>
 #include <vector>
+#include <algorithm>
 
-class SVGSample: public ui::Stage
+namespace app
 {
-public:
-    SVGSample(const char* svgFile):
-          mOffsetX(128/*mWidth/2*/),
-          mOffsetY(-18/*mHeight/2*/),
-          mScale(2.5f),
-          mIsDragging(false)
-    {
+    cpu_timer_t      cpuTimer;
+    gfx::gpu_timer_t gpuTimer;
 
+    ui::CheckBoxID mAAEnabled;
+
+    bool  mIsDragging = false;
+    float mOffsetX = 128.0f;
+    float mOffsetY = -18.0f;
+    float mScale   = 2.5f;
+
+    std::vector<vg::Path>   mPaths;
+    std::vector<vg::Paint>  mPaints;
+
+    void init()
+    {
+        const char* svgFile = "butterfly.svg";
         SVGPath* plist;
         plist = svgParseFromFile(svgFile);
         SVGPath* cur = plist;
@@ -39,9 +48,7 @@ public:
         fwk::setCaption("GPU accelerated SVG rendering");
     }
 
-    ui::CheckBoxID mAAEnabled;
-
-    ~SVGSample()
+    void fini()
     {
         gfx::gpu_timer_fini(&gpuTimer);
 
@@ -56,13 +63,12 @@ public:
         for_each(mPaints.begin(), mPaints.end(), DeletePaint());
     }
 
-protected:
-    void onUpdate(float /*dt*/)
+    void update(float /*dt*/)
     {
         ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
     }
 
-    void onPaint()
+    void render()
     {
         cpu_timer_start(&cpuTimer);
         gfx::gpu_timer_start(&gpuTimer);
@@ -102,29 +108,7 @@ protected:
         vg::drawString(ui::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
     }
 
-private:
-    cpu_timer_t      cpuTimer;
-    gfx::gpu_timer_t gpuTimer;
+    void recompilePrograms() {}
 
-    bool        mIsDragging;
-    float       mOffsetX;
-    float       mOffsetY;
-    float       mScale;
-
-    std::vector<vg::Path>   mPaths;
-    std::vector<vg::Paint>  mPaints;
-};
-
-int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        SVGSample app(argc==2?argv[1]:"butterfly.svg");
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
+    void resize(int width, int height) {}
 }

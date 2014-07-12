@@ -30,6 +30,9 @@ namespace gfx
     static const GLuint     NUM_FRAMES_DELAY = 2; //2 * number of GPUs
     static const GLsizeiptr DYNAMIC_BUFFER_FRAME_SIZE = 1 * (1<<20);
 
+    extern int width;
+    extern int height;
+
     struct gl_caps_t
     {
         GLint uboAlignment;
@@ -51,7 +54,7 @@ namespace gfx
 
     extern GLuint dynBuffer;
 
-    void init();
+    void init(int w, int h);
     void fini();
 
     void beginFrame();

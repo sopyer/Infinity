@@ -71,15 +71,28 @@ struct Mesh
 Mesh    cube  = {0, (float*)cubeVertices, (float*)cubeNormals, ARRAY_SIZE(cubeIndices), cubeIndices};
 Mesh    plane = {0, (float*)planeVertices, (float*)planeNormals, ARRAY_SIZE(planeIndices), planeIndices};
 
-class AOSample: public ui::Stage
+namespace app
 {
-public:
     static const GLuint VOXEL_DIM_X=32;
     static const GLuint VOXEL_DIM_Y=32;
     static const GLuint VOXEL_DIM_Z=32;
 
-public:
-    AOSample()
+    ui::CheckBoxID  mRenderAsVoxels;
+    GLuint          mVoxelField[32][32];
+    GLint           mVoxelLookupTextureUniform;
+    GLuint          mVoxelLookupTexture;
+    GLuint          mLightProgram;
+    GLuint          mGBufferProgram;
+    GLuint          mVoxelizationProgram;
+
+    GLuint mFBO, mDepthRB, mPosTexture, mNormalTexture;
+
+    void destroyMRTObjects();
+    void genVoxelLookupTexture();
+
+    v128                proj[4];
+
+    void init()
     {
         genVoxelLookupTexture();
 
@@ -90,12 +103,10 @@ public:
         mVoxelLookupTextureUniform = glGetUniformLocation(mVoxelizationProgram, "uVoxelLookupTexture");
 
         mRenderAsVoxels = ui::checkBoxAdd(5.0f, 5.0f, 21.0f, 21.0f, FALSE);
-
-        createMRTObjects();
-
+        mFBO = mDepthRB = mPosTexture = mNormalTexture = 0;
     }
 
-    ~AOSample()
+    void fini()
     {
         destroyMRTObjects();
         glDeleteProgram(mVoxelizationProgram);
@@ -104,7 +115,6 @@ public:
         glDeleteTextures(1, &mVoxelLookupTexture);
     }
 
-protected:
     void genVoxelLookupTexture()
     {
         uint32_t textureData[VOXEL_DIM_Z];
@@ -186,10 +196,8 @@ protected:
         return fbo;
     }
 
-    GLuint mFBO, mDepthRB, mPosTexture, mNormalTexture;
-    void createMRTObjects()
+    void createMRTObjects(int w, int h)
     {
-        GLsizei w=(GLsizei)mWidth, h=(GLsizei)mHeight;
         mPosTexture = createFBOTexture(GL_RGBA16F, w, h);
         mNormalTexture = createFBOTexture(GL_RGBA16F, w, h);
         mDepthRB = createRenderbuffer(GL_DEPTH_COMPONENT, w, h);
@@ -199,10 +207,10 @@ protected:
 
     void destroyMRTObjects()
     {
-        glDeleteFramebuffers(1, &mFBO);
-        glDeleteRenderbuffers(1, &mDepthRB);
-        glDeleteTextures(1, &mPosTexture);
-        glDeleteTextures(1, &mNormalTexture);
+        if (mFBO) glDeleteFramebuffers(1, &mFBO);
+        if (mDepthRB) glDeleteRenderbuffers(1, &mDepthRB);
+        if (mPosTexture) glDeleteTextures(1, &mPosTexture);
+        if (mNormalTexture) glDeleteTextures(1, &mNormalTexture);
     }
 
     void renderFBO()
@@ -228,8 +236,11 @@ protected:
         glPopAttrib();
     }
 
-    virtual void onPaint()
+    void render()
     {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadMatrixf((float*)proj);
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
@@ -330,7 +341,7 @@ protected:
                                 );
                             glRotatef(45, 1, 0, 0);
                             glRotatef(45, 0, 1, 0);
-                            glScalef(0.5f*abs(stepX), 0.5f*abs(stepY), 0.5f*abs(stepZ));
+                            glScalef(0.5f*ml::abs(stepX), 0.5f*ml::abs(stepY), 0.5f*ml::abs(stepZ));
 
                             cube.render();
 
@@ -345,35 +356,23 @@ protected:
         glPopAttrib();
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
 
         glColor3f(1.0f, 1.0f, 1.0f);
         vg::drawString(ui::defaultFont, 25.0, 18.0f, "Render as voxels", 16);
 
         vg::drawImage(0,  30, 160, 150, mPosTexture);
         vg::drawImage(0, 160, 160, 280, mNormalTexture);
-
     }
 
-private:
-    ui::CheckBoxID  mRenderAsVoxels;
-    GLuint          mVoxelField[32][32];
-    GLint           mVoxelLookupTextureUniform;
-    GLuint          mVoxelLookupTexture;
-    GLuint          mLightProgram;
-    GLuint          mGBufferProgram;
-    GLuint          mVoxelizationProgram;
-};
-
-extern "C" int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
+    void update(float) {}
+    void recompilePrograms() {}
+    void resize(int width, int height)
     {
-        AOSample app;
-        app.run();
+        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
+
+        destroyMRTObjects();
+        createMRTObjects(width, height);
     }
-
-    fwk::fini();
-
-    return 0;
 }

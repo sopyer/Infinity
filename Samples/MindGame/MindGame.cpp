@@ -70,18 +70,27 @@ void drawArrowTri(float x0, float y0, float R, int dir)
     glEnd();
 }
 
-class MindGameApp: public ui::Stage
+namespace app
 {
-public:
-    MindGameApp()
+    static const int ALLOCATED_ELEMENTS = 32;
+
+    int state;
+    int maxElements;
+    int guessed;
+    int seq[ALLOCATED_ELEMENTS];
+
+    void startGame();
+    void gameComplete();
+
+    void init()
     {
         startGame();
     }
 
-    ~MindGameApp()
+    void fini()
     {
     }
-protected:
+
     void startGame()
     {
         srand((unsigned int)timerAbsoluteTime());
@@ -105,7 +114,7 @@ protected:
         state = GS_GAME_COMPLETED;
     }
 
-    virtual void onUpdate(float dt)
+    void update(float dt)
     {
         if (state == GS_GAME_IN_PROGRESS)
         {
@@ -176,7 +185,7 @@ protected:
         assert(guessed<=maxElements);
     }
 
-    virtual void onPaint()
+    void render()
     {
         float size    = 30.0f;
         float padding = 2.0f;
@@ -210,28 +219,9 @@ protected:
         {
             drawFrame(bx-padding, by-padding, bx+size*maxElements+margin*2*(maxElements-1)+padding, by+size+padding);
         }
-
     }
 
-private:
-    static const int ALLOCATED_ELEMENTS = 32;
+    void recompilePrograms() {}
 
-    int state;
-    int maxElements;
-    int guessed;
-    int seq[ALLOCATED_ELEMENTS];
-};
-
-extern "C" int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        MindGameApp app;
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
+    void resize(int, int) {}
 }

@@ -1,7 +1,7 @@
 #include <framework.h>
 #include <time.h>
 #include <utils.h>
-
+#include <graphics.h>
 #include "ResourceHelpers.h"
 
 //#define RASTER_ACTORS
@@ -32,72 +32,83 @@ const float h = 540;
 #   include "ClockData.h"
 #endif
 
-class ClockSample: public ui::Stage
+namespace app
 {
-public:
-    ClockSample():
-      mOffsetX(mWidth/2),
-          mOffsetY(mHeight/2),
-#ifndef RASTER_ACTORS
-          mScale(7),
+    float  bkgOffsetX;
+    float  bkgOffsetY;
+    bool   mIsDragging;
+    float  mOffsetX;
+    float  mOffsetY;
+    float  mScale;
+
+#ifdef RASTER_ACTORS
+    GLuint      mTextures[IMG_COUNT];
 #else
-          mScale(1),
+    vg::Path    mClockPaths[PATH_COUNT];
+
+    vg::Paint   mWhite;
+    vg::Paint   mRed;
+    vg::Paint   mBlack;
 #endif
-          mIsDragging(false)
-      {
-#ifdef	RASTER_ACTORS
-          glGenTextures(IMG_COUNT, mTextures);
 
-          for (int i=0; i<IMG_COUNT; ++i)
-          {
-              mTextures[i] = resources::createTexture2D(imageNames[i]);
-          }
+    void init()
+    {
+        mOffsetX = gfx::width  / 2.0f;
+        mOffsetY = gfx::height / 2.0f;
+        mIsDragging = false;
+#ifdef RASTER_ACTORS
+        mScale = 1.0f;
+        glGenTextures(IMG_COUNT, mTextures);
+
+        for (int i=0; i<IMG_COUNT; ++i)
+        {
+            mTextures[i] = resources::createTexture2D(imageNames[i]);
+        }
 #else
-          mRed   = vg::createSolidPaint(0xFF0000FF);
-          mBlack = vg::createSolidPaint(0xFF000000);
-          mWhite = vg::createSolidPaint(0xFFFFFFFF);
+        mScale = 7.0f;
+        mRed   = vg::createSolidPaint(0xFF0000FF);
+        mBlack = vg::createSolidPaint(0xFF000000);
+        mWhite = vg::createSolidPaint(0xFFFFFFFF);
 
-          float x1, y1, x2, y2;
+        float x1, y1, x2, y2;
 
-          for (size_t i=PATH_CLOCK_BKG; i<PATH_COUNT; ++i)
-          {
-              mClockPaths[i]  = vg::createPath(clockVectorImages[i].segCount,
-                  clockVectorImages[i].segs, clockVectorImages[i].data);
-          }
+        for (size_t i=PATH_CLOCK_BKG; i<PATH_COUNT; ++i)
+        {
+            mClockPaths[i]  = vg::createPath(clockVectorImages[i].segCount,
+                clockVectorImages[i].segs, clockVectorImages[i].data);
+        }
 
-          vg::getPathBounds(mClockPaths[PATH_CLOCK_BKG], x1, y1, x2, y2);
+        vg::getPathBounds(mClockPaths[PATH_CLOCK_BKG], x1, y1, x2, y2);
 
-          bkgOffsetX = -0.5f * (x2 + x1);
-          bkgOffsetY = -0.5f * (y2 + y1);
+        bkgOffsetX = -0.5f * (x2 + x1);
+        bkgOffsetY = -0.5f * (y2 + y1);
 #endif
       }
 
-      ~ClockSample()
-      {
-#ifdef  RASTER_ACTORS
-          glDeleteTextures(IMG_COUNT, mTextures);
+    void fini()
+    {
+#ifdef RASTER_ACTORS
+        glDeleteTextures(IMG_COUNT, mTextures);
 #else
-          for (size_t i=0; i<PATH_COUNT; ++i)
-              vg::destroyPath(mClockPaths[i]);
+        for (size_t i=0; i<PATH_COUNT; ++i)
+            vg::destroyPath(mClockPaths[i]);
 
-          vg::destroyPaint(mWhite);
-          vg::destroyPaint(mBlack);
-          vg::destroyPaint(mRed);
+        vg::destroyPaint(mWhite);
+        vg::destroyPaint(mBlack);
+        vg::destroyPaint(mRed);
 #endif
-      }
+    }
 
-protected:
-    float bkgOffsetX, bkgOffsetY;
-
-    void onUpdate(float dt)
+    void update(float dt)
     {
         ui::processZoomAndPan(mScale, mOffsetX, mOffsetY, mIsDragging);
     }
 
-    void onPaint()
+    void render()
     {
-        __time64_t	curtime;
-        tm		dt;
+        __time64_t  curtime;
+        tm          dt;
+
         _time64(&curtime);
         _gmtime64_s(&dt, &curtime);
 
@@ -154,33 +165,7 @@ protected:
 #endif
     }
 
-private:
-    bool        mIsDragging;
-    float       mOffsetX;
-    float       mOffsetY;
-    float       mScale;
+    void recompilePrograms() {}
 
-#ifdef	RASTER_ACTORS
-    GLuint      mTextures[IMG_COUNT];
-#else
-    vg::Path    mClockPaths[PATH_COUNT];
-
-    vg::Paint   mWhite;
-    vg::Paint   mRed;
-    vg::Paint   mBlack;
-#endif
-};
-
-int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        ClockSample app;
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
+    void resize(int width, int height) {}
 }

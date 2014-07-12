@@ -158,7 +158,7 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
     if (!tris) return;
     if (!normals) return;
 
-    const float walkableThr = cosf(walkableSlopeAngle/180.0f*DU_PI);
+    const float walkableThr = ml::cos(walkableSlopeAngle/180.0f*DU_PI);
 
     float uva[2];
     float uvb[2];
@@ -184,9 +184,9 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
         const float* vc = &verts[tris[i+2]*3];
 
         int ax = 0, ay = 0;
-        if (fabs(norm[1]) > fabs(norm[ax]))
+        if (ml::abs(norm[1]) > ml::abs(norm[ax]))
             ax = 1;
-        if (fabs(norm[2]) > fabs(norm[ax]))
+        if (ml::abs(norm[2]) > ml::abs(norm[ax]))
             ax = 2;
         ax = (1<<ax)&3; // +1 mod 3
         ay = (1<<ax)&3; // +1 mod 3
@@ -207,47 +207,45 @@ void duDebugDrawTriMeshSlope(duDebugDraw* dd, const float* verts, int /*nverts*/
     dd->texture(false);
 }
 
-class Frest: public ui::Stage
+namespace app
 {
-private:
     SpectatorCamera     camera;
 
-    v128   mProj[4];
+    v128   proj[4];
 
-    rcMeshLoaderObj* m_geom;
+    rcMeshLoaderObj* geom;
 
-public:
-    Frest()
+    void init()
     {
-        ml::make_perspective_mat4(mProj, 30.0f * FLT_DEG_TO_RAD_SCALE, mWidth/mHeight, 0.1f, 10000.0f);
-
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
-        m_geom = new rcMeshLoaderObj();
-        m_geom->load("dungeon.obj");
+        geom = new rcMeshLoaderObj();
+        geom->load("dungeon.obj");
 
     }
 
-    ~Frest()
+    void fini()
     {
-        delete m_geom;
+        delete geom;
     }
 
-protected:
-    void onShaderRecompile()
+    void recompilePrograms()
     {
     }
 
-    void onPaint()
+    void resize(int width, int height)
     {
-        GLenum err;
+        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
+    }
 
+    void render()
+    {
         glClearDepth(1.0);
 
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
-        glLoadMatrixf((float*)mProj);
+        glLoadMatrixf((float*)proj);
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
 
@@ -270,8 +268,8 @@ protected:
         glEnable(GL_CULL_FACE);
 
         DebugDrawGL dd;
-        duDebugDrawTriMeshSlope(&dd, m_geom->getVerts(), m_geom->getVertCount(),
-            m_geom->getTris(), m_geom->getNormals(), m_geom->getTriCount(),
+        duDebugDrawTriMeshSlope(&dd, geom->getVerts(), geom->getVertCount(),
+            geom->getTris(), geom->getNormals(), geom->getTriCount(),
             45.0f, 0.33333f);
 
         glMatrixMode(GL_PROJECTION);
@@ -284,22 +282,8 @@ protected:
         ui::displayStats(10.0f, 10.0f, 300.0f, 70.0f, 0.0f, 0.0f);
     }
 
-    void onUpdate(float dt)
+    void update(float dt)
     {
         ui::processCameraInput(&camera, dt);
     }
-};
-
-int main(int argc, char** argv)
-{
-    fwk::init(argv[0]);
-
-    {
-        Frest app;
-        app.run();
-    }
-
-    fwk::fini();
-
-    return 0;
 }

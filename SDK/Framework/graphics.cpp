@@ -1,6 +1,7 @@
 #include "graphics.h"
 #include "framework.h"
 #include <utils.h>
+#include <string.h>
 
 namespace vf
 {
@@ -24,7 +25,8 @@ namespace gfx
 
     GLuint prgLine, prgPoint;
 
-    GLuint width, height;
+    int width;
+    int height;
 
     GLuint dynBuffer;
     GLint  dynBufferOffset;
@@ -93,11 +95,10 @@ namespace gfx
         logging::message("SRC[%s] TYPE[%s] SEV[%s] : %s\n", glString(source), glString(type), glString(severity), message);
     }
 
-    void init()
+    void init(int w, int h)
     {
-        //HACK!!!!!
-        width  = 1280;
-        height = 720;
+        width  = w;
+        height = h;
 
         ml::make_ortho2D_mat4(uiProj, 0, (float)width, (float)height, 0);
 
