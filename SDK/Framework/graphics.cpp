@@ -100,8 +100,6 @@ namespace gfx
         width  = w;
         height = h;
 
-        ml::make_ortho2D_mat4(uiProj, 0, (float)width, (float)height, 0);
-
         prgLine  = resources::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
         prgPoint = resources::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
 
@@ -130,6 +128,14 @@ namespace gfx
 
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);
+    }
+
+    void resize(int w, int h)
+    {
+        width  = w;
+        height = h;
+
+        ml::make_ortho2D_mat4(uiProj, 0, (float)width, (float)height, 0);
     }
 
     void beginFrame()

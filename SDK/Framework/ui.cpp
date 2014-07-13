@@ -1,15 +1,18 @@
-#include "UI.h"
-
 #include <SDL2/SDL.h>
+
 #include "DefaultFontData.h"
 #include "SpectatorCamera.h"
 #include "ShaderEditOverlay.h"
 #include "ProfilerOverlay.h"
 #include "CameraDirector.h"
-#include "ResourceHelpers.h"
-#include "Framework.h"
-#include <utils.h>
+
 #include <vg/impl/SharedResources.h>
+
+#include <Framework.h>
+#include <utils.h>
+#include <graphics.h>
+
+#include "ui.h"
 
 void Platform_Initialise();
 void Platform_Finalise();
@@ -83,7 +86,7 @@ namespace ui
     int      findAreaByID(uint32_t id);
     uint32_t findAreaID  (const point_t& p);
 
-    void processSDLEvents();
+    void processInputEvents();
 
     void reset();
 
@@ -147,6 +150,12 @@ namespace ui
         profilerState = PROF_STATE_NO_CAPTURE;
     }
 
+    void resize(int w, int h)
+    {
+        width  = w;
+        height = h;
+    }
+
     void update(float dt)
     {
         PROFILER_CPU_TIMESLICE("ui->update");
@@ -160,7 +169,7 @@ namespace ui
 
         mouseWheelUp = mouseWheelDown = false;
 
-        processSDLEvents();
+        processInputEvents();
 
         if (profilerState == PROF_STATE_DATA_RETRIEVAL)
         {
@@ -285,7 +294,7 @@ namespace ui
         return SDL_GetWindowGrab(fwk::window) == SDL_TRUE;
     }
 
-    void processSDLEvents()
+    void processInputEvents()
     {
         PROFILER_CPU_TIMESLICE("ui::processSDLEvents");
         SDL_Event   E;
@@ -312,16 +321,16 @@ namespace ui
                     }
                     break;
                 case SDL_KEYUP:
-                    if (E.key.keysym.sym==SDLK_ESCAPE)
+                    if (E.key.keysym.sym==SDLK_F4 && ((E.key.keysym.mod & ~(KMOD_NUM|KMOD_CAPS|KMOD_MODE) & KMOD_LALT) != 0))
                     {
                         fwk::exit();
                     }
-                    else if (E.key.keysym.sym==SDLK_F5)
+                    else if (E.key.keysym.sym==SDLK_F5 && ((E.key.keysym.mod & ~(KMOD_NUM|KMOD_CAPS|KMOD_MODE)) == 0))
                     {
                         uiState = uiState==STATE_SHADER_EDIT?STATE_DEFAULT:STATE_SHADER_EDIT;
                         if (uiState==STATE_SHADER_EDIT) overlayShaderEdit->reset();
                     }
-                    else if (E.key.keysym.sym==SDLK_F4)
+                    else if (E.key.keysym.sym==SDLK_F4 && ((E.key.keysym.mod & ~(KMOD_NUM|KMOD_CAPS|KMOD_MODE)) == 0))
                     {
                         uiState = uiState==STATE_PROFILER?STATE_DEFAULT:STATE_PROFILER;
                     }
