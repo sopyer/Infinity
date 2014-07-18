@@ -26,9 +26,6 @@
     <ClCompile Include="Font.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="impl\Math.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="impl\Rasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -41,9 +38,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DataTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="impl\Math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Paint.h">

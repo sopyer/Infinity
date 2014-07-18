@@ -93,9 +93,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="VGExp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Math.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="VGExp.h" />
   </ItemGroup>

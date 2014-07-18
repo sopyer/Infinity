@@ -85,7 +85,6 @@
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="SUI.cpp" />
     <ClCompile Include="VG.cpp" />
-    <ClCompile Include="impl\Math.cpp" />
     <ClCompile Include="impl\Rasterizer.cpp" />
     <ClCompile Include="impl\SharedResources.cpp" />
   </ItemGroup>
@@ -100,7 +99,6 @@
     <CustomBuildStep Include="Path.h" />
     <CustomBuildStep Include="VG.h" />
     <ClInclude Include="DataTypes.h" />
-    <ClInclude Include="impl\Math.h" />
     <ClInclude Include="impl\Rasterizer.h" />
     <ClInclude Include="impl\SharedResources.h" />
   </ItemGroup>

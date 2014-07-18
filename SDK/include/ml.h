@@ -12,6 +12,9 @@
 #define FLT_1_OVER_2_PI      0.159154943091895f
 #define FLT_RAD_TO_DEG_SCALE 57.29577951308232f
 #define FLT_DEG_TO_RAD_SCALE 0.017453292519943f
+#define ML_C_EPS3            0.001f
+#define ML_C_EPS5            0.00001f
+#define ML_C_EPS7            0.0000001f
 
 namespace ml
 {

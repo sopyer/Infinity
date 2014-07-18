@@ -1,7 +1,7 @@
 #ifndef __VGEXP_H_INCLUDED__
 #	define __VGEXP_H_INCLUDED__
 
-#include <VG/impl/Math.h>
+#include "Math.h"
 
 struct CubicVertex
 {

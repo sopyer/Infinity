@@ -3,9 +3,9 @@
 #include <glm/glm.h>
 #include <vg/openvg.h>
 #include <opengl.h>
-
-#include "Math.h"
 #include <cassert>
+
+#include "DataTypes.h"
 
 namespace impl
 {

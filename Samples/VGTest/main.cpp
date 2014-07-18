@@ -4,9 +4,8 @@
 
 #include "VGExp.h"
 #include <SOIL.h> // remove later
-#include <VG/impl/Math.h>
+#include "Math.h"
 #include <VG/impl/Rasterizer.h>
-#include <VG/VG.h>
 #include <utils.h>
 #include <graphics.h>
 
