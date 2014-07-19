@@ -23,13 +23,6 @@ namespace vg
         return newPath;
     }
 
-    Path createUnitQuad()
-    {
-        const VGubyte quadSegs[] = {VG_MOVE_TO_ABS, VG_LINE_TO_REL, VG_LINE_TO_REL, VG_LINE_TO_REL, VG_LINE_TO_REL};
-        const VGfloat quadData[] = {0.5f, 0.5f, -1, 0, 0, -1, 1, 0, 0, 1};
-        return createPath(ARRAY_SIZE(quadSegs), quadSegs, quadData);
-    }
-
     void destroyPath(Path path)
     {
         delete path;

@@ -68,14 +68,13 @@ namespace vg
     Paint   createSolidPaint(float* color4f);
     Paint   createSolidPaint(unsigned int color);
     Paint   createLinearGradientPaint(float x0, float y0, float x1, float y1,
-        size_t stopCount, float stops[],
-        unsigned int colorRamp[]);
-    void	destroyPaint(Paint paint);
-    void	applyPaintAsGLProgram(Paint paint);
+                                      size_t stopCount, float stops[],
+                                      unsigned int colorRamp[]);
+    void    destroyPaint(Paint paint);
+    void    applyPaintAsGLProgram(Paint paint);
 
     //Path API
     Path createPath(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
-    Path createUnitQuad();
     void destroyPath(Path path);
     void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2);
 
