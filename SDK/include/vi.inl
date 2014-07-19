@@ -86,33 +86,53 @@ __forceinline v128 vi_set_0001f()
     return vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(vi_set_i000(FLT_1_0_ASINT));
 }
 
-__forceinline v128 vi_load_x(void* m32)
+__forceinline float vi_get_x(v128 v)
 {
-    return _mm_load_ss((float*)m32);
+    return _mm_cvtss_f32(v);
 }
 
-__forceinline v128 vi_load_v2(void* m64)
+__forceinline float vi_get_y(v128 v)
 {
-    return _mm_castpd_ps(_mm_load_sd((double*)m64));
+    return _mm_cvtss_f32(vi_swizzle<VI_SWIZZLE_YYYY>(v));
 }
 
-__forceinline v128 vi_load_v3(void* m96)
+__forceinline float vi_get_z(v128 v)
+{
+    return _mm_cvtss_f32(vi_swizzle<VI_SWIZZLE_ZZZZ>(v));
+}
+
+__forceinline float vi_get_w(v128 v)
+{
+    return _mm_cvtss_f32(vi_swizzle<VI_SWIZZLE_WWWW>(v));
+}
+
+__forceinline v128 vi_load_x(const void* m32)
+{
+    return _mm_load_ss((const float*)m32);
+}
+
+__forceinline v128 vi_load_v2(const void* m64)
+{
+    return _mm_castpd_ps(_mm_load_sd((const double*)m64));
+}
+
+__forceinline v128 vi_load_v3(const void* m96)
 {
     v128 r0, r1;
 
-    r0 = _mm_castpd_ps(_mm_load_sd((double*)m96));
-    r1 = _mm_load_ss((float*)m96 + 2);
+    r0 = _mm_castpd_ps(_mm_load_sd((const double*)m96));
+    r1 = _mm_load_ss((const float*)m96 + 2);
     return _mm_movelh_ps(r0, r1);
 }
 
-__forceinline v128 vi_load_v4(void* m128)
+__forceinline v128 vi_load_v4(const void* m128)
 {
-    return _mm_load_ps((float*)m128);
+    return _mm_load_ps((const float*)m128);
 }
 
-__forceinline v128 vi_loadu_v4(void* m128)
+__forceinline v128 vi_loadu_v4(const void* m128)
 {
-    return _mm_loadu_ps((float*)m128);
+    return _mm_loadu_ps((const float*)m128);
 }
 
 __forceinline void vi_store_x(void* m32, v128 v)

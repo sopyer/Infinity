@@ -55,11 +55,18 @@ inline v128 vi_set_1000f();
 inline v128 vi_set_0100f();
 inline v128 vi_set_0010f();
 inline v128 vi_set_0001f();
-inline v128 vi_load_x   (void* m32);
-inline v128 vi_load_v2  (void* m64);
-inline v128 vi_load_v3  (void* m96);
-inline v128 vi_load_v4  (void* m128);
-inline v128 vi_loadu_v4 (void* m128);
+
+inline float vi_get_x(v128 v);
+inline float vi_get_y(v128 v);
+inline float vi_get_z(v128 v);
+inline float vi_get_w(v128 v);
+
+inline v128 vi_load_x   (const void* m32);
+inline v128 vi_load_v2  (const void* m64);
+inline v128 vi_load_v3  (const void* m96);
+inline v128 vi_load_v4  (const void* m128);
+inline v128 vi_loadu_v4 (const void* m128);
+
 inline void vi_store_x  (void* m32,  v128 v);
 inline void vi_store_v2 (void* m64,  v128 v);
 inline void vi_store_v3 (void* m96,  v128 v);

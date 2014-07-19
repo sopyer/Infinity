@@ -89,6 +89,7 @@ namespace ml
     // matrices
     v128 mul_mat4_vec4     (v128* m/*[4]*/, v128 v);
     void transpose_mat4    (v128* r/*[4]*/, v128* m/*[4]*/);
+    void transpose_mat4x2  (v128* r/*[2]*/, v128* m/*[4]*/);
     void mul_mat4          (v128* r/*[4]*/, v128* a/*[4]*/, v128* b/*[4]*/);
     void quat_to_mat4x3    (v128* m/*[3]*/, v128 q);
     void quat_to_mat4      (v128* m/*[4]*/, v128 q);

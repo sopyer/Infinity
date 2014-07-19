@@ -272,17 +272,26 @@ namespace ml
         return vi_add(v, t);
     }
 
-    void transpose_mat4(v128* t/*[4]*/, v128* m/*[4]*/)
+    void transpose_mat4(v128* r/*[4]*/, v128* m/*[4]*/)
     {
         __m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
         __m128i xmm1 = _mm_unpackhi_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
         __m128i xmm2 = _mm_unpacklo_epi32(_mm_castps_si128(m[2]), _mm_castps_si128(m[3]));
         __m128i xmm3 = _mm_unpackhi_epi32(_mm_castps_si128(m[2]), _mm_castps_si128(m[3]));
 
-        t[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
-        t[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
-        t[2] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm1, xmm3));
-        t[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
+        r[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
+        r[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
+        r[2] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm1, xmm3));
+        r[3] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm1, xmm3));
+    }
+
+    void transpose_mat4x2(v128* r/*[4]*/, v128* m/*[4]*/)
+    {
+        __m128i xmm0 = _mm_unpacklo_epi32(_mm_castps_si128(m[0]), _mm_castps_si128(m[1]));
+        __m128i xmm2 = _mm_unpacklo_epi32(_mm_castps_si128(m[2]), _mm_castps_si128(m[3]));
+
+        r[0] = _mm_castsi128_ps(_mm_unpacklo_epi64(xmm0, xmm2));
+        r[1] = _mm_castsi128_ps(_mm_unpackhi_epi64(xmm0, xmm2));
     }
 
     v128 mul_mat4_vec4(v128* m/*4*/, v128 v)
