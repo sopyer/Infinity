@@ -1,6 +1,7 @@
 #include <sput.h>
 
 #include "impl\Rasterizer.h"
+#include <ml.h>
 
 const float relaxedMaxDiff = 0.001f;
 const float relaxedRelDiff = 0.0001f;
@@ -30,22 +31,29 @@ float calcImplicit(const glm::vec3& tc)
 
 namespace impl
 {
-    void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, float* subdPts);
+    void bezier3MakeImplicit(v128 pos[4], v128 klm[4], int& subdPtCount, float* subdPts);
 }
 
 void test_orientation_selection_bug()
 {
-    glm::vec2 cp[4] = {
-        glm::vec2(12.52016f, 0.19535054f),
-        glm::vec2(13.76016f, 0.19535054f),
-        glm::vec2(14.52016f, 0.23535054f),
-        glm::vec2(14.52016f, 0.23535054f)
+    v128 cp[4] = {
+        {12.52016f, 0.19535054f, 0.0f, 0.0f},
+        {13.76016f, 0.19535054f, 0.0f, 0.0f},
+        {14.52016f, 0.23535054f, 0.0f, 0.0f},
+        {14.52016f, 0.23535054f, 0.0f, 0.0f},
     };
+    v128 klm[4];
     glm::vec3 tc[4];
     int count;
     float subdPt[2];
 
-    impl::bezier3MakeImplicit(cp, tc, count, subdPt);
+    impl::bezier3MakeImplicit(cp, klm, count, subdPt);
+
+    vi_store_v3(&tc[0], klm[0]);
+    vi_store_v3(&tc[1], klm[1]);
+    vi_store_v3(&tc[2], klm[2]);
+    vi_store_v3(&tc[3], klm[3]);
+
     sput_fail_unless(calcImplicit(glm::mix(tc[0], tc[3], 0.5f)) <= 0.0f, "Check midpoint explicit cubic function sign");
 
     float s0 = calcImplicit(tc[0]),

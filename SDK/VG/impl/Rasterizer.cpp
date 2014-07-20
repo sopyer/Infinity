@@ -1,41 +1,26 @@
-#include <cassert>
 #include <opengl.h>
 #include <utils.h>
 
 #include "SharedResources.h"
 #include "Rasterizer.h"
 
-#include <cassert>
-#include <algorithm>
-#include <utils.h>
-
 namespace impl
 {
-    enum
+    void subdivide(v128 cubic[4], float t, v128 subCubic1[4], v128 subCubic2[4])
     {
-        RATIONAL_LOOP_CUBIC,
-        RATIONAL_SERPENTINE_CUSP_CUBIC,
-        INTEGRAL_LOOP_CUBIC,
-        INTEGRAL_SERPENTINE_CUSP_CUBIC,
-        CUSP_AT_INFINITY_CUBIC,
-        RATIONAL_QUADRATIC_CUBIC,
-        DEGENERATE_CUBIC
-    };
+        v128 p0 = cubic[0];
+        v128 p1 = cubic[1];
+        v128 p2 = cubic[2];
+        v128 p3 = cubic[3];
 
-    template<typename T>
-    void subdivide(const T cubic[4], float t, T subCubic1[4], T subCubic2[4])
-    {
-        T p0 = cubic[0];
-        T p3 = cubic[3];
+        v128 p01 = vi_lerp(p0, p1, t);
+        v128 p12 = vi_lerp(p1, p2, t);
+        v128 p23 = vi_lerp(p2, p3, t);
 
-        T p01 = glm::mix(cubic[0], cubic[1], t);
-        T p12 = glm::mix(cubic[1], cubic[2], t);
-        T p23 = glm::mix(cubic[2], cubic[3], t);
+        v128 p012 = vi_lerp(p01, p12, t);
+        v128 p123 = vi_lerp(p12, p23, t);
 
-        T p012 = glm::mix(p01, p12, t);
-        T p123 = glm::mix(p12, p23, t);
-
-        T p0123 = glm::mix(p012, p123, t);
+        v128 p0123 = vi_lerp(p012, p123, t);
 
         subCubic1[0] = p0;
         subCubic1[1] = p01;
@@ -51,129 +36,128 @@ namespace impl
     void solveQuadratic(float k[3], float r[4])
     {
         float a = k[0], b = k[1], c = k[2];
-        float D = b*b-4*a*c;
+        float D = b*b - 4*a*c;
 
-        assert(D>=0);
+        assert(D >= 0.0f);
 
-        if (D==0)
+        if (D == 0.0f)
         {
             r[0] = r[2] = -b;
             r[1] = r[3] = 2*a;
         }
         else
         {
-            float rr = -b + (b<0?1:-1)*sqrt(D);
+            float rr = -b + (b < 0 ? 1 : -1)*sqrt(D);
 
             r[0] = rr;  r[1] = 2*a;
             r[2] = 2*c; r[3] = rr;
         }
     }
 
-    void normSquare(float* x, float* y)
+    void normSquare(float& x, float& y)
     {
         float s;
 
-        s = ut::max(ml::abs(*x), ml::abs(*y));
+        s = ut::max(ml::abs(x), ml::abs(y));
         s = s > ML_C_EPS7 ? s : 1.0f;
 
-        *x /= s; *y /= s;
+        x /= s; y /= s;
     }
 
-    void bezier3MakeImplicit(glm::vec2 pos[4], glm::vec3 klm[4], int& subdPtCount, float* subdPts)
+    void bezier3MakeImplicit(v128 pos[4], v128 klm[4], int& subdPtCount, float* subdPts)
     {
-        glm::vec2 bb[3] = { pos[1]-pos[0], pos[2]-pos[0], pos[3]-pos[0] };
+        //Bezier basis
+        //bb[3] = { pos[1]-pos[0], pos[2]-pos[0], pos[3]-pos[0] };
+        v128 bb0 = vi_sub(pos[1], pos[0]);
+        v128 bb1 = vi_sub(pos[2], pos[0]);
+        v128 bb2 = vi_sub(pos[3], pos[0]);
 
         //Transform from Bezier to power basis
-        glm::vec2 pb[3] = { 3.0f*bb[0], -6.0f*bb[0] +  3.0f*bb[1], 3.0f*bb[0] + -3.0f*bb[1] + bb[2] };
+        //pb[3] = { 3.0f*bb[0], -6.0f*bb[0] +  3.0f*bb[1], 3.0f*bb[0] + -3.0f*bb[1] + bb[2] };
+        v128 pb0 = vi_mul(vi_set_ffff( 3.0f), bb0);
+        v128 pb1 = vi_mad(vi_set_ffff(-6.0f), bb0, vi_mul(vi_set_ffff( 3.0f), bb1));
+        v128 pb2 = vi_mad(vi_set_ffff( 3.0f), bb0, vi_mad(vi_set_ffff(-3.0f), bb1, bb2));
 
-        float d0 =  pb[1].x*pb[2].y - pb[1].y*pb[2].x;
-        float d1 =  pb[2].x*pb[0].y - pb[2].y*pb[0].x;
-        float d2 =  pb[0].x*pb[1].y - pb[0].y*pb[1].x;
+        // make xxx and yyy
+        v128 xy[2];
+        v128 m[4] = {pb0, pb1, pb2, vi_set_0000()};
+        ml::transpose_mat4x2(xy, m);
 
-        //Mitigates precision issues
-        d0 = ml::abs(d0) > ML_C_EPS7 ? d0 : 0.0f;
-        d1 = ml::abs(d1) > ML_C_EPS7 ? d1 : 0.0f;
-        d2 = ml::abs(d2) > ML_C_EPS7 ? d2 : 0.0f;
+        //d0 =  pb[1].x*pb[2].y - pb[1].y*pb[2].x;
+        //d1 =  pb[2].x*pb[0].y - pb[2].y*pb[0].x;
+        //d2 =  pb[0].x*pb[1].y - pb[0].y*pb[1].x;
+        v128 vd = vi_cross3(xy[0], xy[1]);
+
+        // Zero values less then epsilon in order 
+        // to mitigates precision issues
+        v128 mask = vi_cmp_gt(vi_abs(vd), vi_set_ffff(ML_C_EPS7));
+        vd = vi_and(vd, mask);
+
+        float d0 = vi_get_x(vd);
+        float d1 = vi_get_y(vd);
+        float d2 = vi_get_z(vd);
 
         float s = ut::max(ml::abs(d0), ut::max(ml::abs(d1), ml::abs(d2)));
         s = (s != 0.0f) ? s : 1.0f;
 
-        d0 /= s;
-        d1 /= s;
-        d2 /= s;
-
-        //Hessian coefficients
-        float h[3] = { -d0*d0, d0*d1, d0*d2-d1*d1 };
-
-        //Evaluate cubic determinant
-        float det = 4*h[0]*h[2] - h[1]*h[1];
-
-        //det>0 - sepentine, det==0 - cusp, det<0 - loop
-        int subCubicType = !!(det>=0);
-        int cubicType = d0 !=0 ? INTEGRAL_LOOP_CUBIC+subCubicType:
-                        d1 !=0 ? CUSP_AT_INFINITY_CUBIC:
-                        d2 !=0 ? RATIONAL_QUADRATIC_CUBIC:DEGENERATE_CUBIC;
+        d0 /= s; d1 /= s; d2 /= s;
 
         //Final adjustments to make inflection point polynomial
-        float d[3] = { -3.0f*d0, 3.0f*d1, -d2 };
-
-        glm::vec2   r[2] = 
-        {
-            glm::vec2(1, 0),
-            glm::vec2(1, 0),
-        };
-
-        glm::mat4   k;
+        ml::vec2   r[2] = { {1.0f, 0.0f}, {1.0f, 0.0f} };
 
         v128 F0, F1, F2, F3;
         float t0, s0, t1, s1, t00, t11, s00, s11, t01, s01;
 
-        assert(cubicType!=RATIONAL_LOOP_CUBIC && cubicType!=RATIONAL_SERPENTINE_CUSP_CUBIC);
-        switch (cubicType)
+        if (d0 != 0)
         {
-        case INTEGRAL_LOOP_CUBIC:
-            solveQuadratic(h, (float*)r);
+            float h[3] = { -d0*d0, d0*d1, d0*d2-d1*d1 }; //Hessian coefficients
+            float det  = 4*h[0]*h[2] - h[1]*h[1];        //Evaluate cubic determinant
 
-            t0 = r[0].x; s0 = r[0].y;
-            t1 = r[1].x; s1 = r[1].y;
+            if (det >= 0.0f)
+            {
+                float d[3] = { -3.0f*d0, 3.0f*d1, -d2 };
 
-            normSquare(&t0, &s0);
-            normSquare(&t1, &s1);
+                solveQuadratic(d, (float*)r);
 
-            t00 = t0 * t0; s00 = s0 * s0;
-            t01 = t0 * t1; s01 = s0 * s1;
-            t11 = t1 * t1; s11 = s1 * s1;
+                t0 = r[0].x; s0 = r[0].y;
+                t1 = r[1].x; s1 = r[1].y;
 
-            F0 = vi_set( t01,          t00*t1,              t0*t11,             1.0f);
-            F1 = vi_set(-t0*s1-t1*s0, -t00*s1-2.0f*t01*s0, -t11*s0-2.0f*t01*s1, 0.0f);
-            F2 = vi_set( s01,          t1*s00+2.0f*t0*s01,  t0*s11+2.0f*t1*s01, 0.0f);
-            F3 = vi_set( 0.0f,        -s00*s1,             -s0*s11,             0.0f);
+                normSquare(t0, s0);
+                normSquare(t1, s1);
 
-            break;
+                t00 = t0 * t0; s00 = s0 * s0;
+                t11 = t1 * t1; s11 = s1 * s1;
 
-        case INTEGRAL_SERPENTINE_CUSP_CUBIC:
-            solveQuadratic(d, (float*)r);
+                F0 = vi_set( t0*t1,        t00*t0,       t11*t1,      1.0f);
+                F1 = vi_set(-t0*s1-t1*s0, -3.0f*t00*s0, -3.0f*t11*s1, 0.0f);
+                F2 = vi_set( s0*s1,        3.0f*t0*s00,  3.0f*t1*s11, 0.0f);
+                F3 = vi_set( 0.0f,        -s00*s0,      -s11*s1,      0.0f);
+            }
+            else
+            {
+                solveQuadratic(h, (float*)r);
 
-            t0 = r[0].x; s0 = r[0].y;
-            t1 = r[1].x; s1 = r[1].y;
+                t0 = r[0].x; s0 = r[0].y;
+                t1 = r[1].x; s1 = r[1].y;
 
-            normSquare(&t0, &s0);
-            normSquare(&t1, &s1);
+                normSquare(t0, s0);
+                normSquare(t1, s1);
 
-            t00 = t0 * t0; s00 = s0 * s0;
-            t11 = t1 * t1; s11 = s1 * s1;
+                t00 = t0 * t0; s00 = s0 * s0;
+                t01 = t0 * t1; s01 = s0 * s1;
+                t11 = t1 * t1; s11 = s1 * s1;
 
-            F0 = vi_set( t0*t1,        t00*t0,       t11*t1,      1.0f);
-            F1 = vi_set(-t0*s1-t1*s0, -3.0f*t00*s0, -3.0f*t11*s1, 0.0f);
-            F2 = vi_set( s0*s1,        3.0f*t0*s00,  3.0f*t1*s11, 0.0f);
-            F3 = vi_set( 0.0f,        -s00*s0,      -s11*s1,      0.0f);
+                F0 = vi_set( t01,          t00*t1,              t0*t11,             1.0f);
+                F1 = vi_set(-t0*s1-t1*s0, -t00*s1-2.0f*t01*s0, -t11*s0-2.0f*t01*s1, 0.0f);
+                F2 = vi_set( s01,          t1*s00+2.0f*t0*s01,  t0*s11+2.0f*t1*s01, 0.0f);
+                F3 = vi_set( 0.0f,        -s00*s1,             -s0*s11,             0.0f);
+            }
+        }
+        else if (d1 != 0.0f)
+        {
+            t0 = d2; s0 = 3.0f*d1;
 
-            break;
-
-        case CUSP_AT_INFINITY_CUBIC:
-            t0 = -d[2]; s0 = d[1];
-
-            normSquare(&t0, &s0);
+            normSquare(t0, s0);
 
             t00 = t0 * t0; s00 = s0 * s0;
 
@@ -181,43 +165,40 @@ namespace impl
             F1 = vi_set(-s0,   -3.0f*t00*s0, 0.0f, 0.0f);
             F2 = vi_set( 0.0f,  3.0f*t0*s00, 0.0f, 0.0f);
             F3 = vi_set( 0.0f, -s00*s0,      0.0f, 0.0f);
-
-            break;
-
-        case RATIONAL_QUADRATIC_CUBIC:
+        }
+        else if (d2 != 0.0f)
+        {
             F0 = vi_set(0.0f, 0.0f, 0.0f, 0.0f);
             F1 = vi_set(1.0f, 0.0f, 1.0f, 0.0f);
             F2 = vi_set(0.0f, 1.0f, 0.0f, 0.0f);
             F3 = vi_set(0.0f, 0.0f, 0.0f, 0.0f);
-
-            break;
-
-        case DEGENERATE_CUBIC:
+        }
+        else
+        {
             F0 = vi_set_0000();
             F1 = vi_set_0000();
             F2 = vi_set_0000();
             F3 = vi_set_0000();
-
-            break;
-
-        default:
-            assert(false && "Algorithm failed to determine correct cubic curve");
         }
 
-        vi_store_v3(&klm[0], F0);
-        vi_store_v3(&klm[1], vi_mad(F1, vi_set_ffff(0.3333333333f), F0));
-        vi_store_v3(&klm[2], vi_mad(F2, vi_set_ffff(0.3333333333f), vi_mad(F1, vi_set_ffff(0.6666666667f), F0)));
-        vi_store_v3(&klm[3], vi_add(F3, vi_add(F2, vi_add(F1, F0))));
+        klm[0] = F0;
+        klm[1] = vi_mad(F1, vi_set_ffff(0.3333333333f), F0);
+        klm[2] = vi_mad(F2, vi_set_ffff(0.3333333333f), vi_mad(F1, vi_set_ffff(0.6666666667f), F0));
+        klm[3] = vi_add(F3, vi_add(F2, vi_add(F1, F0)));
 
         subdPtCount = 0;
         for (int i=0; i<2; i++)
         {
-            r[i] = (r[i].x<0)?-r[i]:r[i];
+            if (r[i].x<0)
+            {
+                r[i].x = -r[i].x;
+                r[i].y = -r[i].y;
+            }
 
-            if (!(0<r[i].x && r[i].x<r[i].y))
-                continue;
-
-            subdPts[subdPtCount++] = r[i].x/r[i].y;
+            if (0<r[i].x && r[i].x<r[i].y)
+            {
+                subdPts[subdPtCount++] = r[i].x/r[i].y;
+            }
         }
     }
 
@@ -271,37 +252,63 @@ namespace impl
 
     void meshAddBezier3(Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
     {
-        glm::vec2 ctrlPt[4*2] = {cp0, cp1, cp2, cp3};
-        glm::vec3 klm[4*2];
         int       count;
         float     subdPts[2];
+        v128 vcp0[4] = {vi_load_v2(&cp0), vi_load_v2(&cp1), vi_load_v2(&cp2), vi_load_v2(&cp3)};
+        v128 vklm0[4];
 
-        bezier3MakeImplicit(ctrlPt, klm, count, subdPts);
+        bezier3MakeImplicit(vcp0, vklm0, count, subdPts);
 
         if (count>1 && subdPts[0]>subdPts[1])
         {
             ut::swap(subdPts[0], subdPts[1]);
         }
 
+        glm::vec2 cp[4];
+        glm::vec3 klm[4];
+
         for(int i=0; i<count; ++i)
         {
+            v128 vcp1[4];
+            v128 vklm1[4];
+
             float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
 
-            subdivide(ctrlPt, t, ctrlPt+4, ctrlPt);
-            subdivide(klm, t, klm+4, klm);
+            subdivide(vcp0,  t, vcp1,  vcp0);
+            subdivide(vklm0, t, vklm1, vklm0);
 
-            correctOrient(klm+4);
-            geom.bezier3AddVertices(ctrlPt+4, klm+4);
+            vi_store_v2(&cp[0], vcp1[0]);
+            vi_store_v2(&cp[1], vcp1[1]);
+            vi_store_v2(&cp[2], vcp1[2]);
+            vi_store_v2(&cp[3], vcp1[3]);
+
+            vi_store_v3(&klm[0], vklm1[0]);
+            vi_store_v3(&klm[1], vklm1[1]);
+            vi_store_v3(&klm[2], vklm1[2]);
+            vi_store_v3(&klm[3], vklm1[3]);
+
+            correctOrient(klm);
+            geom.bezier3AddVertices(cp, klm);
 
             //Carefully, we changed places of subdivided curves,
             //that's why suitable points are 0 and 7
-            u16 idx = geom.shapeAddVertex(ctrlPt[0]);
+            u16 idx = geom.shapeAddVertex(cp[3]);
             geom.shapeAddTri(prevIdx, idx, curIdx);
             prevIdx = idx;
         }
 
+        vi_store_v2(&cp[0], vcp0[0]);
+        vi_store_v2(&cp[1], vcp0[1]);
+        vi_store_v2(&cp[2], vcp0[2]);
+        vi_store_v2(&cp[3], vcp0[3]);
+
+        vi_store_v3(&klm[0], vklm0[0]);
+        vi_store_v3(&klm[1], vklm0[1]);
+        vi_store_v3(&klm[2], vklm0[2]);
+        vi_store_v3(&klm[3], vklm0[3]);
+
         correctOrient(klm);
-        geom.bezier3AddVertices(ctrlPt, klm);
+        geom.bezier3AddVertices(cp, klm);
     }
 
     void buildFillGeometry(Geometry&      geom,
