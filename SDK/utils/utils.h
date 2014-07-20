@@ -41,6 +41,17 @@ bool mopen(memory_t* mem, const char* name);
 void mfree(memory_t* mem);
 
 template <typename type>
+type mem_read(memory_t* mem)
+{
+    type* value = (type*)(mem->buffer + mem->allocated);
+
+    mem->allocated += sizeof(type);
+    assert(mem->allocated<=mem->size);
+
+    return *value;
+}
+
+template <typename type>
 type* madvance(memory_t* mem, size_t count)
 {
     uint8_t* var = mem->buffer + mem->allocated;

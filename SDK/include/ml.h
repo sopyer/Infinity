@@ -18,11 +18,6 @@
 
 namespace ml
 {
-    struct vec2
-    {
-        float x, y;
-    };
-
     struct vec3
     {
         float x, y, z;
@@ -102,6 +97,45 @@ namespace ml
     void make_ortho2D_mat4        (v128* mat/*[4]*/, float left, float right, float bottom, float top);
     void make_ortho3D_mat4        (v128* mat/*[4]*/, float left, float right, float bottom, float top, float zn, float zf);
     void make_identity_mat4       (v128* mat/*[4]*/);
+}
+
+namespace ml
+{
+    struct vec2
+    {
+        float x, y;
+    };
+
+    inline vec2 make_vec2(float x, float y)
+    {
+        vec2 v = {x, y};
+        return v;
+    }
+
+    inline vec2 operator+(const vec2& arg0, const vec2& arg1)
+    {
+        return make_vec2(arg0.x+arg1.x, arg0.y+arg1.y);
+    }
+
+    inline vec2 operator-(const vec2& arg0, const vec2& arg1)
+    {
+        return make_vec2(arg0.x-arg1.x, arg0.y-arg1.y);
+    }
+
+    inline vec2 operator*(float arg0, const vec2& arg1)
+    {
+        return make_vec2(arg0*arg1.x, arg0*arg1.y);
+    }
+
+    inline vec2 operator*(const vec2& arg0, const vec2& arg1)
+    {
+        return make_vec2(arg0.x*arg1.x, arg0.y*arg1.y);
+    }
+
+    inline vec2 operator/(const vec2& arg0, const vec2& arg1)
+    {
+        return make_vec2(arg0.x/arg1.x, arg0.y/arg1.y);
+    }
 }
 
 namespace ml

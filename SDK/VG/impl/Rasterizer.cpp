@@ -202,26 +202,12 @@ namespace impl
         }
     }
 
-    glm::vec2 readVec2(const VGfloat*& ptr)
-    {
-        glm::vec2 res(*ptr, *(ptr+1));
-        ptr+=2;
-        return res;
-    }
-
-    float readFloat(const VGfloat*& ptr)
-    {
-        float res = *ptr;
-        ++ptr;
-        return res;
-    }
-
-    float calcImplicit(const glm::vec3& tc)
+    float calcImplicit(const ml::vec3& tc)
     {
         return tc.x*tc.x*tc.x - tc.y*tc.z;
     }
 
-    inline void changeOrient(glm::vec3& tc)
+    inline void changeOrient(ml::vec3& tc)
     {
         tc.x = -tc.x;
         tc.y = -tc.y;
@@ -229,7 +215,7 @@ namespace impl
 
     //Function only works on simple cubic subcurve - which does
     //not change curvature direction on oposite anywhere it is defined
-    void correctOrient(glm::vec3 tc[4])
+    void correctOrient(ml::vec3 tc[4])
     {
         float valueCP1 = calcImplicit(tc[1]);
         float valueCP2 = calcImplicit(tc[2]);
@@ -250,7 +236,7 @@ namespace impl
         }
     }
 
-    void meshAddBezier3(Geometry& geom, u16 prevIdx, u16 curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+    void meshAddBezier3(Geometry& geom, u16 prevIdx, u16 curIdx, const ml::vec2& cp0, const ml::vec2&  cp1, const ml::vec2& cp2, const ml::vec2& cp3)
     {
         int       count;
         float     subdPts[2];
@@ -264,8 +250,8 @@ namespace impl
             ut::swap(subdPts[0], subdPts[1]);
         }
 
-        glm::vec2 cp[4];
-        glm::vec3 klm[4];
+        ml::vec2 cp[4];
+        ml::vec3 klm[4];
 
         for(int i=0; i<count; ++i)
         {
@@ -288,11 +274,11 @@ namespace impl
             vi_store_v3(&klm[3], vklm1[3]);
 
             correctOrient(klm);
-            geom.bezier3AddVertices(cp, klm);
+            geom.bezier3AddVertices((glm::vec2*)cp, (glm::vec3*)klm);
 
             //Carefully, we changed places of subdivided curves,
             //that's why suitable points are 0 and 7
-            u16 idx = geom.shapeAddVertex(cp[3]);
+            u16 idx = geom.shapeAddVertex(*(glm::vec2*)&cp[3]);
             geom.shapeAddTri(prevIdx, idx, curIdx);
             prevIdx = idx;
         }
@@ -308,22 +294,23 @@ namespace impl
         vi_store_v3(&klm[3], vklm0[3]);
 
         correctOrient(klm);
-        geom.bezier3AddVertices(cp, klm);
+        geom.bezier3AddVertices((glm::vec2*)cp, (glm::vec3*)klm);
     }
 
-    void buildFillGeometry(Geometry&      geom,
-                           const VGint    count,
-                           const VGubyte* commands,
-                           const VGfloat* pathData)
+    void buildFillGeometry(Geometry& geom, size_t numCmd, const VGubyte* cmd, size_t numData, const VGfloat* data)
     {
-        glm::vec2 cp0, cp1, o, p;
+        ml::vec2  cp0 = {0.0f, 0.0f},
+                  cp1 = {0.0f, 0.0f},
+                  o   = {0.0f, 0.0f},
+                  p   = {0.0f, 0.0f};
         bool      isContourStarted = false;
         u16       startIdx=0, prevIdx=0, curIdx=0; //assign default values to make compiler happy
+        memory_t  mem = {(uint8_t*)data, numData*sizeof(float), 0};
 
-        for (VGint s=0; s<count; ++s)
+        for (size_t s=0; s<numCmd; ++s)
         {
-            int  segment  = commands[s]&0x1E;
-            bool rel      = commands[s]&1;
+            int      segment = cmd[s]&0x1E;
+            ml::vec2 origin  = (cmd[s]&1) ? o : ml::make_vec2(0.0f, 0.0f);
 
             if (segment==VG_CLOSE_PATH)
             {
@@ -332,7 +319,7 @@ namespace impl
             else if (segment==VG_MOVE_TO)
             {
                 isContourStarted = false;
-                o = p = readVec2(pathData) + (rel?o:glm::vec2(0));
+                o = p = mem_read<ml::vec2>(&mem) + origin;
             }
             else
             {
@@ -341,45 +328,45 @@ namespace impl
                 if (!isContourStarted)
                 {
                     isContourStarted = true;
-                    startIdx = prevIdx = curIdx = geom.shapeAddVertex(o);
+                    startIdx = prevIdx = curIdx = geom.shapeAddVertex(*(glm::vec2*)&o);
                 }
 
                 switch (segment)
                 {
                     case VG_LINE_TO:
-                        o = p = readVec2(pathData) + (rel?o:glm::vec2(0));
+                        o = p = mem_read<ml::vec2>(&mem) + origin;
                         break;
 
                     case VG_HLINE_TO:
-                        o.x = p.x = readFloat(pathData) + (rel?o.x:0);
+                        o.x = p.x = mem_read<float>(&mem) + origin.x;
                         break;
 
                     case VG_VLINE_TO:
-                        o.y = p.y = readFloat(pathData) + (rel?o.y:0);
+                        o.y = p.y = mem_read<float>(&mem) + origin.y;
                         break;
 
                     case VG_QUAD_TO:
-                        p = readVec2(pathData) + (rel?o:glm::vec2(0));
-                        o = readVec2(pathData) + (rel?o:glm::vec2(0));
+                        p = mem_read<ml::vec2>(&mem) + origin;
+                        o = mem_read<ml::vec2>(&mem) + origin;
                         break;
 
                     case VG_SQUAD_TO:
                         p = 2.0f*o - p;
-                        o = readVec2(pathData) + (rel?o:glm::vec2(0));
+                        o = mem_read<ml::vec2>(&mem) + origin;
                         break;
 
                     case VG_CUBIC_TO:
                         cp0 = o;
-                        cp1 = readVec2(pathData) + (rel?o:glm::vec2(0));
-                        p = readVec2(pathData) + (rel?o:glm::vec2(0));
-                        o = readVec2(pathData) + (rel?o:glm::vec2(0));
+                        cp1 = mem_read<ml::vec2>(&mem) + origin;
+                        p   = mem_read<ml::vec2>(&mem) + origin;
+                        o   = mem_read<ml::vec2>(&mem) + origin;
                         break;
 
                     case VG_SCUBIC_TO:
                         cp0 = o;
                         cp1 = 2.0f*o - p;
-                        p = readVec2(pathData) + (rel?o:glm::vec2(0));
-                        o = readVec2(pathData) + (rel?o:glm::vec2(0));
+                        p   = mem_read<ml::vec2>(&mem) + origin;
+                        o   = mem_read<ml::vec2>(&mem) + origin;
                         break;
 
                     case VG_SCWARC_TO:
@@ -387,11 +374,14 @@ namespace impl
                     case VG_LCWARC_TO:
                     case VG_LCCWARC_TO:
                         {
-                            glm::vec2 r = readVec2(pathData);
-                            float     a = readFloat(pathData);
-                            glm::vec2 e = readVec2(pathData) + (rel?o:glm::vec2(0));
+                            ml::vec2 r, c;
+                            float a;
 
-                            o = p = e;
+                            r = mem_read<ml::vec2>(&mem);
+                            a = mem_read<float>(&mem);
+                            c = mem_read<ml::vec2>(&mem) + origin;
+
+                            o = p = c;
                         }
                         break;
 
@@ -401,7 +391,7 @@ namespace impl
 
                 assert(isContourStarted);
                 prevIdx = curIdx;
-                curIdx = geom.shapeAddVertex(o);
+                curIdx = geom.shapeAddVertex(*(glm::vec2*)&o);
                 geom.shapeAddTri(startIdx, prevIdx, curIdx);
 
                 switch (segment)
@@ -483,7 +473,7 @@ namespace impl
         {
             glUseProgram(0);
             glColor4ub(0, 0, 0, 255);
-            glVertexPointer(2, GL_FLOAT, sizeof(glm::vec2), geom.shapeVertices.begin());
+            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), geom.shapeVertices.begin());
             glDrawElements(GL_TRIANGLES, (GLsizei)geom.shapeIndices.size(), GL_UNSIGNED_SHORT, geom.shapeIndices.begin());
         }
 
@@ -521,7 +511,7 @@ namespace impl
         if (!geom->shapeIndices.empty())
         {
             glUseProgram(0);
-            glVertexPointer(2, GL_FLOAT, sizeof(glm::vec2), geom->shapeVertices.begin());
+            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), geom->shapeVertices.begin());
             glDrawElements(GL_TRIANGLES, (GLsizei)geom->shapeIndices.size(), GL_UNSIGNED_SHORT, geom->shapeIndices.begin());
         }
 

@@ -77,10 +77,7 @@ namespace impl
         }
     };
 
-    void buildFillGeometry(Geometry&      geom,
-                           const VGint    numSegments,
-                           const VGubyte* pathSegments,
-                           const VGfloat* pathData);
+    void buildFillGeometry(Geometry& geom, size_t numCmd, const VGubyte* cmd, size_t numData, const VGfloat* data);
 
     void rasterizeEvenOddA2C(Geometry& geom);
     void rasterizeNonZeroA2C(Geometry& geom);

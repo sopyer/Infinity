@@ -1,5 +1,3 @@
-#include <vector>
-#include <glm/glm.h>
 #include <utils.h>
 
 #include "VG.h"
@@ -18,7 +16,7 @@ namespace vg
         Path newPath;
 
         newPath = new impl::Geometry();
-        impl::buildFillGeometry(*newPath, numSegments, pathSegments, pathData);
+        impl::buildFillGeometry(*newPath, numSegments, pathSegments, numSegments*6, pathData);
 
         return newPath;
     }

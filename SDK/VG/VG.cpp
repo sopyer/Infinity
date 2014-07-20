@@ -33,17 +33,17 @@ namespace vg
         glnvgDelete(ctx);
     }
 
-    void drawQuad(const glm::vec2& min, const glm::vec2& max, float offset)
+    void drawQuad(float xmin, float ymin, float xmax, float ymax, float offset)
     {
         glBegin(GL_QUADS);
-        glVertex2f(min.x-offset, min.y-offset);
-        glVertex2f(min.x-offset, max.y+offset);
-        glVertex2f(max.x+offset, max.y+offset);
-        glVertex2f(max.x+offset, min.y-offset);
+        glVertex2f(xmin-offset, ymin-offset);
+        glVertex2f(xmin-offset, ymax+offset);
+        glVertex2f(xmax+offset, ymax+offset);
+        glVertex2f(xmax+offset, ymin-offset);
         glEnd();
     }
 
-    void clearStencil(const glm::vec2& min, const glm::vec2& max, float offset)
+    void clearStencil(float xmin, float ymin, float xmax, float ymax, float offset)
     {
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
         glStencilFunc(GL_ALWAYS, 0x00, 0xFF);
@@ -51,7 +51,7 @@ namespace vg
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         glUseProgram(0);
 
-        drawQuad(min, max, offset);
+        drawQuad(xmin, ymin, xmax, ymax, offset);
     }
 
     void drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha)
@@ -65,7 +65,7 @@ namespace vg
         glColor4ub(red, green, blue, alpha);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
@@ -80,7 +80,7 @@ namespace vg
         glColor4ub(red, green, blue, alpha);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
@@ -94,7 +94,7 @@ namespace vg
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
@@ -108,7 +108,7 @@ namespace vg
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
@@ -122,7 +122,7 @@ namespace vg
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
@@ -136,11 +136,11 @@ namespace vg
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         glPopAttrib();
     }
 
-    void clearAlpha(const glm::vec2& min, const glm::vec2& max, float offset)
+    void clearAlpha(float xmin, float ymin, float xmax, float ymax, float offset)
     {
         glUseProgram(0);
 
@@ -148,7 +148,7 @@ namespace vg
 
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
         glColor4ub(0, 0, 0, 0);
-        drawQuad(min, max, offset);
+        drawQuad(xmin, ymin, xmax, ymax, offset);
 
         glPopAttrib();
     }
@@ -158,7 +158,7 @@ namespace vg
         glPushAttrib(GL_ALL_ATTRIB_BITS);
 
         glEnable(GL_STENCIL_TEST);
-        clearAlpha(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        clearAlpha(path->xmin, path->ymin, path->xmax, path->ymax, 0);
         impl::rasterizeEvenOddAA(*path);
 
         applyPaintAsGLProgram(paint);
@@ -166,7 +166,7 @@ namespace vg
         glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-        drawQuad(glm::vec2(path->xmin, path->ymin), glm::vec2(path->xmax, path->ymax), 0);
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
 
         glPopAttrib();
     }
