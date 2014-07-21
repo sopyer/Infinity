@@ -13,7 +13,7 @@ bool testPtInRect(float xp, float yp, float xr, float yr, float wr, float hr)
     return (xr<=xp) && (xp<xr+wr) && (yr<=yp) && (yp<yr+hr);
 }
 
-bool marea(memory_t* mem, size_t size)
+bool mem_area(memory_t* mem, size_t size)
 {
     mem->allocated = 0;
     mem->size      = size;
@@ -22,7 +22,7 @@ bool marea(memory_t* mem, size_t size)
     return true;
 }
 
-bool mopen(memory_t* mem, const char* name)
+bool mem_file(memory_t* mem, const char* name)
 {
     PHYSFS_File* src = PHYSFS_openRead(name);
 
@@ -42,7 +42,7 @@ bool mopen(memory_t* mem, const char* name)
     return true;
 }
 
-void mfree(memory_t* mem)
+void mem_free(memory_t* mem)
 {
     if (mem->buffer) free(mem->buffer);
 

@@ -141,7 +141,7 @@ static int parseFace(char* row, int* data, int n, int vcnt)
 bool rcMeshLoaderObj::load(const char* filename)
 {
     memory_t    mem = {0, 0, 0};
-    mopen(&mem, filename);
+    mem_file(&mem, filename);
 
     if (!mem.buffer)
         return false;
@@ -214,7 +214,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 	strncpy(m_filename, filename, sizeof(m_filename));
 	m_filename[sizeof(m_filename)-1] = '\0';
 	
-    mfree(&mem);
+    mem_free(&mem);
 
 	return true;
 }

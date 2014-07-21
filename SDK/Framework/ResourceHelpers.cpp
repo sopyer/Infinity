@@ -14,8 +14,7 @@ namespace resources
     {
         memory_t source = MEMORY_T_INITIALIZER;
 
-        mopen(&source, filePath);
-        if (source.buffer)
+        if (mem_file(&source, filePath))
         {
             GLint lens   [MAX_DEFINES_TO_PROCESS+1];
             char* sources[MAX_DEFINES_TO_PROCESS+1];
@@ -32,7 +31,7 @@ namespace resources
             glShaderSource(shader, sourceCount, (const GLchar**)sources, lens);
             glCompileShader(shader);
 
-            mfree(&source);
+            mem_free(&source);
 
             const size_t    LOG_STR_LEN = 1024;
             char            infoLog[LOG_STR_LEN] = {0};
@@ -218,9 +217,7 @@ namespace resources
         GLuint texture;
         glGenTextures(1, &texture);
 
-        mopen(&texData, name);
-
-        if (texData.buffer)
+        if (mem_file(&texData, name))
         {
             int imgWidth, imgHeight, imgChannels;
             unsigned char*  pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
@@ -233,7 +230,7 @@ namespace resources
 
             SOIL_free_image_data(pixelsPtr);
 
-            mfree(&texData);
+            mem_free(&texData);
 
             if (width)  *width  = imgWidth;
             if (height) *height = imgHeight;

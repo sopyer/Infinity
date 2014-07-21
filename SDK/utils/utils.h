@@ -36,9 +36,9 @@ struct memory_t
     size_t   allocated;
 };
 
-bool marea(memory_t* mem, size_t size);
-bool mopen(memory_t* mem, const char* name);
-void mfree(memory_t* mem);
+bool mem_area(memory_t* mem, size_t size);
+bool mem_file(memory_t* mem, const char* name);
+void mem_free(memory_t* mem);
 
 template <typename type>
 type mem_read(memory_t* mem)
@@ -52,7 +52,7 @@ type mem_read(memory_t* mem)
 }
 
 template <typename type>
-type* madvance(memory_t* mem, size_t count)
+type* mem_raw_array(memory_t* mem, size_t count)
 {
     uint8_t* var = mem->buffer + mem->allocated;
 
@@ -63,7 +63,7 @@ type* madvance(memory_t* mem, size_t count)
 }
 
 template <typename type>
-type* madvance(memory_t* mem)
+type* mem_raw_data(memory_t* mem)
 {
     uint8_t* var = mem->buffer + mem->allocated;
 

@@ -21,7 +21,7 @@ void build_w_quat( ml::quat& quat )
 
 bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
 {
-    md5_model_t* model = madvance<md5_model_t>(outBinary);
+    md5_model_t* model = mem_raw_data<md5_model_t>(outBinary);
 
     char *line = strtok((char*)inText->buffer, "\n");
 
@@ -41,13 +41,13 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
         else if (sscanf(line, "numJoints %d", &int_val) == 1)
         {
             model->numJoints = int_val;
-            model->joints    = madvance<md5_joint_t>(outBinary, model->numJoints);
+            model->joints    = mem_raw_array<md5_joint_t>(outBinary, model->numJoints);
         }
 
         else if(sscanf(line, "numMeshes %d", &int_val) == 1)
         {
             model->numMeshes = int_val;
-            model->meshes    = madvance<md5_mesh_t>(outBinary, model->numMeshes);
+            model->meshes    = mem_raw_array<md5_mesh_t>(outBinary, model->numMeshes);
         }
 
         else if (!strncmp(line, "joints {", 8))
@@ -106,7 +106,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (sscanf(line, " numverts %d", &int_val) == 1)
                 {
                     mesh->numVertices = int_val;
-                    mesh->vertices    = madvance<md5_vertex_t>(outBinary, mesh->numVertices);
+                    mesh->vertices    = mem_raw_array<md5_vertex_t>(outBinary, mesh->numVertices);
                 }
 
                 else if (sscanf(line, " vert %d ( %f %f ) %d %d",
@@ -121,7 +121,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (sscanf(line, " numtris %d", &int_val) == 1)
                 {
                     mesh->numIndices = int_val * 3;
-                    mesh->indices    = madvance<uint16_t>(outBinary, mesh->numIndices);
+                    mesh->indices    = mem_raw_array<uint16_t>(outBinary, mesh->numIndices);
                 }
 
                 else if (sscanf(line,
@@ -137,7 +137,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (sscanf(line, " numweights %d", &int_val) == 1)
                 {
                     mesh->numWeights = int_val;
-                    mesh->weights    = madvance<md5_weight_t>(outBinary, mesh->numWeights);
+                    mesh->weights    = mem_raw_array<md5_weight_t>(outBinary, mesh->numWeights);
                 }
 
                 else if (sscanf(line,
@@ -167,7 +167,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
 
 bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
 {
-    md5_anim_t* anim = madvance<md5_anim_t>(outBinary);
+    md5_anim_t* anim = mem_raw_data<md5_anim_t>(outBinary);
 
     char *line = strtok((char*)inText->buffer, "\n");
 
@@ -190,8 +190,7 @@ bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
         else if (sscanf(line, "numJoints %d", &int_val) == 1)
         {
             anim->numJoints = int_val;
-            anim->frameData = madvance<md5_anim_data_t>(outBinary, 0); // get current pointer without incrementing allocated size
-
+            anim->frameData = mem_raw_array<md5_anim_data_t>(outBinary, 0); // get current pointer without incrementing allocated size
         }
 
         else if (sscanf(line, "frameRate %d", &int_val) == 1)
@@ -201,7 +200,7 @@ bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
 
         else if (sscanf(line, "frame %d", &int_val))
         {
-            md5_anim_data_t* data = madvance<md5_anim_data_t>(outBinary, anim->numJoints);
+            md5_anim_data_t* data = mem_raw_array<md5_anim_data_t>(outBinary, anim->numJoints);
 
             line = strtok(NULL, "\n");
 

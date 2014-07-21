@@ -275,11 +275,11 @@ namespace Model
         memset(model, 0, sizeof(model_t   ));
         memset(skel,  0, sizeof(skeleton_t));
 
-        if (marea(&outBinary, 4*1024*1024) &&
-            mopen(&inText, name)           &&
+        if (mem_area(&outBinary, 4*1024*1024) &&
+            mem_file(&inText, name)           &&
             md5meshConvertToBinary(&inText, &outBinary))
         {
-            mfree( &inText );
+            mem_free(&inText);
 
             md5_model_t* md5Model = (md5_model_t*)outBinary.buffer;
 
@@ -301,13 +301,13 @@ namespace Model
                 ++md5Mesh;
             }
 
-            mfree(&outBinary);
+            mem_free(&outBinary);
 
             return true;
         }
 
-        mfree(&inText);
-        mfree(&outBinary);
+        mem_free(&inText);
+        mem_free(&outBinary);
 
         return false;
     }
@@ -319,11 +319,11 @@ namespace Model
 
         memset(anim, 0, sizeof(animation_t));
 
-        if (mopen(&inText, name)            &&
-            marea(&outBinary, 4*1024*1024)  &&
+        if (mem_file(&inText, name)            &&
+            mem_area(&outBinary, 4*1024*1024)  &&
             md5animConvertToBinary(&inText, &outBinary))
         {
-            mfree( &inText );
+            mem_free( &inText );
 
             md5_anim_t* md5Anim = (md5_anim_t*)outBinary.buffer;
 
@@ -332,14 +332,14 @@ namespace Model
 
             md5CreateAnimation(anim, md5Anim, skel);
 
-            mfree(&outBinary);
+            mem_free(&outBinary);
 
             return true;
         }
 
 cleanup:
-        mfree(&inText);
-        mfree(&outBinary);
+        mem_free(&inText);
+        mem_free(&outBinary);
 
         return false;
     }
@@ -501,9 +501,9 @@ cleanup:
         strcpy(path, name);
         strcat(path, ".material");
 
-        if (mopen(&inText, path))
+        if (mem_file(&inText, path))
         {
-            marea(&bjson, 10*1024);
+            mem_area(&bjson, 10*1024);
             int result = mjson_parse((const char*)inText.buffer, inText.allocated, bjson.buffer, bjson.size, &root);
             
             assert(result && mjson_get_type(root) == MJSON_ID_DICT32);
@@ -527,8 +527,8 @@ cleanup:
                 key = mjson_get_member_next(root, key, &value);
             }
 
-            mfree(&inText);
-            mfree(&bjson);
+            mem_free(&inText);
+            mem_free(&bjson);
 
             return true;
         }

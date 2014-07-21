@@ -216,12 +216,12 @@ namespace lighting
         memory_t dataNegY = {0, 0, 0};
         memory_t dataNegZ = {0, 0, 0};
 
-        mopen(&dataPosX, "posx.jpg");
-        mopen(&dataPosY, "posy.jpg");
-        mopen(&dataPosZ, "posz.jpg");
-        mopen(&dataNegX, "negx.jpg");
-        mopen(&dataNegY, "negy.jpg");
-        mopen(&dataNegZ, "negz.jpg");
+        mem_file(&dataPosX, "posx.jpg");
+        mem_file(&dataPosY, "posy.jpg");
+        mem_file(&dataPosZ, "posz.jpg");
+        mem_file(&dataNegX, "negx.jpg");
+        mem_file(&dataNegY, "negy.jpg");
+        mem_file(&dataNegZ, "negz.jpg");
 
         if (dataPosX.buffer && dataPosY.buffer && dataPosZ.buffer &&
             dataNegX.buffer && dataNegY.buffer && dataNegZ.buffer)
@@ -262,12 +262,12 @@ namespace lighting
             }
         }
 
-        mfree(&dataPosX);
-        mfree(&dataPosY);
-        mfree(&dataPosZ);
-        mfree(&dataNegX);
-        mfree(&dataNegY);
-        mfree(&dataNegZ);
+        mem_free(&dataPosX);
+        mem_free(&dataPosY);
+        mem_free(&dataPosZ);
+        mem_free(&dataNegX);
+        mem_free(&dataNegY);
+        mem_free(&dataNegZ);
 
         glGenBuffers(1, &ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);

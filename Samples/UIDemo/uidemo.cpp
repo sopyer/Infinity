@@ -1087,10 +1087,10 @@ namespace app
         {
             char file[128];
             _snprintf(file, 128, "uidemo/images/image%d.jpg", i+1);
-            if (mopen(&fileData, file))
+            if (mem_file(&fileData, file))
             {
                 images[i] = nvgCreateImageMem(vg::ctx, fileData.buffer, fileData.allocated, 0);
-                mfree(&fileData);
+                mem_free(&fileData);
             }
             if (images[i] == 0)
             {
@@ -1098,7 +1098,7 @@ namespace app
             }
         }
 
-        if (mopen(&f1, "uidemo/entypo.ttf"))
+        if (mem_file(&f1, "uidemo/entypo.ttf"))
         {
             fontIcons = nvgCreateFontMem(vg::ctx, "icons", f1.buffer, f1.allocated, 0);
         }
@@ -1106,7 +1106,7 @@ namespace app
         {
             printf("Could not add font icons.\n");
         }
-        if (mopen(&f2, "uidemo/Roboto-Regular.ttf"))
+        if (mem_file(&f2, "uidemo/Roboto-Regular.ttf"))
         {
             //fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
             fontNormal = nvgCreateFontMem(vg::ctx, "sans", f2.buffer, f2.allocated, 0);
@@ -1115,7 +1115,7 @@ namespace app
         {
             printf("Could not add font italic.\n");
         }
-        if (mopen(&f3, "uidemo/Roboto-Bold.ttf"))
+        if (mem_file(&f3, "uidemo/Roboto-Bold.ttf"))
         {
             //fontBold = nvgAddFont(vg, "sans-bold", "../example/FiraSans-Bold.ttf");
             fontBold = nvgCreateFontMem(vg::ctx, "sans-bold", f3.buffer, f3.allocated, 0);
@@ -1150,9 +1150,9 @@ namespace app
         for (size_t i = 0; i < 12; i++)
             nvgDeleteImage(vg::ctx, images[i]);
 
-        mfree(&f1);
-        mfree(&f2);
-        mfree(&f3);
+        mem_free(&f1);
+        mem_free(&f2);
+        mem_free(&f3);
     }
 
     void drawButton(uint32_t id, struct NVGcontext* vg, ui::AreaDesc* area, const rect_t& rect)
