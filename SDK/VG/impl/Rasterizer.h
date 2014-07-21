@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include <glm/glm.h>
 #include <vg/openvg.h>
 #include <opengl.h>
@@ -9,8 +10,6 @@
 
 namespace impl
 {
-    typedef unsigned short u16;
-
     struct Bezier3Vertex
     {
         float x, y;
@@ -28,25 +27,25 @@ namespace impl
         float xmin, ymin, xmax, ymax;
 
         Array<glm::vec2> shapeVertices;
-        Array<u16>       shapeIndices;
+        Array<uint16_t>  shapeIndices;
 
-        u16 shapeAddVertex(const glm::vec2& v)
+        uint16_t shapeAddVertex(const glm::vec2& v)
         {
             size_t idx = shapeVertices.size();
             shapeVertices.pushBack(v);
             assert(idx<=USHRT_MAX);
-            return (u16)idx;
+            return (uint16_t)idx;
         }
 
-        void shapeAddTri(u16 i0, u16 i1, u16 i2)
+        void shapeAddTri(uint16_t i0, uint16_t i1, uint16_t i2)
         {
             shapeIndices.push_back(i0);
             shapeIndices.push_back(i1);
             shapeIndices.push_back(i2);
         }
 
-        Array<Bezier3Vertex>	bezier3Vertices;
-        Array<u16>				bezier3Indices;
+        Array<Bezier3Vertex> bezier3Vertices;
+        Array<uint16_t>      bezier3Indices;
 
         void bezier3AddVertices(glm::vec2 pos[4], glm::vec3 klm[4])
         {
@@ -66,18 +65,16 @@ namespace impl
 
             for (size_t i = 0; i<bezier3Vertices.size(); i+=4)
             {
-                bezier3Indices.push_back((u16)i+0);
-                bezier3Indices.push_back((u16)i+1);
-                bezier3Indices.push_back((u16)i+3);
+                bezier3Indices.push_back((uint16_t)i+0);
+                bezier3Indices.push_back((uint16_t)i+1);
+                bezier3Indices.push_back((uint16_t)i+3);
 
-                bezier3Indices.push_back((u16)i+1);
-                bezier3Indices.push_back((u16)i+2);
-                bezier3Indices.push_back((u16)i+3);
+                bezier3Indices.push_back((uint16_t)i+1);
+                bezier3Indices.push_back((uint16_t)i+2);
+                bezier3Indices.push_back((uint16_t)i+3);
             }
         }
     };
-
-    void buildFillGeometry(Geometry& geom, size_t numCmd, const VGubyte* cmd, size_t numData, const VGfloat* data);
 
     void rasterizeEvenOddA2C(Geometry& geom);
     void rasterizeNonZeroA2C(Geometry& geom);

@@ -85,7 +85,6 @@
     <ClCompile Include="Path.cpp" />
     <ClCompile Include="SUI.cpp" />
     <ClCompile Include="VG.cpp" />
-    <ClCompile Include="impl\Rasterizer.cpp" />
     <ClCompile Include="impl\SharedResources.cpp" />
   </ItemGroup>
   <ItemGroup>

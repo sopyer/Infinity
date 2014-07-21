@@ -852,17 +852,18 @@ enum ClockPaths
 
 struct VectorImageDesc
 {
-    VGint    segCount;
-    VGubyte* segs;
+    size_t   numCmd;
+    VGubyte* cmd;
+    size_t   numData;
     VGfloat* data;
 } clockVectorImages[PATH_COUNT] = {
-    {ARRAY_SIZE(clockBkgSegs),               clockBkgSegs,               clockBkgData              },
-    {ARRAY_SIZE(clockMarkers1Segs),          clockMarkers1Segs,          clockMarkers1Data         },
-    {ARRAY_SIZE(clockMarkers2And3Segs),      clockMarkers2And3Segs,      clockMarkers2And3Data     },
-    {ARRAY_SIZE(clockCirclesAndCiphersSegs), clockCirclesAndCiphersSegs, clockCirclesAndCiphersData},
-    {ARRAY_SIZE(hourHandSegs),               hourHandSegs,               hourHandData              },
-    {ARRAY_SIZE(minuteHandSegs),             minuteHandSegs,             minuteHandData            },
-    {ARRAY_SIZE(secondHandSegs),             secondHandSegs,             secondHandData            }
+    {ARRAY_SIZE(clockBkgSegs),               clockBkgSegs,               ARRAY_SIZE(clockBkgData),               clockBkgData              },
+    {ARRAY_SIZE(clockMarkers1Segs),          clockMarkers1Segs,          ARRAY_SIZE(clockMarkers1Data),          clockMarkers1Data         },
+    {ARRAY_SIZE(clockMarkers2And3Segs),      clockMarkers2And3Segs,      ARRAY_SIZE(clockMarkers2And3Data),      clockMarkers2And3Data     },
+    {ARRAY_SIZE(clockCirclesAndCiphersSegs), clockCirclesAndCiphersSegs, ARRAY_SIZE(clockCirclesAndCiphersData), clockCirclesAndCiphersData},
+    {ARRAY_SIZE(hourHandSegs),               hourHandSegs,               ARRAY_SIZE(hourHandData),               hourHandData              },
+    {ARRAY_SIZE(minuteHandSegs),             minuteHandSegs,             ARRAY_SIZE(minuteHandData),             minuteHandData            },
+    {ARRAY_SIZE(secondHandSegs),             secondHandSegs,             ARRAY_SIZE(secondHandData),             secondHandData            }
 };
 
 #endif

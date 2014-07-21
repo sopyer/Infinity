@@ -267,8 +267,8 @@ static void svgDeleteParser(struct SVGParser* p)
 	while (path)
 	{
 		next = path->next;
-		if (path->commands)
-			free(path->commands);
+		if (path->cmd)
+			free(path->cmd);
 		if (path->data)
 			free(path->data);
 		free(path);
@@ -315,9 +315,10 @@ static void svgCreatePath(struct SVGParser* p)
 	path->next = p->plist;
 	p->plist = path;
 
-	path->count = p->commandsCount;
-	path->commands = p->commands;
-	path->data = p->data;
+	path->numCmd  = p->commandsCount;
+	path->cmd     = p->commands;
+	path->numData = p->dataCount;
+	path->data    = p->data;
 
 	p->commands = NULL;
 	p->commandsCount = p->commandsSize = 0;
@@ -1054,8 +1055,8 @@ void svgDelete(struct SVGPath* plist)
 	while (path)
 	{
 		next = path->next;
-		if (path->commands)
-			free(path->commands);
+		if (path->cmd)
+			free(path->cmd);
 		if (path->data)
 			free(path->data);
 		free(path);

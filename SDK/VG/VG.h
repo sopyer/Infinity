@@ -74,7 +74,7 @@ namespace vg
     void    applyPaintAsGLProgram(Paint paint);
 
     //Path API
-    Path createPath(VGint numSegments, const VGubyte* pathSegments, const VGfloat* pathData);
+    Path createPath(size_t numCmd, const VGubyte* cmd, size_t numData, const VGfloat* data);
     void destroyPath(Path path);
     void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2);
 

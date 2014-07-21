@@ -30,7 +30,7 @@ namespace app
 
         while (cur && cur->hasFill)
         {
-            vg::Path path = vg::createPath(cur->count, cur->commands, cur->data);
+            vg::Path path = vg::createPath(cur->numCmd, cur->cmd, cur->numData, cur->data);
             mPaths.push_back(path);
 
             vg::Paint paint = vg::createSolidPaint(cur->fillColor);

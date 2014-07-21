@@ -74,8 +74,10 @@ namespace app
 
         for (size_t i=PATH_CLOCK_BKG; i<PATH_COUNT; ++i)
         {
-            mClockPaths[i]  = vg::createPath(clockVectorImages[i].segCount,
-                clockVectorImages[i].segs, clockVectorImages[i].data);
+            mClockPaths[i]  = vg::createPath(
+                clockVectorImages[i].numCmd,  clockVectorImages[i].cmd,
+                clockVectorImages[i].numData, clockVectorImages[i].data
+            );
         }
 
         vg::getPathBounds(mClockPaths[PATH_CLOCK_BKG], x1, y1, x2, y2);

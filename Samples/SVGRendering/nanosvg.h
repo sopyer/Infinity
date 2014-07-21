@@ -41,8 +41,9 @@ extern "C" {
 		
 struct SVGPath
 {
-	VGint		count;
-	VGubyte*	commands;
+	VGint		numCmd;
+	VGubyte*	cmd;
+	VGint		numData;
 	VGfloat*	data;
 
 	float xform[6];
