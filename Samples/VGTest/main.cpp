@@ -342,8 +342,6 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
     return fbo;
 }
 
-#include "Path.h"
-
 void meshAddBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 {
     glm::vec2   ctrlPt[4*2] = {cp0, cp1, cp2, cp3};
@@ -486,7 +484,6 @@ namespace app
         offsetX = gfx::width  / 2.0f;
         offsetY = gfx::height / 2.0f;
 
-        testWriteBuffer();
         initVGExp();
 
         //addDistanceTransformCubic(controlPts, rcubic);
