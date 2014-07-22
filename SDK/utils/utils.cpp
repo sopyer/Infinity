@@ -22,6 +22,15 @@ bool mem_area(memory_t* mem, size_t size)
     return true;
 }
 
+bool mem_thread_stack_init(memory_t* mem, size_t size)
+{
+    mem->allocated = 0;
+    mem->size      = size;
+    mem->buffer    = (uint8_t*)ut::thread_stack_alloc(size);
+
+    return true;
+}
+
 bool mem_file(memory_t* mem, const char* name)
 {
     PHYSFS_File* src = PHYSFS_openRead(name);
@@ -139,6 +148,16 @@ namespace ut
         assert(mainThreadDataStack);
 
         return mainThreadDataStack;
+    }
+
+    void* thread_stack_alloc(size_t size, size_t align)
+    {
+        return stack_mem_alloc(get_thread_data_stack(), size, align);
+    }
+
+    void thread_stack_reset(void* ptr)
+    {
+        stack_mem_reset(get_thread_data_stack(), ptr);
     }
 };
 

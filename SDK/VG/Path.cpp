@@ -7,6 +7,63 @@
 
 namespace impl
 {
+    struct B3Vertex
+    {
+        ml::vec2 p;
+        ml::vec3 klm;
+    };
+
+    struct geometry_t
+    {
+        size_t numIndices;
+        size_t numVertices;
+        size_t numB3Vertices;
+        
+        uint16_t* indices;
+        ml::vec2* vertices;
+        B3Vertex* b3vertices;
+    };
+
+    uint16_t geomAddVertex(geometry_t* geom, const ml::vec2& v)
+    {
+        size_t idx = geom->numVertices;
+
+        assert(idx<USHRT_MAX);
+        geom->vertices[geom->numVertices++] = v;
+
+        return (uint16_t)idx;
+    }
+
+    void geomAddTri(geometry_t* geom, uint16_t i0, uint16_t i1, uint16_t i2)
+    {
+        geom->indices[geom->numIndices++] = i0;
+        geom->indices[geom->numIndices++] = i1;
+        geom->indices[geom->numIndices++] = i2;
+    }
+
+    void geomAddB3Vertices(geometry_t* geom, ml::vec2 pos[4], ml::vec3 klm[4])
+    {
+        size_t idx = geom->numB3Vertices;
+
+        geom->b3vertices[idx].p   = pos[0];
+        geom->b3vertices[idx].klm = klm[0];
+        ++idx;
+
+        geom->b3vertices[idx].p   = pos[1];
+        geom->b3vertices[idx].klm = klm[1];
+        ++idx;
+
+        geom->b3vertices[idx].p   = pos[2];
+        geom->b3vertices[idx].klm = klm[2];
+        ++idx;
+
+        geom->b3vertices[idx].p   = pos[3];
+        geom->b3vertices[idx].klm = klm[3];
+        ++idx;
+
+        geom->numB3Vertices = idx;
+    }
+
     void subdivide(v128 cubic[4], float t, v128 subCubic1[4], v128 subCubic2[4])
     {
         v128 p0 = cubic[0];
@@ -237,7 +294,7 @@ namespace impl
         }
     }
 
-    void meshAddBezier3(Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const ml::vec2& cp0, const ml::vec2&  cp1, const ml::vec2& cp2, const ml::vec2& cp3)
+    void meshAddBezier3(geometry_t* geom, uint16_t prevIdx, uint16_t curIdx, const ml::vec2& cp0, const ml::vec2&  cp1, const ml::vec2& cp2, const ml::vec2& cp3)
     {
         int       count;
         float     subdPts[2];
@@ -275,12 +332,12 @@ namespace impl
             vi_store_v3(&klm[3], vklm1[3]);
 
             correctOrient(klm);
-            geom.bezier3AddVertices((glm::vec2*)cp, (glm::vec3*)klm);
+            geomAddB3Vertices(geom, cp, klm);
 
             //Carefully, we changed places of subdivided curves,
             //that's why suitable points are 0 and 7
-            uint16_t idx = geom.shapeAddVertex(*(glm::vec2*)&cp[3]);
-            geom.shapeAddTri(prevIdx, idx, curIdx);
+            uint16_t idx = geomAddVertex(geom, cp[3]);
+            geomAddTri(geom, prevIdx, idx, curIdx);
             prevIdx = idx;
         }
 
@@ -295,7 +352,7 @@ namespace impl
         vi_store_v3(&klm[3], vklm0[3]);
 
         correctOrient(klm);
-        geom.bezier3AddVertices((glm::vec2*)cp, (glm::vec3*)klm);
+        geomAddB3Vertices(geom, cp, klm);
     }
 
     void rasterizeEvenOddAA(impl::Geometry& geom)
@@ -389,7 +446,16 @@ namespace vg
 
     Path createPath(size_t numCmd, const VGubyte* cmd, size_t numData, const VGfloat* data)
     {
-        Path geom = new impl::Geometry();
+        const size_t maxIndices    = numCmd * 9;
+        const size_t maxVertices   = numCmd * 5;
+        const size_t maxB3Vertices = numCmd * 10;
+
+        impl::geometry_t pathGeom = {
+            0, 0, 0,
+            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (impl::B3Vertex*)ut::thread_stack_alloc(sizeof(impl::B3Vertex)*maxB3Vertices)
+        };
 
         ml::vec2  cp0 = {0.0f, 0.0f},
                   cp1 = {0.0f, 0.0f},
@@ -420,7 +486,7 @@ namespace vg
                 if (!isContourStarted)
                 {
                     isContourStarted = true;
-                    startIdx = prevIdx = curIdx = geom->shapeAddVertex(*(glm::vec2*)&o);
+                    startIdx = prevIdx = curIdx = geomAddVertex(&pathGeom, o);
                 }
 
                 switch (segment)
@@ -483,14 +549,14 @@ namespace vg
 
                 assert(isContourStarted);
                 prevIdx = curIdx;
-                curIdx = geom->shapeAddVertex(*(glm::vec2*)&o);
-                geom->shapeAddTri(startIdx, prevIdx, curIdx);
+                curIdx = geomAddVertex(&pathGeom, o);
+                geomAddTri(&pathGeom, startIdx, prevIdx, curIdx);
 
                 switch (segment)
                 {
                     case VG_CUBIC_TO:
                     case VG_SCUBIC_TO:
-                        meshAddBezier3(*geom, prevIdx, curIdx, cp0, cp1, p, o);
+                        meshAddBezier3(&pathGeom, prevIdx, curIdx, cp0, cp1, p, o);
                         break;
 
                     case VG_QUAD_TO:
@@ -510,7 +576,22 @@ namespace vg
             }
         }
 
+        assert(pathGeom.numIndices    <= maxIndices);
+        assert(pathGeom.numVertices   <= maxVertices);
+        assert(pathGeom.numB3Vertices <= maxB3Vertices);
+
+        Path geom = new impl::Geometry();
+
+        assert(sizeof(ml::vec2)==sizeof(glm::vec2));
+        assert(sizeof(impl::B3Vertex)==sizeof(impl::Bezier3Vertex));
+
+        geom->shapeIndices.assign(pathGeom.indices, pathGeom.indices + pathGeom.numIndices);
+        geom->shapeVertices.assign((glm::vec2*)pathGeom.vertices, (glm::vec2*)pathGeom.vertices+pathGeom.numVertices);
+        geom->bezier3Vertices.assign((impl::Bezier3Vertex*)pathGeom.b3vertices, (impl::Bezier3Vertex*)pathGeom.b3vertices+pathGeom.numB3Vertices);
+
         geom->bezier3GenIndices();
+
+        ut::thread_stack_reset(pathGeom.indices);
 
         //stupid initialization
         if (!geom->shapeVertices.empty())

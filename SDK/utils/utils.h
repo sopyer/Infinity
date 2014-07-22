@@ -40,6 +40,8 @@ bool mem_area(memory_t* mem, size_t size);
 bool mem_file(memory_t* mem, const char* name);
 void mem_free(memory_t* mem);
 
+bool mem_thread_stack_init(memory_t* mem, size_t size);
+
 template <typename type>
 type mem_read(memory_t* mem)
 {
@@ -222,6 +224,8 @@ namespace ut
 
     //TODO: make mt!!!!!
     stack_mem_t get_thread_data_stack();
+    void* thread_stack_alloc(size_t size, size_t align = 0);
+    void  thread_stack_reset(void* ptr);
 
     template<typename T>
     inline T min(T x, T y)
