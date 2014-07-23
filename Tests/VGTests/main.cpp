@@ -1,6 +1,7 @@
 #include <sput.h>
 
-#include "impl\Rasterizer.h"
+#include <Path.h>
+#include <glm/glm.h>
 #include <ml.h>
 
 const float relaxedMaxDiff = 0.001f;
@@ -29,7 +30,7 @@ float calcImplicit(const glm::vec3& tc)
     return tc.x*tc.x*tc.x - tc.y*tc.z;
 }
 
-namespace impl
+namespace vg
 {
     void bezier3MakeImplicit(v128 pos[4], v128 klm[4], int& subdPtCount, float* subdPts);
 }
@@ -47,7 +48,7 @@ void test_orientation_selection_bug()
     int count;
     float subdPt[2];
 
-    impl::bezier3MakeImplicit(cp, klm, count, subdPt);
+    vg::bezier3MakeImplicit(cp, klm, count, subdPt);
 
     vi_store_v3(&tc[0], klm[0]);
     vi_store_v3(&tc[1], klm[1]);

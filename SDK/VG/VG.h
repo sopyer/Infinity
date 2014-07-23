@@ -8,11 +8,6 @@ extern "C"
 #include <vg/nanovg.h>
 }
 
-namespace impl
-{
-    struct Geometry;
-}
-
 extern "C" struct NVGcontext;
 
 namespace vg
@@ -21,10 +16,11 @@ namespace vg
 
     struct FontOpaque;
     struct PaintOpaque;
+    struct path_data_t;
 
-    typedef FontOpaque*     Font;
-    typedef PaintOpaque*    Paint;
-    typedef impl::Geometry* Path;
+    typedef FontOpaque*   Font;
+    typedef PaintOpaque*  Paint;
+    typedef path_data_t*  Path;
 
     enum TextAlign
     {

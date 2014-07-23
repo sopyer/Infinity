@@ -1,7 +1,8 @@
 #include <opengl.h>
+
 #include "VG.h"
 #include "impl/SharedResources.h"
-#include "impl/Rasterizer.h"
+#include "Path.h"
 
 //TODO: API change: vgBeginDraw vgEndDraw for common state setting
 //TODO: make stencil configurable - make it possible to allocate bits using mask
@@ -10,6 +11,8 @@
 //Path rendering avoids explicit stencil clear - cover/paint operation resets stencil
 
 #define GLNANOVG_IMPLEMENTATION
+#include <stdio.h>
+#include <memory.h>
 #include "glnanovg.h"
 
 namespace vg
@@ -58,7 +61,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 0, 0);
+        stencilPath(path, 0, 0);
 
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glUseProgram(0);
@@ -73,7 +76,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 0, 1);
+        stencilPath(path, 0, 1);
 
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         glUseProgram(0);
@@ -88,7 +91,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 0, 0);
+        stencilPath(path, 0, 0);
 
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -102,7 +105,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 1, 0);
+        stencilPath(path, 1, 0);
 
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -116,7 +119,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 1, 1);
+        stencilPath(path, 1, 1);
 
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -130,7 +133,7 @@ namespace vg
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        impl::stencilPath(path, 0, 1);
+        stencilPath(path, 0, 1);
 
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
@@ -159,7 +162,7 @@ namespace vg
 
         glEnable(GL_STENCIL_TEST);
         clearAlpha(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        impl::rasterizeEvenOddAA(*path);
+        rasterizeEvenOddAA(path);
 
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);

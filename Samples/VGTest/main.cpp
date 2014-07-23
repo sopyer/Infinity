@@ -5,7 +5,7 @@
 #include "VGExp.h"
 #include <SOIL.h> // remove later
 #include "Math.h"
-#include <VG/impl/Rasterizer.h>
+#include <VG/Path.h>
 #include <utils.h>
 #include <graphics.h>
 
@@ -342,7 +342,7 @@ GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
     return fbo;
 }
 
-void meshAddBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+void meshAddBezier3(vg::geometry_t* geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 {
     glm::vec2   ctrlPt[4*2] = {cp0, cp1, cp2, cp3};
     glm::vec3   klm[4*2];
@@ -364,23 +364,23 @@ void meshAddBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, con
         cubic::subdivide(klm, t, klm+4, klm);
 
         cubic::correctOrient(klm+4);
-        geom.bezier3AddVertices(ctrlPt+4, klm+4);
+        vg::geomAddB3Vertices(geom, (ml::vec2*)ctrlPt+4, (ml::vec3*)klm+4);
 
         //Carefully, we changed places of subdivided curves,
         //that's why suitable points are 0 and 7
-        uint16_t idx = geom.shapeAddVertex(ctrlPt[0]);
-        geom.shapeAddTri(prevIdx, idx, curIdx);
+        uint16_t idx = vg::geomAddVertex(geom, *(ml::vec2*)&ctrlPt[0]);
+        vg::geomAddTri(geom, prevIdx, idx, curIdx);
         prevIdx = idx;
     }
 
     cubic::correctOrient(klm);
-    geom.bezier3AddVertices(ctrlPt, klm);
+    vg::geomAddB3Vertices(geom, (ml::vec2*)ctrlPt, (ml::vec3*)klm);
 }
 
 static const float hw = 0.1f;
 
 //TODOD: Move subdivision logic into main func, and stroke creation logic for single curve retain here 
-void meshStrokeSubdivideBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+void meshStrokeSubdivideBezier3(vg::geometry_t* geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 {
     glm::vec2 cps[8] = {cp0, cp1, cp2, cp3};
     float l0 = glm::length(cp3-cp0), l1=glm::length(cp1-cp0), l2=glm::length(cp2-cp1), l3=glm::length(cp3-cp2), l=l1+l2+l3;
@@ -404,14 +404,14 @@ void meshStrokeSubdivideBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t
         glm::vec2 p1neg = cps[5]-n1*hw;
         glm::vec2 p2neg = cps[6]-n2*hw;
         glm::vec2 p3neg = cps[7]-n3*hw;
-        uint16_t i0 = geom.shapeAddVertex(p0pos);
-        uint16_t i1 = geom.shapeAddVertex(p0neg);
-        uint16_t i2 = geom.shapeAddVertex(p3pos);
-        uint16_t i3 = geom.shapeAddVertex(p3neg);
+        uint16_t i0 = vg::geomAddVertex(geom, *(ml::vec2*)&p0pos);
+        uint16_t i1 = vg::geomAddVertex(geom, *(ml::vec2*)&p0neg);
+        uint16_t i2 = vg::geomAddVertex(geom, *(ml::vec2*)&p3pos);
+        uint16_t i3 = vg::geomAddVertex(geom, *(ml::vec2*)&p3neg);
         meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
         meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
-        geom.shapeAddTri(i0, i2, i1);
-        geom.shapeAddTri(i1, i2, i3);
+        vg::geomAddTri(geom, i0, i2, i1);
+        vg::geomAddTri(geom, i1, i2, i3);
     }
     glm::vec2 n0 = calcOffset(cps[0], cps[1]);
     glm::vec2 n1 = calcOffset(cps[0], cps[1], cps[2]);
@@ -425,17 +425,17 @@ void meshStrokeSubdivideBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t
     glm::vec2 p1neg = cps[1]-n1*hw;
     glm::vec2 p2neg = cps[2]-n2*hw;
     glm::vec2 p3neg = cps[3]-n3*hw;
-    uint16_t i0 = geom.shapeAddVertex(p0pos);
-    uint16_t i1 = geom.shapeAddVertex(p0neg);
-    uint16_t i2 = geom.shapeAddVertex(p3pos);
-    uint16_t i3 = geom.shapeAddVertex(p3neg);
+    uint16_t i0 = vg::geomAddVertex(geom, *(ml::vec2*)&p0pos);
+    uint16_t i1 = vg::geomAddVertex(geom, *(ml::vec2*)&p0neg);
+    uint16_t i2 = vg::geomAddVertex(geom, *(ml::vec2*)&p3pos);
+    uint16_t i3 = vg::geomAddVertex(geom, *(ml::vec2*)&p3neg);
     meshAddBezier3(geom, i0, i2, p0pos, p1pos, p2pos, p3pos);
     meshAddBezier3(geom, i3, i1, p3neg, p2neg, p1neg, p0neg);
-    geom.shapeAddTri(i0, i2, i1);
-    geom.shapeAddTri(i1, i2, i3);
+    vg::geomAddTri(geom, i0, i2, i1);
+    vg::geomAddTri(geom, i1, i2, i3);
 }
 
-void meshStrokeBezier3(impl::Geometry& geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
+void meshStrokeBezier3(vg::geometry_t* geom, uint16_t prevIdx, uint16_t curIdx, const glm::vec2& cp0, const glm::vec2&  cp1, const glm::vec2& cp2, const glm::vec2& cp3)
 {
     glm::vec3   klmT[4*2];
     int         count, countT;
@@ -470,7 +470,7 @@ namespace app
     GLuint colorRB, depthRB, fbo;
     Geometry<CubicVertex>   mRasterCubic;
     Geometry<glm::vec2>     mRationalCubic, mTri;
-    impl::Geometry          testPath, testPathOff;
+    vg::Path                testPath, testPathOff;
 
     bool doMove = false;
     float offsetX;
@@ -515,55 +515,47 @@ namespace app
             glm::vec2( 20.0f,  0.0f),
         };
 
-        uint16_t prevIdx, curIdx;
+        const size_t maxIndices    = 100 * 9;
+        const size_t maxVertices   = 100 * 5;
+        const size_t maxB3Vertices = 100 * 10;
+
+        vg::geometry_t  geomPath = {
+            0, 0, 0,
+            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (vg::B3Vertex*)ut::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+        };
+
+        vg::geometry_t  geomPathOff = {
+            0, 0, 0,
+            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (vg::B3Vertex*)ut::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+        };
+
+        uint16_t  prevIdx,  curIdx;
+        uint16_t  prevIdx2, curIdx2;
+
         prevIdx = 0;
-        curIdx = testPath.shapeAddVertex(cps[0]);
+        curIdx = vg::geomAddVertex(&geomPath, *(ml::vec2*)&cps[0]);
 
-        uint16_t prevIdx2, curIdx2;
-        prevIdx2 = testPathOff.shapeAddVertex(cps[0]);
-        curIdx2 = testPathOff.shapeAddVertex(cps[3]);
+        prevIdx2 = vg::geomAddVertex(&geomPathOff, *(ml::vec2*)&cps[0]);
+        curIdx2  = vg::geomAddVertex(&geomPathOff, *(ml::vec2*)&cps[3]);
 
-        //glm::vec3	klmT[4*2];
-        //int			count, countT;
-        //float		subdPts[2], subdPtsT[2];
+        meshAddBezier3   (&geomPath,    prevIdx,  curIdx,  cps[0], cps[1], cps[2], cps[3]);
+        meshStrokeBezier3(&geomPathOff, prevIdx2, curIdx2, cps[0], cps[1], cps[2], cps[3]);
 
-        meshAddBezier3   (testPath,    prevIdx,  curIdx,  cps[0], cps[1], cps[2], cps[3]);
+        testPath    = vg::geomToPath(&geomPath);
+        testPathOff = vg::geomToPath(&geomPathOff);
 
-        //bezier3MakeImplicit(cps, klmT, countT, subdPtsT);
-        //bezier3SpecialPts(cps, count, subdPts);
-        //assert(count==countT);
-        //if (count>0) assert(ml::equalE(subdPts[0], subdPtsT[0]));
-        //if (count>1) assert(ml::equalE(subdPts[1], subdPtsT[1]));
-
-        //if (count>1)
-        //{
-        //	orderAscend(subdPts[0], subdPts[1]);
-        //}
-        //
-        //for(int i=0; i<count; ++i)
-        //{
-        //	float t = i==0?subdPts[i]:(subdPts[i]-subdPts[i-1])/(1-subdPts[i-1]);
-
-        //	cubic::subdivide(cps, t, cps+4, cps);
-        //	meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[4], cps[5], cps[6], cps[7]);
-        //	glm::vec2 n = calcOffset(cps[4], cps[5]);
-        //}
-
-        meshStrokeBezier3(testPathOff, prevIdx2, curIdx2, cps[0], cps[1], cps[2], cps[3]);
-        testPath.xmin = -30.0f;
-        testPath.xmax =  30.0f;
-        testPath.ymin =   0.0f;
-        testPath.ymax =  40.0f;
-        testPathOff.xmin = -40.0f;
-        testPathOff.xmax =  40.0f;
-        testPathOff.ymin = -20.0f;
-        testPathOff.ymax =  60.0f;
-        testPath.bezier3GenIndices();
-        testPathOff.bezier3GenIndices();
+        ut::thread_stack_reset(geomPath.indices);
     }
 
     void fini()
     {
+        vg::destroyPath(testPath);
+        vg::destroyPath(testPathOff);
+
         glDeleteFramebuffers(1, &fbo);
         glDeleteRenderbuffers(1, &depthRB);
         glDeleteRenderbuffers(1, &colorRB);
@@ -602,8 +594,8 @@ namespace app
         glTranslatef(offsetX, offsetY, 0);
         glScalef(zoom, zoom, 1);
 
-        vg::drawPath(&testPath,    0xFF, 0xFF, 0xFF, 0xFF);
-        vg::drawPathNZ(&testPathOff, 0xFF, 0x00, 0x00, 0xFF);
+        vg::drawPath  (testPath,    0xFF, 0xFF, 0xFF, 0xFF);
+        vg::drawPathNZ(testPathOff, 0xFF, 0x00, 0x00, 0xFF);
         glColor3f(1, 0, 0);
         glBegin(GL_LINE_STRIP);
         glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);

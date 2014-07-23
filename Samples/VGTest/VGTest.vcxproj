@@ -97,6 +97,7 @@
     <ClCompile Include="VGExp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DataTypes.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="VGExp.h" />
   </ItemGroup>

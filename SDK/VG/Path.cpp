@@ -1,29 +1,13 @@
-#include "VG.h"
 #include <opengl.h>
 #include <utils.h>
+#include <memory.h>
 
 #include "impl/SharedResources.h"
-#include "impl/Rasterizer.h"
+#include "Path.h"
+#include "VG.h"
 
-namespace impl
+namespace vg
 {
-    struct B3Vertex
-    {
-        ml::vec2 p;
-        ml::vec3 klm;
-    };
-
-    struct geometry_t
-    {
-        size_t numIndices;
-        size_t numVertices;
-        size_t numB3Vertices;
-        
-        uint16_t* indices;
-        ml::vec2* vertices;
-        B3Vertex* b3vertices;
-    };
-
     uint16_t geomAddVertex(geometry_t* geom, const ml::vec2& v)
     {
         size_t idx = geom->numVertices;
@@ -62,6 +46,89 @@ namespace impl
         ++idx;
 
         geom->numB3Vertices = idx;
+    }
+
+    path_data_t* geomToPath(geometry_t* geom)
+    {
+        memory_t  pathBlob;
+
+        assert(geom->numB3Vertices % 4 == 0);
+        assert(geom->numB3Vertices <= USHRT_MAX);
+
+        size_t  numB3Indices = geom->numB3Vertices / 4 * 6;
+
+        size_t  verticesSize   = sizeof(ml::vec2) * geom->numVertices;
+        size_t  indicesSize    = sizeof(uint16_t) * geom->numIndices;
+        size_t  b3verticesSize = sizeof(B3Vertex) * geom->numB3Vertices;
+        size_t  b3indicesSize  = sizeof(B3Vertex) * numB3Indices;
+        size_t  totalSize = sizeof(path_data_t) + verticesSize + indicesSize + b3verticesSize + b3indicesSize;
+
+        mem_area(&pathBlob, totalSize);
+
+        path_data_t* path = mem_raw_data<path_data_t>(&pathBlob);
+
+        path->numVertices   = geom->numVertices;
+        path->numIndices    = geom->numIndices;
+        path->numB3Vertices = geom->numB3Vertices;
+        path->numB3Indices  = numB3Indices;
+
+        path->vertices   = mem_raw_array<ml::vec2>(&pathBlob, geom->numVertices);
+        path->indices    = mem_raw_array<uint16_t>(&pathBlob, geom->numIndices);
+        path->b3vertices = mem_raw_array<B3Vertex>(&pathBlob, geom->numB3Vertices);
+        path->b3indices  = mem_raw_array<uint16_t>(&pathBlob, numB3Indices);
+
+        memcpy(path->vertices,   geom->vertices,   verticesSize);
+        memcpy(path->indices,    geom->indices,    indicesSize);
+        memcpy(path->b3vertices, geom->b3vertices, b3verticesSize);
+
+        numB3Indices = 0;
+        for (size_t i = 0; i<path->numB3Vertices; i+=4)
+        {
+            path->b3indices[numB3Indices++] = (uint16_t)i+0;
+            path->b3indices[numB3Indices++] = (uint16_t)i+1;
+            path->b3indices[numB3Indices++] = (uint16_t)i+3;
+
+            path->b3indices[numB3Indices++] = (uint16_t)i+1;
+            path->b3indices[numB3Indices++] = (uint16_t)i+2;
+            path->b3indices[numB3Indices++] = (uint16_t)i+3;
+        }
+
+        assert(numB3Indices == path->numB3Indices);
+
+        //stupid initialization
+        if (path->numVertices > 0)
+        {
+            path->xmin = path->xmax = path->vertices[0].x;
+            path->ymin = path->ymax = path->vertices[0].y;
+        }
+        else if (path->numB3Vertices > 0)
+        {
+            path->xmin = path->xmax = path->b3vertices[0].p.x;
+            path->ymin = path->ymax = path->b3vertices[0].p.y;
+        }
+        else
+        {
+            path->xmin = path->ymin = path->xmax = path->ymax = 0;
+            return path;
+        }
+
+        for(size_t i = 0; i < path->numVertices; ++i)
+        {
+            path->xmin = ut::min(path->xmin, path->vertices[i].x);
+            path->ymin = ut::min(path->ymin, path->vertices[i].y);
+            path->xmax = ut::max(path->xmax, path->vertices[i].x);
+            path->ymax = ut::max(path->ymax, path->vertices[i].y);
+        }
+
+        for(size_t i = 0; i < path->numB3Vertices; ++i)
+        {
+            path->xmin = ut::min(path->xmin, path->b3vertices[i].p.x);
+            path->ymin = ut::min(path->ymin, path->b3vertices[i].p.y);
+            path->xmax = ut::max(path->xmax, path->b3vertices[i].p.x);
+            path->ymax = ut::max(path->ymax, path->b3vertices[i].p.y);
+        }
+
+        return path;
     }
 
     void subdivide(v128 cubic[4], float t, v128 subCubic1[4], v128 subCubic2[4])
@@ -105,7 +172,7 @@ namespace impl
         }
         else
         {
-            float rr = -b + (b < 0 ? 1 : -1)*sqrt(D);
+            float rr = -b + (b < 0 ? 1 : -1)*ml::sqrt(D);
 
             r[0] = rr;  r[1] = 2*a;
             r[2] = 2*c; r[3] = rr;
@@ -355,7 +422,7 @@ namespace impl
         geomAddB3Vertices(geom, cp, klm);
     }
 
-    void rasterizeEvenOddAA(impl::Geometry& geom)
+    void rasterizeEvenOddAA(path_data_t* path)
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
@@ -370,30 +437,30 @@ namespace impl
 
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        if (!geom.shapeIndices.empty())
+        if (path->numIndices > 0)
         {
             glUseProgram(0);
             glColor4ub(0, 0, 0, 255);
-            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), geom.shapeVertices.begin());
-            glDrawElements(GL_TRIANGLES, (GLsizei)geom.shapeIndices.size(), GL_UNSIGNED_SHORT, geom.shapeIndices.begin());
+            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), path->vertices);
+            glDrawElements(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, path->indices);
         }
 
         glClientActiveTexture(GL_TEXTURE0);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-        if (!geom.bezier3Indices.empty())
+        if (path->numB3Indices > 0)
         {
-            glVertexPointer(2, GL_FLOAT, sizeof(impl::Bezier3Vertex), &geom.bezier3Vertices[0].x);
-            glTexCoordPointer(3, GL_FLOAT, sizeof(impl::Bezier3Vertex), &geom.bezier3Vertices[0].k);
+            glVertexPointer(2, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].p);
+            glTexCoordPointer(3, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].klm);
             glUseProgram(impl::stencilCubicAreaAAProgram);
-            glDrawElements(GL_TRIANGLES, (GLsizei)geom.bezier3Indices.size(), GL_UNSIGNED_SHORT, geom.bezier3Indices.begin());
+            glDrawElements(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, path->b3indices);
         }
 
         glPopClientAttrib();
         glPopAttrib();
     }
 
-    void stencilPath(impl::Geometry* geom, int useAA, int useNonZero)
+    void stencilPath(path_data_t* path, int useAA, int useNonZero)
     {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
@@ -409,11 +476,11 @@ namespace impl
 
         glEnableClientState(GL_VERTEX_ARRAY);
 
-        if (!geom->shapeIndices.empty())
+        if (path->numIndices > 0)
         {
             glUseProgram(0);
-            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), geom->shapeVertices.begin());
-            glDrawElements(GL_TRIANGLES, (GLsizei)geom->shapeIndices.size(), GL_UNSIGNED_SHORT, geom->shapeIndices.begin());
+            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), path->vertices);
+            glDrawElements(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, path->indices);
         }
 
         if (useAA) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -421,12 +488,12 @@ namespace impl
         glClientActiveTexture(GL_TEXTURE0);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-        if (!geom->bezier3Indices.empty())
+        if (path->numB3Indices > 0)
         {
-            glVertexPointer(2, GL_FLOAT, sizeof(impl::Bezier3Vertex), &geom->bezier3Vertices[0].x);
-            glTexCoordPointer(3, GL_FLOAT, sizeof(impl::Bezier3Vertex), &geom->bezier3Vertices[0].k);
+            glVertexPointer(2, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].p.x);
+            glTexCoordPointer(3, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].klm.x);
             glUseProgram(useAA?impl::stencilCubicAreaAAProgram:impl::stencilCubicAreaProgram);
-            glDrawElements(GL_TRIANGLES, (GLsizei)geom->bezier3Indices.size(), GL_UNSIGNED_SHORT, geom->bezier3Indices.begin());
+            glDrawElements(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, path->b3indices);
         }
 
         if (useAA) glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -434,10 +501,7 @@ namespace impl
         glPopClientAttrib();
         glPopAttrib();
     }
-}
 
-namespace vg
-{
     void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2)
     {
         x1 = path->xmin; y1 = path->ymin;
@@ -450,11 +514,11 @@ namespace vg
         const size_t maxVertices   = numCmd * 5;
         const size_t maxB3Vertices = numCmd * 10;
 
-        impl::geometry_t pathGeom = {
+        geometry_t pathGeom = {
             0, 0, 0,
             (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
             (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (impl::B3Vertex*)ut::thread_stack_alloc(sizeof(impl::B3Vertex)*maxB3Vertices)
+            (B3Vertex*)ut::thread_stack_alloc(sizeof(B3Vertex)*maxB3Vertices)
         };
 
         ml::vec2  cp0 = {0.0f, 0.0f},
@@ -580,53 +644,11 @@ namespace vg
         assert(pathGeom.numVertices   <= maxVertices);
         assert(pathGeom.numB3Vertices <= maxB3Vertices);
 
-        Path geom = new impl::Geometry();
-
-        assert(sizeof(ml::vec2)==sizeof(glm::vec2));
-        assert(sizeof(impl::B3Vertex)==sizeof(impl::Bezier3Vertex));
-
-        geom->shapeIndices.assign(pathGeom.indices, pathGeom.indices + pathGeom.numIndices);
-        geom->shapeVertices.assign((glm::vec2*)pathGeom.vertices, (glm::vec2*)pathGeom.vertices+pathGeom.numVertices);
-        geom->bezier3Vertices.assign((impl::Bezier3Vertex*)pathGeom.b3vertices, (impl::Bezier3Vertex*)pathGeom.b3vertices+pathGeom.numB3Vertices);
-
-        geom->bezier3GenIndices();
+        Path path = geomToPath(&pathGeom);
 
         ut::thread_stack_reset(pathGeom.indices);
 
-        //stupid initialization
-        if (!geom->shapeVertices.empty())
-        {
-            geom->xmin = geom->xmax = geom->shapeVertices[0].x;
-            geom->ymin = geom->ymax = geom->shapeVertices[0].y;
-        }
-        else if (!geom->bezier3Vertices.empty())
-        {
-            geom->xmin = geom->xmax = geom->bezier3Vertices[0].x;
-            geom->ymin = geom->ymax = geom->bezier3Vertices[0].y;
-        }
-        else
-        {
-            geom->xmin = geom->ymin = geom->xmax = geom->ymax = 0;
-            return geom;
-        }
-
-        for(size_t i=0; i<geom->shapeVertices.size(); ++i)
-        {
-            geom->xmin = ut::min(geom->xmin, geom->shapeVertices[i].x);
-            geom->ymin = ut::min(geom->ymin, geom->shapeVertices[i].y);
-            geom->xmax = ut::max(geom->xmax, geom->shapeVertices[i].x);
-            geom->ymax = ut::max(geom->ymax, geom->shapeVertices[i].y);
-        }
-
-        for(size_t i=0; i<geom->bezier3Vertices.size(); ++i)
-        {
-            geom->xmin = ut::min(geom->xmin, geom->bezier3Vertices[i].x);
-            geom->ymin = ut::min(geom->ymin, geom->bezier3Vertices[i].y);
-            geom->xmax = ut::max(geom->xmax, geom->bezier3Vertices[i].x);
-            geom->ymax = ut::max(geom->ymax, geom->bezier3Vertices[i].y);
-        }
-
-        return geom;
+        return path;
     }
 
     void destroyPath(Path path)

@@ -92,13 +92,12 @@
     <ClInclude Include="glnanovg.h" />
     <ClInclude Include="nanovg.h" />
     <ClInclude Include="Paint.h" />
+    <ClInclude Include="Path.h" />
     <ClInclude Include="stb_truetype.h" />
     <CustomBuildStep Include="Context.h" />
     <CustomBuildStep Include="Paint.h" />
     <CustomBuildStep Include="Path.h" />
     <CustomBuildStep Include="VG.h" />
-    <ClInclude Include="DataTypes.h" />
-    <ClInclude Include="impl\Rasterizer.h" />
     <ClInclude Include="impl\SharedResources.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
