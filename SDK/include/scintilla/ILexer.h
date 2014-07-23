@@ -13,7 +13,7 @@ namespace Scintilla {
 #endif
 
 #ifdef _WIN32
-	#define SCI_METHOD __stdcall
+	#define SCI_METHOD
 #else
 	#define SCI_METHOD
 #endif

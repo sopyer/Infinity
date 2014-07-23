@@ -12,18 +12,52 @@
 namespace Scintilla {
 #endif
 
-/**
- */
-class Style {
-public:
-	Colour/*Pair*/ fore;
-	Colour/*Pair*/ back;
-	bool aliasOfDefaultFont;
-	bool bold;
+struct FontSpecification {
+	const char *fontName;
+	int weight;
 	bool italic;
 	int size;
-	const char *fontName;
 	int characterSet;
+	int extraFontFlag;
+	FontSpecification() :
+		fontName(0),
+		weight(SC_WEIGHT_NORMAL),
+		italic(false),
+		size(10 * SC_FONT_SIZE_MULTIPLIER),
+		characterSet(0),
+		extraFontFlag(0) {
+	}
+	bool EqualTo(const FontSpecification &other) const;
+};
+
+// Just like Font but only has a copy of the FontID so should not delete it
+class FontAlias : public Font {
+	// Private so FontAlias objects can not be copied
+	FontAlias(const FontAlias &);
+	FontAlias &operator=(const FontAlias &);
+public:
+	FontAlias();
+	virtual ~FontAlias();
+	void MakeAlias(Font &fontOrigin);
+	void ClearFont();
+};
+
+struct FontMeasurements {
+	float ascent;
+	float descent;
+	float aveCharWidth;
+	float spaceWidth;
+	float sizeZoomed;
+	FontMeasurements();
+	void Clear();
+};
+
+/**
+ */
+class Style : public FontSpecification, public FontMeasurements {
+public:
+	Colour fore;
+	Colour back;
 	bool eolFilled;
 	bool underline;
 	enum ecaseForced {caseMixed, caseUpper, caseLower};
@@ -32,14 +66,7 @@ public:
 	bool changeable;
 	bool hotspot;
 
-	Font font;
-	float sizeZoomed;
-	float lineHeight;
-	float ascent;
-	float descent;
-	float externalLeading;
-	float aveCharWidth;
-	float spaceWidth;
+	FontAlias font;
 
 	Style();
 	Style(const Style &source);
@@ -48,12 +75,11 @@ public:
 	void Clear(Colour fore_, Colour back_,
 	           int size_,
 	           const char *fontName_, int characterSet_,
-	           bool bold_, bool italic_, bool eolFilled_,
+	           int weight_, bool italic_, bool eolFilled_,
 	           bool underline_, ecaseForced caseForce_,
 		   bool visible_, bool changeable_, bool hotspot_);
 	void ClearTo(const Style &source);
-	bool EquivalentFontTo(const Style *other) const;
-	void Realise(Surface &surface, int zoomLevel, Style *defaultStyle = 0, int extraFontFlag = 0);
+	void Copy(Font &font_, const FontMeasurements &fm_);
 	bool IsProtected() const { return !(changeable && visible);}
 };
 

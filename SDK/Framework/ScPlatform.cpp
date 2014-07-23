@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <math.h>
 #include <assert.h>
+#include <vector>
+#include <map>
 
 #include <scintilla/Platform.h>
 #include <scintilla/Scintilla.h>
@@ -217,7 +219,7 @@ public:
 	void Release();
 	void PenColour(Colour fore);
 	int LogPixelsY();
-	float DeviceHeightFont(int points);
+	float DeviceHeightFont(float points);
 	void MoveTo(float x_, float y_);
 	void LineTo(float x_, float y_);
 	void Polygon(Point *pts, int npts, Colour fore, Colour back);
@@ -230,6 +232,7 @@ public:
 	void Ellipse(PRectangle rc, Colour fore, Colour back);
 
 	virtual void DrawPixmap(PRectangle rc, Point from, Pixmap pixmap);
+	virtual void DrawRGBAImage(PRectangle rc, int width, int height, const unsigned char *pixelsImage);
 
 	void DrawTextBase(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore);
 	void DrawTextNoClip(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore, Colour back);
@@ -269,7 +272,7 @@ int SurfaceImpl::LogPixelsY() {
 	return 72;
 }
 
-float SurfaceImpl::DeviceHeightFont(int points) {
+float SurfaceImpl::DeviceHeightFont(float points) {
 	int logPix = LogPixelsY();
 	return (points * logPix + logPix / 2) / 72.0f;
 }
@@ -379,6 +382,11 @@ void SurfaceImpl::DrawPixmap(PRectangle rc, Point offset, Pixmap pixmap)
 	glDisable(GL_TEXTURE_2D);
 }
 
+void SurfaceImpl::DrawRGBAImage(PRectangle rc, int width, int height, const unsigned char *pixelsImage)
+{
+    assert(!"Implemented");
+}
+
 void SurfaceImpl::FillRectangle(PRectangle rc, Colour back) {
 	glColor4ubv((GLubyte*)&back);
 	glBegin(GL_QUADS);
@@ -423,9 +431,9 @@ Font::~Font()
 {
 }
 
-void Font::Create(const char *faceName, int /*characterSet*/, int size,	bool /*bold*/, bool /*italic*/, int)
+void Font::Create(const FontParameters &fp)
 {
-	vg::Font font = vg::createFont(anonymousProRTTF, sizeof(anonymousProRTTF), size);
+    vg::Font font = vg::createFont(anonymousProRTTF, sizeof(anonymousProRTTF), (size_t)fp.size);
 	fid = font;
 }
 

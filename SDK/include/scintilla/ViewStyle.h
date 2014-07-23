@@ -39,6 +39,20 @@ public:
 	const char *Save(const char *name);
 };
 
+class FontRealised : public FontSpecification, public FontMeasurements {
+	// Private so FontRealised objects can not be copied
+	FontRealised(const FontRealised &);
+	FontRealised &operator=(const FontRealised &);
+public:
+	Font font;
+	FontRealised *frNext;
+	FontRealised(const FontSpecification &fs);
+	virtual ~FontRealised();
+	void Realise(Surface &surface, float zoomLevel);
+	FontRealised *Find(const FontSpecification &fs);
+	void FindMaxAscentDescent(float &maxAscent, float &maxDescent);
+};
+
 enum IndentView {ivNone, ivReal, ivLookForward, ivLookBoth};
 
 enum WhiteSpaceVisibility {wsInvisible=0, wsVisibleAlways=1, wsVisibleAfterIndent=2};
@@ -48,46 +62,47 @@ enum WhiteSpaceVisibility {wsInvisible=0, wsVisibleAlways=1, wsVisibleAfterInden
 class ViewStyle {
 public:
 	FontNames fontNames;
+	FontRealised *frFirst;
 	size_t stylesSize;
 	Style *styles;
 	LineMarker markers[MARKER_MAX + 1];
+	int largestMarkerHeight;
 	Indicator indicators[INDIC_MAX + 1];
 	float lineHeight;
-	/*unsigned int*/float maxAscent;
-	/*unsigned int*/float maxDescent;
-	/*unsigned int*/float aveCharWidth;
-	/*unsigned int*/float spaceWidth;
+	float maxAscent;
+	float maxDescent;
+	float aveCharWidth;
+	float spaceWidth;
 	bool selforeset;
-	Colour/*Pair*/ selforeground;
-	Colour/*Pair*/ selAdditionalForeground;
+	Colour selforeground;
+	Colour selAdditionalForeground;
 	bool selbackset;
-	Colour/*Pair*/ selbackground;
-	Colour/*Pair*/ selAdditionalBackground;
-	Colour/*Pair*/ selbackground2;
+	Colour selbackground;
+	Colour selAdditionalBackground;
+	Colour selbackground2;
 	int selAlpha;
 	int selAdditionalAlpha;
 	bool selEOLFilled;
 	bool whitespaceForegroundSet;
-	Colour/*Pair*/ whitespaceForeground;
+	Colour whitespaceForeground;
 	bool whitespaceBackgroundSet;
-	Colour/*Pair*/ whitespaceBackground;
-	Colour/*Pair*/ selbar;
-	Colour/*Pair*/ selbarlight;
+	Colour whitespaceBackground;
+	Colour selbar;
+	Colour selbarlight;
 	bool foldmarginColourSet;
-	Colour/*Pair*/ foldmarginColour;
+	Colour foldmarginColour;
 	bool foldmarginHighlightColourSet;
-	Colour/*Pair*/ foldmarginHighlightColour;
+	Colour foldmarginHighlightColour;
 	bool hotspotForegroundSet;
-	Colour/*Pair*/ hotspotForeground;
+	Colour hotspotForeground;
 	bool hotspotBackgroundSet;
-	Colour/*Pair*/ hotspotBackground;
+	Colour hotspotBackground;
 	bool hotspotUnderline;
 	bool hotspotSingleLine;
 	/// Margins are ordered: Line Numbers, Selection Margin, Spacing Margin
 	enum { margins=5 };
 	int leftMarginWidth;	///< Spacing margin on left of text
 	int rightMarginWidth;	///< Spacing margin on left of text
-	bool symbolMargin;
 	int maskInLine;	///< Mask for markers to be put into text because there is nowhere for them to go in margin
 	MarginStyle ms[margins];
 	int fixedColumnWidth;
@@ -96,13 +111,12 @@ public:
 	int whitespaceSize;
 	IndentView viewIndentationGuides;
 	bool viewEOL;
-	bool showMarkedLines;
-	Colour/*Pair*/ caretcolour;
-	Colour/*Pair*/ additionalCaretColour;
+	Colour caretcolour;
+	Colour additionalCaretColour;
 	bool showCaretLineBackground;
-	Colour/*Pair*/ caretLineBackground;
+	Colour caretLineBackground;
 	int caretLineAlpha;
-	Colour/*Pair*/ edgecolour;
+	Colour edgecolour;
 	int edgeState;
 	int caretStyle;
 	int caretWidth;
@@ -114,12 +128,16 @@ public:
 	int marginStyleOffset;
 	int annotationVisible;
 	int annotationStyleOffset;
+	bool braceHighlightIndicatorSet;
+	int braceHighlightIndicator;
+	bool braceBadLightIndicatorSet;
+	int braceBadLightIndicator;
 
 	ViewStyle();
 	ViewStyle(const ViewStyle &source);
 	~ViewStyle();
 	void Init(size_t stylesSize_=64);
-	//void RefreshColourPalette(Palette &pal, bool want);
+	void CreateFont(const FontSpecification &fs);
 	void Refresh(Surface &surface);
 	void AllocStyles(size_t sizeNew);
 	void EnsureStyle(size_t index);
@@ -128,6 +146,7 @@ public:
 	void SetStyleFontName(int styleIndex, const char *name);
 	bool ProtectionActive() const;
 	bool ValidStyle(size_t styleIndex) const;
+	void CalcLargestMarkerHeight();
 };
 
 #ifdef SCI_NAMESPACE

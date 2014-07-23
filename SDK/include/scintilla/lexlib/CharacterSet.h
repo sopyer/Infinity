@@ -119,7 +119,6 @@ inline bool iswordstart(int ch) {
 inline bool isoperator(int ch) {
 	if (IsASCII(ch) && IsAlphaNumeric(ch))
 		return false;
-	// '.' left out as it is used to make up numbers
 	if (ch == '%' || ch == '^' || ch == '&' || ch == '*' ||
 	        ch == '(' || ch == ')' || ch == '-' || ch == '+' ||
 	        ch == '=' || ch == '|' || ch == '{' || ch == '}' ||
@@ -137,6 +136,13 @@ inline char MakeUpperCase(char ch) {
 		return ch;
 	else
 		return static_cast<char>(ch - 'a' + 'A');
+}
+
+inline char MakeLowerCase(char ch) {
+	if (ch < 'A' || ch > 'Z')
+		return ch;
+	else
+		return static_cast<char>(ch - 'A' + 'a');
 }
 
 int CompareCaseInsensitive(const char *a, const char *b);
