@@ -341,7 +341,7 @@ void mediaShutdown()
 
 media_player_t mediaCreatePlayer(const char* source)
 {
-    media_player_t player = (media_player_t)malloc(sizeof(media_player_data_t));
+    media_player_t player = (media_player_t)_aligned_malloc(sizeof(media_player_data_t), _alignof(media_player_data_t));
 
     memset(player, 0, sizeof(media_player_data_t));
 
@@ -402,7 +402,7 @@ void mediaDestroyPlayer(media_player_t player)
     closeVideoStream(player);
 
     av_close_input_file(player->formatContext);
-    free(player);
+    _aligned_free(player);
 }
 
 enum 
