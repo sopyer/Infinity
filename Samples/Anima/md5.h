@@ -1,5 +1,4 @@
-#include <ml.h>
-#include <utils.h>
+#include <core/core.h>
 
 struct md5_joint_t;
 struct md5_mesh_t;

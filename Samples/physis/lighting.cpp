@@ -1,8 +1,6 @@
 #include <opengl.h>
-#include <stdint.h>
-#include <ml.h>
+#include <core/core.h>
 #include <SOIL/SOIL.h>
-#include <utils.h>
 #include <framework.h>
 #include <SpectatorCamera.h>
 

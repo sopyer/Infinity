@@ -1,5 +1,4 @@
 #include "CDLODTerrain.h"
-#include <Framework/graphics.h>
 
 struct PatchData
 {

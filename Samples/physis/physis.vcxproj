@@ -63,7 +63,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>winmm.lib;scintilla_d.lib;utils_d.lib;physfs_d.lib;opengl32.lib;framework_d.lib;sdl2_d.lib;sdl2main_d.lib;vg_d.lib;freetype_d.lib;zlib_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;scintilla_d.lib;core_d.lib;physfs_d.lib;opengl32.lib;framework_d.lib;sdl2_d.lib;sdl2main_d.lib;vg_d.lib;freetype_d.lib;zlib_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -85,7 +85,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>winmm.lib;scintilla.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;utils.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;scintilla.lib;core.lib;physfs.lib;opengl32.lib;framework.lib;sdl2.lib;sdl2main.lib;vg.lib;freetype.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

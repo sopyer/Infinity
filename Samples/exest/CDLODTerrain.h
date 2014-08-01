@@ -2,7 +2,7 @@
 #	define __CDLODTERRAIN_H_INCLUDED__
 
 #include <framework.h>
-#include <ml.h>
+#include <core/ml.h>
 #include <graphics.h>
 
 struct PatchData;

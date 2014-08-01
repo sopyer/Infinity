@@ -2,9 +2,7 @@
 #include "Paint.h"
 #include "impl/SharedResources.h"
 
-#include <float.h>
-#include <assert.h>
-#include <memory.h>
+#include <core/core.h>
 
 namespace vg
 {

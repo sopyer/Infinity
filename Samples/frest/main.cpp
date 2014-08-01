@@ -1,11 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <framework.h>
-#include <ml.h>
-#include <cassert>
 #include <ResourceHelpers.h>
 #include <SOIL.h>
-#include <utils.h>
+#include <core/core.h>
 #include <SpectatorCamera.h>
 #include "DebugDraw.h"
 #include "MeshLoaderObj.h"

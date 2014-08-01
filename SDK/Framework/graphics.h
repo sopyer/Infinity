@@ -2,8 +2,7 @@
 #   define __FRAMEWORK_GRAPHICS_H_INCLUDED__
 
 #include <opengl.h>
-#include <stdint.h>
-#include <ml.h>
+#include <core/core.h>
 
 namespace vf
 {

@@ -1,7 +1,6 @@
 #include <framework.h>
 #include <vg/VG.h>
-#include <ml.h>
-#include <utils.h>
+#include <core/core.h>
 #include "pp.h"
 #include "Perlin.h"
 #include "lighting.h"

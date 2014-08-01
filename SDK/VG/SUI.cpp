@@ -1,5 +1,5 @@
 #include <opengl.h>
-#include <vi.h>
+#include <core/core.h>
 #include "vg.h"
 #include "impl/SharedResources.h"
 

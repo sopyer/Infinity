@@ -11,7 +11,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="utils.cpp">
+    <ClCompile Include="core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ml.cpp">
@@ -22,9 +22,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\vi.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -32,6 +29,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\ml.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\core\core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

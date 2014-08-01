@@ -3,7 +3,7 @@
 
 #include <opengl.h>
 #include <vg/vg.h>
-#include <utils/utils.h>
+#include <core/core.h>
 
 class  SpectatorCamera;
 struct CameraDirector;

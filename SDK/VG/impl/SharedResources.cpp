@@ -1,6 +1,4 @@
-#include <assert.h>
-#include <stdarg.h>
-#include <string.h>
+#include <core/core.h>
 
 #include <opengl.h>
 

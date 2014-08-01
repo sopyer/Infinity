@@ -14,7 +14,7 @@ extern "C"
 #include "profiler.h"
 #include "ResourceHelpers.h"
 
-#include <utils.h>
+#include <core/core.h>
 #include <graphics.h>
 
 #define PACKET_BUFFER_SIZE 64

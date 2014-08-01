@@ -1,6 +1,5 @@
-#include <assert.h>
 #include <SDL2/SDL.h>
-#include <utils.h>
+#include <core/core.h>
 #include "profiler.h"
 
 #define MAX_PROFILER_EVENTS     16384

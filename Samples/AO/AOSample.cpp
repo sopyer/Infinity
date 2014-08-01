@@ -1,5 +1,5 @@
 #include <framework.h>
-#include <utils.h>
+#include <core/core.h>
 
 float   cubeVertices[][3] = {
     //Top plane

@@ -1,11 +1,7 @@
 #include "model.h"
 
 #include <ResourceHelpers.h>
-#include <utils.h>
 #include <graphics.h>
-
-#include <memory.h>
-#include <string.h>
 
 #include "md5.h"
 #include "mjson.h"

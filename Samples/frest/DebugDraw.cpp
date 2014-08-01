@@ -16,9 +16,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <string.h>
+#include <core/core.h>
 #include "DebugDraw.h"
 
 
@@ -180,8 +178,8 @@ void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float 
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
 			const float a = (float)i/(float)NUM_SEG*DU_PI*2;
-			dir[i*2] = cosf(a);
-			dir[i*2+1] = sinf(a);
+			dir[i*2]   = ml::cos(a);
+			dir[i*2+1] = ml::sin(a);
 		}
 	}
 	
@@ -313,8 +311,8 @@ void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
 			const float a = (float)i/(float)NUM_SEG*DU_PI*2;
-			dir[i*2] = cosf(a);
-			dir[i*2+1] = sinf(a);
+			dir[i*2]   = ml::cos(a);
+			dir[i*2+1] = ml::sin(a);
 		}
 	}
 	
@@ -371,7 +369,7 @@ inline void vcross(float* dest, const float* v1, const float* v2)
 
 inline void vnormalize(float* v)
 {
-	float d = 1.0f / sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+	float d = 1.0f / ml::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 	v[0] *= d;
 	v[1] *= d;
 	v[2] *= d;
@@ -427,7 +425,7 @@ void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const f
 	const float dx = x1 - x0;
 	const float dy = y1 - y0;
 	const float dz = z1 - z0;
-	const float len = sqrtf(dx*dx + dy*dy + dz*dz);
+	const float len = ml::sqrt(dx*dx + dy*dy + dz*dz);
 	float prev[3];
 	evalArc(x0,y0,z0, dx,dy,dz, len*h, PAD, prev);
 	for (int i = 1; i <= NUM_ARC_PTS; ++i)
@@ -488,8 +486,8 @@ void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const 
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
 			const float a = (float)i/(float)NUM_SEG*DU_PI*2;
-			dir[i*2] = cosf(a);
-			dir[i*2+1] = sinf(a);
+			dir[i*2]   = ml::cos(a);
+			dir[i*2+1] = ml::sin(a);
 		}
 	}
 	

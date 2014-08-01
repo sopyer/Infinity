@@ -5,7 +5,7 @@
 #include <SOIL.h>
 #include <SpectatorCamera.h>
 #include <CameraDirector.h>
-#include <utils.h>
+#include <core/core.h>
 
 #include "CDLODTerrain.h"
 

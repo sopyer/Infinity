@@ -7,7 +7,7 @@
 
 #include <ui.h>
 #include <vg/vg.h>
-#include <utils.h>
+#include <core/core.h>
 #include <graphics.h>
 
 static const uint32_t profilerIntervalMask = 0xFEDC0000;

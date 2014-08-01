@@ -1,8 +1,7 @@
-#include "Scheduler.h"
-#include <assert.h>
-#include <algorithm>
-#include <stdlib.h>
 #include <SDL2/SDL.h>
+#include <core/core.h>
+
+#include "Scheduler.h"
 
 namespace mt
 {

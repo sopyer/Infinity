@@ -125,4 +125,4 @@ inline bool vi_any(v128 a);
 inline v128 vi_cvt_ubyte4_to_vec4(__int32 ub4);
 inline v128 vi_cvt_vec4_to_ubyte4(__int32 ub4);
 
-#include "vi.inl"
+#include <core/vi.inl>

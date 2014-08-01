@@ -12,8 +12,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{176B584F-06B8-4986-A800-7B02CF813062}</ProjectGuid>
-    <RootNamespace>Utils</RootNamespace>
+    <RootNamespace>core</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>core</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -75,13 +76,13 @@
   <ItemGroup>
     <ClCompile Include="mjson.c" />
     <ClCompile Include="ml.cpp" />
-    <ClCompile Include="utils.cpp" />
+    <ClCompile Include="core.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\core\core.h" />
     <ClInclude Include="..\include\mjson.h" />
     <ClInclude Include="..\include\ml.h" />
     <ClInclude Include="..\include\vi.h" />
-    <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\include\vi.inl" />

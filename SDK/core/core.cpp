@@ -1,7 +1,5 @@
-#include <stdlib.h>
-
-#include "utils.h"
-#include "physfs/physfs.h"
+#include <core/core.h>
+#include <physfs/physfs.h>
 
 bool testPtInRect(const point_t& pt, const rect_t& rect)
 {

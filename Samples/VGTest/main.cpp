@@ -6,7 +6,7 @@
 #include <SOIL.h> // remove later
 #include "Math.h"
 #include <VG/Path.h>
-#include <utils.h>
+#include <core/core.h>
 #include <graphics.h>
 
 //float w1 = -0.35f;

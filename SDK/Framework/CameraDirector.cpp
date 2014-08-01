@@ -1,7 +1,6 @@
 #include "CameraDirector.h"
 
 #include <stdio.h>
-#include <utils.h>
 
 CameraDirector::CameraDirector(): index(0)
 {

@@ -9,7 +9,7 @@
 #include <vg/impl/SharedResources.h>
 
 #include <Framework.h>
-#include <utils.h>
+#include <core/core.h>
 #include <graphics.h>
 
 #include "ui.h"

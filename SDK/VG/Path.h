@@ -1,8 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <vg/openvg.h>
-#include <ml.h>
+#include <core/ml.h>
 
 namespace vg
 {

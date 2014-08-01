@@ -1,10 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
 
 #include "md5.h"
-
-#include <stdio.h>
-#include <string.h>
-#include <ml.h>
 
 void build_w_quat( ml::quat& quat )
 {

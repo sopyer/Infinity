@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "SpectatorCamera.h"
-#include <ml.h>
 
 const float DEFAULT_ROTATION_SPEED = 0.3f;
 

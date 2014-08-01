@@ -1,7 +1,6 @@
 #include "graphics.h"
 #include "framework.h"
-#include <utils.h>
-#include <string.h>
+#include <core/core.h>
 
 namespace vf
 {

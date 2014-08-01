@@ -1,6 +1,6 @@
 #include <framework.h>
 #include <time.h>
-#include <utils.h>
+#include <core/core.h>
 #include <graphics.h>
 #include "ResourceHelpers.h"
 

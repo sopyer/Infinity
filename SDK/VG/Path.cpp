@@ -1,6 +1,5 @@
 #include <opengl.h>
-#include <utils.h>
-#include <memory.h>
+#include <core/core.h>
 
 #include "impl/SharedResources.h"
 #include "Path.h"

@@ -5,8 +5,10 @@
 #include <assert.h>
 // switch to dlalloc and use mspaces
 #include <stdlib.h> 
+#include <string.h>
+#include <stdarg.h>
 
-#include <ml.h>
+#include <core/ml.h>
 
 #define UNUSED(var)         ((void)(var))
 #define ARRAY_SIZE(arr)     sizeof(arr)/sizeof(arr[0])

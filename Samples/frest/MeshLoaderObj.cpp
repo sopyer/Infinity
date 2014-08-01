@@ -18,11 +18,8 @@
 
 #include "MeshLoaderObj.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <utils/utils.h>
+#include <core/core.h>
 
 rcMeshLoaderObj::rcMeshLoaderObj() :
 	m_verts(0),
@@ -201,7 +198,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 		n[0] = e0[1]*e1[2] - e0[2]*e1[1];
 		n[1] = e0[2]*e1[0] - e0[0]*e1[2];
 		n[2] = e0[0]*e1[1] - e0[1]*e1[0];
-		float d = sqrtf(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+		float d = ml::sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
 		if (d > 0)
 		{
 			d = 1.0f/d;

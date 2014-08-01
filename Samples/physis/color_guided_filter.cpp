@@ -1,6 +1,5 @@
 #include "pp.h"
-#include <framework.h>
-#include <utils.h>
+#include <core/core.h>
 
 extern GLuint programs[PRG_ID_COUNT];
 

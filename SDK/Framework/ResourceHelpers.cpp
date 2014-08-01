@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <stdarg.h>
 
-#include <utils/utils.h>
+#include <core/core.h>
 #include "ResourceHelpers.h"
 #include "Framework.h"
 #include "SOIL.h"
