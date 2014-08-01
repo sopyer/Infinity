@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 #include <assert.h>
-// switch to dlalloc and use mspaces
-#include <stdlib.h> 
 #include <string.h>
 #include <stdarg.h>
 

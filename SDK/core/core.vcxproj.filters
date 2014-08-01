@@ -9,6 +9,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="nedmalloc">
+      <UniqueIdentifier>{8b73c858-8004-49bc-9a3e-0b261afd60da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="core.cpp">
@@ -19,6 +22,12 @@
     </ClCompile>
     <ClCompile Include="mjson.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="memory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nedmalloc.c">
+      <Filter>nedmalloc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -33,6 +42,15 @@
     </ClInclude>
     <ClInclude Include="..\include\core\core.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="memory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nedmalloc.h">
+      <Filter>nedmalloc</Filter>
+    </ClInclude>
+    <ClInclude Include="malloc.c.h">
+      <Filter>nedmalloc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

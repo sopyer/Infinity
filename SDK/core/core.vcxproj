@@ -74,15 +74,20 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="memory.cpp" />
     <ClCompile Include="mjson.c" />
     <ClCompile Include="ml.cpp" />
     <ClCompile Include="core.cpp" />
+    <ClCompile Include="nedmalloc.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\core\core.h" />
     <ClInclude Include="..\include\mjson.h" />
     <ClInclude Include="..\include\ml.h" />
     <ClInclude Include="..\include\vi.h" />
+    <ClInclude Include="malloc.c.h" />
+    <ClInclude Include="memory.h" />
+    <ClInclude Include="nedmalloc.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\include\vi.inl" />
