@@ -1,7 +1,5 @@
 #include "pp.h"
-#include <framework.h>
-#include <core/ml.h>
-#include <graphics.h>
+#include <gfx/gfx.h>
 
 static const size_t MAX_SAMPLE_COUNT = 64;
 
@@ -34,14 +32,14 @@ void ppInit()
 {
     glGenFramebuffers(1, &fbo);
 
-    GLuint vert = resources::createShaderFromFile(GL_VERTEX_SHADER, "Mesh.ScreenTri.UV.vert");
+    GLuint vert = res::createShaderFromFile(GL_VERTEX_SHADER, "Mesh.ScreenTri.UV.vert");
 
     for (size_t i=0; i<PRG_ID_COUNT; ++i)
     {
         GLuint frag;
 
-        frag        = resources::createShaderFromFile(GL_FRAGMENT_SHADER, programFSPath[i]);
-        programs[i] = resources::linkProgram(2, vert, frag);
+        frag        = res::createShaderFromFile(GL_FRAGMENT_SHADER, programFSPath[i]);
+        programs[i] = res::linkProgram(2, vert, frag);
         glDeleteShader(frag);
     }
 

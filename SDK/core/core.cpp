@@ -1,5 +1,4 @@
 #include <core/core.h>
-#include <physfs/physfs.h>
 
 bool testPtInRect(const point_t& pt, const rect_t& rect)
 {
@@ -131,12 +130,15 @@ namespace ut
     void init()
     {
         threadDataStackMem = (uint8_t*)malloc(THREAD_DATA_STACK_SIZE);
-
         stack_mem_init(&mainThreadDataStack, threadDataStackMem, THREAD_DATA_STACK_SIZE);
+
+        mt::init(1, 128);
     }
 
     void fini()
     {
+        mt::fini();
+
         free(threadDataStackMem);
     }
 

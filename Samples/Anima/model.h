@@ -1,7 +1,6 @@
 #pragma once;
 
-#include <core/core.h>
-#include <opengl.h>
+#include <gfx/gfx.h>
 
 namespace Model
 {

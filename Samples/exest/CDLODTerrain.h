@@ -1,9 +1,7 @@
 #ifndef __CDLODTERRAIN_H_INCLUDED__
 #	define __CDLODTERRAIN_H_INCLUDED__
 
-#include <framework.h>
-#include <core/ml.h>
-#include <graphics.h>
+#include <gfx/gfx.h>
 
 struct PatchData;
 

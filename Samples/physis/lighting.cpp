@@ -1,8 +1,5 @@
-#include <opengl.h>
-#include <core/core.h>
-#include <SOIL/SOIL.h>
-#include <framework.h>
-#include <SpectatorCamera.h>
+#include <fwk/fwk.h>
+#include <gfx/SOIL2/SOIL2.h>
 
 #include "lighting.h"
 
@@ -204,8 +201,8 @@ namespace lighting
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
-        prgSkybox = resources::createProgramFromFiles("skybox.vert", "skybox.frag");
-        prgSH     = resources::createProgramFromFiles("box.vert", "MESH.Wireframe.geom", "box.frag");
+        prgSkybox = res::createProgramFromFiles("skybox.vert", "skybox.frag");
+        prgSH     = res::createProgramFromFiles("box.vert", "MESH.Wireframe.geom", "box.frag");
 
         memory_t dataPosX = {0, 0, 0};
         memory_t dataPosY = {0, 0, 0};

@@ -1,8 +1,6 @@
-#include <framework.h>
+#include <fwk/fwk.h>
 #include <al/al.h>
 #include <al/alc.h>
-
-#include <media_api.h>
 
 namespace app
 {

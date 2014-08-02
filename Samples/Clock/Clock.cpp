@@ -1,8 +1,5 @@
-#include <framework.h>
+#include <fwk/fwk.h>
 #include <time.h>
-#include <core/core.h>
-#include <graphics.h>
-#include "ResourceHelpers.h"
 
 //#define RASTER_ACTORS
 
@@ -17,7 +14,7 @@ enum
     IMG_COUNT
 };
 
-const char*	imageNames[IMG_COUNT] = 
+const char* imageNames[IMG_COUNT] = 
 {
     "clockFace.png",
     "hourHand.png",
@@ -62,7 +59,7 @@ namespace app
 
         for (int i=0; i<IMG_COUNT; ++i)
         {
-            mTextures[i] = resources::createTexture2D(imageNames[i]);
+            mTextures[i] = res::createTexture2D(imageNames[i]);
         }
 #else
         mScale = 7.0f;

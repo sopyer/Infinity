@@ -1,12 +1,18 @@
-#ifndef _UTILS_H_INCLUDED_
-#	define _UTILS_H_INCLUDED_
+#pragma once
 
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
+#include <physfs/physfs.h>
+
+#include <core/mt.h>
 #include <core/ml.h>
+#include <core/profiler.h>
+#include <core/timer.h>
 
 #define UNUSED(var)         ((void)(var))
 #define ARRAY_SIZE(arr)     sizeof(arr)/sizeof(arr[0])
@@ -292,5 +298,3 @@ namespace ut
     }
 
 };
-
-#endif

@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="UI">
+      <UniqueIdentifier>{7e05eaa5-338c-4aab-a833-b66b28dd1898}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Public Headers">
+      <UniqueIdentifier>{b53172b7-8905-4880-ab97-018767e49874}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="fwk.cpp" />
+    <ClCompile Include="media_api.cpp" />
+    <ClCompile Include="SpectatorCamera.cpp" />
+    <ClCompile Include="CameraDirector.cpp" />
+    <ClCompile Include="ui.cpp" />
+    <ClCompile Include="ProfilerOverlay.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ScPlatform.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderEditOverlay.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ShaderEditOverlay.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="ProfilerOverlay.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="RainbowTables.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fwk\CameraDirector.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fwk\fwk.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fwk\media_api.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fwk\SpectatorCamera.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\fwk\ui.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

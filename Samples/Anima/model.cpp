@@ -1,8 +1,5 @@
 #include "model.h"
 
-#include <ResourceHelpers.h>
-#include <graphics.h>
-
 #include "md5.h"
 #include "mjson.h"
 
@@ -47,13 +44,13 @@ namespace Model
 
     void init()
     {
-        prgDefault = resources::createProgramFromFiles("MESH.Wireframe.Skinning4.vert", "MESH.Wireframe.geom", "MESH.Wireframe.SHLighting.frag");
+        prgDefault = res::createProgramFromFiles("MESH.Wireframe.Skinning4.vert", "MESH.Wireframe.geom", "MESH.Wireframe.SHLighting.frag");
 
         mWireframe = (material_t*)malloc(sizeof(material_t));
         mWireframe->program = prgDefault;
         mWireframe->diffuse = mWireframe->normal = 0;
 
-        prgLighting = resources::createProgramFromFiles("MESH.Skinning4.vert", "MESH.SHLighting.frag");
+        prgLighting = res::createProgramFromFiles("MESH.Skinning4.vert", "MESH.SHLighting.frag");
 
         ubufLighting = gfx::createUBODesc(prgDefault, "uniLighting");
         ubufGlobal   = gfx::createUBODesc(prgDefault, "uniGlobal");
@@ -513,11 +510,11 @@ cleanup:
 
                 if (strcmp(name, "diffuse")==0)
                 {
-                    mat->diffuse = resources::createTexture2D(mjson_get_string(value, ""));
+                    mat->diffuse = res::createTexture2D(mjson_get_string(value, ""));
                 }
                 else if (strcmp(name, "normal")==0)
                 {
-                    mat->normal = resources::createTexture2D(mjson_get_string(value, ""));
+                    mat->normal = res::createTexture2D(mjson_get_string(value, ""));
                 }
 
                 key = mjson_get_member_next(root, key, &value);

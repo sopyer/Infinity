@@ -1,8 +1,5 @@
 #include "nanosvg.h"
-#include <framework.h>
-#include "ResourceHelpers.h"
-#include <timer.h>
-#include <graphics.h>
+#include <fwk/fwk.h>
 #include <vector>
 #include <algorithm>
 
@@ -105,7 +102,7 @@ namespace app
         );
 
         glColor3f(1.0f, 1.0f, 1.0f);
-        vg::drawString(ui::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
+        vg::drawString(vg::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
     }
 
     void recompilePrograms() {}

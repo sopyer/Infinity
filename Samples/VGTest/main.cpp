@@ -1,13 +1,10 @@
-#define _SCL_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 
-#include <framework.h>
+#include <fwk/fwk.h>
 
 #include "VGExp.h"
-#include <SOIL.h> // remove later
 #include "Math.h"
-#include <VG/Path.h>
-#include <core/core.h>
-#include <graphics.h>
+#include <gfx/Path.h>
 
 //float w1 = -0.35f;
 //float w2 = -0.35f;
@@ -745,7 +742,7 @@ namespace app
         glColor3f(1.0f, 1.0f, 1.0f);
         char zoomStr[256];
         _snprintf(zoomStr, 256, "Zoom level %f", zoom);
-        vg::drawString(ui::defaultFont, 300, 10, zoomStr, strlen(zoomStr));
+        vg::drawString(vg::defaultFont, 300, 10, zoomStr, strlen(zoomStr));
     }
 
     void update(float){}

@@ -1,8 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <framework.h>
-#include <SpectatorCamera.h>
-#include <graphics.h>
+#include <fwk/fwk.h>
 
 #include "model.h"
 

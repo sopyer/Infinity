@@ -1,8 +1,5 @@
-#include <framework.h>
-#include <vg/vg.h>
+#include <fwk/fwk.h>
 #include <time.h>
-#include <stdlib.h>
-#include <timer.h>
 
 void drawFrame(float x0, float y0, float x1, float y1)
 {

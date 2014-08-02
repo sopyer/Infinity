@@ -34,7 +34,7 @@ struct ViewData
 void CDLODTerrain::initialize()
 {
     // Create instanced terrain program
-    prgTerrain  = resources::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag");
+    prgTerrain  = res::createProgramFromFiles("Terrain.CDLOD.Instanced.vert", "Terrain.SHLighting.frag");
 
 #ifdef _DEBUG
     {

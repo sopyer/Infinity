@@ -1,10 +1,7 @@
-#include <framework.h>
-#include <vg/VG.h>
-#include <core/core.h>
+#include <fwk/fwk.h>
 #include "pp.h"
 #include "Perlin.h"
 #include "lighting.h"
-#include <graphics.h>
 
 static const int texSize = 1024;
 
@@ -183,7 +180,7 @@ namespace app
 
     void CreatePerlinNoiseGtor()
     {
-        perlinGtorProg = resources::createProgramFromFiles(0, NULL, 3,
+        perlinGtorProg = res::createProgramFromFiles(0, NULL, 3,
                              GL_VERTEX_SHADER,   "MESH.ScreenTri.UV.vert",
                              GL_FRAGMENT_SHADER, "Perlin.Noise.frag",
                              GL_FRAGMENT_SHADER, "TextureGtor.Perlin.frag"
@@ -220,7 +217,7 @@ namespace app
     {
         ppInit();
  
-        texSource  = resources::createTexture2D("coin.dds", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
+        texSource  = res::createTexture2D("coin.dds", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
 
         assert(rtDesc[14].id == TEX_LUMINANCE);
         for (size_t i = 14; i < ARRAY_SIZE(rtDesc); ++i)
@@ -233,7 +230,7 @@ namespace app
 
         glGetIntegerv(GL_VIEWPORT, vp);
 
-        texGtorProg     = resources::createProgramFromFiles(
+        texGtorProg     = res::createProgramFromFiles(
                               "MESH.ScreenTri.UV.vert",
                               "TextureGtor.Metal.frag"
                           );
@@ -404,7 +401,7 @@ namespace app
     {
         for (size_t i = 0; i < count; ++i)
         {
-            vg::drawString(ui::defaultFont, strings[i].x, strings[i].y, strings[i].text, strlen(strings[i].text));
+            vg::drawString(vg::defaultFont, strings[i].x, strings[i].y, strings[i].text, strlen(strings[i].text));
         }
     }
 
@@ -649,8 +646,8 @@ namespace app
 
             vg::drawRect(pos+margin, 34.0f-(currentTab==i?3.0f:0.0f), pos+size-margin, 35.0f, 0xFFEDB734, 0xFF34B7ED);
 
-            float x = vg::getTextHExtent(ui::defaultFont, caption[i]);
-            vg::drawString(ui::defaultFont, pos + 0.5f * (size - x), 25.0f, caption[i], strlen(caption[i]));
+            float x = vg::getTextHExtent(vg::defaultFont, caption[i]);
+            vg::drawString(vg::defaultFont, pos + 0.5f * (size - x), 25.0f, caption[i], strlen(caption[i]));
             pos += size;
         }
  

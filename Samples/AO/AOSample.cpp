@@ -1,5 +1,4 @@
-#include <framework.h>
-#include <core/core.h>
+#include <fwk/fwk.h>
 
 float   cubeVertices[][3] = {
     //Top plane
@@ -96,9 +95,9 @@ namespace app
     {
         genVoxelLookupTexture();
 
-        mLightProgram        = resources::createProgramFromFiles("SimpleLight.vert",  "SimpleLight.frag");
-        mVoxelizationProgram = resources::createProgramFromFiles("Voxelization.vert", "Voxelization.frag");
-        mGBufferProgram      = resources::createProgramFromFiles("SimpleGBuffer.vert", "SimpleGBuffer.frag");
+        mLightProgram        = res::createProgramFromFiles("SimpleLight.vert",  "SimpleLight.frag");
+        mVoxelizationProgram = res::createProgramFromFiles("Voxelization.vert", "Voxelization.frag");
+        mGBufferProgram      = res::createProgramFromFiles("SimpleGBuffer.vert", "SimpleGBuffer.frag");
 
         mVoxelLookupTextureUniform = glGetUniformLocation(mVoxelizationProgram, "uVoxelLookupTexture");
 
@@ -122,7 +121,7 @@ namespace app
         for (uint32_t i=0; i<VOXEL_DIM_Z; ++i)
             textureData[i] = 1L<<i;
 
-        mVoxelLookupTexture = resources::createSpecialTexture1D(
+        mVoxelLookupTexture = res::createSpecialTexture1D(
             GL_RGBA8, 32, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
     }
 
@@ -299,7 +298,7 @@ namespace app
             glPopMatrix();
 
 #if defined(_DEBUG) || defined(DEBUG)
-            resources::saveScreenToFile("VoxelSlices.tga");
+            res::saveScreenToFile("VoxelSlices.tga");
 #endif
 
             glReadPixels(0, 0, VOXEL_DIM_X, VOXEL_DIM_Y, GL_RGBA, GL_UNSIGNED_BYTE, mVoxelField);
@@ -360,7 +359,7 @@ namespace app
         glPopMatrix();
 
         glColor3f(1.0f, 1.0f, 1.0f);
-        vg::drawString(ui::defaultFont, 25.0, 18.0f, "Render as voxels", 16);
+        vg::drawString(vg::defaultFont, 25.0, 18.0f, "Render as voxels", 16);
 
         vg::drawImage(0,  30, 160, 150, mPosTexture);
         vg::drawImage(0, 160, 160, 280, mNormalTexture);

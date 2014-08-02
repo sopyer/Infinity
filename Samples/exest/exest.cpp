@@ -1,11 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <framework.h>
-#include <ResourceHelpers.h>
-#include <SOIL.h>
-#include <SpectatorCamera.h>
-#include <CameraDirector.h>
-#include <core/core.h>
+#include <fwk/fwk.h>
 
 #include "CDLODTerrain.h"
 
@@ -258,15 +253,15 @@ namespace app
         char str[256];
         
         _snprintf(str, 256, "CPU select time - %f ms", cpu_timer_measured(&terrain.cpuSelectTimer) / 1000.0f);
-        vg::drawString(ui::defaultFont, 25.0f, 83.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, 25.0f, 83.0f, str, strlen(str));
         
         _snprintf(str, 256, "CPU draw time - %f ms", cpu_timer_measured(&terrain.cpuRenderTimer) / 1000.0f);
-        vg::drawString(ui::defaultFont, 25.0f, 101.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, 25.0f, 101.0f, str, strlen(str));
         
         int patches = terrain.patchCount;
         int vtx = patches*terrain.patchDim*terrain.patchDim;
         _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
-        vg::drawString(ui::defaultFont, 25.0f, 119.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, 25.0f, 119.0f, str, strlen(str));
     }
 
     void update(float dt)
