@@ -1823,11 +1823,11 @@ namespace app
     {
         app::dt = dt;
 
-        if (ui::keyWasPressed(SDLK_SPACE))
+        if (ui::keyWasPressed(SDL_SCANCODE_SPACE))
             blowup = !blowup;
-        if (ui::keyWasPressed(SDLK_s))
+        if (ui::keyWasPressed(SDL_SCANCODE_S))
             screenshot = 1;
-        if (ui::keyWasPressed(SDLK_p))
+        if (ui::keyWasPressed(SDL_SCANCODE_P))
             premult = !premult;
 
         //int mx, my;
