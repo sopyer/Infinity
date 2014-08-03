@@ -96,8 +96,8 @@ namespace ui
         overlayProfiler->init(width, height);
 
         GLuint programs[] = {
-            impl::simpleUIProgram, impl::stencilArcAreaProgram, impl::stencilQuadAreaProgram,
-            impl::stencilCubicAreaAAProgram, impl::stencilCubicAreaProgram, impl::linGradProgram
+            impl::simpleUIProgram, impl::stencilCubicAreaAAProgram,
+            impl::stencilCubicAreaProgram, impl::linGradProgram
         };
 
         overlayShaderEdit->addPrograms(ARRAY_SIZE(programs), programs);

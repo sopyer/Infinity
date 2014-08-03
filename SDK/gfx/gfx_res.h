@@ -14,8 +14,6 @@ namespace impl
 
     extern GLuint   stencilCubicAreaProgram;
     extern GLuint   stencilCubicAreaAAProgram;
-    extern GLuint   stencilQuadAreaProgram;
-    extern GLuint   stencilArcAreaProgram;
 
     enum
     {
