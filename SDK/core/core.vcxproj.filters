@@ -29,9 +29,6 @@
     <ClCompile Include="memory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="nedmalloc.c">
-      <Filter>nedmalloc</Filter>
-    </ClCompile>
     <ClCompile Include="mt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -40,6 +37,9 @@
     </ClCompile>
     <ClCompile Include="timer.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nedmalloc.cpp">
+      <Filter>nedmalloc</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

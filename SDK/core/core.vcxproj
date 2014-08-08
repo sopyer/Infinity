@@ -81,7 +81,7 @@
     <ClCompile Include="ml.cpp" />
     <ClCompile Include="core.cpp" />
     <ClCompile Include="mt.cpp" />
-    <ClCompile Include="nedmalloc.c" />
+    <ClCompile Include="nedmalloc.cpp" />
     <ClCompile Include="profiler.cpp" />
     <ClCompile Include="timer.cpp" />
   </ItemGroup>
