@@ -1912,8 +1912,8 @@ namespace app
         //    break;
         //case ID_TRACKBAR:
         //    sliderPos = float(mx + dsx);
-        //    sliderPos = ut::max(sliderPos,   0);
-        //    sliderPos = ut::min(sliderPos, 170);
+        //    sliderPos = core::max(sliderPos,   0);
+        //    sliderPos = core::min(sliderPos, 170);
         //    break;
         //}
 

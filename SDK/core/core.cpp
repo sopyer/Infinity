@@ -23,7 +23,7 @@ bool mem_thread_stack_init(memory_t* mem, size_t size)
 {
     mem->allocated = 0;
     mem->size      = size;
-    mem->buffer    = (uint8_t*)ut::thread_stack_alloc(size);
+    mem->buffer    = (uint8_t*)core::thread_stack_alloc(size);
 
     return true;
 }
@@ -120,7 +120,7 @@ void  stack_mem_reset(stack_mem_t stack, void* ptr)
     stack->allocated = (uint8_t*)ptr - stack->data;
 }
 
-namespace ut
+namespace core
 {
     static const size_t THREAD_DATA_STACK_SIZE = 256 * (1<<10);
 

@@ -29,8 +29,8 @@ struct media_player_data_t
     int              playback;
     int              streamEnd;
 
-    ut::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> aPackets;
-    ut::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> vPackets;
+    core::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> aPackets;
+    core::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> vPackets;
 
     uint64_t baseTime, timeShift, timeOfNextFrame, frameTime;
     uint64_t aBufferSize;
@@ -200,11 +200,11 @@ static void streamMediaData(media_player_t player)
     {
         if (packet.stream_index==player->audioStream)
         {
-            *ut::ring_buffer_alloc(player->aPackets) = packet;
+            *core::ring_buffer_alloc(player->aPackets) = packet;
         }
         else if (packet.stream_index==player->videoStream)
         {
-            *ut::ring_buffer_alloc(player->vPackets) = packet;
+            *core::ring_buffer_alloc(player->vPackets) = packet;
         }
     }
     else if (!player->streamEnd)
@@ -212,7 +212,7 @@ static void streamMediaData(media_player_t player)
         player->streamEnd = true;
         packet.data = 0;
         packet.size = 0;
-        *ut::ring_buffer_alloc(player->vPackets) = packet;
+        *core::ring_buffer_alloc(player->vPackets) = packet;
     }
 }
 
@@ -227,9 +227,9 @@ static void decodeAudio(media_player_t player)
 
     while((player->bufSize < player->aBufferSize) && audioDataAva)
     {
-        if (ut::ring_buffer_used(player->aPackets)>0)
+        if (core::ring_buffer_used(player->aPackets)>0)
         {
-            AVPacket* pkt        = ut::ring_buffer_back(player->aPackets);
+            AVPacket* pkt        = core::ring_buffer_back(player->aPackets);
             uint8_t*  inData     = pkt->data;
             int       inSize     = pkt->size;
             int       bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
@@ -251,12 +251,12 @@ static void decodeAudio(media_player_t player)
             }
 
             av_free_packet(pkt);
-            ut::ring_buffer_pop(player->aPackets);
+            core::ring_buffer_pop(player->aPackets);
         }
         else
             streamMediaData(player);
 
-        audioDataAva = !player->streamEnd || ut::ring_buffer_used(player->aPackets)>0;
+        audioDataAva = !player->streamEnd || core::ring_buffer_used(player->aPackets)>0;
     }
 }
 
@@ -268,15 +268,15 @@ static void decodeVideo(media_player_t player)
 
     while(videoDataAva)
     {
-        if (ut::ring_buffer_used(player->vPackets)>0)
+        if (core::ring_buffer_used(player->vPackets)>0)
         {
-            AVPacket* pkt       = ut::ring_buffer_back(player->vPackets);
+            AVPacket* pkt       = core::ring_buffer_back(player->vPackets);
             int       frameDone = 0;
 
             avcodec_decode_video(player->videoCodecContext, player->pFrame, &frameDone, pkt->data, pkt->size);
 
             av_free_packet(pkt);
-            ut::ring_buffer_pop(player->vPackets);
+            core::ring_buffer_pop(player->vPackets);
 
             if(frameDone)
             {
@@ -287,7 +287,7 @@ static void decodeVideo(media_player_t player)
         else
             streamMediaData(player);
 
-        videoDataAva = !player->streamEnd || ut::ring_buffer_used(player->vPackets)>0;
+        videoDataAva = !player->streamEnd || core::ring_buffer_used(player->vPackets)>0;
     }
 }
 
@@ -375,8 +375,8 @@ media_player_t mediaCreatePlayer(const char* source)
     player->taskStarted = false;
     player->eventID     = mt::INVALID_HANDLE;
 
-    ut::ring_buffer_reset(player->aPackets);
-    ut::ring_buffer_reset(player->vPackets);
+    core::ring_buffer_reset(player->aPackets);
+    core::ring_buffer_reset(player->vPackets);
 
     return player;
 }
@@ -388,8 +388,8 @@ void mediaDestroyPlayer(media_player_t player)
         mt::syncAndReleaseEvent(player->eventID);
     }
 
-    ut::ring_buffer_reset(player->aPackets);
-    ut::ring_buffer_reset(player->vPackets);
+    core::ring_buffer_reset(player->aPackets);
+    core::ring_buffer_reset(player->vPackets);
 
     closeAudioStream(player);
     closeVideoStream(player);
@@ -458,7 +458,7 @@ void mediaPlayerUpdate(media_player_t player)
 
     ALuint buffer;
 
-    player->playback = !player->streamEnd || ut::ring_buffer_used(player->aPackets)>0 || ut::ring_buffer_used(player->vPackets)>0;
+    player->playback = !player->streamEnd || core::ring_buffer_used(player->aPackets)>0 || core::ring_buffer_used(player->vPackets)>0;
 
     if (player->taskStarted)
     {
@@ -498,9 +498,9 @@ void mediaPlayerUpdate(media_player_t player)
     uint64_t time = currentTime+player->timeShift;
     if (time>=player->timeOfNextFrame)
     {
-        ut::swap(player->texY[0], player->texY[1]);
-        ut::swap(player->texU[0], player->texU[1]);
-        ut::swap(player->texV[0], player->texV[1]);
+        core::swap(player->texY[0], player->texY[1]);
+        core::swap(player->texU[0], player->texU[1]);
+        core::swap(player->texV[0], player->texV[1]);
 
         player->subTasks |= MEDIA_DECODE_VIDEO;
     }

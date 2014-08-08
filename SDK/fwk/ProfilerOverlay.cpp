@@ -101,8 +101,8 @@ void ProfilerOverlay::loadProfilerData()
 
     for (size_t i = 1; i < numEvents; ++i)
     {
-        minTime = ut::min(minTime, events[i].timestamp);
-        maxTime = ut::max(maxTime, events[i].timestamp);
+        minTime = core::min(minTime, events[i].timestamp);
+        maxTime = core::max(maxTime, events[i].timestamp);
     }
 
     int     stackTop[MAX_THREAD_COUNT] = {-1, -1, -1, -1, -1, -1, -1, -1};
@@ -114,8 +114,8 @@ void ProfilerOverlay::loadProfilerData()
 
     float scale = (mWidth-70.0f) / float(maxTime-minTime);
 
-    ut::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
-    ut::index_t<uint64_t, 32>                       threadMap = {0};
+    core::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
+    core::index_t<uint64_t, 32>                       threadMap = {0};
 
     rectData.clear();
     intervals.clear();
@@ -127,7 +127,7 @@ void ProfilerOverlay::loadProfilerData()
         profiler_event_t event = events[i];
         uint32_t         threadIdx;
 
-        threadIdx = ut::index_lookup_or_add(&threadMap, event.threadID);
+        threadIdx = core::index_lookup_or_add(&threadMap, event.threadID);
 
         int& top = stackTop[threadIdx];
 
@@ -157,7 +157,7 @@ void ProfilerOverlay::loadProfilerData()
             uint32_t colorIdx;
             uint32_t color;
 
-            colorIdx = ut::index_lookup_or_add(&colorMap, event.id);
+            colorIdx = core::index_lookup_or_add(&colorMap, event.id);
             color    = ui::rainbowTableL[colorIdx];
 
             colors.push_back(color);

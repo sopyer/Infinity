@@ -518,16 +518,16 @@ namespace app
 
         vg::geometry_t  geomPath = {
             0, 0, 0,
-            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (vg::B3Vertex*)ut::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+            (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (vg::B3Vertex*)core::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
         };
 
         vg::geometry_t  geomPathOff = {
             0, 0, 0,
-            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (vg::B3Vertex*)ut::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+            (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (vg::B3Vertex*)core::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
         };
 
         uint16_t  prevIdx,  curIdx;
@@ -545,7 +545,7 @@ namespace app
         testPath    = vg::geomToPath(&geomPath);
         testPathOff = vg::geomToPath(&geomPathOff);
 
-        ut::thread_stack_reset(geomPath.indices);
+        core::thread_stack_reset(geomPath.indices);
     }
 
     void fini()

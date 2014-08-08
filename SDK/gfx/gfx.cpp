@@ -389,7 +389,7 @@ namespace gfx
 
     ubo_desc_t createUBODesc(GLuint prg, const char* name)
     {
-        stack_mem_t stalloc = ut::get_thread_data_stack();
+        stack_mem_t stalloc = core::get_thread_data_stack();
 
         GLint numBlocks = 0;
 

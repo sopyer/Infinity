@@ -262,8 +262,8 @@ namespace Model
     
     bool loadModel(const char* name, model_t* model, skeleton_t* skel)
     {
-        memory_t inText    = MEMORY_T_INITIALIZER;
-        memory_t outBinary = MEMORY_T_INITIALIZER;
+        memory_t inText    = {0, 0, 0};
+        memory_t outBinary = {0, 0, 0};
 
         memset(model, 0, sizeof(model_t   ));
         memset(skel,  0, sizeof(skeleton_t));
@@ -307,8 +307,8 @@ namespace Model
 
     bool loadAnimation(const char *name, animation_t* anim, skeleton_t* skel)
     {
-        memory_t inText    = MEMORY_T_INITIALIZER;
-        memory_t outBinary = MEMORY_T_INITIALIZER;
+        memory_t inText    = {0, 0, 0};
+        memory_t outBinary = {0, 0, 0};
 
         memset(anim, 0, sizeof(animation_t));
 
@@ -486,8 +486,8 @@ cleanup:
 
     bool loadMaterial(material_t* mat, const char* name)
     {
-        memory_t        inText = MEMORY_T_INITIALIZER;
-        memory_t        bjson  = MEMORY_T_INITIALIZER;
+        memory_t        inText = {0, 0, 0};
+        memory_t        bjson  = {0, 0, 0};
         mjson_element_t root = 0;
         char            path[1024];
 

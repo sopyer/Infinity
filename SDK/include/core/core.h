@@ -9,15 +9,28 @@
 
 #include <physfs/physfs.h>
 
+#include <core/bits.h>
 #include <core/mt.h>
 #include <core/ml.h>
 #include <core/profiler.h>
 #include <core/timer.h>
+#include <core/memory.h>
 
 #define UNUSED(var)         ((void)(var))
 #define ARRAY_SIZE(arr)     sizeof(arr)/sizeof(arr[0])
 #define BUFFER_OFFSET(i)    ((char*)NULL + (i))
-#define MEMORY_T_INITIALIZER  {0, 0, 0}
+
+#define PP_CAT(a, b) PP_CAT_I(a, b)
+#define PP_CAT_I(a, b) PP_CAT_II(a ## b)
+#define PP_CAT_II(res) res
+
+#define UNIQUE_NAME(base) PP_CAT(base, __LINE__)
+
+#define STATIC_ASSERT(exp) \
+    typedef char UNIQUE_NAME(static_assert) [(exp) ? 1 : -1]
+
+#define PROFILER_CPU_TIMESLICE(name) \
+    ProfilerCPUAutoTimeslice UNIQUE_NAME(profiler_scope) (name)
 
 char* cpToUTF8(int cp, char* str);
 
@@ -84,7 +97,7 @@ type* mem_raw_data(memory_t* mem)
 #define TRUE  1
 #define FALSE 0
 
-namespace ut
+namespace core
 {
     template<size_t N>
     struct moving_avg_filter_t
@@ -151,7 +164,7 @@ namespace ut
     }
 }
 
-namespace ut
+namespace core
 {
     template<typename type_t, size_t N>
     struct index_t
@@ -221,9 +234,7 @@ T* stack_mem_alloc(stack_mem_t stack, size_t count, size_t align = 0)
     return (T*)stack_mem_alloc(stack, count*sizeof(T), align);
 }
 
-#define STATIC_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
-
-namespace ut
+namespace core
 {
     void init();
     void fini();
@@ -296,5 +307,4 @@ namespace ut
         assert(ring_buffer_used(rb) > 0);
         ++rb.tail;
     }
-
 };

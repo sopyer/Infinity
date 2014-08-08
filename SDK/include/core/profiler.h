@@ -49,6 +49,4 @@ struct ProfilerCPUAutoTimeslice
     ~ProfilerCPUAutoTimeslice()                 { profilerAddCPUEvent( id, PROF_EVENT_PHASE_END ); }
 };
 
-#       define PROFILER_CPU_TIMESLICE(name) ProfilerCPUAutoTimeslice __PROFILER_AUTO_TS_VAR_##__LINE__(name)
-
 #   endif

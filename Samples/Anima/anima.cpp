@@ -115,7 +115,7 @@ namespace app
         static const float maxTimeStep = 0.03333f;
 
         cpu_timer_start(&cpuTimer);
-        Model::update(ut::min(dt, maxTimeStep), &anim, &skel, &pose);
+        Model::update(core::min(dt, maxTimeStep), &anim, &skel, &pose);
         cpu_timer_stop(&cpuTimer);
 
         ui::processCameraInput(&camera, dt);

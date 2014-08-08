@@ -66,7 +66,7 @@ namespace fwk
 
         importOpenGL();
 
-        ut::init();
+        core::init();
         gfx::init(1280, 720);
         ui::init(1280, 720);
         app::init();
@@ -143,7 +143,7 @@ namespace fwk
         app::fini();
         ui::fini();
         gfx::fini();
-        ut::fini();
+        core::fini();
 
         SDL_GL_DeleteContext(context);
         SDL_DestroyWindow(window);

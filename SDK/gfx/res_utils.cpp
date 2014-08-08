@@ -8,14 +8,14 @@ namespace res
 {
     GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t headerCount, const char** headers)
     {
-        memory_t source = MEMORY_T_INITIALIZER;
+        memory_t source;
 
         if (mem_file(&source, filePath))
         {
             GLint lens   [MAX_DEFINES_TO_PROCESS+1];
             char* sources[MAX_DEFINES_TO_PROCESS+1];
 
-            size_t sourceCount = ut::min<size_t>(headerCount, MAX_DEFINES_TO_PROCESS);
+            size_t sourceCount = core::min<size_t>(headerCount, MAX_DEFINES_TO_PROCESS);
             memcpy(sources, headers, sizeof(char*)*sourceCount);
             for (size_t i=0; i<sourceCount; ++i)
                 lens[i] = strlen(sources[i]);
@@ -208,7 +208,7 @@ namespace res
 
     GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
     {
-        memory_t texData = MEMORY_T_INITIALIZER;
+        memory_t texData;
 
         GLuint texture;
         glGenTextures(1, &texture);

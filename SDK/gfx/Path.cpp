@@ -110,18 +110,18 @@ namespace vg
 
         for(size_t i = 0; i < path->numVertices; ++i)
         {
-            path->xmin = ut::min(path->xmin, path->vertices[i].x);
-            path->ymin = ut::min(path->ymin, path->vertices[i].y);
-            path->xmax = ut::max(path->xmax, path->vertices[i].x);
-            path->ymax = ut::max(path->ymax, path->vertices[i].y);
+            path->xmin = core::min(path->xmin, path->vertices[i].x);
+            path->ymin = core::min(path->ymin, path->vertices[i].y);
+            path->xmax = core::max(path->xmax, path->vertices[i].x);
+            path->ymax = core::max(path->ymax, path->vertices[i].y);
         }
 
         for(size_t i = 0; i < path->numB3Vertices; ++i)
         {
-            path->xmin = ut::min(path->xmin, path->b3vertices[i].p.x);
-            path->ymin = ut::min(path->ymin, path->b3vertices[i].p.y);
-            path->xmax = ut::max(path->xmax, path->b3vertices[i].p.x);
-            path->ymax = ut::max(path->ymax, path->b3vertices[i].p.y);
+            path->xmin = core::min(path->xmin, path->b3vertices[i].p.x);
+            path->ymin = core::min(path->ymin, path->b3vertices[i].p.y);
+            path->xmax = core::max(path->xmax, path->b3vertices[i].p.x);
+            path->ymax = core::max(path->ymax, path->b3vertices[i].p.y);
         }
 
         return path;
@@ -179,7 +179,7 @@ namespace vg
     {
         float s;
 
-        s = ut::max(ml::abs(x), ml::abs(y));
+        s = core::max(ml::abs(x), ml::abs(y));
         s = s > ML_C_EPS7 ? s : 1.0f;
 
         x /= s; y /= s;
@@ -218,7 +218,7 @@ namespace vg
         float d1 = vi_get_y(vd);
         float d2 = vi_get_z(vd);
 
-        float s = ut::max(ml::abs(d0), ut::max(ml::abs(d1), ml::abs(d2)));
+        float s = core::max(ml::abs(d0), core::max(ml::abs(d1), ml::abs(d2)));
         s = (s != 0.0f) ? s : 1.0f;
 
         d0 /= s; d1 /= s; d2 /= s;
@@ -368,7 +368,7 @@ namespace vg
 
         if (count>1 && subdPts[0]>subdPts[1])
         {
-            ut::swap(subdPts[0], subdPts[1]);
+            core::swap(subdPts[0], subdPts[1]);
         }
 
         ml::vec2 cp[4];
@@ -512,9 +512,9 @@ namespace vg
 
         geometry_t pathGeom = {
             0, 0, 0,
-            (uint16_t*)ut::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)ut::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (B3Vertex*)ut::thread_stack_alloc(sizeof(B3Vertex)*maxB3Vertices)
+            (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
+            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
+            (B3Vertex*)core::thread_stack_alloc(sizeof(B3Vertex)*maxB3Vertices)
         };
 
         ml::vec2  cp0 = {0.0f, 0.0f},
@@ -642,7 +642,7 @@ namespace vg
 
         Path path = geomToPath(&pathGeom);
 
-        ut::thread_stack_reset(pathGeom.indices);
+        core::thread_stack_reset(pathGeom.indices);
 
         return path;
     }

@@ -148,8 +148,8 @@ void CDLODTerrain::selectQuadsForDrawing(size_t level, float bx, float bz, float
 
     v128 vp = vi_set(viewPoint.x, viewPoint.z, 0.0f, 0.0f);
 
-    float sizeX = ut::min(patchSize, maxX-bx);
-    float sizeZ = ut::min(patchSize, maxZ-bz);
+    float sizeX = core::min(patchSize, maxX-bx);
+    float sizeZ = core::min(patchSize, maxZ-bz);
 
     float minX = bx;
     float minZ = bz;
@@ -253,8 +253,8 @@ void CDLODTerrain::drawTerrain()
 
     instData = (PatchData*)gfx::dynbufAllocVert(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
 
-    vertDistToTerrain = ut::max(viewPoint.y-maxY, minY-viewPoint.y);
-    vertDistToTerrain = ut::max(vertDistToTerrain, 0.0f);
+    vertDistToTerrain = core::max(viewPoint.y-maxY, minY-viewPoint.y);
+    vertDistToTerrain = core::max(vertDistToTerrain, 0.0f);
 
     maxLevel = 1;
     while (maxLevel<LODCount && vertDistToTerrain>LODRange[maxLevel])
@@ -275,7 +275,7 @@ void CDLODTerrain::drawTerrain()
     cpu_timer_start(&cpuRenderTimer);
     gfx::gpu_timer_start(&gpuTimer);
 
-    patchCount = ut::min(patchCount, maxPatchCount);
+    patchCount = core::min(patchCount, maxPatchCount);
     if (patchCount)
     {
         PROFILER_CPU_TIMESLICE("Render");
@@ -371,7 +371,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     {
         //To avoid cracks when diagonal is greater then minRange,
         float minRange = 2.0f*ml::sqrt(size2+size2);
-        range = ut::max(range, minRange);
+        range = core::max(range, minRange);
 
         LODRange[i]  = curRange;
         curRange    += range;
