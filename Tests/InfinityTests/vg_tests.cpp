@@ -1,8 +1,8 @@
 #include <sput.h>
 
-#include <Path.h>
+#include <gfx/Path.h>
 #include <glm/glm.h>
-#include <ml.h>
+#include <core/core.h>
 
 const float relaxedMaxDiff = 0.001f;
 const float relaxedRelDiff = 0.0001f;
@@ -68,7 +68,8 @@ void test_orientation_selection_bug()
     sput_fail_unless(fabs(s3) < stricterMaxDif, "Check hull point 3 explicit cubic function sign");
 }
 
-int main(int argc, char **argv) {
+int run_vg_tests()
+{
     sput_start_testing();
 
     sput_enter_suite("VG: cubic geometry generation tests");
