@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdint.h>
+#include <assert.h>
+
 /*
 ** Architecture-specific bit manipulation routines.
 **
@@ -131,3 +134,14 @@ inline int bit_fls(unsigned int word)
 }
 
 #endif
+
+inline bool bit_is_pow2(uint32_t x)
+{
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
+
+inline uint32_t bit_align_up(uint32_t size, uint32_t align)
+{
+    assert(bit_is_pow2(align));
+    return (size + (align - 1)) & ~(align - 1);
+}
