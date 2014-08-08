@@ -47,6 +47,20 @@ void test_alloc_free()
     sput_fail_unless(etlsf_block_size(arena, id3) == 3 * 1024, "Allocation size test");
     sput_fail_unless(etlsf_block_size(arena, id4) == 5 * 1024, "Allocation size test");
     sput_fail_unless(etlsf_block_size(arena, id5) == 4 * 1024, "Allocation size test");
+
+    etlsf_free(arena, id2);
+    etlsf_free(arena, id4);
+
+    id2 = etlsf_alloc(arena, 4*1024+512);
+    id4 = etlsf_alloc(arena, 256);
+
+    sput_fail_unless(id2, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id2) == 11*1024, "Single allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id2) == 4*1024+512, "Single allocation size test");
+
+    sput_fail_unless(id4, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id4) == 11*1024 + 4*1024+512, "Single allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id4) == 256, "Single allocation size test");
 }
 
 int run_etlsf_tests()

@@ -264,7 +264,7 @@ static void block_set_offset(etlsf_arena_t arena, uint16_t id, uint32_t offset)
 static void block_set_size(etlsf_arena_t arena, uint16_t id, uint32_t size)
 {
     assert(id < arena->size);
-    assert(size > BLOCK_SIZE_MIN);
+    assert(size >= BLOCK_SIZE_MIN);
     uint32_t oldsize = arena->storage[id].size;
     arena->storage[id].size = size | (oldsize & BLOCK_FREE_BIT);
 }
