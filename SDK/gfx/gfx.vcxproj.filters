@@ -65,6 +65,9 @@
     <ClCompile Include="DefaultFontData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="etlsf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Paint.h">
@@ -146,6 +149,9 @@
       <Filter>Public Headers</Filter>
     </ClInclude>
     <ClInclude Include="DefaultFontData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="etlsf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
