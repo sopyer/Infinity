@@ -18,7 +18,6 @@ void cpu_timer_init(cpu_timer_t* timer)
 
 void cpu_timer_start(cpu_timer_t* timer)
 {
-    timer->measuredTime = 0;
     timer->startTime = SDL_GetPerformanceCounter();
 }
 

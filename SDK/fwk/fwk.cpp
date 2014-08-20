@@ -25,8 +25,8 @@ namespace fwk
     {
         PHYSFS_init(argv0);
 
-        PHYSFS_mount("AppData"        , 0, 1);
-        PHYSFS_mount("../AppData"    , 0, 1);
+        PHYSFS_mount("AppData",       0, 1);
+        PHYSFS_mount("../AppData",    0, 1);
         PHYSFS_mount("../../AppData", 0, 1);
 
         if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)<0)
