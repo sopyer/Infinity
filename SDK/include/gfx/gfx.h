@@ -134,6 +134,7 @@ namespace gfx
 
     void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
     void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
+    void drawXZGrid(float x0, float z0, float x1, float z1, int numQuads, v128 color);
 
     struct gpu_timer_t
     {

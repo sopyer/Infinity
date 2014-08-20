@@ -41,6 +41,7 @@ namespace app
         v128 m[4];
         camera.getViewMatrix(m);
 
+        memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
         glLoadMatrixf((float*)m);
 
         glDisable(GL_CULL_FACE);
@@ -59,6 +60,8 @@ namespace app
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
+
+        gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 0.0f, 1.0f));
 
         ui::displayStats(
             10.0f, 10.0f, 300.0f, 70.0f,

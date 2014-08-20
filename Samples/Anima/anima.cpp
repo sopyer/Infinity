@@ -65,39 +65,16 @@ namespace app
     {
         glClearDepth(1.0);
 
-        glFrontFace(GL_CCW);
-        glCullFace (GL_BACK);
-        glEnable   (GL_CULL_FACE);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadMatrixf((float*)proj);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
+        //!!!!!TODO: fix culling
+        //glFrontFace(GL_CW);
+        //glCullFace (GL_BACK);
+        //glEnable   (GL_CULL_FACE);
 
         v128 m[4];
         camera.getViewMatrix(m);
-
-        glLoadMatrixf((float*)m);
-
-        glDisable(GL_CULL_FACE);
-
-        glUseProgram(0);
-        glBegin(GL_TRIANGLES);
-        glColor3f(1, 0, 0);
-        glVertex3f(-3, -1, -10);
-        glColor3f(0, 1, 0);
-        glVertex3f( 3, -1, -10);
-        glColor3f(0, 0, 1);
-        glVertex3f( 0, 4, -10);
-        glEnd();
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
         memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
+
+        gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 1.0f, 1.0f));
 
         gpu_timer_start(&gpuTimer);
         Model::render(&model, &skel, &pose);

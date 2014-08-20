@@ -298,6 +298,7 @@ namespace gfx
         v128  uProj;
     };
 
+    //!!TODO: fix near plane clipping bug
     void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size)
     {
         GLuint offsetGlobal;
@@ -346,6 +347,28 @@ namespace gfx
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
 
         glUseProgram(0);
+    }
+
+    void drawXZGrid(float x0, float z0, float x1, float z1, int numQuads, v128 color)
+    {
+        float stepX = (x1-x0) / numQuads;
+        float stepZ = (z1-z0) / numQuads;
+        int numLines = (numQuads + 1);
+
+        GLuint  offset;
+        GLuint  size;
+        v128*   v;
+
+        size = sizeof(gfx::line_t) * 2 * numLines;
+        v    = (v128*)gfx::dynbufAllocMem(size, gfx::caps.ssboAlignment, &offset);
+        for ( int i = 0; i < numLines; ++i )
+        {
+            *v++ = vi_set(x0, 0.0f, z0 + i * stepZ, 1.0f);
+            *v++ = vi_set(x1, 0.0f, z0 + i * stepZ, 1.0f);
+            *v++ = vi_set(x0 + i * stepX, 0.0f, z0, 1.0f);
+            *v++ = vi_set(x0 + i * stepX, 0.0f, z1, 1.0f);
+        }
+        gfx::drawLines(color, 2 * numLines, gfx::dynBuffer, offset, size);
     }
 
     auto_vars_t autoVars;
