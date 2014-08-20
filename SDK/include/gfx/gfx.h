@@ -17,6 +17,15 @@ namespace vf
         static GLuint vao;
     };
 
+    struct static_geom_t
+    {
+        float   px, py, pz;
+        float   nx, ny, xz;
+        float   u, v;
+
+        static GLuint vao;
+    };
+
     struct empty_geom_t
     {
         static GLuint vao;
@@ -43,10 +52,10 @@ namespace gfx
         GLuint     stream;
         GLuint     offset;
         GLuint     attrib;
-        GLenum     type       : 16;
-        GLint      size       : 4;
-        GLboolean  integer    : 1;
-        GLboolean  normalized : 1;
+        GLuint     type       : 16;
+        GLuint     size       : 4;
+        GLuint     integer    : 1;
+        GLuint     normalized : 1;
     };
 
     extern gl_caps_t caps;

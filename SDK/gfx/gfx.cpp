@@ -4,6 +4,7 @@
 namespace vf
 {
     GLuint skinned_geom_t::vao;
+    GLuint static_geom_t::vao;
     GLuint empty_geom_t::vao;
 
     static const gfx::vertex_element_t descSkinnedGeom[5] = 
@@ -13,6 +14,13 @@ namespace vf
         {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
         {0, offsetof(vf::skinned_geom_t, b),  3, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE},
         {0, offsetof(vf::skinned_geom_t, w),  4, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
+    };
+
+    static const gfx::vertex_element_t descStaticGeom[3] = 
+    {
+        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
+        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
     };
 }
 
@@ -98,20 +106,21 @@ namespace gfx
 
     void init(int w, int h)
     {
-        width  = w;
-        height = h;
-
-        prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
-        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
-
-        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
-        glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
-
         glDebugMessageCallback(debugCallback, NULL);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
+        width  = w;
+        height = h;
+
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
+        glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
+
+        prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
+        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
+
         vf::skinned_geom_t::vao = createVAO(ARRAY_SIZE(vf::descSkinnedGeom), vf::descSkinnedGeom, 0, NULL);
+        vf::static_geom_t::vao  = createVAO(ARRAY_SIZE(vf::descStaticGeom),  vf::descStaticGeom,  0, NULL);
 
         glGenVertexArrays(1, &vf::empty_geom_t::vao);
 
@@ -128,6 +137,10 @@ namespace gfx
     void fini()
     {
         vg::fini();
+
+        glDeleteVertexArrays(1, &vf::skinned_geom_t::vao);
+        glDeleteVertexArrays(1, &vf::static_geom_t::vao);
+        glDeleteVertexArrays(1, &vf::empty_geom_t::vao);
 
         glDeleteProgram(prgLine);
 
