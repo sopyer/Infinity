@@ -8,9 +8,12 @@ namespace res
 {
     GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t headerCount, const char** headers)
     {
+        char path[1024] = "shaders/";
         memory_t source;
 
-        if (mem_file(&source, filePath))
+        strcat(path, filePath);
+
+        if (mem_file(&source, path))
         {
             GLint lens   [MAX_DEFINES_TO_PROCESS+1];
             char* sources[MAX_DEFINES_TO_PROCESS+1];
@@ -211,22 +214,20 @@ namespace res
         memory_t texData;
 
         GLuint texture;
-        glGenTextures(1, &texture);
 
         if (mem_file(&texData, name))
         {
-            int imgWidth, imgHeight, imgChannels;
-            unsigned char*  pixelsPtr = SOIL_load_image_from_memory(texData.buffer, texData.size,
-                &imgWidth, &imgHeight, &imgChannels, SOIL_LOAD_RGBA);
+            int imgWidth, imgHeight;
 
+            texture = SOIL_load_OGL_texture_from_memory(texData.buffer, texData.size, 0, 0, SOIL_FLAG_DDS_LOAD_DIRECT);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
-            glTextureImage2DEXT(texture, GL_TEXTURE_2D, 0, GL_RGBA8, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelsPtr);
-
-            SOIL_free_image_data(pixelsPtr);
 
             mem_free(&texData);
+
+            glGetTextureLevelParameterivEXT(texture, GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &imgWidth);
+            glGetTextureLevelParameterivEXT(texture, GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgHeight);
 
             if (width)  *width  = imgWidth;
             if (height) *height = imgHeight;
