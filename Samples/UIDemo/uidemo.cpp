@@ -1099,7 +1099,7 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
         _snprintf(file, 128, "uidemo/images/image%d.jpg", i+1);
         if (mem_file(&fileData, file))
         {
-            data->images[i] = nvgCreateImageMem(vg::ctx, 0, fileData.buffer, fileData.allocated);
+            data->images[i] = nvgCreateImageMem(vg::ctx, 0, fileData.buffer, fileData.size);
             mem_free(&fileData);
         }
         if (data->images[i] == 0)
@@ -1110,7 +1110,7 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
 
     if (mem_file(&f1, "uidemo/entypo.ttf"))
     {
-        data->fontIcons = nvgCreateFontMem(vg::ctx, "icons", f1.buffer, f1.allocated, 0);
+        data->fontIcons = nvgCreateFontMem(vg::ctx, "icons", f1.buffer, f1.size, 0);
     }
     if (data->fontIcons == -1)
     {
@@ -1119,7 +1119,7 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
     if (mem_file(&f2, "uidemo/Roboto-Regular.ttf"))
     {
         //fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
-        data->fontNormal = nvgCreateFontMem(vg::ctx, "sans", f2.buffer, f2.allocated, 0);
+        data->fontNormal = nvgCreateFontMem(vg::ctx, "sans", f2.buffer, f2.size, 0);
     }
     if (data->fontNormal == -1)
     {
@@ -1128,7 +1128,7 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
     if (mem_file(&f3, "uidemo/Roboto-Bold.ttf"))
     {
         //fontBold = nvgAddFont(vg, "sans-bold", "../example/FiraSans-Bold.ttf");
-        data->fontBold = nvgCreateFontMem(vg::ctx, "sans-bold", f3.buffer, f3.allocated, 0);
+        data->fontBold = nvgCreateFontMem(vg::ctx, "sans-bold", f3.buffer, f3.size, 0);
     }
     if (data->fontBold == -1)
     {

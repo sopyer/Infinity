@@ -497,7 +497,7 @@ cleanup:
         if (mem_file(&inText, path))
         {
             mem_area(&bjson, 10*1024);
-            int result = mjson_parse((const char*)inText.buffer, inText.allocated, bjson.buffer, bjson.size, &root);
+            int result = mjson_parse((const char*)inText.buffer, inText.size, bjson.buffer, bjson.size, &root);
             
             assert(result && mjson_get_type(root) == MJSON_ID_DICT32);
 

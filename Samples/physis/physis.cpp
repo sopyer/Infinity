@@ -217,7 +217,7 @@ namespace app
     {
         ppInit();
  
-        texSource  = res::createTexture2D("coin.dds", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
+        texSource  = res::createTexture2D("coin.dds", TRUE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, TRUE, &imgWidth, &imgHeight);
 
         assert(rtDesc[14].id == TEX_LUMINANCE);
         for (size_t i = 14; i < ARRAY_SIZE(rtDesc); ++i)

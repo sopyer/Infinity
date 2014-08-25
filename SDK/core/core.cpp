@@ -38,7 +38,7 @@ bool mem_file(memory_t* mem, const char* name)
     assert(PHYSFS_fileLength(src)<SIZE_MAX);
 
     mem->size      = (size_t)PHYSFS_fileLength(src);
-    mem->allocated = mem->size;
+    mem->allocated = 0;
     mem->buffer    = (uint8_t*)malloc(mem->size+1);
 
     PHYSFS_read(src, mem->buffer, mem->size, 1);
