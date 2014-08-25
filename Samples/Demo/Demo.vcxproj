@@ -83,6 +83,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Demo.cpp" />
+    <ClCompile Include="tiny_obj_loader.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="tiny_obj_loader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
