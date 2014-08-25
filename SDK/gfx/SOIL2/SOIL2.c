@@ -152,10 +152,23 @@ int query_tex_rectangle_capability( void );
 /*	for using DXT compression	*/
 static int has_DXT_capability = SOIL_CAPABILITY_UNKNOWN;
 int query_DXT_capability( void );
-#define SOIL_RGB_S3TC_DXT1		0x83F0
-#define SOIL_RGBA_S3TC_DXT1		0x83F1
-#define SOIL_RGBA_S3TC_DXT3		0x83F2
-#define SOIL_RGBA_S3TC_DXT5		0x83F3
+#define SOIL_RGB_S3TC_DXT1				0x83F0
+#define SOIL_RGBA_S3TC_DXT1				0x83F1
+#define SOIL_RGBA_S3TC_DXT3				0x83F2
+#define SOIL_RGBA_S3TC_DXT5				0x83F3
+#define SOIL_SRGB_S3TC_DXT1				0x8C4C
+#define SOIL_SRGB_ALPHA_S3TC_DXT1		0x8C4D
+#define SOIL_SRGB_ALPHA_S3TC_DXT3		0x8C4E
+#define SOIL_SRGB_ALPHA_S3TC_DXT5		0x8C4F
+#define SOIL_SRGB						0x8C40
+#define SOIL_SRGB8						0x8C41
+#define SOIL_SRGB_ALPHA					0x8C42
+#define SOIL_SRGB8_ALPHA8				0x8C43
+#define SOIL_SLUMINANCE_ALPHA			0x8C44
+#define SOIL_SLUMINANCE8_ALPHA8			0x8C45
+#define SOIL_SLUMINANCE					0x8C46
+#define SOIL_SLUMINANCE8				0x8C47
+
 typedef void (APIENTRY * P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC soilGlCompressedTexImage2D = NULL;
 
@@ -1612,18 +1625,21 @@ unsigned int
 		{
 		case 1:
 			original_texture_format = GL_LUMINANCE;
+			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SLUMINANCE : GL_LUMINANCE;
 			break;
 		case 2:
 			original_texture_format = GL_LUMINANCE_ALPHA;
+			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SLUMINANCE_ALPHA : GL_LUMINANCE_ALPHA;
 			break;
 		case 3:
 			original_texture_format = GL_RGB;
+			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB : GL_RGB;
 			break;
 		case 4:
 			original_texture_format = GL_RGBA;
+			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA : GL_RGBA;
 			break;
 		}
-		internal_texture_format = original_texture_format;
 		/*	does the user want me to, and can I, save as DXT?	*/
 		if( flags & SOIL_FLAG_COMPRESS_TO_DXT )
 		{
@@ -1634,11 +1650,11 @@ unsigned int
 				if( (channels & 1) == 1 )
 				{
 					/*	1 or 3 channels = DXT1	*/
-					internal_texture_format = SOIL_RGB_S3TC_DXT1;
+                    internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_S3TC_DXT1 : SOIL_RGB_S3TC_DXT1;
 				} else
 				{
 					/*	2 or 4 channels = DXT5	*/
-					internal_texture_format = SOIL_RGBA_S3TC_DXT5;
+                    internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT5 : SOIL_RGBA_S3TC_DXT5;
 				}
 			}
 		}
@@ -1944,6 +1960,7 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 	unsigned int tex_ID = 0;
 	/*	file reading variables	*/
 	unsigned int S3TC_type = 0;
+	unsigned int S3TC_type_internal = 0;
 	unsigned char *DDS_data;
 	unsigned int DDS_main_size;
 	unsigned int DDS_full_size;
@@ -2006,10 +2023,12 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 	if( uncompressed )
 	{
 		S3TC_type = GL_RGB;
+		S3TC_type_internal = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB : GL_RGB;
 		block_size = 3;
 		if( header.sPixelFormat.dwFlags & DDPF_ALPHAPIXELS )
 		{
 			S3TC_type = GL_RGBA;
+			S3TC_type_internal = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA : GL_RGB;
 			block_size = 4;
 		}
 		DDS_main_size = width * height * block_size;
@@ -2027,14 +2046,17 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 		{
 		case 1:
 			S3TC_type = SOIL_RGBA_S3TC_DXT1;
+			S3TC_type_internal = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT1 : SOIL_RGBA_S3TC_DXT1;
 			block_size = 8;
 			break;
 		case 3:
 			S3TC_type = SOIL_RGBA_S3TC_DXT3;
+			S3TC_type_internal = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT3 : SOIL_RGBA_S3TC_DXT3;
 			block_size = 16;
 			break;
 		case 5:
 			S3TC_type = SOIL_RGBA_S3TC_DXT5;
+			S3TC_type_internal = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SRGB_ALPHA_S3TC_DXT5 : SOIL_RGBA_S3TC_DXT5;
 			block_size = 16;
 			break;
 		}
@@ -2136,13 +2158,13 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 				}
 				glTexImage2D(
 					cf_target, 0,
-					S3TC_type, width, height, 0,
+					S3TC_type_internal, width, height, 0,
 					S3TC_type, GL_UNSIGNED_BYTE, DDS_data );
 			} else
 			{
 				soilGlCompressedTexImage2D(
 					cf_target, 0,
-					S3TC_type, width, height, 0,
+					S3TC_type_internal, width, height, 0,
 					DDS_main_size, DDS_data );
 			}
 			/*	upload the mipmaps, if we have them	*/
@@ -2165,14 +2187,14 @@ unsigned int SOIL_direct_load_DDS_from_memory(
 					mip_size = w*h*block_size;
 					glTexImage2D(
 						cf_target, i,
-						S3TC_type, w, h, 0,
+						S3TC_type_internal, w, h, 0,
 						S3TC_type, GL_UNSIGNED_BYTE, &DDS_data[byte_offset] );
 				} else
 				{
 					mip_size = ((w+3)/4)*((h+3)/4)*block_size;
 					soilGlCompressedTexImage2D(
 						cf_target, i,
-						S3TC_type, w, h, 0,
+						S3TC_type_internal, w, h, 0,
 						mip_size, &DDS_data[byte_offset] );
 				}
 				/*	and move to the next mipmap	*/

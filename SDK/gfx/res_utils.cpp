@@ -209,7 +209,7 @@ namespace res
         }
     }
 
-    GLuint createTexture2D(const char* name, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
+    GLuint createTexture2D(const char* name, GLint forceSRGB, GLint minFilter, GLint magFilter, GLint genMipmap, GLint* width, GLint* height)
     {
         memory_t texData;
 
@@ -219,7 +219,7 @@ namespace res
         {
             int imgWidth, imgHeight;
 
-            texture = SOIL_load_OGL_texture_from_memory(texData.buffer, texData.size, 0, 0, SOIL_FLAG_DDS_LOAD_DIRECT);
+            texture = SOIL_load_OGL_texture_from_memory(texData.buffer, texData.size, 0, 0, SOIL_FLAG_DDS_LOAD_DIRECT | (forceSRGB ? SOIL_FLAG_FORCE_SRGB : 0));
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_GENERATE_MIPMAP, genMipmap);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
@@ -233,6 +233,10 @@ namespace res
             if (height) *height = imgHeight;
 
             return texture;
+        }
+        else
+        {
+            fprintf(stderr, "Failed to load %s\n", name);
         }
 
         return 0;
