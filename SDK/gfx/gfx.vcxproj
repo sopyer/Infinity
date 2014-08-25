@@ -105,6 +105,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\gfx\gfx.h" />
     <ClInclude Include="..\include\gfx\vg.h" />
+    <ClInclude Include="..\include\opengl.h" />
     <ClInclude Include="DefaultFontData.h" />
     <ClInclude Include="etlsf.h" />
     <ClInclude Include="gfx_res.h" />

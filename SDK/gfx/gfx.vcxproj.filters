@@ -154,5 +154,8 @@
     <ClInclude Include="etlsf.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\opengl.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
