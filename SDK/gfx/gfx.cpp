@@ -545,6 +545,25 @@ namespace gfx
         }
     }
 
+    struct std_transforms_t
+    {
+        v128 uMV[4];
+        v128 uProj;
+    };
+
+    void setStdTransforms(GLuint index)
+    {
+        GLuint     offset;
+        GLsizeiptr size = sizeof(std_transforms_t);
+
+        std_transforms_t* transforms = (std_transforms_t*)gfx::dynbufAllocMem(size, gfx::caps.uboAlignment, &offset);
+
+        memcpy(transforms->uMV, &autoVars.matMV, 4*sizeof(v128));
+        transforms->uProj = vi_loadu_v4(&autoVars.projParams);
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, index, dynBuffer, offset, size);
+    }
+
     void gpu_timer_init(gpu_timer_t* timer)
     {
         glGenQueries(NUM_FRAMES_DELAY, timer->queries);

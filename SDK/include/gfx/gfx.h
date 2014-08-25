@@ -90,6 +90,8 @@ namespace gfx
 
     extern auto_vars_t autoVars;
 
+    void setStdTransforms(GLuint index = 0);
+
     ubo_desc_t createUBODesc (GLuint prg, const char* name);
     void       destroyUBODesc(ubo_desc_t desc);
     void       updateUBO     (ubo_desc_t desc, void* mem, size_t size);
@@ -163,6 +165,7 @@ namespace res
     void    getUniforms(GLuint program, GLsizei uniformCount, const char** uniformNames, GLint* uniforms);
 
     GLuint createTexture2D(const char* name,
+        GLint  forceSRGB=false,
         GLint  minFilter=GL_LINEAR_MIPMAP_LINEAR,
         GLint  magFilter=GL_LINEAR,
         GLint  genMipmap=GL_TRUE,
