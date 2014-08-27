@@ -34,6 +34,20 @@
 
 char* cpToUTF8(int cp, char* str);
 
+template<typename T, typename E>
+size_t calcBlobSize1(size_t numElements)
+{
+    assert(numElements>=1);
+    return sizeof(T) + (numElements - 1) * sizeof(E);
+}
+
+template<typename T, typename E>
+size_t calcBlobSize0(size_t numElements)
+{
+    assert(numElements>=0);
+    return sizeof(T) + numElements * sizeof(E);
+}
+
 struct point_t
 {
     float x, y;

@@ -418,11 +418,6 @@ namespace gfx
         } mappings[1];
     };
 
-    static size_t ubufCalcSize(size_t numMappings)
-    {
-        return sizeof(ubo_desc_data_t) + (numMappings - 1) * sizeof(ubo_desc_data_t::mapping_t);
-    }
-
     ubo_desc_t createUBODesc(GLuint prg, const char* name)
     {
         stack_mem_t stalloc = core::get_thread_data_stack();
@@ -462,7 +457,7 @@ namespace gfx
         GLint* uniIndices = stack_mem_alloc<GLint>(stalloc, blockProps.numVars);
         glGetProgramResourceiv(prg, GL_UNIFORM_BLOCK, block, 1, reqBlockUnis, blockProps.numVars, NULL, uniIndices);
 
-        ubo_desc_data_t* descProto = (ubo_desc_data_t*)stack_mem_alloc(stalloc, ubufCalcSize(blockProps.numVars));
+        ubo_desc_data_t* descProto = (ubo_desc_data_t*)stack_mem_alloc(stalloc, calcBlobSize1<ubo_desc_data_t, ubo_desc_data_t::mapping_t>(blockProps.numVars));
 
         descProto->numVars = 0;
         descProto->bufferSize = blockProps.bufferSize;
@@ -490,7 +485,7 @@ namespace gfx
             stack_mem_reset(stalloc, uname);
         }
 
-        size_t descSize = ubufCalcSize(descProto->numVars);
+        size_t descSize = calcBlobSize1<ubo_desc_data_t, ubo_desc_data_t::mapping_t>(descProto->numVars);
 
         ubo_desc_data_t* desc = (ubo_desc_data_t*)malloc(descSize);
 
