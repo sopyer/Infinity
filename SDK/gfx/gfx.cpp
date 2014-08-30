@@ -373,17 +373,9 @@ namespace gfx
 
     auto_vars_t autoVars;
 
-    struct auto_var_desc_t
-    {
-        const char* name;
-        GLenum      type;
-        GLint       arraySize;
-        GLint       offset;
-    };
-
     static const size_t AUTO_VARS_COUNT = 4;
 
-    auto_var_desc_t autoVarDesc[AUTO_VARS_COUNT] = {
+    var_desc_t autoVarDesc[AUTO_VARS_COUNT] = {
         { "au_Proj",   GL_FLOAT_VEC4,  1, offsetof(auto_vars_t, projParams) },
         { "au_MV",     GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMV)      },
         { "au_MVP",    GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMVP)     },
@@ -421,10 +413,6 @@ namespace gfx
     ubo_desc_t createUBODesc(GLuint prg, const char* name)
     {
         stack_mem_t stalloc = core::get_thread_data_stack();
-
-        GLint numBlocks = 0;
-
-        glGetProgramInterfaceiv(prg, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &numBlocks );
 
         struct block_props_t
         {
@@ -496,6 +484,69 @@ namespace gfx
         return desc;
     }
 
+    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLuint numVars, var_desc_t* desc)
+    {
+        stack_mem_t stalloc = core::get_thread_data_stack();
+
+        struct block_props_t
+        {
+            GLint numVars;
+            GLint bufferSize;
+        };
+        static const GLenum reqBlockProps[2] = {GL_NUM_ACTIVE_VARIABLES, GL_BUFFER_DATA_SIZE};
+
+        static const GLenum reqBlockUnis[1]  = {GL_ACTIVE_VARIABLES};
+
+        GLenum type    = ubuffer ? GL_UNIFORM_BLOCK : GL_SHADER_STORAGE_BLOCK;
+        GLenum vartype = ubuffer ? GL_UNIFORM : GL_BUFFER_VARIABLE;
+        struct uni_props_t
+        {
+            GLint nameLen;
+            GLint type;
+            GLint arraySize;
+            GLint arrayStride;
+            GLint offset;
+        };
+        static const GLenum reqUniProps[5]   = {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE, GL_ARRAY_STRIDE, GL_OFFSET};
+
+        GLuint block = glGetProgramResourceIndex(prg, type, name);
+
+        if (block == GL_INVALID_INDEX) return MATCH_INVALID_BLOCK;
+
+        block_props_t blockProps;
+        glGetProgramResourceiv(prg, type, block, 2, reqBlockProps, 2, NULL, (GLint*)&blockProps);
+
+        if (blockProps.numVars != numVars) return MATCH_COUNT_MISMATCH;
+
+        GLint* uniIndices = stack_mem_alloc<GLint>(stalloc, blockProps.numVars);
+        glGetProgramResourceiv(prg, type, block, 1, reqBlockUnis, blockProps.numVars, NULL, uniIndices);
+
+        for(int uni = 0; uni < blockProps.numVars; ++uni)
+        {
+            uni_props_t uniProps;
+
+            glGetProgramResourceiv(prg, vartype, uniIndices[uni], 5, reqUniProps, 5, NULL, (GLint*)&uniProps);
+
+            char* uname = stack_mem_alloc<char>(stalloc, uniProps.nameLen);
+            glGetProgramResourceName(prg, vartype, uniIndices[uni], uniProps.nameLen, NULL, uname);
+
+            if (desc[uni].type   != uniProps.type)   return MATCH_VAR_N_DESC_MISMATCH+uni;
+            if (desc[uni].offset != uniProps.offset) return MATCH_VAR_N_DESC_MISMATCH+uni;
+            if (uniProps.arraySize > 1 && desc[uni].arraySize != uniProps.arraySize) return MATCH_VAR_N_DESC_MISMATCH+uni;
+
+            if (desc[uni].name && strncmp(desc[uni].name, uname, uniProps.arraySize>1 ? uniProps.nameLen-3 : uniProps.nameLen) != 0)
+            {
+                return MATCH_VAR_N_DESC_MISMATCH+uni;
+            }
+
+            stack_mem_reset(stalloc, uname);
+        }
+
+        stack_mem_reset(stalloc, uniIndices);
+
+        return MATCH_SUCCESS;
+    }
+
     void destroyUBODesc(ubo_desc_t desc)
     {
         free(desc);
@@ -531,7 +582,7 @@ namespace gfx
         for (GLint vi = 0; vi < desc->numVars; ++vi)
         {
             ubo_desc_data_t::mapping_t& m   = desc->mappings[vi];
-            auto_var_desc_t&            var = autoVarDesc[m.index];
+            var_desc_t&                 var = autoVarDesc[m.index];
             size_t                      sz  = gl_type_size(var.type);
             for (GLint i = 0; i < var.arraySize; ++i)
             {

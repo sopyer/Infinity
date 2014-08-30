@@ -1,4 +1,4 @@
-#version 330
+#version 440
 
 #define UNI_STD_TRANSFORMS  0
 
@@ -20,10 +20,11 @@ out vec2 vTexCoord0;
 
 void main()
 {
-    vec4 viewPos = uMV * vec4(aVertex, 1.0);
+    vec4 viewP = uMV * vec4(aVertex, 1.0);
+    vec4 viewN = uMV * vec4(aNormal, 0.0);
 
-    gl_Position = vec4(viewPos.xy * uProj.xy, uProj.z*viewPos.z+uProj.w, -viewPos.z); //projection
-    vPosition   = aVertex;
-    vNormal     = aNormal;
+    gl_Position = vec4(viewP.xy * uProj.xy, uProj.z*viewP.z+uProj.w, -viewP.z); //projection
+    vPosition   = viewP.xyz;
+    vNormal     = viewN.xyz;
     vTexCoord0  = aUV0;
 }

@@ -36,7 +36,7 @@ namespace gfx
 {
     static const GLuint64   GL_TIMEOUT_INFINITE = ~0ull;
     static const GLuint     NUM_FRAMES_DELAY = 2; //2 * number of GPUs
-    static const GLsizeiptr DYNAMIC_BUFFER_FRAME_SIZE = 1 * (1<<20);
+    static const GLsizeiptr DYNAMIC_BUFFER_FRAME_SIZE = 10 * (1<<20);
 
     extern int width;
     extern int height;
@@ -57,6 +57,24 @@ namespace gfx
         GLuint     integer    : 1;
         GLuint     normalized : 1;
     };
+
+    struct var_desc_t
+    {
+        const char* name;
+        GLenum      type;
+        GLint       arraySize;
+        GLint       offset;
+    };
+
+    enum
+    {
+        MATCH_SUCCESS,
+        MATCH_INVALID_BLOCK,
+        MATCH_COUNT_MISMATCH,
+        MATCH_VAR_N_DESC_MISMATCH // Should be last
+    };
+
+    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLuint numVars, var_desc_t* desc);
 
     extern gl_caps_t caps;
 

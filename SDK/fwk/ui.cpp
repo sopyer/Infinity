@@ -325,7 +325,7 @@ namespace ui
         }
     }
 
-    void addPrograms(size_t count, GLuint* programs)
+    void debugAddPrograms(size_t count, GLuint* programs)
     {
         overlayShaderEdit->addPrograms(count, programs);
     }

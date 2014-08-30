@@ -26,6 +26,11 @@ namespace ml
         IT_INTERSECT
     };
 
+    struct vec2
+    {
+        float x, y;
+    };
+
     struct vec3
     {
         float x, y, z;
@@ -116,15 +121,15 @@ namespace ml
 
 namespace ml
 {
-    struct vec2
-    {
-        float x, y;
-    };
-
     inline vec2 make_vec2(float x, float y)
     {
         vec2 v = {x, y};
         return v;
+    }
+
+    inline vec2 operator-(const vec2& arg)
+    {
+        return make_vec2(-arg.x, -arg.y);
     }
 
     inline vec2 operator+(const vec2& arg0, const vec2& arg1)
@@ -150,6 +155,78 @@ namespace ml
     inline vec2 operator/(const vec2& arg0, const vec2& arg1)
     {
         return make_vec2(arg0.x/arg1.x, arg0.y/arg1.y);
+    }
+
+    inline vec3 make_vec3(float x, float y, float z)
+    {
+        vec3 v = {x, y, z};
+        return v;
+    }
+
+    inline vec3 operator-(const vec3& arg)
+    {
+        return make_vec3(-arg.x, -arg.y, -arg.z);
+    }
+
+    inline vec3 operator+(const vec3& arg0, const vec3& arg1)
+    {
+        return make_vec3(arg0.x+arg1.x, arg0.y+arg1.y, arg0.z+arg1.z);
+    }
+
+    inline vec3 operator-(const vec3& arg0, const vec3& arg1)
+    {
+        return make_vec3(arg0.x-arg1.x, arg0.y-arg1.y, arg0.z-arg1.z);
+    }
+
+    inline vec3 operator*(float arg0, const vec3& arg1)
+    {
+        return make_vec3(arg0*arg1.x, arg0*arg1.y, arg0*arg1.z);
+    }
+
+    inline vec3 operator*(const vec3& arg0, const vec3& arg1)
+    {
+        return make_vec3(arg0.x*arg1.x, arg0.y*arg1.y, arg0.z*arg1.z);
+    }
+
+    inline vec3 operator/(const vec3& arg0, const vec3& arg1)
+    {
+        return make_vec3(arg0.x/arg1.x, arg0.y/arg1.y, arg0.z/arg1.z);
+    }
+
+    inline vec4 make_vec4(float x, float y, float z, float w)
+    {
+        vec4 v = {x, y, z, w};
+        return v;
+    }
+
+    inline vec4 operator-(const vec4& arg)
+    {
+        return make_vec4(-arg.x, -arg.y, -arg.z, -arg.w);
+    }
+
+    inline vec4 operator+(const vec4& arg0, const vec4& arg1)
+    {
+        return make_vec4(arg0.x+arg1.x, arg0.y+arg1.y, arg0.z+arg1.z, arg0.w+arg1.w);
+    }
+
+    inline vec4 operator-(const vec4& arg0, const vec4& arg1)
+    {
+        return make_vec4(arg0.x-arg1.x, arg0.y-arg1.y, arg0.z-arg1.z, arg0.w-arg1.w);
+    }
+
+    inline vec4 operator*(float arg0, const vec4& arg1)
+    {
+        return make_vec4(arg0*arg1.x, arg0*arg1.y, arg0*arg1.z, arg0*arg1.w);
+    }
+
+    inline vec4 operator*(const vec4& arg0, const vec4& arg1)
+    {
+        return make_vec4(arg0.x*arg1.x, arg0.y*arg1.y, arg0.z*arg1.z, arg0.w*arg1.w);
+    }
+
+    inline vec4 operator/(const vec4& arg0, const vec4& arg1)
+    {
+        return make_vec4(arg0.x/arg1.x, arg0.y/arg1.y, arg0.z/arg1.z, arg0.w/arg1.w);
     }
 }
 

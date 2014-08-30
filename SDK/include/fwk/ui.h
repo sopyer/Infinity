@@ -48,6 +48,8 @@ namespace ui
 
     void     displayStats(float x, float y, float w, float h, float cpuTime, float gpuTime);
 
+    void     debugAddPrograms(size_t count, GLuint* programs);
+
     CheckBoxID checkBoxAdd(float x0, float y0, float x1, float y1, int checked);
     int        checkBoxIsChecked(CheckBoxID id);
 

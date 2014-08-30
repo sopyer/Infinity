@@ -8,6 +8,14 @@
 #define MAX_MESHES     2048
 #define MAX_MODELS      512
 #define MAX_MATERIALS    64
+#define MAX_LIGHTS     1024
+
+#define LIGHT_GRID_TILE_DIM_X 64
+#define LIGHT_GRID_TILE_DIM_Y 64
+
+#define LIGHT_GRID_MAX_DIM_X ((1920 + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X)
+#define LIGHT_GRID_MAX_DIM_Y ((1080 + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y)
+#define LIGHT_GRID_MAX_DIM_Z 256 
 
 struct mesh_header_v0
 {
@@ -59,8 +67,59 @@ struct model_t
     material_t*  materials[16];
 };
 
+struct light_t
+{
+  ml::vec3 pos;
+  float    range;
+  ml::vec3 color;
+  uint32_t pad;
+};
+
+#define DEBUG_SHADER
+
+struct gpu_clusters_t
+{
+    uint32_t uGridTileX;
+    uint32_t uGridTileY;
+    uint32_t uGridDimX;
+    uint32_t uGridDimY;
+    float uInvZNear;
+    float uLogScale;
+#ifdef DEBUG_SHADER
+    uint32_t uDebugMaxClusters;
+    uint32_t uDebugMaxLightList;
+    uint32_t uDebugMaxLights;
+    uint32_t pad[3];
+#else
+    uint32_t pad[2];
+#endif
+
+    struct 
+    {
+        uint32_t offset;
+        uint32_t count;
+        uint64_t pad;
+    } lightLists[1];
+};
+
+struct gpu_globals_t
+{
+    ml::vec4  uMatDiffuse;
+    ml::vec3  uMatSpecular;
+    uint32_t  pad1;
+    ml::vec3  uAmbientGlobal;
+    float     uR0;
+    float     uMatSpecPow;
+};
+
+STATIC_ASSERT(sizeof(light_t)==32);
+
 namespace app
 {
+    GLuint prgStatic;
+    GLuint prgStaticAT;
+    GLuint prgStaticDiffuse;
+
     SpectatorCamera     camera;
     v128                proj[4];
 
@@ -73,31 +132,97 @@ namespace app
     void destroyModels();
     void renderModels();
     void convertOBJ();
+    void generateLights(int num);
+    static void assignLightsToClustersCpu(v128 modelView[4], v128 proj[4]);
 
     mem::arena_t appArena;
 
+    size_t numViewLights;
+    light_t  lights[MAX_LIGHTS];
+    light_t  lightsView[MAX_LIGHTS];
+
+    ml::vec3 scene_min = {0.0f, 0.0f, 0.0f};
+    ml::vec3 scene_max = {0.0f, 0.0f, 0.0f};
+
+    GLuint lightDescSSBO = 0;
+
+    GLuint lightOffset,       lightSize;
+    GLuint lightListOffset,   lightListSize;
+    GLuint clusterListOffset, clusterListSize;
+
     void init()
     {
-        appArena = mem::create_arena(1024*1024, 0);
+        appArena = mem::create_arena(20*1024*1024, 0);
 
         //convertOBJ();
 
         loadMaterials();
         loadModels();
 
+        generateLights(MAX_LIGHTS);
+
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x  = camera.maxVelocity.y  = camera.maxVelocity.z  =  60;
 
+        gfx::var_desc_t gpu_globals_desc[] = 
+        {
+            {0, GL_FLOAT_VEC4, 1, offsetof(gpu_globals_t, uMatDiffuse)},
+            {0, GL_FLOAT_VEC3, 1, offsetof(gpu_globals_t, uMatSpecular)},
+            {0, GL_FLOAT_VEC3, 1, offsetof(gpu_globals_t, uAmbientGlobal)},
+            {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uR0)},
+            {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uMatSpecPow)},
+        };
+        assert(gfx::matchInterface(prgStatic, "Globals", true, ARRAY_SIZE(gpu_globals_desc), gpu_globals_desc)==gfx::MATCH_SUCCESS);
+
+
+        gfx::var_desc_t gpu_clusters_desc[] = 
+        {
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridTileX)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridTileY)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridDimX)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridDimY)},
+            {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uInvZNear)},
+            {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uLogScale)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, lightLists[0].offset)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, lightLists[0].count)},
+        };
+        //assert(gfx::matchInterface(prgStatic, "ClusterData", false, ARRAY_SIZE(gpu_clusters_desc), gpu_clusters_desc)==gfx::MATCH_SUCCESS);
+
+        gfx::var_desc_t gpu_lights_desc[] = 
+        {
+            {0, GL_FLOAT_VEC3, 1, offsetof(light_t, pos)},
+            {0, GL_FLOAT,      1, offsetof(light_t, range)},
+            {0, GL_FLOAT_VEC3, 1, offsetof(light_t, color)},
+        };
+        //assert(gfx::matchInterface(prgStatic, "Lights", false, ARRAY_SIZE(gpu_lights_desc), gpu_lights_desc)==gfx::MATCH_SUCCESS);
+
         gfx::gpu_timer_init(&gpuTimer);
+
+        glGenBuffers(1, &lightDescSSBO);
+
+        glNamedBufferStorageEXT(lightDescSSBO, sizeof(light_t)*MAX_LIGHTS, lights, 0);
     }
 
     void fini()
     {
+        glDeleteBuffers(1, &lightDescSSBO);
+
         destroyModels();
         destroyMaterials();
         gfx::gpu_timer_fini(&gpuTimer);
         mem::destroy_arena(appArena);
     }
+
+    uint32_t gridDimX;
+    uint32_t gridDimY;
+    uint32_t gridDimZ;
+    uint32_t numClusters;
+    float zLogScale;
+    float invZNear;
+
+    float fov   = 30.0f * FLT_DEG_TO_RAD_SCALE;
+    float znear = 0.1f;
+    float zfar  = 1000.0f;
 
     void render()
     {
@@ -112,6 +237,7 @@ namespace app
 
         gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 0.0f, 1.0f));
 
+        assignLightsToClustersCpu(m, proj);
         renderModels();
 
         glDisable(GL_FRAMEBUFFER_SRGB);
@@ -135,7 +261,7 @@ namespace app
 
     void resize(int width, int height)
     {
-        ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
+        ml::make_perspective_mat4(proj, fov, (float)width/(float)height, znear, zfar);
 
         gfx::autoVars.projParams.x = proj[0].m128_f32[0];
         gfx::autoVars.projParams.y = proj[1].m128_f32[1];
@@ -146,16 +272,13 @@ namespace app
     size_t  numModels;
     size_t  numMeshes;
     size_t  numMaterials;
+    size_t  numLights;
 
     model_t      models       [MAX_MODELS];
     mesh_t       meshes       [MAX_MESHES];
     material_t*  materialRefs [MAX_MESHES];
     material_t   materials    [MAX_MATERIALS];
     const char*  materialNames[MAX_MATERIALS];
-
-    GLuint prgStatic;
-    GLuint prgStaticAT;
-    GLuint prgStaticDiffuse;
 
     void loadModel(const char* name, int& first, int& count);
     material_t* findMaterial(const char* name);
@@ -236,6 +359,8 @@ namespace app
         prgStatic        = res::createProgramFromFiles("MESH.Static.vert", "MESH.Texture.frag");
         prgStaticAT      = res::createProgramFromFiles("MESH.Static.vert", "MESH.AT.Texture.frag");
         prgStaticDiffuse = res::createProgramFromFiles("MESH.Static.vert", "MESH.Diffuse.frag");
+
+        ui::debugAddPrograms(1, &prgStatic);
 
         numMaterials = 0;
 
@@ -395,10 +520,69 @@ namespace app
         memset(models, 0, sizeof(model_t)*MAX_MODELS);
     }
 
+    float randomUnitFloat()
+    {
+      return float(rand()) / float(RAND_MAX);
+    }
+
+    float randomRange(float low, float high)
+    {
+      return low + (high - low) * randomUnitFloat();
+    }
+
+    static v128 hueToRGB(float hue)
+    {
+        const float s = hue * 6.0f;
+        float r0 = core::min(core::max(s - 4.0f, 0.0f), 1.0f);
+        float g0 = core::min(core::max(s - 0.0f, 0.0f), 1.0f);
+        float b0 = core::min(core::max(s - 2.0f, 0.0f), 1.0f);
+
+        float r1 = core::min(core::max(2.0f - s, 0.0f), 1.0f);
+        float g1 = core::min(core::max(4.0f - s, 0.0f), 1.0f);
+        float b1 = core::min(core::max(6.0f - s, 0.0f), 1.0f);
+
+        // annoying that it wont quite vectorize...
+        return vi_set(r0 + r1, g0 * g1, b0 * b1, 0.0f);
+    }
+
+    void generateLights(int num)
+    {
+        assert(num<=MAX_LIGHTS);
+        // divide volume equally amongst lights
+        const float volume = (scene_max.x-scene_min.x)*(scene_max.y-scene_min.y)*(scene_max.z-scene_min.z);
+        const float lightVol = volume / float(num);
+        // set radius to be the cube root of volume for a light
+        const float lightRad = pow(lightVol, 1.0f / 3.0f);
+        // and allow some overlap
+        const float maxRad = lightRad;// * 2.0f;
+        const float minRad = lightRad;
+
+        numLights = 0;
+        for (int i = 0; i < num; ++i)
+        {
+            float rad = randomRange(minRad, maxRad);
+            ml::vec3 col;
+            vi_store_v3(&col, vi_mul(hueToRGB(randomUnitFloat()), vi_set_ffff(randomRange(0.4f, 0.7f))));
+            //float3 pos = { randomRange(aabb.min.x + rad, aabb.max.x - rad), randomRange(aabb.min.y + rad, aabb.max.y - rad), randomRange(aabb.min.z + rad, aabb.max.z - rad) };
+            const float ind =  rad / 8.0f;
+            ml::vec3 pos = { randomRange(scene_min.x + ind, scene_max.x - ind), randomRange(scene_min.y + ind, scene_max.y - ind), randomRange(scene_min.z + ind, scene_max.z - ind) };
+            light_t l = { pos, rad, col };
+            lights[numLights++] = l;
+        }
+        //numLights = 0;
+        //for (size_t i=0; i<=20; ++i)
+        //{
+        //    lights[numLights].pos = ml::make_vec3(-100.0f+ i*10, 20.0f, 0.0f);;
+        //    lights[numLights].range = 50;
+        //    ml::vec3 col;
+        //    vi_store_v3(&col, vi_mul(hueToRGB(randomUnitFloat()), vi_set_ffff(randomRange(0.4f, 0.7f))));
+        //    lights[numLights].color = col;
+        //    ++numLights;
+        //}
+    }
+
     void renderMesh(mesh_t* mesh, material_t* material)
     {
-        glUseProgram(material->program);
-
         // Position data
         glBindVertexArray(vf::static_geom_t::vao);
         glBindVertexBuffer(0, mesh->vbo, 0, sizeof(vf::static_geom_t));
@@ -417,9 +601,29 @@ namespace app
     void renderModels()
     {
         gfx::setStdTransforms();
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, gfx::dynBuffer, clusterListOffset, clusterListSize);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, gfx::dynBuffer, lightListOffset,   lightListSize);
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, gfx::dynBuffer, lightOffset,       lightSize);
+
+        //!!!!HACK: in order to upload SSBO, otherwise they are not updated
+        glUseProgram(prgStatic);
+        renderMesh( &meshes[100], materialRefs[100] );
 
         for (size_t i=0; i<numMeshes; ++i)
         {
+            glUseProgram(materialRefs[i]->program);
+            GLuint globalsOffset;
+            GLuint globalsSize = sizeof(gpu_globals_t);
+            gpu_globals_t* globals = (gpu_globals_t*)gfx::dynbufAllocMem(globalsSize, gfx::caps.uboAlignment, &globalsOffset);
+
+            globals->uAmbientGlobal = ml::make_vec3(0.02f, 0.02f, 0.02f);
+            globals->uMatDiffuse    = *(ml::vec4*)materialRefs[i]->diffuse;
+            globals->uMatSpecular   = *(ml::vec3*)materialRefs[i]->specular;
+            globals->uMatSpecPow    = materialRefs[i]->specPow;
+            globals->uR0            = materialRefs[i]->fresnel;
+
+            glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, globalsOffset, globalsSize);
+
             renderMesh( &meshes[i], materialRefs[i] );
         }
     }
@@ -445,6 +649,25 @@ namespace app
             mesh_header_v0*    header   = mem_raw_data<mesh_header_v0>(&data);
             vf::static_geom_t* vertices = mem_raw_array<vf::static_geom_t>(&data, header->numVertices);
             uint32_t*          indices  = mem_raw_array<uint32_t>(&data, header->numIndices);
+
+            if (!numModels)
+            {
+                scene_min.x = header->minx;
+                scene_min.y = header->miny;
+                scene_min.z = header->minz;
+                scene_max.x = header->maxx;
+                scene_max.y = header->maxy;
+                scene_max.z = header->maxz;
+            }
+            else
+            {
+                scene_min.x = core::min(scene_min.x, header->minx);
+                scene_min.y = core::min(scene_min.y, header->miny);
+                scene_min.z = core::min(scene_min.z, header->minz);
+                scene_max.x = core::max(scene_max.x, header->maxx);
+                scene_max.y = core::max(scene_max.y, header->maxy);
+                scene_max.z = core::max(scene_max.z, header->maxz);
+            }
 
             glGenBuffers(1, &models[numModels].vbo);
             glGenBuffers(1, &models[numModels].ibo);
@@ -476,6 +699,7 @@ namespace app
 
     void convertOBJ()
     {
+        const float scale = 0.1f;
         const char* filename = "D:\\projects\\graphics\\Infinity\\AppData\\models\\sponza\\sponza.obj";
         const char* mtl_basepath = "D:\\projects\\graphics\\Infinity\\AppData\\models\\sponza\\";
         std::vector<tinyobj::shape_t> shapes;
@@ -519,7 +743,7 @@ namespace app
                 maxz = core::max(maxz, p[v*3+2]);
             }
 
-            mesh_header_v0 h = {MESH_FILE_MAGIC, 0, nv, ni, minx, miny, minz, maxx, maxy, maxz, s.submeshes.size()};
+            mesh_header_v0 h = {MESH_FILE_MAGIC, 0, nv, ni, minx*scale, miny*scale, minz*scale, maxx*scale, maxy*scale, maxz*scale, s.submeshes.size()};
 
             for (size_t i = 0; i < h.numSubmeshes; ++i)
             {
@@ -535,7 +759,7 @@ namespace app
             fwrite(&h, sizeof(h), 1, f);
             for (size_t v = 0; v < nv; ++v)
             {
-                float vp3[3] = {p[v*3]/10.0f, p[v*3+1]/10.0f, p[v*3+2]/10.0f};
+                float vp3[3] = {p[v*3]*scale, p[v*3+1]*scale, p[v*3+2]*scale};
                 float uv2[2] = {uv[v*2], 1.0f-uv[v*2+1]};
                 fwrite(vp3, sizeof(float), 3, f);
                 fwrite(n  + v*3, sizeof(float), 3, f);
@@ -612,5 +836,304 @@ namespace app
         }
         fprintf(f, "]\n");
         fclose(f);
+    }
+
+    struct ScreenRect3D
+    {
+        int minx, miny, minz;
+        int maxx, maxy, maxz;
+        uint32_t index;
+    };
+
+    float calcClusterZ(float viewSpaceZ)
+    {
+        float gridLocZ = logf(-viewSpaceZ * invZNear) * zLogScale;
+
+        return gridLocZ;
+    }
+
+    //--------------------------------------------------------------------------------------
+    // Bounds computation utilities, similar to PointLightBounds.cpp
+    void updateClipRegionRoot(float nc,          // Tangent plane x/y normal coordinate (view space)
+        float lc,          // Light x/y coordinate (view space)
+        float lz,          // Light z coordinate (view space)
+        float lightRadius,
+        float cameraScale, // Project scale for coordinate (_11 or _22 for x/y respectively)
+        float &clipMin,
+        float &clipMax)
+    {
+        float nz = (lightRadius - nc * lc) / lz;
+        float pz = (lc * lc + lz * lz - lightRadius * lightRadius) / (lz - (nz / nc) * lc);
+
+        if (pz < 0.0f) 
+        {
+            float c = -nz * cameraScale / nc;
+            if (nc < 0.0f) 
+            {        
+                // Left side boundary
+                clipMin = std::max(clipMin, c);
+            } 
+            else 
+            {                          // Right side boundary
+                clipMax = std::min(clipMax, c);
+            }
+        }
+    }
+
+    void updateClipRegion(float lc,          // Light x/y coordinate (view space)
+        float lz,          // Light z coordinate (view space)
+        float lightRadius,
+        float cameraScale, // Project scale for coordinate (_11 or _22 for x/y respectively)
+        float &clipMin,
+        float &clipMax)
+    {
+        float rSq = lightRadius * lightRadius;
+        float lcSqPluslzSq = lc * lc + lz * lz;
+        float d = rSq * lc * lc - lcSqPluslzSq * (rSq - lz * lz);
+
+        if (d >= 0.0f) 
+        {
+            float a = lightRadius * lc;
+            float b = sqrt(d);
+            float nx0 = (a + b) / lcSqPluslzSq;
+            float nx1 = (a - b) / lcSqPluslzSq;
+
+            updateClipRegionRoot(nx0, lc, lz, lightRadius, cameraScale, clipMin, clipMax);
+            updateClipRegionRoot(nx1, lc, lz, lightRadius, cameraScale, clipMin, clipMax);
+        }
+    }
+
+    // Returns bounding box [min.xy, max.xy] in clip [-1, 1] space.
+    void computeClipRegion(
+        const ml::vec3& lightPosView, float lightRadius, float cameraNear, v128 proj[4],
+        float& minx, float& miny, float& maxx, float& maxy
+    )
+    {
+        minx = 1.0f; miny = 1.0f; maxx = -1.0f; maxy = -1.0f;
+        // Early out with empty rectangle if the light is too far behind the view frustum
+        if (lightPosView.z - lightRadius <= -cameraNear) 
+        {
+            minx = -1.0f; miny = -1.0f; maxx = 1.0f; maxy = 1.0f;
+
+            updateClipRegion(lightPosView.x, lightPosView.z, lightRadius, proj[0].m128_f32[0], minx, maxx);
+            updateClipRegion(lightPosView.y, lightPosView.z, lightRadius, proj[1].m128_f32[1], miny, maxy);
+        }
+    }
+
+    void findScreenSpaceBounds(
+        v128 proj[4], const ml::vec3& pt, float rad,
+        int width, int height, float near,
+        int& minx, int& miny, int& maxx, int& maxy
+    )
+    {
+        float fminx=1.0f, fminy=1.0f, fmaxx=-1.0f, fmaxy=-1.0f;
+        computeClipRegion(pt, rad, near, proj, fminx, fminy, fmaxx, fmaxy);
+
+        fminx = -fminx;
+        fminy = -fminy;
+        fmaxx = -fmaxx;
+        fmaxy = -fmaxy;
+
+        core::swap(fminx, fmaxx);
+        core::swap(fminy, fmaxy);
+
+        fminx = 0.5f * fminx + 0.5f;
+        fminy = 0.5f * fminy + 0.5f;
+        fmaxx = 0.5f * fmaxx + 0.5f;
+        fmaxy = 0.5f * fmaxy + 0.5f;
+
+        minx = int(fminx * float(width));
+        miny = int(fminy * float(height));
+        maxx = int(fmaxx * float(width));
+        maxy = int(fmaxy * float(height));
+
+        minx = core::max(0, core::min(width,  minx));
+        miny = core::max(0, core::min(height, miny));
+        maxx = core::max(0, core::min(width,  maxx));
+        maxy = core::max(0, core::min(height, maxy));
+    }
+
+    static void buildRects3D(v128 matMV[4], v128 matP[4], uint32_t maxRects, uint32_t& numRects, ScreenRect3D* rects)
+    {
+        PROFILER_CPU_TIMESLICE("BuildRects");
+
+        numRects = 0;
+        for (uint32_t i = 0; i < numViewLights; ++i)
+        {
+            const light_t &l = lightsView[i];
+            int minx=0, miny=0, maxx=0, maxy=0;
+            findScreenSpaceBounds(matP, l.pos, l.range, gfx::width, gfx::height, znear, minx, miny, maxx, maxy);
+
+            if (minx < maxx && miny < maxy)
+            {
+                ScreenRect3D& r3 = rects[numRects++];
+
+                r3.index = i;
+                
+                r3.minx = minx / LIGHT_GRID_TILE_DIM_X;
+                r3.miny = miny / LIGHT_GRID_TILE_DIM_Y;
+                r3.minz = uint32_t(core::max(0.0f, calcClusterZ(l.pos.z + l.range)));;
+
+                r3.maxx = (maxx + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X;
+                r3.maxy = (maxy + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y;
+                r3.maxz = uint32_t(core::max(0.0f, ceilf(calcClusterZ(l.pos.z - l.range)) + 0.5f));
+            }
+        }
+        assert(numRects<=maxRects);
+    }
+
+    static void assignLightsToClustersCpu(v128 modelView[4], v128 proj[4])
+    {
+        PROFILER_CPU_TIMESLICE("LightGridBuild");
+
+        numViewLights = 0;
+        for (size_t i=0; i < numLights; ++i)
+        {
+            light_t& l = lightsView[i];
+
+            l = lights[i];
+
+            v128 vlp = ml::mul_mat4_vec4(modelView, vi_set(l.pos.x, l.pos.y, l.pos.z, 1.0f));
+            vi_store_v3(&l.pos, vlp);
+            ++numViewLights;
+        }
+
+        lightOffset = 0;
+        lightSize   = sizeof(light_t)* core::max(4U, numViewLights);
+
+        light_t* data = (light_t*)gfx::dynbufAllocMem(lightSize, gfx::caps.ssboAlignment, &lightOffset);
+        memcpy(data, lightsView, numViewLights*sizeof(light_t));
+
+        gridDimX = (gfx::width  + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X;
+        gridDimY = (gfx::height + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y;
+        gridDimZ = 60;
+
+        numClusters = gridDimX * gridDimY * gridDimZ;
+
+        zLogScale = gridDimZ / logf(zfar / znear);
+        invZNear  = 1.0f / znear;
+
+        uint32_t numRects;
+        ScreenRect3D* rects = mem::alloc_array<ScreenRect3D>(appArena, MAX_LIGHTS);
+        uint32_t* offsets = mem::alloc_array<uint32_t>(appArena, numClusters);
+        uint32_t* counts  = mem::alloc_array<uint32_t>(appArena, numClusters);
+
+        buildRects3D(modelView, proj, MAX_LIGHTS, numRects, rects);
+
+        memset(counts, 0,  sizeof(uint32_t)*numClusters);
+        memset(offsets, 0, sizeof(uint32_t)*numClusters);
+
+        uint32_t totalus = 0;
+        {  
+            PROFILER_CPU_TIMESLICE("Pass1");
+            for (size_t i = 0; i < numRects; ++i)
+            {
+                ScreenRect3D r = rects[i];
+
+                uint32_t lx = core::max(0, core::min<int>(gridDimX, r.minx));
+                uint32_t ly = core::max(0, core::min<int>(gridDimY, r.miny));
+                uint32_t lz = core::max(0, core::min<int>(gridDimZ, r.minz));
+
+                uint32_t ux = core::max(0, core::min<int>(gridDimX, r.maxx));
+                uint32_t uy = core::max(0, core::min<int>(gridDimY, r.maxy));
+                uint32_t uz = core::max(0, core::min<int>(gridDimZ, r.maxz));
+
+                for (uint32_t z = lz; z < uz; ++z)
+                {
+                    for (uint32_t y = ly; y < uy; ++y)
+                    {
+                        for (uint32_t x = lx; x < ux; ++x)
+                        {
+                            uint32_t idx = (z * gridDimY + y) * gridDimX + x;
+                            ++counts[idx];
+                            ++totalus;
+                        }
+                    }
+                }
+            }
+        }
+
+        uint32_t offset = 0;
+        {  
+            PROFILER_CPU_TIMESLICE("BuildOffsets");
+            for (size_t idx = 0; idx < numClusters; ++idx)
+            {
+                offsets[idx] = offset;
+
+                offset += counts[idx];
+            }
+        }
+
+        memset(counts, 0,  sizeof(uint32_t)*numClusters);
+
+        {
+            PROFILER_CPU_TIMESLICE("Pass2");
+
+            lightListOffset = 0;
+            lightListSize   = core::max(4U, totalus) * sizeof(v128);
+
+            uint32_t* data = (uint32_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.ssboAlignment, &lightListOffset);
+
+            for (size_t i = 0; i < numRects; ++i)
+            {
+                ScreenRect3D r = rects[i];
+
+                uint32_t lx = core::max(0, core::min<int>(gridDimX, r.minx));
+                uint32_t ly = core::max(0, core::min<int>(gridDimY, r.miny));
+                uint32_t lz = core::max(0, core::min<int>(gridDimZ, r.minz));
+
+                uint32_t ux = core::max(0, core::min<int>(gridDimX, r.maxx));
+                uint32_t uy = core::max(0, core::min<int>(gridDimY, r.maxy));
+                uint32_t uz = core::max(0, core::min<int>(gridDimZ, r.maxz));
+
+                for (uint32_t z = lz; z < uz; ++z)
+                {
+                    for (uint32_t y = ly; y < uy; ++y)
+                    {
+                        for (uint32_t x = lx; x < ux; ++x)
+                        {
+                            uint32_t idx = (z * gridDimY + y) * gridDimX + x;
+
+                            uint32_t count = counts[idx];
+                            ++counts[idx];
+                            uint32_t offset = offsets[idx] + count;
+
+                            data[offset*4] = r.index;
+                            assert(r.index<numViewLights);
+                        }
+                    }
+                }
+            }
+        }
+        {
+            PROFILER_CPU_TIMESLICE("copyGridFromHost");
+
+            clusterListOffset = 0;
+            clusterListSize   = calcBlobSize1<gpu_clusters_t, v128>(numClusters);
+
+            gpu_clusters_t* data = (gpu_clusters_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.ssboAlignment, &clusterListOffset);
+
+            data->uGridTileX = LIGHT_GRID_TILE_DIM_X;
+            data->uGridTileY = LIGHT_GRID_TILE_DIM_Y;
+            data->uGridDimX  = gridDimX;
+            data->uGridDimY  = gridDimY;
+            data->uInvZNear  = 1.0f / znear;
+            data->uLogScale  = zLogScale;
+#ifdef DEBUG_SHADER
+            data->uDebugMaxClusters  = numClusters;
+            data->uDebugMaxLightList = totalus;
+            data->uDebugMaxLights    = numViewLights;
+#endif
+
+            for (size_t i = 0; i < numClusters; ++i)
+            {
+                data->lightLists[i].offset = offsets[i];
+                data->lightLists[i].count  = counts [i];
+                assert(offsets[i]+counts [i]<=totalus);
+            }
+        }
+        mem::free(appArena, offsets);
+        mem::free(appArena, counts);
+        mem::free(appArena, rects);
     }
 }
