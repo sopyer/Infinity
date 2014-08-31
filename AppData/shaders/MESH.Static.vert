@@ -1,4 +1,3 @@
-#version 440
 
 #define UNI_STD_TRANSFORMS  0
 

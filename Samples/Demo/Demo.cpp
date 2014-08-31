@@ -106,10 +106,6 @@ STATIC_ASSERT(sizeof(light_t)==32);
 
 namespace app
 {
-    GLuint prgStatic;
-    GLuint prgStaticAT;
-    GLuint prgStaticDiffuse;
-
     SpectatorCamera     camera;
     v128                proj[4];
 
@@ -142,9 +138,76 @@ namespace app
     GLuint texLightListData;
     GLuint texLightData;
 
+    enum
+    {
+        PRG_PERM_DIFFUSE    = 1<<0,
+        PRG_PERM_SPECULAR   = 1<<1,
+        PRG_PERM_NORMAL     = 1<<2,
+        PGR_PERM_ALPHA_TEST = 1<<3,
+
+        NUM_PERM = 16
+    };
+
+    GLuint staticPrograms[NUM_PERM];
+
+    GLuint getProgram(bool diffuse, bool specular, bool normal, bool alphaTest)
+    {
+        int idx = 0;
+        idx |= diffuse   ? PRG_PERM_DIFFUSE    : 0;
+        idx |= specular  ? PRG_PERM_SPECULAR   : 0;
+        idx |= normal    ? PRG_PERM_NORMAL     : 0;
+        idx |= alphaTest ? PGR_PERM_ALPHA_TEST : 0;
+
+        assert(idx<NUM_PERM);
+        return staticPrograms[idx];
+    }
+
     void init()
     {
         appArena = mem::create_arena(20*1024*1024, 0);
+
+        const char* version        = "#version 440\n\n";
+        const char* enableDebug    = "#define ENABLE_DEBUG\n";
+        const char* enableAT       = "#define ENABLE_ALPHA_TEST\n";
+        const char* enableDiffuse  = "#define ENABLE_DIFFUSE\n";
+        const char* enableSpecular = "#define ENABLE_SPECULAR\n";
+        const char* enableNormal   = "#define ENABLE_NORMAL\n";
+
+        const char* headers[6] = 
+        {
+            version,
+#ifdef DEBUG_SHADER
+            enableDebug,
+#endif
+        };
+
+        for (size_t i=0; i<NUM_PERM; ++i)
+        {
+#ifdef DEBUG_SHADER
+            size_t numHeaders = 2;
+#else
+            size_t numHeaders = 1;
+#endif
+            if (i&PRG_PERM_DIFFUSE)
+            {
+                headers[numHeaders++] = enableDiffuse;
+            }
+            if (i&PRG_PERM_SPECULAR)
+            {
+                headers[numHeaders++] = enableSpecular;
+            }
+            if (i&PRG_PERM_NORMAL)
+            {
+                headers[numHeaders++] = enableNormal;
+            }
+            if (i&PGR_PERM_ALPHA_TEST)
+            {
+                headers[numHeaders++] = enableAT;
+            }
+            staticPrograms[i] = res::createProgramFromFiles("MESH.Static.vert", "MESH.StdLighting.frag", numHeaders, headers);
+     }
+
+        ui::debugAddPrograms(NUM_PERM, staticPrograms);
 
         //convertOBJ();
 
@@ -160,33 +223,6 @@ namespace app
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x  = camera.maxVelocity.y  = camera.maxVelocity.z  =  60;
 
-        gfx::var_desc_t gpu_globals_desc[] = 
-        {
-            {0, GL_FLOAT_VEC4, 1, offsetof(gpu_globals_t, uMatDiffuse)},
-            {0, GL_FLOAT_VEC3, 1, offsetof(gpu_globals_t, uMatSpecular)},
-            {0, GL_FLOAT_VEC3, 1, offsetof(gpu_globals_t, uAmbientGlobal)},
-            {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uR0)},
-            {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uMatSpecPow)},
-        };
-        assert(gfx::matchInterface(prgStatic, "MaterialData", true, ARRAY_SIZE(gpu_globals_desc), gpu_globals_desc)==gfx::MATCH_SUCCESS);
-
-
-        gfx::var_desc_t gpu_clusters_desc[] = 
-        {
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridTileX)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridTileY)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridDimX)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridDimY)},
-            {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uInvZNear)},
-            {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uLogScale)},
-#ifdef DEBUG_SHADER
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxClusters)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxLightList)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxLights)},
-#endif
-        };
-        //assert(gfx::matchInterface(prgStatic, "ClusterData", true, ARRAY_SIZE(gpu_clusters_desc), gpu_clusters_desc)==gfx::MATCH_SUCCESS);
-
         gfx::gpu_timer_init(&gpuTimer);
     }
 
@@ -195,6 +231,11 @@ namespace app
         glDeleteTextures(1, &texLightData);
         glDeleteTextures(1, &texLightListData);
         glDeleteTextures(1, &texClusterData);
+
+        for (size_t i=0; i<NUM_PERM; ++i)
+        {
+            glDeleteProgram(staticPrograms[i]);
+        }
 
         destroyModels();
         destroyMaterials();
@@ -222,11 +263,9 @@ namespace app
         camera.getViewMatrix(m);
         memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
 
+        assignLightsToClustersCpu(m, proj);
         glEnable(GL_FRAMEBUFFER_SRGB);
 
-        //gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 0.0f, 1.0f));
-
-        assignLightsToClustersCpu(m, proj);
         renderModels();
 
         glDisable(GL_FRAMEBUFFER_SRGB);
@@ -345,12 +384,6 @@ namespace app
 
     void loadMaterials()
     {
-        prgStatic        = res::createProgramFromFiles("MESH.Static.vert", "MESH.Texture.frag");
-        prgStaticAT      = res::createProgramFromFiles("MESH.Static.vert", "MESH.AT.Texture.frag");
-        prgStaticDiffuse = res::createProgramFromFiles("MESH.Static.vert", "MESH.Diffuse.frag");
-
-        ui::debugAddPrograms(1, &prgStatic);
-
         numMaterials = 0;
 
         memory_t        inText = {0, 0, 0};
@@ -426,7 +459,6 @@ namespace app
                     key = mjson_get_member_next(dict, key, &value);
                 }
 
-                materials[numMaterials].program = mask ? prgStaticAT : prgStatic;
                 if (dmap)
                 {
                     materials[numMaterials].diffuseMap = res::createTexture2D(dmap, TRUE);
@@ -436,7 +468,6 @@ namespace app
                 else
                 {
                     materials[numMaterials].diffuseMap = 0;
-                    materials[numMaterials].program = prgStaticDiffuse;
                 }
 
                 if (nmap)
@@ -456,6 +487,8 @@ namespace app
                 }
                 else
                     materials[numMaterials].specularMap = 0;
+
+                materials[numMaterials].program = getProgram(dmap!=0, smap!=0, nmap!=0, mask!=0);
 
                 ++numMaterials;
                 material = mjson_get_member_next(root, material, &dict);
@@ -484,9 +517,6 @@ namespace app
             }
             mem::free(appArena, (void*)materialNames[i]);
         }
-        glDeleteProgram(prgStatic);
-        glDeleteProgram(prgStaticAT);
-        glDeleteProgram(prgStaticDiffuse);
         memset(materials,     0, sizeof(material_t)*MAX_MATERIALS);
         memset(materialNames, 0, sizeof(const char*)*MAX_MATERIALS);
     }

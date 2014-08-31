@@ -1,6 +1,3 @@
-#version 440
-
-//#define DEBUG_SHADER
 
 //!!!!!TODO: use ARB_robustness and SSBO when driver will be fixed
 
@@ -35,7 +32,7 @@ layout(binding = 2) uniform ClusterData
     int uGridDimY;
     float uInvZNear;
     float uLogScale;
-#ifdef DEBUG_SHADER
+#ifdef ENABLE_DEBUG
     int uDebugMaxClusters;
     int uDebugMaxLightList;
     int uDebugMaxLights;
@@ -44,7 +41,7 @@ layout(binding = 2) uniform ClusterData
 
 layout(location = 0, index = 0) out vec4 fragColor;
 
-vec3 doLight(vec3 position, vec3 normal, vec3 diffuse, vec3 specular, float shininess, vec3 viewDir, vec3 lightPos, vec3 lightColor, float range)
+vec3 doLight(vec3 position, vec3 normal, vec3 diffuse, vec3 specular, float shininess, float specMul, vec3 viewDir, vec3 lightPos, vec3 lightColor, float range)
 {
     vec3 lightDir = lightPos - position;
 
@@ -64,7 +61,7 @@ vec3 doLight(vec3 position, vec3 normal, vec3 diffuse, vec3 specular, float shin
     vec3 spec = (normFactor * pow(NdotH, shininess)) * specular;
     vec3 diff = NdotL * diffuse;
 
-    return att * lightColor * (diff + spec);
+    return att * lightColor * mix(diff, spec, specMul);
 }
 
 int calcClusterIndex(vec2 fragPos, float viewSpaceZ)
@@ -76,7 +73,7 @@ int calcClusterIndex(vec2 fragPos, float viewSpaceZ)
     return (clusterLocZ * uGridDimY + clusterLocY) * uGridDimX + clusterLocX;
 }
 
-vec3 evalClusteredShading(in vec3 diffuse, in vec3 specular, in float shininess, in vec3 position, in vec3 normal, in vec3 viewDir)
+vec3 evalClusteredShading(in vec3 diffuse, in vec3 specular, in float shininess, float specMul, in vec3 position, in vec3 normal, in vec3 viewDir)
 {
     int  idx = calcClusterIndex(gl_FragCoord.xy, position.z);
 
@@ -85,7 +82,7 @@ vec3 evalClusteredShading(in vec3 diffuse, in vec3 specular, in float shininess,
     int lightCount  = clusterData.g;
 
     vec3 shading = vec3(0.0, 0.0, 0.0);
-#ifdef DEBUG_SHADER
+#ifdef ENABLE_DEBUG
     if (idx>=uDebugMaxClusters) return vec3(1, 0, 0);
     if (lightOffset+lightCount>uDebugMaxLightList) return vec3(0, 1, 0);
 #endif
@@ -93,33 +90,73 @@ vec3 evalClusteredShading(in vec3 diffuse, in vec3 specular, in float shininess,
     for (int i = 0; i < lightCount; ++i)
     {
         int lightIndex =  texelFetch(samLightListData, lightOffset + i).r;
-#ifdef DEBUG_SHADER
+#ifdef ENABLE_DEBUG
         if (lightIndex>=uDebugMaxLights) return vec3(0, 0, 1);
 #endif
 
         vec4 lightPosRange = texelFetch(samLightData, lightIndex*2+0);
         vec4 lightColor    = texelFetch(samLightData, lightIndex*2+1);
 
-        shading += doLight(position, normal, diffuse, specular, shininess, viewDir, lightPosRange.xyz, lightColor.xyz, lightPosRange.w);
+        shading += doLight(position, normal, diffuse, specular, shininess, specMul, viewDir, lightPosRange.xyz, lightColor.xyz, lightPosRange.w);
     }
 
     return shading;
 }
 
+mat3 cotangentFrame( vec3 p, vec3 N, vec2 uv )
+{
+    // get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx( p );
+    vec3 dp2 = dFdy( p );
+    vec2 duv1 = dFdx( uv );
+    vec2 duv2 = dFdy( uv );
+
+    // solve the linear system
+    vec3 dp2perp = cross( dp2, N );
+    vec3 dp1perp = cross( N, dp1 );
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // construct a scale-invariant frame 
+    float invmax = inversesqrt( max( dot(T,T), dot(B,B) ) );
+    return mat3( T * invmax, B * invmax, N );
+}
+
 void main()
 {
-    vec3 diffuse  = texture2D(samDiffuse,  vTexCoord0).rgb * uMatDiffuse.rgb;
-    vec3 specular = texture2D(samSpecular, vTexCoord0).rgb * uMatSpecular;
+#ifdef ENABLE_DIFFUSE
+    vec4 diffuse  = texture2D(samDiffuse,  vTexCoord0);
+#   ifdef ENABLE_ALPHA_TEST
+    if (diffuse.a < 0.5f) discard;
+#   endif
+    diffuse.rgb *= uMatDiffuse.rgb;
+#else
+    vec3 diffuse = uMatDiffuse.rgb;
+#endif
 
-    vec3 position = vPosition;
-    vec3 normal   = vNormal;
+#ifdef ENABLE_DIFFUSE
+    float specular = texture2D(samSpecular, vTexCoord0).r;
+#else
+    float specular = 0.0;
+#endif
+
+    vec3 normal = normalize(vNormal);
+#ifdef ENABLE_NORMAL
+    vec3 N = texture2D(samNormal, vTexCoord0).xyz;
+    mat3 TBN = cotangentFrame(vPosition, normal, vTexCoord0);
+
+    N   = N * 255./127. - 128./127.;
+    N.y = -N.y;
+    normal = normalize(TBN * N);
+#endif
+
     vec3 viewDir = normalize(-vPosition);
 
     float fresnelTerm = pow(clamp(1.0 + dot(-viewDir, normal), 0.0, 1.0), 5.0);
-    vec3  fresnelSpec = specular * (uR0 + (1.0 - uR0) * fresnelTerm);
+    float fresnelSpec = specular * (uR0 + (1.0 - uR0) * fresnelTerm);
 
-    vec3 direct   = evalClusteredShading(diffuse, fresnelSpec, uMatSpecPow, position, normal, viewDir);
-    vec3 indirect = diffuse * uAmbientGlobal;
+    vec3 direct   = evalClusteredShading(diffuse.rgb, uMatSpecular, uMatSpecPow, fresnelSpec, vPosition, normal, viewDir);
+    vec3 indirect = diffuse.rgb * uAmbientGlobal;
 
     fragColor = vec4(direct + indirect, uMatDiffuse.a + (1.0 - uMatDiffuse.a) * fresnelTerm);
 }
