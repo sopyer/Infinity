@@ -62,7 +62,7 @@ namespace app
         //SOIL_free_image_data(pixelsPtr);
         delete [] data;
 
-        ui::addPrograms(1, &terrain.prgTerrain);
+        ui::debugAddPrograms(1, &terrain.prgTerrain);
     }
 
     void fini()

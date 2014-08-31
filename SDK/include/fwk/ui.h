@@ -53,8 +53,6 @@ namespace ui
     CheckBoxID checkBoxAdd(float x0, float y0, float x1, float y1, int checked);
     int        checkBoxIsChecked(CheckBoxID id);
 
-    void addPrograms(size_t count, GLuint* programs);
-
     enum EventType
     {
         EVENT_LEFT_CLICK = 1<<0,
