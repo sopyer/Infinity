@@ -115,6 +115,7 @@ namespace gfx
 
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,        &caps.uboAlignment);
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
+        glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT,        &caps.tboAlignment);
 
         prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
         prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");

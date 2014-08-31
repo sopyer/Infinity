@@ -79,27 +79,17 @@ struct light_t
 
 struct gpu_clusters_t
 {
-    uint32_t uGridTileX;
-    uint32_t uGridTileY;
-    uint32_t uGridDimX;
-    uint32_t uGridDimY;
+    int32_t uGridTileX;
+    int32_t uGridTileY;
+    int32_t uGridDimX;
+    int32_t uGridDimY;
     float uInvZNear;
     float uLogScale;
 #ifdef DEBUG_SHADER
-    uint32_t uDebugMaxClusters;
-    uint32_t uDebugMaxLightList;
-    uint32_t uDebugMaxLights;
-    uint32_t pad[3];
-#else
-    uint32_t pad[2];
+    int32_t uDebugMaxClusters;
+    int32_t uDebugMaxLightList;
+    int32_t uDebugMaxLights;
 #endif
-
-    struct 
-    {
-        uint32_t offset;
-        uint32_t count;
-        uint64_t pad;
-    } lightLists[1];
 };
 
 struct gpu_globals_t
@@ -144,17 +134,23 @@ namespace app
     ml::vec3 scene_min = {0.0f, 0.0f, 0.0f};
     ml::vec3 scene_max = {0.0f, 0.0f, 0.0f};
 
-    GLuint lightDescSSBO = 0;
-
     GLuint lightOffset,       lightSize;
     GLuint lightListOffset,   lightListSize;
     GLuint clusterListOffset, clusterListSize;
+
+    GLuint texClusterData;
+    GLuint texLightListData;
+    GLuint texLightData;
 
     void init()
     {
         appArena = mem::create_arena(20*1024*1024, 0);
 
         //convertOBJ();
+
+        glGenTextures(1, &texClusterData);
+        glGenTextures(1, &texLightListData);
+        glGenTextures(1, &texLightData);
 
         loadMaterials();
         loadModels();
@@ -172,7 +168,7 @@ namespace app
             {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uR0)},
             {0, GL_FLOAT,      1, offsetof(gpu_globals_t, uMatSpecPow)},
         };
-        assert(gfx::matchInterface(prgStatic, "Globals", true, ARRAY_SIZE(gpu_globals_desc), gpu_globals_desc)==gfx::MATCH_SUCCESS);
+        assert(gfx::matchInterface(prgStatic, "MaterialData", true, ARRAY_SIZE(gpu_globals_desc), gpu_globals_desc)==gfx::MATCH_SUCCESS);
 
 
         gfx::var_desc_t gpu_clusters_desc[] = 
@@ -183,29 +179,22 @@ namespace app
             {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uGridDimY)},
             {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uInvZNear)},
             {0, GL_FLOAT,        1, offsetof(gpu_clusters_t, uLogScale)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, lightLists[0].offset)},
-            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, lightLists[0].count)},
+#ifdef DEBUG_SHADER
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxClusters)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxLightList)},
+            {0, GL_UNSIGNED_INT, 1, offsetof(gpu_clusters_t, uDebugMaxLights)},
+#endif
         };
-        //assert(gfx::matchInterface(prgStatic, "ClusterData", false, ARRAY_SIZE(gpu_clusters_desc), gpu_clusters_desc)==gfx::MATCH_SUCCESS);
-
-        gfx::var_desc_t gpu_lights_desc[] = 
-        {
-            {0, GL_FLOAT_VEC3, 1, offsetof(light_t, pos)},
-            {0, GL_FLOAT,      1, offsetof(light_t, range)},
-            {0, GL_FLOAT_VEC3, 1, offsetof(light_t, color)},
-        };
-        //assert(gfx::matchInterface(prgStatic, "Lights", false, ARRAY_SIZE(gpu_lights_desc), gpu_lights_desc)==gfx::MATCH_SUCCESS);
+        //assert(gfx::matchInterface(prgStatic, "ClusterData", true, ARRAY_SIZE(gpu_clusters_desc), gpu_clusters_desc)==gfx::MATCH_SUCCESS);
 
         gfx::gpu_timer_init(&gpuTimer);
-
-        glGenBuffers(1, &lightDescSSBO);
-
-        glNamedBufferStorageEXT(lightDescSSBO, sizeof(light_t)*MAX_LIGHTS, lights, 0);
     }
 
     void fini()
     {
-        glDeleteBuffers(1, &lightDescSSBO);
+        glDeleteTextures(1, &texLightData);
+        glDeleteTextures(1, &texLightListData);
+        glDeleteTextures(1, &texClusterData);
 
         destroyModels();
         destroyMaterials();
@@ -213,10 +202,10 @@ namespace app
         mem::destroy_arena(appArena);
     }
 
-    uint32_t gridDimX;
-    uint32_t gridDimY;
-    uint32_t gridDimZ;
-    uint32_t numClusters;
+    int32_t gridDimX;
+    int32_t gridDimY;
+    int32_t gridDimZ;
+    int32_t numClusters;
     float zLogScale;
     float invZNear;
 
@@ -235,7 +224,7 @@ namespace app
 
         glEnable(GL_FRAMEBUFFER_SRGB);
 
-        gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 0.0f, 1.0f));
+        //gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 0.0f, 1.0f));
 
         assignLightsToClustersCpu(m, proj);
         renderModels();
@@ -541,21 +530,17 @@ namespace app
         float g1 = core::min(core::max(4.0f - s, 0.0f), 1.0f);
         float b1 = core::min(core::max(6.0f - s, 0.0f), 1.0f);
 
-        // annoying that it wont quite vectorize...
         return vi_set(r0 + r1, g0 * g1, b0 * b1, 0.0f);
     }
 
     void generateLights(int num)
     {
         assert(num<=MAX_LIGHTS);
-        // divide volume equally amongst lights
-        const float volume = (scene_max.x-scene_min.x)*(scene_max.y-scene_min.y)*(scene_max.z-scene_min.z);
+        const float volume   = (scene_max.x-scene_min.x)*(scene_max.y-scene_min.y)*(scene_max.z-scene_min.z);
         const float lightVol = volume / float(num);
-        // set radius to be the cube root of volume for a light
         const float lightRad = pow(lightVol, 1.0f / 3.0f);
-        // and allow some overlap
-        const float maxRad = lightRad;// * 2.0f;
-        const float minRad = lightRad;
+        const float maxRad   = lightRad;
+        const float minRad   = lightRad;
 
         numLights = 0;
         for (int i = 0; i < num; ++i)
@@ -563,7 +548,6 @@ namespace app
             float rad = randomRange(minRad, maxRad);
             ml::vec3 col;
             vi_store_v3(&col, vi_mul(hueToRGB(randomUnitFloat()), vi_set_ffff(randomRange(0.4f, 0.7f))));
-            //float3 pos = { randomRange(aabb.min.x + rad, aabb.max.x - rad), randomRange(aabb.min.y + rad, aabb.max.y - rad), randomRange(aabb.min.z + rad, aabb.max.z - rad) };
             const float ind =  rad / 8.0f;
             ml::vec3 pos = { randomRange(scene_min.x + ind, scene_max.x - ind), randomRange(scene_min.y + ind, scene_max.y - ind), randomRange(scene_min.z + ind, scene_max.z - ind) };
             light_t l = { pos, rad, col };
@@ -584,7 +568,6 @@ namespace app
     void renderMesh(mesh_t* mesh, material_t* material)
     {
         // Position data
-        glBindVertexArray(vf::static_geom_t::vao);
         glBindVertexBuffer(0, mesh->vbo, 0, sizeof(vf::static_geom_t));
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
 
@@ -595,19 +578,19 @@ namespace app
         glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
     }
 
     void renderModels()
     {
-        gfx::setStdTransforms();
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 2, gfx::dynBuffer, clusterListOffset, clusterListSize);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 3, gfx::dynBuffer, lightListOffset,   lightListSize);
-        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 4, gfx::dynBuffer, lightOffset,       lightSize);
+        glEnable(GL_CULL_FACE);
 
-        //!!!!HACK: in order to upload SSBO, otherwise they are not updated
-        glUseProgram(prgStatic);
-        renderMesh( &meshes[100], materialRefs[100] );
+        gfx::setStdTransforms();
+        glBindBufferRange(GL_UNIFORM_BUFFER, 2, gfx::dynBuffer, clusterListOffset, clusterListSize);
+
+        GLuint cluserRenderTextures[] = {texClusterData, texLightListData, texLightData};
+        glBindTextures(3, ARRAY_SIZE(cluserRenderTextures), cluserRenderTextures);
+
+        glBindVertexArray(vf::static_geom_t::vao);
 
         for (size_t i=0; i<numMeshes; ++i)
         {
@@ -626,6 +609,8 @@ namespace app
 
             renderMesh( &meshes[i], materialRefs[i] );
         }
+        glBindVertexArray(0);
+        glDisable(GL_CULL_FACE);
     }
 
     material_t* findMaterial(const char* name)
@@ -1001,12 +986,15 @@ namespace app
         lightOffset = 0;
         lightSize   = sizeof(light_t)* core::max(4U, numViewLights);
 
-        light_t* data = (light_t*)gfx::dynbufAllocMem(lightSize, gfx::caps.ssboAlignment, &lightOffset);
+        light_t* data = (light_t*)gfx::dynbufAllocMem(lightSize, gfx::caps.tboAlignment, &lightOffset);
         memcpy(data, lightsView, numViewLights*sizeof(light_t));
+        glTextureBufferRangeEXT(texLightData, GL_TEXTURE_BUFFER, GL_RGBA32F, gfx::dynBuffer, lightOffset, lightSize);
+
+        assert(lightSize % (sizeof(float)*8) == 0);
 
         gridDimX = (gfx::width  + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X;
         gridDimY = (gfx::height + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y;
-        gridDimZ = 60;
+        gridDimZ = 128;
 
         numClusters = gridDimX * gridDimY * gridDimZ;
 
@@ -1015,13 +1003,13 @@ namespace app
 
         uint32_t numRects;
         ScreenRect3D* rects = mem::alloc_array<ScreenRect3D>(appArena, MAX_LIGHTS);
-        uint32_t* offsets = mem::alloc_array<uint32_t>(appArena, numClusters);
-        uint32_t* counts  = mem::alloc_array<uint32_t>(appArena, numClusters);
+        int32_t* offsets = mem::alloc_array<int32_t>(appArena, numClusters);
+        int32_t* counts  = mem::alloc_array<int32_t>(appArena, numClusters);
 
         buildRects3D(modelView, proj, MAX_LIGHTS, numRects, rects);
 
-        memset(counts, 0,  sizeof(uint32_t)*numClusters);
-        memset(offsets, 0, sizeof(uint32_t)*numClusters);
+        memset(counts, 0,  sizeof(int32_t)*numClusters);
+        memset(offsets, 0, sizeof(int32_t)*numClusters);
 
         uint32_t totalus = 0;
         {  
@@ -1056,7 +1044,7 @@ namespace app
         uint32_t offset = 0;
         {  
             PROFILER_CPU_TIMESLICE("BuildOffsets");
-            for (size_t idx = 0; idx < numClusters; ++idx)
+            for (int32_t idx = 0; idx < numClusters; ++idx)
             {
                 offsets[idx] = offset;
 
@@ -1070,9 +1058,9 @@ namespace app
             PROFILER_CPU_TIMESLICE("Pass2");
 
             lightListOffset = 0;
-            lightListSize   = core::max(4U, totalus) * sizeof(v128);
+            lightListSize   = core::max(4U, totalus) * sizeof(uint32_t);
 
-            uint32_t* data = (uint32_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.ssboAlignment, &lightListOffset);
+            int32_t* data = (int32_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.tboAlignment, &lightListOffset);
 
             for (size_t i = 0; i < numRects; ++i)
             {
@@ -1094,24 +1082,25 @@ namespace app
                         {
                             uint32_t idx = (z * gridDimY + y) * gridDimX + x;
 
-                            uint32_t count = counts[idx];
+                            int32_t count = counts[idx];
                             ++counts[idx];
-                            uint32_t offset = offsets[idx] + count;
+                            int32_t offset = offsets[idx] + count;
 
-                            data[offset*4] = r.index;
+                            data[offset] = r.index;
                             assert(r.index<numViewLights);
                         }
                     }
                 }
             }
+            glTextureBufferRangeEXT(texLightListData, GL_TEXTURE_BUFFER, GL_R32I, gfx::dynBuffer, lightListOffset, lightListSize);
         }
         {
             PROFILER_CPU_TIMESLICE("copyGridFromHost");
 
             clusterListOffset = 0;
-            clusterListSize   = calcBlobSize1<gpu_clusters_t, v128>(numClusters);
+            clusterListSize   = sizeof(gpu_clusters_t);
 
-            gpu_clusters_t* data = (gpu_clusters_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.ssboAlignment, &clusterListOffset);
+            gpu_clusters_t* data = (gpu_clusters_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.uboAlignment, &clusterListOffset);
 
             data->uGridTileX = LIGHT_GRID_TILE_DIM_X;
             data->uGridTileY = LIGHT_GRID_TILE_DIM_Y;
@@ -1125,12 +1114,16 @@ namespace app
             data->uDebugMaxLights    = numViewLights;
 #endif
 
-            for (size_t i = 0; i < numClusters; ++i)
+            uint32_t clusterDataSize   = 2*sizeof(uint32_t)*numClusters;
+            uint32_t clusterDataOffset = 0;
+            int32_t* clusterData = (int32_t*)gfx::dynbufAllocMem(clusterDataSize, gfx::caps.tboAlignment, &clusterDataOffset);
+            for (int32_t i = 0; i < numClusters; ++i)
             {
-                data->lightLists[i].offset = offsets[i];
-                data->lightLists[i].count  = counts [i];
+                clusterData[2*i]   = offsets[i];
+                clusterData[2*i+1] = counts [i];
                 assert(offsets[i]+counts [i]<=totalus);
             }
+            glTextureBufferRangeEXT(texClusterData, GL_TEXTURE_BUFFER, GL_RG32I, gfx::dynBuffer, clusterDataOffset, clusterDataSize);
         }
         mem::free(appArena, offsets);
         mem::free(appArena, counts);

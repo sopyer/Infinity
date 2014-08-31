@@ -45,6 +45,7 @@ namespace gfx
     {
         GLint uboAlignment;
         GLint ssboAlignment;
+        GLint tboAlignment;
     };
 
     struct vertex_element_t
