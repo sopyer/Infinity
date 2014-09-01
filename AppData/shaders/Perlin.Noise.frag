@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 layout(binding=0) uniform sampler1D samPerm;
 layout(binding=1) uniform sampler1D samGrad;

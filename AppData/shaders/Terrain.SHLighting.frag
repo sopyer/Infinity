@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 in vec3  vPos;
 in vec2  vUV;

@@ -1,4 +1,4 @@
-#version 440
+#version 430
 
 layout(std140, column_major) uniform;
 

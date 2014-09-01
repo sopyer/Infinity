@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 #define UNI_LIGHTING  2
 

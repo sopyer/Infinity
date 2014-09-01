@@ -166,7 +166,7 @@ namespace app
     {
         appArena = mem::create_arena(20*1024*1024, 0);
 
-        const char* version        = "#version 440\n\n";
+        const char* version        = "#version 430\n\n";
         const char* enableDebug    = "#define ENABLE_DEBUG\n";
         const char* enableAT       = "#define ENABLE_ALPHA_TEST\n";
         const char* enableDiffuse  = "#define ENABLE_DIFFUSE\n";

@@ -1,4 +1,9 @@
-#version 440
+#version 430
+
+struct line_t
+{
+    vec3 p0, p1;
+};
 
 layout(std140, column_major) uniform;
 
@@ -12,10 +17,7 @@ layout(binding = 0) uniform uniGlobal
 
 layout(std140, binding = 1) buffer uniLines
 {
-    struct line_t
-    {
-        vec3 p0, p1;
-    } uLines[];
+    line_t uLines[];
 };
 
 out vec4 faColor;

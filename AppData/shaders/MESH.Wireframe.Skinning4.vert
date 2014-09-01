@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 #ifndef MAX_BONES
 #define MAX_BONES 128
