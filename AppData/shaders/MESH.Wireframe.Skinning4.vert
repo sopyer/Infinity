@@ -7,6 +7,11 @@
 #define UNI_GLOBAL  0
 #define UNI_BONES   1
 
+struct dual_quat_t
+{
+    vec4 real, dual;
+};
+
 layout(std140, column_major) uniform;
 
 layout(location=0) in vec3  aVertex;
@@ -21,10 +26,7 @@ layout(binding = UNI_GLOBAL) uniform uniGlobal
 
 layout(std140, binding = UNI_BONES) buffer uniBones
 {
-    struct dual_quat_t
-    {
-        vec4 real, dual;
-    } uBones[];
+    dual_quat_t uBones[];
 };
 
 out vec3 gaPosition;
