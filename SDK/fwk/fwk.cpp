@@ -50,7 +50,9 @@ namespace fwk
         SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 4 );
         SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
 
+#ifdef _DEBUG
         SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG );
+#endif
 
         window = SDL_CreateWindow(
             "", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,

@@ -106,9 +106,11 @@ namespace gfx
 
     void init(int w, int h)
     {
+#ifdef _DEBUG
         glDebugMessageCallback(debugCallback, NULL);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
 
         width  = w;
         height = h;
