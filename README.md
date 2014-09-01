@@ -29,9 +29,11 @@ Click in order to grab mouse. Hold LeftCtrl+LeftAlt in order to release. Use mou
 Debug functions
 ---------------------------------------------
 F4 - profiler view. Click individual bars in order to get more info.
+
 F5 - shader editing. Use Alt+1/Alt+2/Alt+3 in order to switch between windows.
 
 ~+F - make single frame capture, which can be viewed in profiler view.
+
 ~+T twice - to capture few frames
 
 

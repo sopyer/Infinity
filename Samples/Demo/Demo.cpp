@@ -573,7 +573,7 @@ namespace app
         const float lightVol = volume / float(num);
         const float lightRad = pow(lightVol, 1.0f / 3.0f);
         const float maxRad   = lightRad;
-        const float minRad   = lightRad;
+        const float minRad   = 0.7f*lightRad;
 
         numLights = 0;
         for (int i = 0; i < num; ++i)
@@ -1000,6 +1000,8 @@ namespace app
         assert(numRects<=maxRects);
     }
 
+#define BACKWARD_STORE_LIGHT_INDICES
+
     static void assignLightsToClustersCpu(v128 modelView[4], v128 proj[4])
     {
         PROFILER_CPU_TIMESLICE("LightGridBuild");
@@ -1027,7 +1029,7 @@ namespace app
 
         gridDimX = (gfx::width  + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X;
         gridDimY = (gfx::height + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y;
-        gridDimZ = 128;
+        gridDimZ = 64;
 
         numClusters = gridDimX * gridDimY * gridDimZ;
 
@@ -1079,13 +1081,19 @@ namespace app
             PROFILER_CPU_TIMESLICE("BuildOffsets");
             for (int32_t idx = 0; idx < numClusters; ++idx)
             {
-                offsets[idx] = offset;
-
+#ifdef BACKWARD_STORE_LIGHT_INDICES
                 offset += counts[idx];
+                offsets[idx] = offset;
+#else
+                offsets[idx] = offset;
+                offset += counts[idx];
+#endif
             }
         }
 
+#ifndef BACKWARD_STORE_LIGHT_INDICES
         memset(counts, 0,  sizeof(uint32_t)*numClusters);
+#endif
 
         {
             PROFILER_CPU_TIMESLICE("Pass2");
@@ -1117,9 +1125,13 @@ namespace app
                         {
                             uint32_t idx = (z * gridDimY + y) * gridDimX + x;
 
+#ifdef BACKWARD_STORE_LIGHT_INDICES
+                            int32_t offset = --offsets[idx];
+#else
                             int32_t count = counts[idx];
                             ++counts[idx];
                             int32_t offset = offsets[idx] + count;
+#endif
 
                             data[offset] = r.index;
                         }
