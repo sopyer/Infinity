@@ -223,6 +223,9 @@ namespace app
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x  = camera.maxVelocity.y  = camera.maxVelocity.z  =  60;
 
+        camera.setPosition(vi_set(80.0f, 100.0f, 0.0f, 1.0f));
+        camera.setOrientation(vi_set(0.0f, 0.707f, 0.0f, -0.707f));
+
         gfx::gpu_timer_init(&gpuTimer);
     }
 
@@ -1104,6 +1107,8 @@ namespace app
                 uint32_t uy = core::max(0, core::min<int>(gridDimY, r.maxy));
                 uint32_t uz = core::max(0, core::min<int>(gridDimZ, r.maxz));
 
+                assert(r.index<numViewLights);
+
                 for (uint32_t z = lz; z < uz; ++z)
                 {
                     for (uint32_t y = ly; y < uy; ++y)
@@ -1117,7 +1122,6 @@ namespace app
                             int32_t offset = offsets[idx] + count;
 
                             data[offset] = r.index;
-                            assert(r.index<numViewLights);
                         }
                     }
                 }

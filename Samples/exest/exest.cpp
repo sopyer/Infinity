@@ -30,6 +30,7 @@ namespace app
 
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
+        camera.setPosition(vi_set(0.0f, 80.0f, 110.0f, 1.0f));
 
         PHYSFS_File*    src = PHYSFS_openRead("hm.raw");
         //explicit conversion to avoid warning on 32-bit system

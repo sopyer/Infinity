@@ -44,6 +44,9 @@ namespace app
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x  = camera.maxVelocity.y  = camera.maxVelocity.z  =  60;
 
+        camera.setPosition(vi_set(0.0f, 110.0f, 110.0f, 1.0f));
+        camera.setOrientation(vi_set(0.3f, 0.0f, 0.0f, 0.95f));
+
         memcpy(&gfx::autoVars.shCoef, shPoly_v3, sizeof(ml::vec3) * 10);
 
         gfx::gpu_timer_init(&gpuTimer);
