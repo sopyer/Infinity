@@ -37,6 +37,7 @@ struct mesh_t
 {
     GLuint    vbo;
     GLuint    ibo;
+    GLuint    firstVertex;
     GLenum    idxFormat;
     GLsizei   idxOffset;
     GLsizei   numIndices;
@@ -45,14 +46,8 @@ struct mesh_t
 struct material_t
 {
     GLuint  program;
-    GLuint  diffuseMap;
-    GLuint  specularMap;
-    GLuint  normalMap;
-    float   diffuse [4];
-    float   specular[4];
-    float   emissive[4];
-    float   specPow;
-    float   fresnel;
+    GLuint  textures[3];
+    GLuint  matOffset;
 };
 
 struct model_t
@@ -77,27 +72,26 @@ struct light_t
 
 #define DEBUG_SHADER
 
-struct gpu_clusters_t
+struct gpu_clustered_lighting_t
 {
-    int32_t uGridTileX;
-    int32_t uGridTileY;
-    int32_t uGridDimX;
-    int32_t uGridDimY;
-    float uInvZNear;
-    float uLogScale;
+    ml::vec3  uAmbientGlobal;
+    int32_t   uGridTileX;
+    int32_t   uGridTileY;
+    int32_t   uGridDimX;
+    int32_t   uGridDimY;
+    float     uInvZNear;
+    float     uLogScale;
 #ifdef DEBUG_SHADER
-    int32_t uDebugMaxClusters;
-    int32_t uDebugMaxLightList;
-    int32_t uDebugMaxLights;
+    int32_t   uDebugMaxClusters;
+    int32_t   uDebugMaxLightList;
+    int32_t   uDebugMaxLights;
 #endif
 };
 
-struct gpu_globals_t
+struct gpu_material_t
 {
     ml::vec4  uMatDiffuse;
     ml::vec3  uMatSpecular;
-    uint32_t  pad1;
-    ml::vec3  uAmbientGlobal;
     float     uR0;
     float     uMatSpecPow;
 };
@@ -137,6 +131,16 @@ namespace app
     GLuint texClusterData;
     GLuint texLightListData;
     GLuint texLightData;
+
+    GLuint materialUBO;
+    GLuint matBufferSize;
+    GLuint materialSize;
+
+    GLuint vertexBuffer;
+    GLuint indexBuffer;
+
+    const size_t vertexBufferSize = 7 * (1<<20);
+    const size_t indexBufferSize  = 5 * (1<<20);
 
     enum
     {
@@ -205,7 +209,7 @@ namespace app
                 headers[numHeaders++] = enableAT;
             }
             staticPrograms[i] = res::createProgramFromFiles("MESH.Static.vert", "MESH.StdLighting.frag", numHeaders, headers);
-     }
+        }
 
         ui::debugAddPrograms(NUM_PERM, staticPrograms);
 
@@ -214,6 +218,17 @@ namespace app
         glGenTextures(1, &texClusterData);
         glGenTextures(1, &texLightListData);
         glGenTextures(1, &texLightData);
+
+        materialSize  = bit_align_up(sizeof(gpu_material_t), gfx::caps.uboAlignment);
+        matBufferSize = materialSize*MAX_MATERIALS;
+        glGenBuffers(1, &materialUBO);
+        glNamedBufferStorageEXT(materialUBO, matBufferSize, 0, GL_MAP_WRITE_BIT);
+
+        glGenBuffers(1, &vertexBuffer);
+        glNamedBufferStorageEXT(vertexBuffer, vertexBufferSize, 0, GL_MAP_WRITE_BIT);
+
+        glGenBuffers(1, &indexBuffer);
+        glNamedBufferStorageEXT(indexBuffer, indexBufferSize, 0, GL_MAP_WRITE_BIT);
 
         loadMaterials();
         loadModels();
@@ -231,6 +246,10 @@ namespace app
 
     void fini()
     {
+        glDeleteBuffers(1, &vertexBuffer);
+        glDeleteBuffers(1, &indexBuffer);
+        glDeleteBuffers(1, &materialUBO);
+
         glDeleteTextures(1, &texLightData);
         glDeleteTextures(1, &texLightListData);
         glDeleteTextures(1, &texClusterData);
@@ -273,11 +292,14 @@ namespace app
 
         glDisable(GL_FRAMEBUFFER_SRGB);
 
-        ui::displayStats(
-            10.0f, 10.0f, 300.0f, 70.0f,
-            cpu_timer_measured(&cpuTimer) / 1000.0f,
-            gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
-        );
+        {
+            PROFILER_CPU_TIMESLICE("ui::displayStats");
+            ui::displayStats(
+                10.0f, 10.0f, 300.0f, 70.0f,
+                cpu_timer_measured(&cpuTimer) / 1000.0f,
+                gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
+            );
+        }
 
         cpu_timer_stop(&cpuTimer);
         gpu_timer_stop(&gpuTimer);
@@ -311,7 +333,12 @@ namespace app
     material_t   materials    [MAX_MATERIALS];
     const char*  materialNames[MAX_MATERIALS];
 
-    void loadModel(const char* name, int& first, int& count);
+    void loadModel(
+        const char* name,
+        int& first, int& count,
+        uint8_t* vertices, GLuint& vertexOffset,
+        uint8_t* indices,  GLuint& indexOffset
+    );
     material_t* findMaterial(const char* name);
 
     void loadModels()
@@ -332,6 +359,11 @@ namespace app
 
             mjson_element_t modelDesc, key, value;
             mjson_element_t matList, mat;
+
+            uint8_t* vertexPtr = (uint8_t*)glMapNamedBufferRangeEXT(vertexBuffer, 0, vertexBufferSize, GL_MAP_WRITE_BIT);
+            uint8_t* indexPtr  = (uint8_t*)glMapNamedBufferRangeEXT(indexBuffer,  0, indexBufferSize,  GL_MAP_WRITE_BIT);
+            GLuint vertexOffset = 0;
+            GLuint indexOffset  = 0;
 
             modelDesc = mjson_get_element_first(root);
             while (modelDesc)
@@ -359,7 +391,7 @@ namespace app
                 }
 
                 int first, count;
-                loadModel(model, first, count);
+                loadModel(model, first, count, vertexPtr, vertexOffset, indexPtr, indexOffset);
                 mat = mjson_get_element_first(matList);
                 for (int i = 0; i<count; ++i)
                 {
@@ -369,6 +401,9 @@ namespace app
 
                 modelDesc = mjson_get_element_next(root, modelDesc);
             }
+
+            glUnmapNamedBufferEXT(vertexBuffer);
+            glUnmapNamedBufferEXT(indexBuffer);
 
             mem_free(&inText);
             mem_free(&bjson);
@@ -402,6 +437,9 @@ namespace app
 
             mjson_element_t material, dict, key, value;
 
+            uint8_t* matPtr = (uint8_t*)glMapNamedBufferRangeEXT(materialUBO, 0, matBufferSize, GL_MAP_WRITE_BIT);
+            GLuint matOffset = 0;
+
             material = mjson_get_member_first(root, &dict);
             while (material)
             {
@@ -410,6 +448,13 @@ namespace app
                 const char* nmap = 0;
                 const char* smap = 0;
                 int mask = FALSE;
+                ml::vec4 diffuse  = {1.0f, 1.0f, 1.0f, 1.0f};
+                ml::vec3 specular = {0.0f, 0.0f, 0.0f};
+                ml::vec3 emissive = {0.0f, 0.0f, 0.0f};
+                float    specPow  = 0.0f;
+                float    fresnel  = 1.0f;
+
+                gpu_material_t* matGPU = (gpu_material_t*)(matPtr+matOffset);
 
                 size_t len = strlen(matName);
                 materialNames[numMaterials] = (const char*)mem::alloc(appArena, len+1);
@@ -440,62 +485,78 @@ namespace app
                     }
                     else if (strcmp(name, "DiffuseColor")==0)
                     {
-                        readVector(value, 4, materials[numMaterials].diffuse);
+                        readVector(value, 4, &diffuse.x);
                     }
                     else if (strcmp(name, "SpecularColor")==0)
                     {
-                        readVector(value, 3, materials[numMaterials].specular);
+                        readVector(value, 3, &specular.x);
                     }
                     else if (strcmp(name, "EmissiveColor")==0)
                     {
-                        readVector(value, 3, materials[numMaterials].emissive);
+                        readVector(value, 3, &emissive.x);
                     }
                     else if (strcmp(name, "SpecPow")==0)
                     {
-                        materials[numMaterials].specPow = mjson_get_float(value, 0.0f);
+                        specPow = mjson_get_float(value, 0.0f);
                     }
                     else if (strcmp(name, "Fresnel")==0)
                     {
-                        materials[numMaterials].fresnel = mjson_get_float(value, 0.0f);
+                        fresnel = mjson_get_float(value, 0.0f);
                     }
 
                     key = mjson_get_member_next(dict, key, &value);
                 }
 
+                material_t& mat = materials[numMaterials];
+
                 if (dmap)
                 {
-                    materials[numMaterials].diffuseMap = res::createTexture2D(dmap, TRUE);
-                    glTextureParameteriEXT(materials[numMaterials].diffuseMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(materials[numMaterials].diffuseMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    GLuint texDiffuse = res::createTexture2D(dmap, TRUE);
+                    glTextureParameteriEXT(texDiffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteriEXT(texDiffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    mat.textures[0] = texDiffuse;
                 }
                 else
                 {
-                    materials[numMaterials].diffuseMap = 0;
+                    mat.textures[0] = 0;
                 }
 
                 if (nmap)
                 {
-                    materials[numMaterials].normalMap = res::createTexture2D(nmap);
-                    glTextureParameteriEXT(materials[numMaterials].normalMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(materials[numMaterials].normalMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    GLuint texNormal = res::createTexture2D(nmap);
+                    glTextureParameteriEXT(texNormal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteriEXT(texNormal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    mat.textures[2] = texNormal;
                 }
                 else
-                    materials[numMaterials].normalMap = 0;
+                    mat.textures[2] = 0;
 
                 if (smap)
                 {
-                    materials[numMaterials].specularMap = res::createTexture2D(smap);
-                    glTextureParameteriEXT(materials[numMaterials].specularMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(materials[numMaterials].specularMap, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    GLuint texSpecular = res::createTexture2D(smap);
+                    glTextureParameteriEXT(texSpecular, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteriEXT(texSpecular, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    mat.textures[1] = texSpecular;
                 }
                 else
-                    materials[numMaterials].specularMap = 0;
+                    mat.textures[1] = 0;
 
-                materials[numMaterials].program = getProgram(dmap!=0, smap!=0, nmap!=0, mask!=0);
+                mat.program = getProgram(dmap!=0, smap!=0, nmap!=0, mask!=0);
+                mat.matOffset = matOffset;
+
+                matGPU->uMatDiffuse    = diffuse;
+                matGPU->uMatSpecular   = specular;
+                matGPU->uMatSpecPow    = specPow;
+                matGPU->uR0            = fresnel;
 
                 ++numMaterials;
                 material = mjson_get_member_next(root, material, &dict);
+                matOffset+=materialSize;
             }
+
+            glUnmapNamedBufferEXT(materialUBO);
+
+            assert(matOffset<=matBufferSize);
 
             mem_free(&inText);
             mem_free(&bjson);
@@ -506,17 +567,17 @@ namespace app
     {
         for (size_t i=0; i < numMaterials; ++i)
         {
-            if (materials[i].diffuseMap)
+            if (materials[i].textures[0])
             {
-                glDeleteTextures(1, &materials[i].diffuseMap);
+                glDeleteTextures(1, &materials[i].textures[0]);
             }
-            if (materials[i].specularMap)
+            if (materials[i].textures[1])
             {
-                glDeleteTextures(1, &materials[i].specularMap);
+                glDeleteTextures(1, &materials[i].textures[1]);
             }
-            if (materials[i].normalMap)
+            if (materials[i].textures[2])
             {
-                glDeleteTextures(1, &materials[i].normalMap);
+                glDeleteTextures(1, &materials[i].textures[2]);
             }
             mem::free(appArena, (void*)materialNames[i]);
         }
@@ -601,20 +662,15 @@ namespace app
     void renderMesh(mesh_t* mesh, material_t* material)
     {
         // Position data
-        glBindVertexBuffer(0, mesh->vbo, 0, sizeof(vf::static_geom_t));
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
-
-        GLuint textureSet[3] = {material->diffuseMap, material->specularMap, material->normalMap};
-        glBindTextures(0, ARRAY_SIZE(textureSet), textureSet);
 
         // Draw mesh from index buffer
-        glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     void renderModels()
     {
+        PROFILER_CPU_TIMESLICE("renderModels");
+
         glEnable(GL_CULL_FACE);
 
         gfx::setStdTransforms();
@@ -625,23 +681,41 @@ namespace app
 
         glBindVertexArray(vf::static_geom_t::vao);
 
+        glBindVertexBuffer(0, vertexBuffer, 0, sizeof(vf::static_geom_t));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+        GLuint      currentPrg = 0;
+        material_t* currentMat = 0;
+
         for (size_t i=0; i<numMeshes; ++i)
         {
-            glUseProgram(materialRefs[i]->program);
-            GLuint globalsOffset;
-            GLuint globalsSize = sizeof(gpu_globals_t);
-            gpu_globals_t* globals = (gpu_globals_t*)gfx::dynbufAllocMem(globalsSize, gfx::caps.uboAlignment, &globalsOffset);
+            PROFILER_CPU_TIMESLICE("drawMesh");
+            material_t* mat = materialRefs[i];
+            if (currentMat!=mat)
+            {
+                PROFILER_CPU_TIMESLICE("materialChange");
+                GLuint prg = mat->program;
+                if (prg!=currentPrg)
+                {
+                    PROFILER_CPU_TIMESLICE("glUseProgram");
+                    glUseProgram(prg);
+                    currentPrg = prg;
+                }
 
-            globals->uAmbientGlobal = ml::make_vec3(0.02f, 0.02f, 0.02f);
-            globals->uMatDiffuse    = *(ml::vec4*)materialRefs[i]->diffuse;
-            globals->uMatSpecular   = *(ml::vec3*)materialRefs[i]->specular;
-            globals->uMatSpecPow    = materialRefs[i]->specPow;
-            globals->uR0            = materialRefs[i]->fresnel;
+                glBindBufferRange(GL_UNIFORM_BUFFER, 1, materialUBO, mat->matOffset, sizeof(gpu_material_t));
+                glBindTextures(0, ARRAY_SIZE(mat->textures), mat->textures);
 
-            glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, globalsOffset, globalsSize);
+                currentMat = mat;
+            }
 
-            renderMesh( &meshes[i], materialRefs[i] );
+            mesh_t& m = meshes[i];
+
+            {
+                PROFILER_CPU_TIMESLICE("glDrawElementsBaseVertex");
+                glDrawElementsBaseVertex(GL_TRIANGLES, m.numIndices, m.idxFormat, BUFFER_OFFSET(m.idxOffset), m.firstVertex);
+            }
         }
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         glDisable(GL_CULL_FACE);
     }
@@ -657,16 +731,21 @@ namespace app
         return 0;
     }
 
-    void loadModel(const char* name, int& first, int& count)
+    void loadModel(
+        const char* name,
+        int& first, int& count,
+        uint8_t* vertices, GLuint& vertexOffset,
+        uint8_t* indices,  GLuint& indexOffset
+    )
     {
         memory_t  data = {0, 0, 0};
 
 
         if (mem_file(&data, name))
         {
-            mesh_header_v0*    header   = mem_raw_data<mesh_header_v0>(&data);
-            vf::static_geom_t* vertices = mem_raw_array<vf::static_geom_t>(&data, header->numVertices);
-            uint32_t*          indices  = mem_raw_array<uint32_t>(&data, header->numIndices);
+            mesh_header_v0*    header    = mem_raw_data<mesh_header_v0>(&data);
+            vf::static_geom_t* fvertices = mem_raw_array<vf::static_geom_t>(&data, header->numVertices);
+            uint32_t*          findices  = mem_raw_array<uint32_t>(&data, header->numIndices);
 
             if (!numModels)
             {
@@ -687,28 +766,39 @@ namespace app
                 scene_max.z = core::max(scene_max.z, header->maxz);
             }
 
-            glGenBuffers(1, &models[numModels].vbo);
-            glGenBuffers(1, &models[numModels].ibo);
+            GLuint baseVOffset = vertexOffset;
 
-            glNamedBufferStorageEXT( models[numModels].vbo, sizeof(vf::static_geom_t) * header->numVertices, vertices, 0 );
-            glNamedBufferStorageEXT( models[numModels].ibo, sizeof(uint32_t) * header->numIndices, indices, 0 );
+            assert(indexOffset % 4 ==0);
 
-            models[numModels].idxFormat  = GL_UNSIGNED_INT;
-            models[numModels].numSubmeshes =header->numSubmeshes;
+            GLuint rem = vertexOffset % sizeof(vf::static_geom_t) * header->numVertices;
+            baseVOffset += (rem==0) ? 0 : (sizeof(vf::static_geom_t) - rem);
+
+            GLuint verticesSize = sizeof(vf::static_geom_t) * header->numVertices;
+            GLuint indicesSize  = sizeof(uint32_t) * header->numIndices;
+
+            memcpy(vertices+baseVOffset, fvertices, verticesSize);
+            memcpy(indices+indexOffset,  findices,  indicesSize);
+
+            models[numModels].idxFormat    = GL_UNSIGNED_INT;
+            models[numModels].numSubmeshes = header->numSubmeshes;
 
             first = numMeshes;
             count = header->numSubmeshes;
 
             for (size_t i = 0; i < header->numSubmeshes; ++i)
             {
-                meshes[numMeshes].vbo = models[numModels].vbo;
-                meshes[numMeshes].ibo = models[numModels].ibo;
-                meshes[numMeshes].idxFormat  = GL_UNSIGNED_INT;
-                meshes[numMeshes].idxOffset  = header->offsetSize[i*2  ] * sizeof(uint32_t);
-                meshes[numMeshes].numIndices = header->offsetSize[i*2+1];
+                meshes[numMeshes].vbo = vertexBuffer;
+                meshes[numMeshes].ibo = indexBuffer;
+                meshes[numMeshes].firstVertex = baseVOffset / sizeof(vf::static_geom_t);
+                meshes[numMeshes].idxFormat   = GL_UNSIGNED_INT;
+                meshes[numMeshes].idxOffset   = indexOffset+header->offsetSize[i*2  ] * sizeof(uint32_t);
+                meshes[numMeshes].numIndices  = header->offsetSize[i*2+1];
 
                 ++numMeshes;
             }
+
+            vertexOffset  = baseVOffset+verticesSize;
+            indexOffset  += indicesSize;
 
             ++numModels;
             mem_free(&data);
@@ -1144,10 +1234,11 @@ namespace app
             PROFILER_CPU_TIMESLICE("copyGridFromHost");
 
             clusterListOffset = 0;
-            clusterListSize   = sizeof(gpu_clusters_t);
+            clusterListSize   = sizeof(gpu_clustered_lighting_t);
 
-            gpu_clusters_t* data = (gpu_clusters_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.uboAlignment, &clusterListOffset);
+            gpu_clustered_lighting_t* data = (gpu_clustered_lighting_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.uboAlignment, &clusterListOffset);
 
+            data->uAmbientGlobal = ml::make_vec3(0.02f, 0.02f, 0.02f);
             data->uGridTileX = LIGHT_GRID_TILE_DIM_X;
             data->uGridTileY = LIGHT_GRID_TILE_DIM_Y;
             data->uGridDimX  = gridDimX;

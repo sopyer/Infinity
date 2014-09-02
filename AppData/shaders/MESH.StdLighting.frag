@@ -19,23 +19,23 @@ layout(binding = 1) uniform MaterialData
 {
     vec4  uMatDiffuse;
     vec3  uMatSpecular;
-    vec3  uAmbientGlobal;
     float uR0;
     float uMatSpecPow;
 };
 
 layout(binding = 2) uniform ClusterData
 {
-    int uGridTileX;
-    int uGridTileY;
-    int uGridDimX;
-    int uGridDimY;
+    vec3  uAmbientGlobal;
+    int   uGridTileX;
+    int   uGridTileY;
+    int   uGridDimX;
+    int   uGridDimY;
     float uInvZNear;
     float uLogScale;
 #ifdef ENABLE_DEBUG
-    int uDebugMaxClusters;
-    int uDebugMaxLightList;
-    int uDebugMaxLights;
+    int   uDebugMaxClusters;
+    int   uDebugMaxLightList;
+    int   uDebugMaxLights;
 #endif
 };
 
