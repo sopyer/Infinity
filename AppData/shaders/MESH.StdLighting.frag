@@ -30,7 +30,8 @@ layout(binding = 2) uniform ClusterData
     int   uGridTileY;
     int   uGridDimX;
     int   uGridDimY;
-    float uInvZNear;
+    float uZScale;
+    float uZOffset;
     float uLogScale;
 #ifdef ENABLE_DEBUG
     int   uDebugMaxClusters;
@@ -68,7 +69,7 @@ int calcClusterIndex(vec2 fragPos, float viewSpaceZ)
 {
     int clusterLocX = int(fragPos.x) / uGridTileX;
     int clusterLocY = int(fragPos.y) / uGridTileY;
-    int clusterLocZ = int(log(-viewSpaceZ * uInvZNear) * uLogScale);
+    int clusterLocZ = int(log(viewSpaceZ * uZScale + uZOffset) * uLogScale);
 
     return (clusterLocZ * uGridDimY + clusterLocY) * uGridDimX + clusterLocX;
 }

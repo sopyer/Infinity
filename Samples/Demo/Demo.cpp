@@ -79,7 +79,8 @@ struct gpu_clustered_lighting_t
     int32_t   uGridTileY;
     int32_t   uGridDimX;
     int32_t   uGridDimY;
-    float     uInvZNear;
+    float     uZScale;
+    float     uZOffset;
     float     uLogScale;
 #ifdef DEBUG_SHADER
     int32_t   uDebugMaxClusters;
@@ -270,7 +271,7 @@ namespace app
     int32_t gridDimZ;
     int32_t numClusters;
     float zLogScale;
-    float invZNear;
+    float zscale, zoffset;
 
     float fov   = 30.0f * FLT_DEG_TO_RAD_SCALE;
     float znear = 0.1f;
@@ -955,7 +956,7 @@ namespace app
 
     float calcClusterZ(float viewSpaceZ)
     {
-        float gridLocZ = logf(-viewSpaceZ * invZNear) * zLogScale;
+        float gridLocZ = logf(viewSpaceZ * zscale + zoffset) * zLogScale;
 
         return gridLocZ;
     }
@@ -1119,12 +1120,15 @@ namespace app
 
         gridDimX = (gfx::width  + LIGHT_GRID_TILE_DIM_X - 1) / LIGHT_GRID_TILE_DIM_X;
         gridDimY = (gfx::height + LIGHT_GRID_TILE_DIM_Y - 1) / LIGHT_GRID_TILE_DIM_Y;
-        gridDimZ = 64;
+        gridDimZ = 64;//32;//128;
 
         numClusters = gridDimX * gridDimY * gridDimZ;
 
-        zLogScale = gridDimZ / logf(zfar / znear);
-        invZNear  = 1.0f / znear;
+        float b = 4.0f;
+        float q = 1.03805;//1.116;//1.0098;
+        zLogScale = 1.0f / logf(q);
+        zscale  = -(q-1)/b;
+        zoffset = 1.0f;
 
         uint32_t numRects;
         ScreenRect3D* rects = mem::alloc_array<ScreenRect3D>(appArena, MAX_LIGHTS);
@@ -1243,7 +1247,8 @@ namespace app
             data->uGridTileY = LIGHT_GRID_TILE_DIM_Y;
             data->uGridDimX  = gridDimX;
             data->uGridDimY  = gridDimY;
-            data->uInvZNear  = 1.0f / znear;
+            data->uZScale    = zscale;
+            data->uZOffset   = zoffset;
             data->uLogScale  = zLogScale;
 #ifdef DEBUG_SHADER
             data->uDebugMaxClusters  = numClusters;
