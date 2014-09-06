@@ -951,7 +951,7 @@ namespace app
     {
         int minx, miny, minz;
         int maxx, maxy, maxz;
-        uint32_t index;
+        uint16_t index;
     };
 
     float calcClusterZ(float viewSpaceZ)
@@ -1066,8 +1066,10 @@ namespace app
     {
         PROFILER_CPU_TIMESLICE("BuildRects");
 
+        assert(numViewLights<(1<<16));
+
         numRects = 0;
-        for (uint32_t i = 0; i < numViewLights; ++i)
+        for (uint16_t i = 0; i < numViewLights; ++i)
         {
             const light_t &l = lightsView[i];
             int minx=0, miny=0, maxx=0, maxy=0;
@@ -1193,9 +1195,9 @@ namespace app
             PROFILER_CPU_TIMESLICE("Pass2");
 
             lightListOffset = 0;
-            lightListSize   = core::max(4U, totalus) * sizeof(uint32_t);
+            lightListSize   = core::max(4U, totalus) * sizeof(uint16_t);
 
-            int32_t* data = (int32_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.tboAlignment, &lightListOffset);
+            int16_t* data = (int16_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.tboAlignment, &lightListOffset);
 
             for (size_t i = 0; i < numRects; ++i)
             {
@@ -1232,7 +1234,7 @@ namespace app
                     }
                 }
             }
-            glTextureBufferRangeEXT(texLightListData, GL_TEXTURE_BUFFER, GL_R32I, gfx::dynBuffer, lightListOffset, lightListSize);
+            glTextureBufferRangeEXT(texLightListData, GL_TEXTURE_BUFFER, GL_R16I, gfx::dynBuffer, lightListOffset, lightListSize);
         }
         {
             PROFILER_CPU_TIMESLICE("copyGridFromHost");
