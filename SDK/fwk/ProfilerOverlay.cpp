@@ -6,32 +6,37 @@
 static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
 const char vsQuadSource[] = 
-    "#version 330                                                           \n"
+    "#version 430                                                           \n"
     "                                                                       \n"
-    "layout(location=0) in vec4  aRect;                                     \n"
-    "layout(location=1) in vec4  aColor;                                    \n"
+    "layout(std140, column_major, binding = 0) uniform uniMVP               \n"
+    "{                                                                      \n"
+    "    mat4  uMVP;                                                        \n"
+    "};                                                                     \n"
     "                                                                       \n"
-    "out vec4 vColor;                                                       \n"
+    "layout(location=0) in vec4  vaRect;                                    \n"
+    "layout(location=1) in vec4  vaColor;                                   \n"
+    "                                                                       \n"
+    "out vec4 faColor;                                                      \n"
     "                                                                       \n"
     "void main()                                                            \n"
     "{                                                                      \n"
-    "   float x = ((gl_VertexID & 1) != 0) ? aRect.x : aRect.z;             \n"
-    "   float y = ((gl_VertexID & 2) != 0) ? aRect.y : aRect.w;             \n"
+    "   float x = ((gl_VertexID & 1) != 0) ? vaRect.x : vaRect.z;           \n"
+    "   float y = ((gl_VertexID & 2) != 0) ? vaRect.y : vaRect.w;           \n"
     "                                                                       \n"
-    "   gl_Position = gl_ModelViewProjectionMatrix * vec4(x, y, 0, 1);      \n"
-    "   vColor      = aColor;                                               \n"
+    "   gl_Position = uMVP * vec4(x, y, 0, 1);                              \n"
+    "   faColor     = vaColor;                                              \n"
     "}                                                                      \n";
 
 const char fsQuadSource[] = 
-    "#version 330                                                           \n"
+    "#version 430                                                           \n"
     "                                                                       \n"
-    "in vec4 vColor;                                                        \n"
+    "in vec4 faColor;                                                       \n"
     "                                                                       \n"
-    "layout(location = 0, index = 0) out vec4 outColor;                     \n"
+    "layout(location = 0, index = 0) out vec4 rt0;                          \n"
     "                                                                       \n"
     "void main()                                                            \n"
     "{                                                                      \n"
-    "   outColor = vColor;                                                  \n"
+    "   rt0 = faColor;                                                      \n"
     "}                                                                      \n";
 
 GLuint prgQuad;
@@ -187,9 +192,14 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     PROFILER_CPU_TIMESLICE("ProfilerOverlay::drawBars");
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    glPushMatrix();
-    glTranslatef(30.0f+mOffsetX, 30.0f, 0.0f);
-    glScalef(mScale, 1.0f, 1.0f);
+    v128 mv[4] = {
+        vi_set(  mScale,       0.0f, 0.0f, 0.0f),
+        vi_set(    0.0f,       1.0f, 0.0f, 0.0f),
+        vi_set(    0.0f,       0.0f, 1.0f, 0.0f),
+        vi_set(30.0f+mOffsetX, 30.0f, 0.0f, 1.0f),
+    };
+
+    gfx::setModelViewMatrix(mv);
 
     glEnable(GL_SCISSOR_TEST);
     glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
@@ -197,6 +207,7 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     {
         PROFILER_CPU_TIMESLICE("ModernGL");
         glUseProgram(prgQuad);
+        gfx::setMVP();
 
         GLuint rectOffset, colOffset;
         size_t count = colors.size();
@@ -218,11 +229,11 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
 
         glBindVertexArray(0);
-
-        glUseProgram(0);
     }
 
-    glPopMatrix();
+    glDisable(GL_SCISSOR_TEST);
+    ml::make_identity_mat4(mv);
+    gfx::setModelViewMatrix(mv);
 }
 
 void ProfilerOverlay::updateUI(float delta)
@@ -288,33 +299,11 @@ void ProfilerOverlay::renderFullscreen()
 {
     PROFILER_CPU_TIMESLICE("ProfilerOverlay::renderFullscreen");
     glViewport(0, 0, mWidth, mHeight);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    glOrtho(0, mWidth, 0, mHeight, 0, 500);
-    glTranslatef(0, mHeight, 0);
-    glScalef(1, -1, 1);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    glUseProgram(0);
-    
     // Background
-    glColor4f(0.1f, 0.1f, 0.1f, 0.93f);
-    glBegin(GL_QUADS);
-    glVertex3f(30.0f, 30.0f, 0.0f);
-    glVertex3f(mWidth-30.0f, 30.0f, 0.0f);
-    glVertex3f(mWidth-30.0f, mHeight-30.0f, 0.0f);
-    glVertex3f(30.0f, mHeight-30.0f, 0.0f);
-    glEnd();
+    vg::drawRect(30.0f, 30.0f, mWidth-30.0f, mHeight-30.0f, 0xF01A1A1A, 0xF01A1A1A);
 
     if (!rectData.empty())
         drawBars(&colors[0]);
@@ -323,15 +312,10 @@ void ProfilerOverlay::renderFullscreen()
     {
         char str[256];
 
-       glUseProgram(0);
-       glColor3f(1.0f, 1.0f, 1.0f);
-
         _snprintf(str, 256, "name     : %s", intervals[mSelection].name);
-        vg::drawString(vg::defaultFont, 50, 550, str, strlen(str));
+        vg::drawString(vg::defaultFont, 50, 550, 0xFFFFFFFF, str, strlen(str));
 
         _snprintf(str, 256, "duration : %.4f", intervals[mSelection].duration);
-        vg::drawString(vg::defaultFont, 50, 565, str, strlen(str));
+        vg::drawString(vg::defaultFont, 50, 565, 0xFFFFFFFF, str, strlen(str));
     }
-
-    glPopAttrib();
 }

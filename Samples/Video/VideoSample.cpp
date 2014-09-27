@@ -40,61 +40,66 @@ namespace app
 
         mediaPlayerUpdate(player);
 
-        const GLfloat w = 640.0f/2.0f/2.0f, h = 360.0f/2.0f;
+        gfx::set2DStates();
 
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
+        v128 mv[4];
+        ml::make_identity_mat4(mv);
+        gfx::setModelViewMatrix(mv);
+        gfx::setProjectionMatrix(mv);
 
-        glDisable(GL_DEPTH_TEST);
-        glUseProgram(0);
+        {
+            gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+            gfx::setMVP();
 
-        glBegin(GL_QUADS);
+            glBindVertexArray(vf::p2cu4_vertex_t::vao);
+            glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2cu4_vertex_t));
 
-        glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+            GLuint baseVertex;
+            vf::p2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2cu4_vertex_t>(6, &baseVertex);
 
-        glVertex2f(-1.0f,  1.0f);
-        glVertex2f( 1.0f,  1.0f);
+            vf::set(v++, -1.0f,  1.0f, 0xFF000000);
+            vf::set(v++,  1.0f,  1.0f, 0xFF000000);
+            vf::set(v++, -1.0f, -0.7f, 0xFF330000);
+            vf::set(v++,  1.0f, -0.7f, 0xFF330000);
+            vf::set(v++, -1.0f, -1.0f, 0xFF330000);
+            vf::set(v++,  1.0f, -1.0f, 0xFF330000);
 
-        glColor4f(0.0f, 0.0f, 0.2f, 1.0f);
+            glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 6);
+        }
 
-        glVertex2f( 1.0f, -0.7f);
-        glVertex2f(-1.0f, -0.7f);
-
-        glVertex2f(-1.0f, -0.7f);
-        glVertex2f( 1.0f, -0.7f);
-        glVertex2f( 1.0f, -1.0f);
-        glVertex2f(-1.0f, -1.0f);
-
-        glEnd();
-
-        glPopMatrix();
-
-        glMatrixMode(GL_MODELVIEW);
-        glTranslatef(640.0f, 360.0f, 0.0f);
-        glScalef(w, h, 0.0f);
-
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        gfx::setUIMatrices();
 
         mediaPlayerPrepareRender(player);
+        gfx::setMVP();
 
-        glBegin(GL_QUADS);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f, -1.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f, -1.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  0.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  0.0f);
-        glEnd();
+        {
+            float vidw = 640;
+            float vidh = 320;
+            float x0 = gfx::width / 2.0f - vidw / 2.0f;
+            float x1 = gfx::width / 2.0f + vidw / 2.0f;
+            float ym = gfx::height / 2.0f;
 
-        glBegin(GL_QUADS);
-        glColor4f(1.0f, 1.0f, 1.0f, 0.0f);glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f,  1.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 0.0f);glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f,  1.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 0.3f);glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f,  0.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 0.3f);glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f,  0.0f);
-        glEnd();
+            glBindVertexArray(vf::p2uv2cu4_vertex_t::vao);
+            glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2uv2cu4_vertex_t));
 
-        glDisable(GL_BLEND);
+            GLuint baseVertex;
+            vf::p2uv2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2uv2cu4_vertex_t>(8, &baseVertex);
+
+            vf::set(v++, x0, ym - vidh, 0.0f, 0.0f, 0xFFFFFFFF);
+            vf::set(v++, x1, ym - vidh, 1.0f, 0.0f, 0xFFFFFFFF);
+            vf::set(v++, x0, ym,        0.0f, 1.0f, 0xFFFFFFFF);
+            vf::set(v++, x1, ym,        1.0f, 1.0f, 0xFFFFFFFF);
+            glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
+            baseVertex += 4;
+
+            vf::set(v++, x0, ym,        0.0f, 1.0f, 0x4CFFFFFF);
+            vf::set(v++, x1, ym,        1.0f, 1.0f, 0x4CFFFFFF);
+            vf::set(v++, x0, ym + vidh, 0.0f, 0.0f, 0x00FFFFFF);
+            vf::set(v++, x1, ym + vidh, 1.0f, 0.0f, 0x00FFFFFF);
+            glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
+        }
+
+        const GLfloat w = 640.0f/2.0f/2.0f, h = 360.0f/2.0f;
     }
 
     void update(float){}

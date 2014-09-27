@@ -93,6 +93,8 @@ namespace ml
     void transform_vec3_dual_quat      (vec3* result, dual_quat* dq, vec3* p);
     void get_translation_from_dual_quat(vec3* result, dual_quat* dq);
     v128 transform_vec3_dual_quat      (dual_quat* dq, v128 p);
+    void make_translation_mat4         (v128* res, float dx, float dy, float dz);
+    void make_rotation_mat4            (v128* res, float angle, float axisx, float axisy, float axisz);
 
     // matrices
     v128 mul_mat4_vec4     (v128* m/*[4]*/, v128 v);

@@ -109,10 +109,9 @@ etlsf_arena_t etlsf_create(mem::arena_t marena, uint32_t size, uint16_t max_allo
 
     etlsf_arena_t arena = (etlsf_arena_t)mem::alloc(marena, arena_total_size(max_allocs + 1));
 
-    arena->marena = marena;
-
     memset(arena, 0, sizeof(etlsf_arena_data_t)); // sets also all lists point to zero block
 
+    arena->marena    = marena;
     arena->size      = max_allocs + 1;
     arena->unused    = max_allocs;
     arena->first_ava = 0;
@@ -155,7 +154,7 @@ uint16_t etlsf_alloc(etlsf_arena_t arena, uint32_t size)
         //block should be marked as used before trim, as trim will try to merge
         //it with trimmed again
         block_set_used(arena, id);
-        block_trim(arena, id, size);
+        block_trim(arena, id, adjust);
     }
 
     return id;
@@ -178,6 +177,11 @@ uint32_t etlsf_block_size(etlsf_arena_t arena, uint16_t block)
 uint32_t etlsf_block_offset(etlsf_arena_t arena, uint16_t block)
 {
     return block_get_offset(arena, block);
+}
+
+int etlsf_is_block_valid(etlsf_arena_t arena, uint16_t block)
+{
+    return !block_is_free(arena, block);
 }
 
 

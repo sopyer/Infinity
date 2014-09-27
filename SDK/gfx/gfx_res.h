@@ -1,31 +1,27 @@
 #pragma once
 
-namespace impl
+#include <gfx/gfx.h>
+
+namespace gfx
 {
-    enum
-    {
-        //PRG_SIMPLE_UI uniforms
-        UNI_SIMPLE_UI_FILL_COLOR   = 0,
-        UNI_SIMPLE_UI_BORDER_COLOR = 1,
-        UNI_SIMPLE_UI_ZONES        = 2,
-    };
+    extern mem::arena_t memArena;
+    extern gpu_buffer_t vgBuffer;
+}
 
-    extern GLuint   simpleUIProgram;
+namespace gfx_res
+{
+    static const size_t STD_PROGRAM_COUNT = 1<<gfx::STD_FEATURE_COUNT;
 
-    extern GLuint   stencilCubicAreaProgram;
-    extern GLuint   stencilCubicAreaAAProgram;
+    extern GLuint stdPrograms[STD_PROGRAM_COUNT];
 
-    enum
-    {
-        UNI_LIN_GRAD_STOPS          =  0,
-        UNI_LIN_GRAD_SCALES         =  8,
-        UNI_LIN_GRAD_INV_STOP_COUNT = 16,
-        UNI_LIN_GRAD_START_POINT    = 17,
-        UNI_LIN_GRAD_DIRECTION      = 18,
-    };
+    extern GLuint prgUI;
+    extern GLuint prgRasterCubic;
+    extern GLuint prgRasterCubicAA;
+    extern GLuint prgPaintSolid;
+    extern GLuint prgPaintLinGradient;
+    extern GLuint prgLine;
+    extern GLuint prgPoint;
 
-    extern GLuint   linGradProgram;
-
-    void allocResources();
-    void freeResources();
+    void init();
+    void fini();
 }

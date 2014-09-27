@@ -1,35 +1,13 @@
 #include <gfx/gfx.h>
-#include <core/core.h>
 
-namespace vf
-{
-    GLuint skinned_geom_t::vao;
-    GLuint static_geom_t::vao;
-    GLuint empty_geom_t::vao;
+#include "gfx_res.h"
 
-    static const gfx::vertex_element_t descSkinnedGeom[5] = 
-    {
-        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, b),  3, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, w),  4, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
-    };
-
-    static const gfx::vertex_element_t descStaticGeom[3] = 
-    {
-        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
-    };
-}
+#define GFX_MAX_ALLOCS (1<<14) 
 
 namespace gfx
 {
     static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
     static int        frameID = 0;
-
-    GLuint prgLine, prgPoint;
 
     int width;
     int height;
@@ -43,6 +21,22 @@ namespace gfx
     v128 uiProj[4];
 
     gl_caps_t caps;
+
+    mem::arena_t memArena = 0;
+    gpu_buffer_t vgBuffer = 0;
+
+//!!!!!TODO: implements proper simple caching solution with bitset
+    //enum RevObjects
+    //{
+    //    REVOBJ_STD_TRANSFORMS,
+    //    REVOBJ_MVP,
+    //    NUM_REVISIONED_OBJECTS
+    //};
+
+    //core::bitset<NUM_REVISIONED_OBJECTS> resSubmitStatus;
+    //bitset_init(bs)
+    //bitset_set(bs, int, int);
+    //int bitset_is_set(bs, int)
 
     static const char* glString(GLenum value)
     {
@@ -106,6 +100,10 @@ namespace gfx
 
     void init(int w, int h)
     {
+        memArena = mem::create_arena(512 * (1<<10), 1);
+
+        vgBuffer = createBuffer(1 * (1<<20), GL_MAP_WRITE_BIT);
+
 #ifdef _DEBUG
         glDebugMessageCallback(debugCallback, NULL);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
@@ -119,20 +117,14 @@ namespace gfx
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &caps.ssboAlignment);
         glGetIntegerv(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT,        &caps.tboAlignment);
 
-        prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
-        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
-
-        vf::skinned_geom_t::vao = createVAO(ARRAY_SIZE(vf::descSkinnedGeom), vf::descSkinnedGeom, 0, NULL);
-        vf::static_geom_t::vao  = createVAO(ARRAY_SIZE(vf::descStaticGeom),  vf::descStaticGeom,  0, NULL);
-
-        glGenVertexArrays(1, &vf::empty_geom_t::vao);
-
         GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
         GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
 
         glGenBuffers(1, &dynBuffer);
         glNamedBufferStorageEXT(dynBuffer, size, 0, flags);
         dynBufBasePtr = (uint8_t*)glMapNamedBufferRangeEXT(dynBuffer, 0, size, flags);
+
+        gfx_res::init();
 
         vg::init();
     }
@@ -141,14 +133,14 @@ namespace gfx
     {
         vg::fini();
 
-        glDeleteVertexArrays(1, &vf::skinned_geom_t::vao);
-        glDeleteVertexArrays(1, &vf::static_geom_t::vao);
-        glDeleteVertexArrays(1, &vf::empty_geom_t::vao);
-
-        glDeleteProgram(prgLine);
+        gfx_res::fini();
 
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);
+
+        destroyBuffer(vgBuffer);
+
+        mem::destroy_arena(memArena);
     }
 
     void resize(int w, int h)
@@ -177,23 +169,20 @@ namespace gfx
         dynBufferOffset = frameID * DYNAMIC_BUFFER_FRAME_SIZE;
         dynBufAllocated = 0;
 
-        glClearDepth(1.0);
-        glClearStencil(0x00);
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        ml::make_identity_mat4(autoVars.matMV);
+        ml::make_identity_mat4(autoVars.matP);
+        ml::make_identity_mat4(autoVars.matMVP);
 
         glViewport(0, 0, width, height);
 
+        glClearColor   (0.0f, 0.0f, 0.0f, 0.0f);
+        glClearDepthf  (1.0f);
+        glClearStencil (0x00);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-        glMatrixMode(GL_PROJECTION);
-        glLoadMatrixf((float*)uiProj);
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
     }
 
     void endFrame()
@@ -238,28 +227,17 @@ namespace gfx
     {
         if (align != 0)
         {
-            GLsizei rem  = dynBufAllocated % align;
+            GLsizei rem  = (dynBufferOffset + dynBufAllocated) % align;
             GLsizei aoff = rem == 0 ? 0 : align - rem;
 
             if (dynBufAllocated + aoff > DYNAMIC_BUFFER_FRAME_SIZE)
                 return false;
 
             dynBufAllocated += aoff;
-            assert(dynBufAllocated % align == 0);
+            assert((dynBufferOffset + dynBufAllocated) % align == 0);
         }
 
         if (offset) *offset = dynBufferOffset + dynBufAllocated;
-
-        return true;
-    }
-
-    bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex)
-    {
-        GLuint offset;
-
-        if (!dynbufAlignMem(stride, &offset)) return false;
-
-        *baseVertex = offset / stride;
 
         return true;
     }
@@ -275,14 +253,6 @@ namespace gfx
         dynBufAllocated += size;
 
         return mem;
-    }
-
-    void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex)
-    {
-        if (!dynbufAlignVert(stride, baseVertex))
-            return 0;
-
-        return dynbufAlloc(size);
     }
 
     void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset)
@@ -316,15 +286,13 @@ namespace gfx
         assert(sizeof(line_t)*count <= (size_t)size);
         assert(offset % caps.ssboAlignment == 0);
 
-        glUseProgram(prgLine);
+        glUseProgram(gfx_res::prgLine);
 
         glBindBufferRange(GL_UNIFORM_BUFFER,        0, dynBuffer, offsetGlobal, sizeGlobal);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
 
         glBindVertexArray(vf::empty_geom_t::vao);
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-
-        glUseProgram(0);
     }
 
     void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size)
@@ -341,15 +309,13 @@ namespace gfx
         assert(sizeof(point_t)*count <= (size_t)size);
         assert(offset % caps.ssboAlignment == 0);
 
-        glUseProgram(prgPoint);
+        glUseProgram(gfx_res::prgPoint);
 
         glBindBufferRange(GL_UNIFORM_BUFFER,        0, dynBuffer, offsetGlobal, sizeGlobal);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
 
         glBindVertexArray(vf::empty_geom_t::vao);
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
-
-        glUseProgram(0);
     }
 
     void drawXZGrid(float x0, float z0, float x1, float z1, int numQuads, v128 color)
@@ -372,6 +338,45 @@ namespace gfx
             *v++ = vi_set(x0 + i * stepX, 0.0f, z1, 1.0f);
         }
         gfx::drawLines(color, 2 * numLines, gfx::dynBuffer, offset, size);
+    }
+
+    void draw2DLineStrip(float* vertices, GLuint numVertices, uint32_t color)
+    {
+        assert(numVertices>1);
+
+        GLuint numLines = numVertices - 1;
+
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+        gfx::setMVP();
+
+        GLuint baseVertex;
+
+        glBindVertexArray(vf::p2cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2cu4_vertex_t));
+
+        vf::p2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2cu4_vertex_t>(numLines*4, &baseVertex);
+
+        for (GLuint i = 0; i < numLines; ++i)
+        {
+            float x  = vertices[i*2];
+            float y  = vertices[i*2+1];
+            float x_ = vertices[i*2+2];
+            float y_ = vertices[i*2+3];
+            float nx = y  - y_;
+            float ny = x_ - x;
+            float scale = 10*core::max(ml::abs(nx), ml::abs(ny));
+
+            if (scale<FLT_EPSILON) continue;
+
+            nx /= scale;
+            ny /= scale;
+
+            vf::set(v++, x +nx, y +ny, color);
+            vf::set(v++, x -nx, y -ny, color);
+            vf::set(v++, x_+nx, y_+ny, color);
+            vf::set(v++, x_-nx, y_-ny, color);
+        }
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, numLines*4);
     }
 
     auto_vars_t autoVars;
@@ -594,10 +599,21 @@ namespace gfx
         }
     }
 
+    void setStdProgram(size_t featureMask)
+    {
+        assert(featureMask<gfx_res::STD_PROGRAM_COUNT);
+        glUseProgram(gfx_res::stdPrograms[featureMask]);
+    }
+
     struct std_transforms_t
     {
         v128 uMV[4];
         v128 uProj;
+    };
+
+    struct mvp_t
+    {
+        v128 uMVP[4];
     };
 
     void setStdTransforms(GLuint index)
@@ -612,6 +628,62 @@ namespace gfx
 
         glBindBufferRange(GL_UNIFORM_BUFFER, index, dynBuffer, offset, size);
     }
+
+    void setMVP(GLuint index)
+    {
+        GLuint     offset;
+        GLsizeiptr size = sizeof(mvp_t);
+
+        mvp_t* transforms = (mvp_t*)gfx::dynbufAllocMem(size, gfx::caps.uboAlignment, &offset);
+
+        memcpy(transforms->uMVP, &autoVars.matMVP, 4*sizeof(v128));
+
+        glBindBufferRange(GL_UNIFORM_BUFFER, index, dynBuffer, offset, size);
+    }
+
+    void setModelViewMatrix(v128* view)
+    {
+        memcpy(autoVars.matMV, view, sizeof(v128)*4);
+
+        ml::mul_mat4(autoVars.matMVP, autoVars.matP, view);
+    }
+
+    void setProjectionMatrix(v128* proj)
+    {
+        memcpy(autoVars.matP, proj, sizeof(v128)*4);
+
+        ml::mul_mat4(autoVars.matMVP, proj, autoVars.matMV);
+
+        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
+        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
+        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
+        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
+    }
+
+    void setUIMatrices()
+    {
+        ml::make_identity_mat4(autoVars.matMV);
+        setProjectionMatrix(uiProj);
+    }
+
+    void set3DStates()
+    {
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+        glDisable(GL_BLEND);
+    }
+
+    void set2DStates()
+    {
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+
 
     void gpu_timer_init(gpu_timer_t* timer)
     {
@@ -646,4 +718,94 @@ namespace gfx
     {
         return timer->measuredTime / 1000;
     }
+
+    struct gpu_buffer_data_t
+    {
+        etlsf_arena_t gpu_arena;
+        GLuint        buffer;
+        GLuint        flags;
+    };
+
+    gpu_buffer_t createBuffer(GLsizeiptr size, GLuint flags)
+    {
+        gpu_buffer_t buffer = mem::alloc<gpu_buffer_data_t>(memArena);
+
+        buffer->gpu_arena = etlsf_create(memArena, size, GFX_MAX_ALLOCS);
+
+        glGenBuffers(1, &buffer->buffer);
+        glNamedBufferStorageEXT(buffer->buffer, size, 0, flags);
+
+        buffer->flags = flags & ~(GL_CLIENT_STORAGE_BIT|GL_DYNAMIC_STORAGE_BIT);
+
+        return buffer;
+    }
+
+    void destroyBuffer(gpu_buffer_t buffer)
+    {
+        assert(buffer);
+        etlsf_destroy(buffer->gpu_arena);
+        glDeleteBuffers(1, &buffer->buffer);
+        memset(buffer, 0, sizeof(gpu_buffer_data_t));
+    }
+
+    uint16_t allocBufferMem(gpu_buffer_t buffer, GLsizeiptr size, GLuint align)
+    {
+        assert(buffer);
+        return etlsf_alloc(buffer->gpu_arena, size+align);
+    }
+
+    void freeBufferMem(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        assert(buffer);
+        etlsf_free(buffer->gpu_arena, alloc);
+    }
+
+    void* lockBufferMem(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        assert(buffer);
+
+        GLuint offset = etlsf_block_offset(buffer->gpu_arena, alloc);
+        GLuint size   = etlsf_block_size(buffer->gpu_arena, alloc);
+
+        return glMapNamedBufferRangeEXT(buffer->buffer, offset, size, buffer->flags|GL_MAP_INVALIDATE_RANGE_BIT);
+    }
+
+    void unlockBufferMem(gpu_buffer_t buffer)
+    {
+        assert(buffer);
+        glUnmapNamedBufferEXT(buffer->buffer);
+    }
+
+    GLuint getBufferMemOffset(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        assert(buffer);
+        return etlsf_block_offset(buffer->gpu_arena, alloc);
+    }
+
+    GLuint getBufferMemSize(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        assert(buffer);
+        return etlsf_block_size(buffer->gpu_arena, alloc);
+    }
+
+    GLuint getBufferFirstVertex(gpu_buffer_t buffer, uint16_t alloc, GLuint stride)
+    {
+        assert(buffer);
+
+        GLuint offset = getBufferMemOffset(buffer, alloc);
+        GLuint rem    = offset % stride;
+        GLuint offsetAdjust = (rem==0)? 0 : (stride - rem);
+
+        assert((offset+offsetAdjust) % stride == 0);
+
+        return (offset+offsetAdjust) / stride;
+    }
+
+    GLuint getGPUBuffer(gpu_buffer_t buffer)
+    {
+        assert(buffer);
+
+        return buffer->buffer;
+    }
+
 }

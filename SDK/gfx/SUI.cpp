@@ -3,52 +3,50 @@
 
 namespace vg
 {
-    using namespace impl;
+    enum
+    {
+        UNI_SIMPLE_UI_FILL_COLOR   = 0,
+        UNI_SIMPLE_UI_BORDER_COLOR = 1,
+        UNI_SIMPLE_UI_ZONES        = 2,
+    };
 
     void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        PROFILER_CPU_TIMESLICE("vg::drawRect");
 
         v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
 
-        glUseProgram(simpleUIProgram);
+        glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
         glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
         glUniform2f (UNI_SIMPLE_UI_ZONES, 0, 0);
+        gfx::setMVP();
 
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, 0);
+        GLuint baseVertex;
 
-        glVertex2f( x0, y0);
-        glVertex2f( x1, y0);
-
-        glVertex2f( x0, y1);
-        glVertex2f( x1, y1);
-        glEnd();
-
-        glUseProgram(0);
-        glPopAttrib();
+        glBindVertexArray(vf::p2_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2_vertex_t));
+        vf::p2_vertex_t* v = gfx::frameAllocVertices<vf::p2_vertex_t>(4, &baseVertex);
+        v[0].x = x0; v[0].y = y0;
+        v[1].x = x1; v[1].y = y0;
+        v[2].x = x0; v[2].y = y1;
+        v[3].x = x1; v[3].y = y1;
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
     }
 
     void drawRoundedRect(float x0, float y0, float x1, float y1, float cx, float cy, VGuint fillColor, VGuint borderColor)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+        PROFILER_CPU_TIMESLICE("vg::drawRoundedRect");
 
-        glUseProgram(simpleUIProgram);
+        v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
+             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+
+        glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
         glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
         glUniform2f (UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
+        gfx::setMVP();
 
         float xb = cx;
         float yb = cy;
@@ -63,88 +61,66 @@ namespace vg
         float py2 = y1-cy;
         float py3 = y1;
 
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(xb, yb);
-        glVertex2f(px0, py0);
-        glTexCoord2f(0, yb);
-        glVertex2f(px1, py0);
+        GLuint baseVertex;
 
-        glTexCoord2f(xb, 0);
-        glVertex2f(px0, py1);
-        glTexCoord2f(0, 0);
-        glVertex2f(px1, py1);
+        glBindVertexArray(vf::p2uv3_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2uv3_vertex_t));
+        vf::p2uv3_vertex_t* v = gfx::frameAllocVertices<vf::p2uv3_vertex_t>(24, &baseVertex);
 
-        glTexCoord2f(xb, 0);
-        glVertex2f(px0, py2);
-        glTexCoord2f(0, 0);
-        glVertex2f(px1, py2);
+        vf::set(v++, px0, py0, xb, yb);
+        vf::set(v++, px1, py0,  0, yb);
 
-        glTexCoord2f(xb, yb);
-        glVertex2f(px0, py3);
-        glTexCoord2f(0, yb);
-        glVertex2f(px1, py3);
-        glEnd();
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, yb);
-        glVertex2f(px2, py0);
-        glTexCoord2f(xb, yb);
-        glVertex2f(px3, py0);
+        vf::set(v++, px0, py1, xb,  0);
+        vf::set(v++, px1, py1,  0,  0);
 
-        glTexCoord2f(0, 0);
-        glVertex2f(px2, py1);
-        glTexCoord2f(xb, 0);
-        glVertex2f(px3, py1);
+        vf::set(v++, px0, py2, xb, 0);
+        vf::set(v++, px1, py2,  0, 0);
 
-        glTexCoord2f(0, 0);
-        glVertex2f(px2, py2);
-        glTexCoord2f(xb, 0);
-        glVertex2f(px3, py2);
+        vf::set(v++, px0, py3, xb, yb);
+        vf::set(v++, px1, py3,  0, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
+        baseVertex+=8;
 
-        glTexCoord2f(0, yb);
-        glVertex2f(px2, py3);
-        glTexCoord2f(xb, yb);
-        glVertex2f(px3, py3);
-        glEnd();
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, yb);
-        glVertex2f(px1, py0);
-        glTexCoord2f(0, yb);
-        glVertex2f(px2, py0);
+        vf::set(v++, px2, py0, 0, yb);
+        vf::set(v++, px3, py0, xb, yb);
 
-        glTexCoord2f(0, 0);
-        glVertex2f(px1, py1);
-        glTexCoord2f(0, 0);
-        glVertex2f(px2, py1);
+        vf::set(v++, px2, py1, 0, 0);
+        vf::set(v++, px3, py1, xb, 0);
 
-        glTexCoord2f(0, 0);
-        glVertex2f(px1, py2);
-        glTexCoord2f(0, 0);
-        glVertex2f(px2, py2);
+        vf::set(v++, px2, py2, 0, 0);
+        vf::set(v++, px3, py2, xb, 0);
 
-        glTexCoord2f(0, yb);
-        glVertex2f(px1, py3);
-        glTexCoord2f(0, yb);
-        glVertex2f(px2, py3);
-        glEnd();
+        vf::set(v++, px2, py3, 0, yb);
+        vf::set(v++, px3, py3, xb, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
+        baseVertex+=8;
 
-        glUseProgram(0);
-        glPopAttrib();
+        vf::set(v++, px1, py0, 0, yb);
+        vf::set(v++, px2, py0, 0, yb);
+
+        vf::set(v++, px1, py1, 0, 0);
+        vf::set(v++, px2, py1, 0, 0);
+
+        vf::set(v++, px1, py2, 0, 0);
+        vf::set(v++, px2, py2, 0, 0);
+
+        vf::set(v++, px1, py3, 0, yb);
+        vf::set(v++, px2, py3, 0, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
     }
 
     void drawRoundedRectOutline(float x0, float y0, float x1, float y1, float cx, float cy, VGuint borderColor)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        v128 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000),
-            borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+        PROFILER_CPU_TIMESLICE("vg::drawRoundedRectOutline");
 
-        glUseProgram(simpleUIProgram);
+        v128 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000),
+             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+
+        glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&translucentF);
         glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
         glUniform2f (UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
+        gfx::setMVP();
 
         float xb = cx;
         float yb = cy;
@@ -159,91 +135,79 @@ namespace vg
         float py2 = y1 - cy;
         float py3 = y1;
 
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(xb, yb);
-        glVertex2f( px0, py0);
-        glTexCoord2f(0, yb);
-        glVertex2f( px1, py0);
+        GLuint baseVertex;
 
-        glTexCoord2f(xb, 0);
-        glVertex2f( px0, py1);
-        glTexCoord2f(0, 0);
-        glVertex2f( px1, py1);
+        glBindVertexArray(vf::p2uv3_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2uv3_vertex_t));
+        vf::p2uv3_vertex_t* v = gfx::frameAllocVertices<vf::p2uv3_vertex_t>(24, &baseVertex);
 
-        glTexCoord2f(xb, 0);
-        glVertex2f( px0, py2);
-        glTexCoord2f(0, 0);
-        glVertex2f( px1, py2);
+        vf::set(v++, px0, py0, xb, yb);
+        vf::set(v++, px1, py0,  0, yb);
 
-        glTexCoord2f(xb, yb);
-        glVertex2f( px0, py3);
-        glTexCoord2f(0, yb);
-        glVertex2f( px1, py3);
-        glEnd();
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, yb);
-        glVertex2f( px2, py0);
-        glTexCoord2f(xb, yb);
-        glVertex2f( px3, py0);
+        vf::set(v++, px0, py1, xb,  0);
+        vf::set(v++, px1, py1,  0,  0);
 
-        glTexCoord2f(0, 0);
-        glVertex2f( px2, py1);
-        glTexCoord2f(xb, 0);
-        glVertex2f( px3, py1);
+        vf::set(v++, px0, py2, xb, 0);
+        vf::set(v++, px1, py2,  0, 0);
 
-        glTexCoord2f(0, 0);
-        glVertex2f( px2, py2);
-        glTexCoord2f(xb, 0);
-        glVertex2f( px3, py2);
+        vf::set(v++, px0, py3, xb, yb);
+        vf::set(v++, px1, py3,  0, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
+        baseVertex+=8;
 
-        glTexCoord2f(0, yb);
-        glVertex2f( px2, py3);
-        glTexCoord2f(xb, yb);
-        glVertex2f( px3, py3);
-        glEnd();
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, yb);
-        glVertex2f( px1, py0);
-        glTexCoord2f(0, yb);
-        glVertex2f( px2, py0);
+        vf::set(v++, px2, py0, 0, yb);
+        vf::set(v++, px3, py0, xb, yb);
 
-        glTexCoord2f(0, 0);
-        glVertex2f( px1, py1);
-        glTexCoord2f(0, 0);
-        glVertex2f( px2, py1);
-        glEnd();
-        glBegin(GL_TRIANGLE_STRIP);
-        glTexCoord2f(0, 0);
-        glVertex2f( px1, py2);
-        glTexCoord2f(0, 0);
-        glVertex2f( px2, py2);
+        vf::set(v++, px2, py1, 0, 0);
+        vf::set(v++, px3, py1, xb, 0);
 
-        glTexCoord2f(0, yb);
-        glVertex2f( px1, py3);
-        glTexCoord2f(0, yb);
-        glVertex2f( px2, py3);
-        glEnd();
+        vf::set(v++, px2, py2, 0, 0);
+        vf::set(v++, px3, py2, xb, 0);
 
-        glUseProgram(0);
-        glPopAttrib();
+        vf::set(v++, px2, py3, 0, yb);
+        vf::set(v++, px3, py3, xb, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
+        baseVertex+=8;
+
+        vf::set(v++, px1, py0, 0, yb);
+        vf::set(v++, px2, py0, 0, yb);
+
+        vf::set(v++, px1, py1, 0, 0);
+        vf::set(v++, px2, py1, 0, 0);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
+        baseVertex+=4;
+
+        vf::set(v++, px1, py2, 0, 0);
+        vf::set(v++, px2, py2, 0, 0);
+
+        vf::set(v++, px1, py3, 0, yb);
+        vf::set(v++, px2, py3, 0, yb);
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
     }
 
     //   void drawCircle( const Rect& rect, int fillColorId, int borderColorId );
 
     void drawImage(float x0, float y0, float x1, float y1, GLuint texture)
     {
-        glUseProgram(0);
-        glColor4f(1, 1, 1, 1);
-        glEnable(GL_TEXTURE_2D);
+        PROFILER_CPU_TIMESLICE("vg::drawImage");
+        gfx::setStdProgram(gfx::STD_FEATURE_TEXTURE);
+        gfx::setMVP();
+
         glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, texture);
         glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBegin(GL_QUADS);
-            glTexCoord2f(0, 1); glVertex2f(x0, y0);
-            glTexCoord2f(1, 1); glVertex2f(x1, y0);
-            glTexCoord2f(1, 0); glVertex2f(x1, y1);
-            glTexCoord2f(0, 0); glVertex2f(x0, y1);
-        glEnd();
-        glDisable(GL_TEXTURE_2D);
+
+        GLuint baseVertex;
+
+        glBindVertexArray(vf::p2uv2_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2uv2_vertex_t));
+        vf::p2uv2_vertex_t* v = gfx::frameAllocVertices<vf::p2uv2_vertex_t>(4, &baseVertex);
+
+        vf::set(v++, x0, y0, 0.0f, 0.0f);
+        vf::set(v++, x1, y0, 1.0f, 0.0f);
+        vf::set(v++, x0, y1, 0.0f, 1.0f);
+        vf::set(v++, x1, y1, 1.0f, 1.0f);
+
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
     }
 }

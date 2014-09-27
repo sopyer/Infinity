@@ -102,30 +102,30 @@ RTDesc rtDesc[] =
     {TEX_COMBINED2,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_COMBINED3,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
     {TEX_COMBINED4,     texSize, texSize, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_LUMINANCE,           0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_GUIDED_RESULT,       0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_BYTE },
-    {TEX_TMP0,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP1,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP2,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP3,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP4,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP5,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP6,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP7,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP8,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP9,                0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP10,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP11,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP12,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP13,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP14,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP15,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP16,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP17,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP18,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP19,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP20,               0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
-    {TEX_TMP_BOXF,            0,       0, GL_RGBA8,        GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_LUMINANCE,           0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_GUIDED_RESULT,       0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_BYTE },
+    {TEX_TMP0,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP1,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP2,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP3,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP4,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP5,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP6,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP7,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP8,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP9,                0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP10,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP11,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP12,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP13,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP14,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP15,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP16,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP17,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP18,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP19,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP20,               0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
+    {TEX_TMP_BOXF,            0,       0, GL_SRGB8_ALPHA8, GL_RGBA, GL_UNSIGNED_SHORT},
 };
 
 extern GLuint programs[PRG_ID_COUNT];
@@ -193,9 +193,7 @@ namespace app
         uniFreq      = glGetUniformLocation(perlinGtorProg, "uFreq");
         uniFreqScale = glGetUniformLocation(perlinGtorProg, "uFreqScale");
 
-        glUseProgram(perlinGtorProg);
-        glUniform1f(uniInvTexDim, 1.0f/PERMUTATION_DIM);
-        glUseProgram(0);
+        glProgramUniform1fEXT(perlinGtorProg, uniInvTexDim, 1.0f/PERMUTATION_DIM);
 
         //Gen perlin permutation and gradient textures
         glGenTextures(9, permTex);
@@ -360,6 +358,7 @@ namespace app
 
     void generateColorGuided()
     {
+        glEnable(GL_FRAMEBUFFER_SRGB);
         //boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
         //boxFilter2Pass(textures[TEX_TMP1], textures[TEX_LUMINANCE], textures[TEX_TMP0], 7, 256, 256);
 
@@ -377,10 +376,12 @@ namespace app
         };
 
         colorGuidedFilter(mTextures[TEX_GUIDED_RESULT], texSource, texSource, tmp, 7, 0.04f, imgWidth, imgHeight);
+        glDisable(GL_FRAMEBUFFER_SRGB);
     }
 
     void generateGuided()
     {
+        glEnable(GL_FRAMEBUFFER_SRGB);
         convertToLuminance(mTextures[TEX_LUMINANCE], texSource, imgWidth, imgHeight);
 
         //boxFilter(textures[TEX_TMP2], textures[TEX_LUMINANCE], 256, 256);
@@ -395,18 +396,20 @@ namespace app
         };
 
         guidedFilter(mTextures[TEX_GUIDED_RESULT], texSource, mTextures[TEX_LUMINANCE], tmp, 7, 0.04f, imgWidth, imgHeight);
+        glDisable(GL_FRAMEBUFFER_SRGB);
     }
 
     void drawStrings(size_t count, TextDesc* strings)
     {
         for (size_t i = 0; i < count; ++i)
         {
-            vg::drawString(vg::defaultFont, strings[i].x, strings[i].y, strings[i].text, strlen(strings[i].text));
+            vg::drawString(vg::defaultFont, strings[i].x, strings[i].y, 0xFFFFFFFF, strings[i].text, strlen(strings[i].text));
         }
     }
 
     void drawImages(size_t count, ImageDesc* images)
     {
+        glEnable(GL_FRAMEBUFFER_SRGB);
         for (size_t i = 0; i < count; ++i)
         {
             glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
@@ -420,14 +423,21 @@ namespace app
 
             glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
         }
+        glDisable(GL_FRAMEBUFFER_SRGB);
     }
 
     void visualizeColorGuided()
     {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(mOffsetX, mOffsetY, 0);
-        glScalef(mScale, mScale, 1);
+        gfx::setUIMatrices();
+
+        v128 mv[4] = {
+            vi_set(  mScale,     0.0f, 0.0f, 0.0f),
+            vi_set(    0.0f,   mScale, 0.0f, 0.0f),
+            vi_set(    0.0f,     0.0f, 1.0f, 0.0f),
+            vi_set(mOffsetX, mOffsetY, 0.0f, 1.0f),
+        };
+
+        gfx::setModelViewMatrix(mv);
 
         TextDesc strings[] = {
             { 450.0f,   15.0f, "source"              },
@@ -516,16 +526,20 @@ namespace app
         };
 
         drawImages(ARRAY_SIZE(images), images);
-
-        glPopMatrix();
     }
 
     void visualizeGuided()
     {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(mOffsetX, mOffsetY, 0);
-        glScalef(mScale, mScale, 1);
+        gfx::setUIMatrices();
+
+        v128 mv[4] = {
+            vi_set(  mScale,     0.0f, 0.0f, 0.0f),
+            vi_set(    0.0f,   mScale, 0.0f, 0.0f),
+            vi_set(    0.0f,     0.0f, 1.0f, 0.0f),
+            vi_set(mOffsetX, mOffsetY, 0.0f, 1.0f),
+        };
+
+        gfx::setModelViewMatrix(mv);
 
         TextDesc strings[] = {
             { 450.0f,  15.0f, "source"              },
@@ -566,16 +580,20 @@ namespace app
         };
 
         drawImages(ARRAY_SIZE(images), images);
-
-        glPopMatrix();
     }
 
     void visualizeTexture()
     {
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(mOffsetX, mOffsetY, 0);
-        glScalef(mScale, mScale, 1);
+        gfx::setUIMatrices();
+
+        v128 mv[4] = {
+            vi_set(  mScale,     0.0f, 0.0f, 0.0f),
+            vi_set(    0.0f,   mScale, 0.0f, 0.0f),
+            vi_set(    0.0f,     0.0f, 1.0f, 0.0f),
+            vi_set(mOffsetX, mOffsetY, 0.0f, 1.0f),
+        };
+
+        gfx::setModelViewMatrix(mv);
 
         ImageDesc images[] = {
             {  0.0f,  25.0f, 256.0f, 256.0f, mTextures[TEX_PERLIN0],   swizzleRGBA},
@@ -590,8 +608,6 @@ namespace app
         };
 
         drawImages(ARRAY_SIZE(images), images);
-
-        glPopMatrix();
     }
 
     void render()
@@ -622,6 +638,9 @@ namespace app
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(vp[0], vp[1], vp[2], vp[3]);
 
+        gfx::setUIMatrices();
+        gfx::set2DStates();
+
         vg::drawRect(3.0f, 3.0f, 1277.0f, 37.0f, 0xFF3E3E3E, 0xFF3E3E3E);
 
         const float     size    = 120.0f;
@@ -638,7 +657,6 @@ namespace app
             "LIGHTING"
         };
 
-        glColor3f(1.0f, 1.0f, 1.0f);
         for (uint32_t i = 0; i < count; ++i)
         {
             if (i > 0)
@@ -647,7 +665,7 @@ namespace app
             vg::drawRect(pos+margin, 34.0f-(currentTab==i?3.0f:0.0f), pos+size-margin, 35.0f, 0xFFEDB734, 0xFF34B7ED);
 
             float x = vg::getTextHExtent(vg::defaultFont, caption[i]);
-            vg::drawString(vg::defaultFont, pos + 0.5f * (size - x), 25.0f, caption[i], strlen(caption[i]));
+            vg::drawString(vg::defaultFont, pos + 0.5f * (size - x), 25.0f, 0xFFFFFFFF, caption[i], strlen(caption[i]));
             pos += size;
         }
  
@@ -668,6 +686,12 @@ namespace app
                 lighting::draw();
                 break;
         }
+
+        v128 mv[4];
+
+        ml::make_identity_mat4(mv);
+        gfx::setModelViewMatrix(mv);
+        gfx::set2DStates();
 
         ui::displayStats(
             10.0f, 10.0f, 300.0f, 70.0f,

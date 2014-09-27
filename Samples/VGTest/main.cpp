@@ -519,15 +519,15 @@ namespace app
         vg::geometry_t  geomPath = {
             0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (vg::B3Vertex*)core::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+            (vf::p2_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
+            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
         };
 
         vg::geometry_t  geomPathOff = {
             0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (vg::B3Vertex*)core::thread_stack_alloc(sizeof(vg::B3Vertex)*maxB3Vertices)
+            (vf::p2_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
+            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
         };
 
         uint16_t  prevIdx,  curIdx;
@@ -586,22 +586,32 @@ namespace app
     {
         ui::processZoomAndPan(zoom, offsetX, offsetY, doMove);
 
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(offsetX, offsetY, 0);
-        glScalef(zoom, zoom, 1);
+        gfx::set2DStates();
+        gfx::setUIMatrices();
 
-        vg::drawPath  (testPath,    0xFF, 0xFF, 0xFF, 0xFF);
-        vg::drawPathNZ(testPathOff, 0xFF, 0x00, 0x00, 0xFF);
-        glColor3f(1, 0, 0);
-        glBegin(GL_LINE_STRIP);
-        glVertex2f(controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z);
-        glVertex2f(controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z);
-        glVertex2f(controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z);
-        glVertex2f(controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z);
-        glEnd();
+        v128 mv[4] = {
+            vi_set(   zoom,    0.0f, 0.0f, 0.0f),
+            vi_set(   0.0f,    zoom, 0.0f, 0.0f),
+            vi_set(   0.0f,    0.0f, 1.0f, 0.0f),
+            vi_set(offsetX, offsetY, 0.0f, 1.0f),
+        };
 
-        glPopMatrix();
+        gfx::setModelViewMatrix(mv);
+
+
+        vg::drawPath(testPath,    0xFFFFFFFF, false);
+        vg::drawPath(testPathOff, 0xFF0000FF, true);
+
+        float p[] = {
+            controlPts[0].x/controlPts[0].z, controlPts[0].y/controlPts[0].z,
+            controlPts[1].x/controlPts[1].z, controlPts[1].y/controlPts[1].z,
+            controlPts[2].x/controlPts[2].z, controlPts[2].y/controlPts[2].z,
+            controlPts[3].x/controlPts[3].z, controlPts[3].y/controlPts[3].z,
+        };
+
+        gfx::draw2DLineStrip(p, ARRAY_SIZE(p)/ 2, 0xFF0000FF);
+
+/*
         return;
 
         float vp[4];
@@ -692,7 +702,7 @@ namespace app
             //		0, 0, 800, 600,
             //		0, 0, 800, 600,
             //		//if enable depth and stencil resolve - label stops to render.
-            //		GL_COLOR_BUFFER_BIT/*|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT*/,
+            //		GL_COLOR_BUFFER_BIT,
             //		GL_NEAREST);
 
             //glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -739,10 +749,10 @@ namespace app
         }
         glPopMatrix();
 
-        glColor3f(1.0f, 1.0f, 1.0f);
         char zoomStr[256];
         _snprintf(zoomStr, 256, "Zoom level %f", zoom);
-        vg::drawString(vg::defaultFont, 300, 10, zoomStr, strlen(zoomStr));
+        vg::drawString(vg::defaultFont, 300, 10, 0xFFFFFFFF, zoomStr, strlen(zoomStr));
+*/
     }
 
     void update(float){}

@@ -5,6 +5,7 @@
 
 GLuint	cubicProgram, cubicProgramAA, rcubicProgram, rcubicProgramAA, rcubicDTProgramAA;
 
+/*
 void clearAlpha()
 {
 	glUseProgram(0);
@@ -358,7 +359,7 @@ void drawRCubicDTAA(Geometry<RCubicVertex>& geom)
 	glPopClientAttrib();
 	glPopAttrib();
 }
-
+*/
 void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Array<glm::vec2>& v)
 {
 	assert(v.size()==4);
@@ -405,7 +406,7 @@ void addCubic(Geometry<CubicVertex>& cubics, Geometry<glm::vec2>& tri, const Arr
 		}
 	}
 }
-
+/*
 const char cubicFSSource[] = 
 				"void main(void)											\n"
 				"{															\n"
@@ -533,21 +534,22 @@ GLuint createProgram(GLenum type, const char* source)
 	
 	return program;
 }
-
+*/
 void initVGExp()
-{
+{/*
 	cubicProgram = createProgram(GL_FRAGMENT_SHADER, cubicFSSource);
 	rcubicProgram = createProgram(GL_FRAGMENT_SHADER, rcubicFSSource);
 	cubicProgramAA = createProgram(GL_FRAGMENT_SHADER, cubicAAFSSource);
 	rcubicProgramAA = createProgram(GL_FRAGMENT_SHADER, rcubicAAFSSource);
 	rcubicDTProgramAA = createProgram(GL_FRAGMENT_SHADER, rcubicDTAAFSSource);
-}
+*/}
 
 void terminateVGExp()
-{
+{/*
 	glDeleteProgram(rcubicDTProgramAA);
 	glDeleteProgram(rcubicProgramAA);
 	glDeleteProgram(cubicProgramAA);
 	glDeleteProgram(rcubicProgram);
 	glDeleteProgram(cubicProgram);
-}
+*/}
+

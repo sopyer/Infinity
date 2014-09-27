@@ -25,7 +25,6 @@ namespace vg
     void init()
     {
         ctx = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
-        impl::allocResources();
         initFontSubsystem();
         defaultFont = createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
     }
@@ -34,18 +33,21 @@ namespace vg
     {
         destroyFont(defaultFont);
         shutdownFontSubsystem();
-        impl::freeResources();
         nvgDeleteGL3(ctx);
     }
 
     void drawQuad(float xmin, float ymin, float xmax, float ymax, float offset)
     {
-        glBegin(GL_QUADS);
-        glVertex2f(xmin-offset, ymin-offset);
-        glVertex2f(xmin-offset, ymax+offset);
-        glVertex2f(xmax+offset, ymax+offset);
-        glVertex2f(xmax+offset, ymin-offset);
-        glEnd();
+        GLuint baseVertex;
+
+        glBindVertexArray(vf::p2_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2_vertex_t));
+        vf::p2_vertex_t* v = gfx::frameAllocVertices<vf::p2_vertex_t>(4, &baseVertex);
+        v[0].x = xmin-offset; v[0].y = ymin-offset;
+        v[1].x = xmin-offset; v[1].y = ymax+offset;
+        v[2].x = xmax+offset; v[2].y = ymin-offset;
+        v[3].x = xmax+offset; v[3].y = ymax+offset;
+        glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
     }
 
     void clearStencil(float xmin, float ymin, float xmax, float ymax, float offset)
@@ -54,125 +56,90 @@ namespace vg
         glStencilFunc(GL_ALWAYS, 0x00, 0xFF);
         glStencilMask(0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glUseProgram(0);
+
+        gfx::setStdProgram(0);
 
         drawQuad(xmin, ymin, xmax, ymax, offset);
     }
 
-    void drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha)
+    void setStencilRasterStates(bool useNonZero)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 0, 0);
-
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glUseProgram(0);
-        glColor4ub(red, green, blue, alpha);
-        glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glStencilMask(0xFF); //TODO: make mask configurable
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, useNonZero?GL_INCR_WRAP:GL_INVERT);
+        glStencilOpSeparate(GL_BACK,  GL_KEEP, GL_KEEP, useNonZero?GL_DECR_WRAP:GL_INVERT);
     }
 
-    void drawPathNZ(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha)
+    void setStencilFillStates()
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 0, 1);
-
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glUseProgram(0);
-        glColor4ub(red, green, blue, alpha);
         glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
     }
 
-    void drawPath(Path path, Paint paint)
+    void drawPath(Path path, uint32_t color, bool useNonZero)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 0, 0);
+
+        setStencilRasterStates(useNonZero);
+        stencilPath(path, 0);
+
+        setStencilFillStates();
+        glUseProgram(gfx_res::prgPaintSolid);
+        gfx::setMVP();
+
+        GLuint offset;
+        v128*  colorf = (v128*)gfx::dynbufAllocMem(sizeof(v128), gfx::caps.uboAlignment, &offset);
+        *colorf = vi_cvt_ubyte4_to_vec4(color);
+        glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, offset, sizeof(v128));
+
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
+
+        glDisable(GL_STENCIL_TEST);
+    }
+
+    void drawPath(Path path, Paint paint, bool useNonZero, bool useAA)
+    {
+        glEnable(GL_STENCIL_TEST);
+
+        setStencilRasterStates(useNonZero);
+        if (useAA) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+        stencilPath(path, useAA);
+        if (useAA) glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
         applyPaintAsGLProgram(paint);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        setStencilFillStates();
         drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
-    }
 
-    void drawPathA2C(Path path, Paint paint)
-    {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 1, 0);
-
-        applyPaintAsGLProgram(paint);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
-    }
-
-    void drawPathNZA2C(Path path, Paint paint)
-    {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 1, 1);
-
-        applyPaintAsGLProgram(paint);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
-    }
-
-    void drawPathNZ(Path path, Paint paint)
-    {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_STENCIL_TEST);
-        stencilPath(path, 0, 1);
-
-        applyPaintAsGLProgram(paint);
-        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glStencilFunc(GL_NOTEQUAL, 0x00, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        glPopAttrib();
-    }
-
-    void clearAlpha(float xmin, float ymin, float xmax, float ymax, float offset)
-    {
-        glUseProgram(0);
-
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-        glColor4ub(0, 0, 0, 0);
-        drawQuad(xmin, ymin, xmax, ymax, offset);
-
-        glPopAttrib();
+        glDisable(GL_STENCIL_TEST);
     }
 
     void drawPathAA(Path path, Paint paint)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        //Clear alpha
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+        glDisable(GL_BLEND);
+        glUseProgram(gfx_res::prgPaintSolid);
 
-        glEnable(GL_STENCIL_TEST);
-        clearAlpha(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-        rasterizeEvenOddAA(path);
+        GLuint offset;
+        v128*  colorf = (v128*)gfx::dynbufAllocMem(sizeof(v128), gfx::caps.uboAlignment, &offset);
+        *colorf = vi_set_0000();
 
+        gfx::setMVP();
+        glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, offset, sizeof(v128));
+        drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0.0f);
+
+        //stencil
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        stencilPath(path, true);
+
+        //fill
         applyPaintAsGLProgram(paint);
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
         drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
-
-        glPopAttrib();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 }

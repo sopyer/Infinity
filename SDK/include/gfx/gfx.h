@@ -3,6 +3,7 @@
 #include <core/core.h>
 #include <opengl.h>
 #include <gfx/vg.h>
+#include <gfx/etlsf.h>
 
 namespace vf
 {
@@ -26,10 +27,81 @@ namespace vf
         static GLuint vao;
     };
 
+    struct p2_vertex_t
+    {
+        float  x, y;
+
+        static GLuint vao;
+    };
+
+    struct p2uv2_vertex_t
+    {
+        float  x, y;
+        float  u, v;
+
+        static GLuint vao;
+    };
+
+    struct p2cu4_vertex_t
+    {
+        float    x, y;
+        uint32_t c;
+
+        static GLuint vao;
+    };
+
+    struct p2uv2cu4_vertex_t
+    {
+        float    x, y;
+        float    u, v;
+        uint32_t c;
+
+        static GLuint vao;
+    };
+
+    struct p2uv3_vertex_t
+    {
+        float  x, y;
+        float  u, v, w;
+
+        static GLuint vao;
+    };
+
+    struct p3_vertex_t
+    {
+        float  x, y, z;
+
+        static GLuint vao;
+    };
+
+    struct p3cu4_vertex_t
+    {
+        float    x, y, z;
+        uint32_t c;
+
+        static GLuint vao;
+    };
+
+    struct p3uv2cu4_vertex_t
+    {
+        float    x, y, z;
+        float    u, v;
+        uint32_t c;
+
+        static GLuint vao;
+    };
+
     struct empty_geom_t
     {
         static GLuint vao;
     };
+
+    void set(p2uv2_vertex_t*    vert, float x, float y, float u, float v);
+    void set(p2uv3_vertex_t*    vert, float x, float y, float u, float v, float w = 0.0f);
+    void set(p2cu4_vertex_t*    vert, float x, float y, uint32_t c);
+    void set(p2uv2cu4_vertex_t* vert, float x, float y, float u, float v, uint32_t c);
+    void set(p3cu4_vertex_t*    vert, float x, float y, float z, uint32_t c);
+    void set(p3uv2cu4_vertex_t* vert, float x, float y, float z, float u, float v, uint32_t c);
 }
 
 namespace gfx
@@ -75,6 +147,13 @@ namespace gfx
         MATCH_VAR_N_DESC_MISMATCH // Should be last
     };
 
+    enum
+    {
+        STD_FEATURE_COLOR   = 1<<0,
+        STD_FEATURE_TEXTURE = 1<<1,
+        STD_FEATURE_COUNT = 2
+    };
+
     int matchInterface(GLuint prg, const char* name, bool ubuffer, GLuint numVars, var_desc_t* desc);
 
     extern gl_caps_t caps;
@@ -90,26 +169,63 @@ namespace gfx
     GLuint createVAO(GLuint numEntries, const vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors);
 
     bool  dynbufAlignMem(GLuint align, GLuint* offset);
-    bool  dynbufAlignVert(GLsizei stride, GLuint* baseVertex);
     void* dynbufAlloc(GLsizeiptr size);
-    void* dynbufAllocVert(GLsizeiptr size, GLsizei stride, GLuint* baseVertex);
     void* dynbufAllocMem(GLsizeiptr size, GLuint align, GLuint* offset);
+
+    template<typename T>
+    T* frameAllocVertices(GLsizei count, GLuint* baseVertex)
+    {
+        GLsizei  stride = sizeof(T);
+        GLuint   offset;
+
+        if (!dynbufAlignMem(stride, &offset)) return false;
+
+        *baseVertex = offset / stride;
+
+        return (T*)dynbufAlloc(stride * count);
+    }
+
+    template<typename T>
+    T* frameAlloc(GLuint align, GLuint* offset)
+    {
+        if (!dynbufAlignMem(align, offset)) return false;
+
+        return (T*)dynbufAlloc(sizeof(T));
+    }
+
+    template<typename T>
+    T* frameAllocArray(GLsizei count, GLuint align, GLuint* offset)
+    {
+        if (!dynbufAlignMem(align, offset)) return false;
+
+        return (T*)dynbufAlloc(count * sizeof(T));
+    }
 
     struct ubo_desc_data_t;
     typedef ubo_desc_data_t* ubo_desc_t;
 
     struct auto_vars_t
     {
-        ml::mat4x4 matMVP;
-        ml::mat4x4 matMV;
-        ml::mat4x4 matP;
-        ml::vec4   projParams;
-        ml::vec3   shCoef[10];
+        v128      matMVP[4];
+        v128      matMV[4];
+        v128      matP[4];
+        ml::vec4  projParams;
+        ml::vec3  shCoef[10];
     };
 
     extern auto_vars_t autoVars;
 
+    void setStdProgram(size_t featureMask);
+
+    void setModelViewMatrix (v128* view);
+    void setProjectionMatrix(v128* proj);
+    void setUIMatrices();
+
+    void set3DStates();
+    void set2DStates();
+
     void setStdTransforms(GLuint index = 0);
+    void setMVP          (GLuint index = 0);
 
     ubo_desc_t createUBODesc (GLuint prg, const char* name);
     void       destroyUBODesc(ubo_desc_t desc);
@@ -156,6 +272,7 @@ namespace gfx
     void drawLines(v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
     void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size);
     void drawXZGrid(float x0, float z0, float x1, float z1, int numQuads, v128 color);
+    void draw2DLineStrip(float* vertices, GLuint numVertices, uint32_t color);
 
     struct gpu_timer_t
     {
@@ -197,4 +314,43 @@ namespace res
     GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height);
 
     void saveScreenToFile(const char* imageName);
+}
+
+//-----------------------   GPU memory   ------------------------------
+namespace gfx
+{
+    struct  gpu_buffer_data_t;
+    typedef gpu_buffer_data_t*  gpu_buffer_t;
+
+    gpu_buffer_t  createBuffer   (GLsizeiptr size, GLuint flags = GL_MAP_WRITE_BIT);
+    void          destroyBuffer  (gpu_buffer_t buffer);
+    uint16_t      allocBufferMem (gpu_buffer_t buffer, GLsizeiptr size, GLuint align=0);
+    void          freeBufferMem  (gpu_buffer_t buffer, uint16_t alloc);
+    void*         lockBufferMem  (gpu_buffer_t buffer, uint16_t alloc);
+    void          unlockBufferMem(gpu_buffer_t buffer);
+
+    GLuint getBufferMemOffset  (gpu_buffer_t buffer, uint16_t alloc);
+    GLuint getBufferMemSize    (gpu_buffer_t buffer, uint16_t alloc);
+    GLuint getBufferFirstVertex(gpu_buffer_t buffer, uint16_t alloc, GLuint stride);
+
+    GLuint getGPUBuffer(gpu_buffer_t buffer);
+
+    template<typename T>
+    T* lockBufferMem(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        return (T*)lockBufferMem(buffer, alloc);
+    }
+
+    template<typename T>
+    T* lockBufferVertices(gpu_buffer_t buffer, uint16_t alloc)
+    {
+        GLuint align  = sizeof(T);
+        GLuint offset = getBufferMemOffset(buffer, alloc);
+        GLuint rem    = offset % align;
+        GLuint offsetAdjust = (rem==0)? 0 : (align - rem);
+
+        uint8_t* mem = (uint8_t*)lockBufferMem(buffer, alloc);
+
+        return (T*)(mem+offsetAdjust);
+    }
 }

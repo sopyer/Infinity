@@ -1,4 +1,6 @@
 @require(passthru, functions, enums, options, version, extensions)
+/* WARNING: This file was automatically generated */
+/* Do not edit. */
 
 #ifndef __gl_h_
 #define __gl_h_
@@ -71,7 +73,7 @@ int importOpenGL(void);
 
 #define GLEXT_MAJOR_VERSION @version.major!s
 #define GLEXT_MINOR_VERSION @version.minor!s
-@if version.core:
+@if version.profile == 'core':
 #define GLEXT_CORE_PROFILE 1
 @else:
 #define GLEXT_CORE_PROFILE 0

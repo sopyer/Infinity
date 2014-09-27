@@ -325,6 +325,37 @@ namespace ml
         r[3] = res;
     }
 
+    void make_translation_mat4(v128* res, float dx, float dy, float dz)
+    {
+        res[0] = vi_set_1000f();
+        res[1] = vi_set_0100f();
+        res[2] = vi_set_0010f();
+        res[3] = vi_set(dx, dy, dz, 1.0f);
+    }
+
+    void make_rotation_mat4(v128* res, float angle, float axisx, float axisy, float axisz)
+    {
+        float c = ml::cos(angle);
+        float s = ml::sin(angle);
+
+        res[0].m128_f32[0] = (1 - c) * axisx * axisx + c;
+        res[0].m128_f32[1] = (1 - c) * axisx * axisy + s * axisz;
+        res[0].m128_f32[2] = (1 - c) * axisx * axisz - s * axisy;
+        res[0].m128_f32[3] = 0.0f;
+
+        res[1].m128_f32[0] = (1 - c) * axisy * axisx - s * axisz;
+        res[1].m128_f32[1] = (1 - c) * axisy * axisy + c;
+        res[1].m128_f32[2] = (1 - c) * axisy * axisz + s * axisx;
+        res[1].m128_f32[3] = 0.0f;
+
+        res[2].m128_f32[0] = (1 - c) * axisz * axisx + s * axisy;
+        res[2].m128_f32[1] = (1 - c) * axisz * axisy - s * axisx;
+        res[2].m128_f32[2] = (1 - c) * axisz * axisz + c;
+        res[2].m128_f32[3] = 0.0f;
+
+        res[3] = vi_set_0001f();
+    }
+
     //  | a11   a12   a13  a14|   | w -z  y  x|   | w -z  y -x|
     //  |                     |   |           |   |           |
     //  | a21   a22   a23  a24|   | z  w -x  y|   | z  w -x -y|

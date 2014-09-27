@@ -251,7 +251,7 @@ void CDLODTerrain::drawTerrain()
 
     GLuint baseInstance;
 
-    instData = (PatchData*)gfx::dynbufAllocVert(MAX_PATCH_COUNT*sizeof(PatchData), sizeof(PatchData), &baseInstance);
+    instData = gfx::frameAllocVertices<PatchData>(MAX_PATCH_COUNT, &baseInstance);
 
     vertDistToTerrain = core::max(viewPoint.y-maxY, minY-viewPoint.y);
     vertDistToTerrain = core::max(vertDistToTerrain, 0.0f);
@@ -318,7 +318,6 @@ void CDLODTerrain::drawTerrain()
 
         {
             PROFILER_CPU_TIMESLICE("ClearBindings");
-            glUseProgram(0);
             glBindVertexArray(0);
        }
     }

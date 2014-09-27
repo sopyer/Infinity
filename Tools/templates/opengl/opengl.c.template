@@ -30,7 +30,7 @@ int importOpenGL(void)
     GLubyte* extensions;
     GLubyte* i;
     @end
-    @if version.int_value() >= 32 and not version.core:
+    @if version.int_value() >= 32 and not version.profile == 'core':
     GLint profile;
     @end
 
@@ -56,6 +56,7 @@ int importOpenGL(void)
     }
     @end
 
+    /* --- Check for minimal version and profile --- */
     if (10 * major + minor < @version.int_value()!s) {
         fprintf(stderr, "Error: OpenGL version @version.major!s.@version.minor!s not supported.\n");
         fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
@@ -63,7 +64,7 @@ int importOpenGL(void)
         return GL_FALSE;
     }
 
-    @if version.int_value() >= 32 and not version.core:
+    @if version.int_value() >= 32 and not version.profile == 'core':
     
     glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
 
@@ -73,24 +74,6 @@ int importOpenGL(void)
     }
     @end
     
-    /* --- Check for minimal version and profile --- */
-
-    if (major * 10 + minor < @version.int_value()!s) {
-    fprintf(stderr, "Error: OpenGL version @version.major!s.@version.minor!s not supported.\n");
-        fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-
-    @if version.int_value() >= 32 and not version.core:
-    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
-
-    if ((profile & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) == 0) {
-    fprintf(stderr, "Error: This application requires a compatibility profile\n");
-        return GL_FALSE;
-    }
-    @end
-
     /* --- Check for extensions --- */
 
     @if version.major < 3:

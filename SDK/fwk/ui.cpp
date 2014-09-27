@@ -4,8 +4,6 @@
 #include "ShaderEditOverlay.h"
 #include "ProfilerOverlay.h"
 
-#include <gfx/gfx_res.h>
-
 void Platform_Initialise();
 void Platform_Finalise();
 
@@ -94,13 +92,6 @@ namespace ui
 
         overlayProfiler = new ProfilerOverlay;
         overlayProfiler->init(width, height);
-
-        GLuint programs[] = {
-            impl::simpleUIProgram, impl::stencilCubicAreaAAProgram,
-            impl::stencilCubicAreaProgram, impl::linGradProgram
-        };
-
-        overlayShaderEdit->addPrograms(ARRAY_SIZE(programs), programs);
 
         //TODO: HACK!!!!!
         SDL_StartTextInput();
@@ -449,16 +440,14 @@ namespace ui
 
         vg::drawRoundedRect(x, y, x+w, y+h, 5, 5, 0xC0000000, 0xFF00FF32);
 
-        glColor3f(1.0f, 1.0f, 1.0f);
-
         gpuName = (char*)glGetString(GL_RENDERER);
-        vg::drawString(vg::defaultFont, x+15.0f, y+18.0f, gpuName, strlen(gpuName));
+        vg::drawString(vg::defaultFont, x+15.0f, y+18.0f, 0xFFFFFFFF, gpuName, strlen(gpuName));
 
         _snprintf(str, 256, "CPU time - %f ms", cpuTime);
-        vg::drawString(vg::defaultFont, x+15.0f, y+37.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, x+15.0f, y+37.0f, 0xFFFFFFFF, str, strlen(str));
 
         _snprintf(str, 256, "GPU time - %f ms", gpuTime);
-        vg::drawString(vg::defaultFont, x+15.0f, y+55.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, x+15.0f, y+55.0f, 0xFFFFFFFF, str, strlen(str));
     }
 
     void processCameraDirectorInput(CameraDirector* camDirector, SpectatorCamera* camera)

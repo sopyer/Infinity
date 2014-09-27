@@ -101,12 +101,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="DebugDraw.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MeshLoaderObj.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugDraw.h" />
     <ClInclude Include="MeshLoaderObj.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

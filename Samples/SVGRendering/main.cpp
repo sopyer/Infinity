@@ -72,28 +72,37 @@ namespace app
 
         glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glTranslatef(mOffsetX, mOffsetY, 0);
-        glScalef(mScale, mScale, 1);
+
+        gfx::set2DStates();
+        gfx::setUIMatrices();
+
+        v128 mv[4] = {
+            vi_set(  mScale,     0.0f, 0.0f, 0.0f),
+            vi_set(    0.0f,   mScale, 0.0f, 0.0f),
+            vi_set(    0.0f,     0.0f, 1.0f, 0.0f),
+            vi_set(mOffsetX, mOffsetY, 0.0f, 1.0f),
+        };
+
+        gfx::setModelViewMatrix(mv);
 
         if (ui::checkBoxIsChecked(mAAEnabled))
         {
             for (size_t i=mPaths.size(); i!=0; i--)
-                vg::drawPathNZA2C(mPaths[i-1], mPaints[i-1]);
+                vg::drawPath(mPaths[i-1], mPaints[i-1], true, true);
         }
         else
         {
             glDisable(GL_MULTISAMPLE);
             for (size_t i=mPaths.size(); i!=0; i--)
-                vg::drawPathNZ(mPaths[i-1], mPaints[i-1]);
+                vg::drawPath(mPaths[i-1], mPaints[i-1], true, false);
             glEnable(GL_MULTISAMPLE);
         }
 
-        glPopMatrix();
-
         cpu_timer_stop(&cpuTimer);
         gfx::gpu_timer_stop(&gpuTimer);
+
+        ml::make_identity_mat4(mv);
+        gfx::setModelViewMatrix(mv);
 
         ui::displayStats(
             10.0f, 10.0f, 300.0f, 100.0f,
@@ -101,8 +110,7 @@ namespace app
             gfx::gpu_timer_measured(&gpuTimer) / 1000.0f
         );
 
-        glColor3f(1.0f, 1.0f, 1.0f);
-        vg::drawString(vg::defaultFont, 46.0f, 96.0f, "Enable AA", 9);
+        vg::drawString(vg::defaultFont, 46.0f, 96.0f, 0xFFFFFFFF, "Enable AA", 9);
     }
 
     void recompilePrograms() {}

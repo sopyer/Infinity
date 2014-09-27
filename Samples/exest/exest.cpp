@@ -113,50 +113,73 @@ namespace app
             4, 7, 5, 5, 7, 6,
         };
 
-        glUseProgram(0);
-        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glBegin(GL_LINES);
-        glVertex3fv((float*)&frustumPoints[0]); glVertex3fv((float*)&frustumPoints[1]);
-        glVertex3fv((float*)&frustumPoints[1]); glVertex3fv((float*)&frustumPoints[2]);
-        glVertex3fv((float*)&frustumPoints[2]); glVertex3fv((float*)&frustumPoints[3]);
-        glVertex3fv((float*)&frustumPoints[3]); glVertex3fv((float*)&frustumPoints[0]);
+        GLuint  offset;
+        GLuint  size;
+        v128*   vertices;
+        static const size_t NUM_LINES = 12;
 
-        glVertex3fv((float*)&frustumPoints[4]); glVertex3fv((float*)&frustumPoints[5]);
-        glVertex3fv((float*)&frustumPoints[5]); glVertex3fv((float*)&frustumPoints[6]);
-        glVertex3fv((float*)&frustumPoints[6]); glVertex3fv((float*)&frustumPoints[7]);
-        glVertex3fv((float*)&frustumPoints[7]); glVertex3fv((float*)&frustumPoints[4]);
+        size     = sizeof(gfx::line_t) * NUM_LINES;
+        vertices = (v128*)gfx::dynbufAllocMem(size, gfx::caps.ssboAlignment, &offset);
+        *vertices++ = vi_load_v3(&frustumPoints[0]); *vertices++ = vi_load_v3(&frustumPoints[1]);
+        *vertices++ = vi_load_v3(&frustumPoints[1]); *vertices++ = vi_load_v3(&frustumPoints[2]);
+        *vertices++ = vi_load_v3(&frustumPoints[2]); *vertices++ = vi_load_v3(&frustumPoints[3]);
+        *vertices++ = vi_load_v3(&frustumPoints[3]); *vertices++ = vi_load_v3(&frustumPoints[0]);
 
-        glVertex3fv((float*)&frustumPoints[0]); glVertex3fv((float*)&frustumPoints[4]);
-        glVertex3fv((float*)&frustumPoints[1]); glVertex3fv((float*)&frustumPoints[5]);
-        glVertex3fv((float*)&frustumPoints[2]); glVertex3fv((float*)&frustumPoints[6]);
-        glVertex3fv((float*)&frustumPoints[3]); glVertex3fv((float*)&frustumPoints[7]);
-        glEnd();
+        *vertices++ = vi_load_v3(&frustumPoints[4]); *vertices++ = vi_load_v3(&frustumPoints[5]);
+        *vertices++ = vi_load_v3(&frustumPoints[5]); *vertices++ = vi_load_v3(&frustumPoints[6]);
+        *vertices++ = vi_load_v3(&frustumPoints[6]); *vertices++ = vi_load_v3(&frustumPoints[7]);
+        *vertices++ = vi_load_v3(&frustumPoints[7]); *vertices++ = vi_load_v3(&frustumPoints[4]);
+
+        *vertices++ = vi_load_v3(&frustumPoints[0]); *vertices++ = vi_load_v3(&frustumPoints[4]);
+        *vertices++ = vi_load_v3(&frustumPoints[1]); *vertices++ = vi_load_v3(&frustumPoints[5]);
+        *vertices++ = vi_load_v3(&frustumPoints[2]); *vertices++ = vi_load_v3(&frustumPoints[6]);
+        *vertices++ = vi_load_v3(&frustumPoints[3]); *vertices++ = vi_load_v3(&frustumPoints[7]);
+        gfx::drawLines(vi_set(0.0f, 1.0f, 0.0f, 1.0f), NUM_LINES, gfx::dynBuffer, offset, size);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBlendEquation(GL_FUNC_ADD);
         glEnable(GL_CULL_FACE);
-        glDisable(GL_TEXTURE_2D);
 
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+        gfx::setMVP();
+
+        glBindVertexArray(vf::p3cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p3cu4_vertex_t));
+
+        GLuint baseVertex;
+        GLuint numVertices = ARRAY_SIZE(indices);
+
+        vf::p3cu4_vertex_t* v = gfx::frameAllocVertices<vf::p3cu4_vertex_t>(numVertices * 2, &baseVertex);
+
+        uint32_t color = 0x800080FF;
         //Simple sorting for convex alpha object rendering
         //First render back faces
         //Then render front faces
-        glColor4f(1.0f, 0.5f, 0.0f, 0.5f);
         glCullFace(GL_FRONT);
-        glBegin(GL_TRIANGLES);
-        for (int i=0; i<ARRAY_SIZE(indices); ++i)
+        for (GLuint i=0; i<numVertices; ++i)
         {
-            glVertex3fv((float*)&frustumPoints[indices[i]]);
+            vf::set(v++,
+                frustumPoints[indices[i]].x,
+                frustumPoints[indices[i]].y,
+                frustumPoints[indices[i]].z,
+                color
+            );
         }
-        glEnd();
+        glDrawArrays(GL_TRIANGLES, baseVertex, numVertices);
+        baseVertex+=+numVertices;
 
         glCullFace(GL_BACK);
-        glBegin(GL_TRIANGLES);
-        for (int i=0; i<ARRAY_SIZE(indices); ++i)
+        for (GLuint i=0; i<numVertices; ++i)
         {
-            glVertex3fv((float*)&frustumPoints[indices[i]]);
+            vf::set(v++,
+                frustumPoints[indices[i]].x,
+                frustumPoints[indices[i]].y,
+                frustumPoints[indices[i]].z,
+                color
+            );
         }
-        glEnd();
+        glDrawArrays(GL_TRIANGLES, baseVertex, numVertices);
 
         glDisable(GL_BLEND);
         glDisable(GL_CULL_FACE);
@@ -170,43 +193,33 @@ namespace app
     void resize(int width, int height)
     {
         ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
-
-        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
-        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
-        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
-        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
     }
 
     void render()
     {
-        glClearDepth(1.0);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadMatrixf((float*)proj);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
         v128 vm[4];
         camera.getViewMatrix(vm);
-        glLoadMatrixf((float*)vm);
 
-        v128 MVP[4];
-        ml::mul_mat4(MVP, proj, vm);
-        memcpy(&gfx::autoVars.matMV,  vm,  sizeof(v128)*4);
-        memcpy(&gfx::autoVars.matMVP, MVP, sizeof(v128)*4);
+        gfx::set3DStates();
+
+        gfx::setProjectionMatrix(proj);
+        gfx::setModelViewMatrix(vm);
 
         glDisable(GL_CULL_FACE);
 
-        glUseProgram(0);
-        glBegin(GL_TRIANGLES);
-        glColor3f(1, 0, 0);
-        glVertex3f(-3, -1, -10);
-        glColor3f(0, 1, 0);
-        glVertex3f( 3, -1, -10);
-        glColor3f(0, 0, 1);
-        glVertex3f( 0, 4, -10);
-        glEnd();
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+        gfx::setMVP();
+
+        glBindVertexArray(vf::p3cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p3cu4_vertex_t));
+
+        GLuint baseVertex;
+        vf::p3cu4_vertex_t* v = gfx::frameAllocVertices<vf::p3cu4_vertex_t>(3, &baseVertex);
+
+        vf::set(v++, -3.0f, -1.0f, -10.0f, 0xFF0000FF);
+        vf::set(v++,  3.0f, -1.0f, -10.0f, 0xFF00FF00);
+        vf::set(v++,  0.0f,  4.0f, -10.0f, 0xFFFF0000);
+        glDrawArrays(GL_TRIANGLES, baseVertex, 3);
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
@@ -217,7 +230,7 @@ namespace app
         if (!fixedMode)
         {
             vi_store_v3(&terrain.viewPoint, camera.getPosition());
-            terrain.setSelectMatrix(MVP);
+            terrain.setSelectMatrix(gfx::autoVars.matMVP);
         }
         else
         {
@@ -235,14 +248,8 @@ namespace app
             drawFrustum(zn, 0.7f*zf);
         }
 
-        glDisable(GL_CULL_FACE);
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glDisable(GL_BLEND);
+        gfx::set2DStates();
+        gfx::setUIMatrices();
 
         //Draw ui
         ui::displayStats(
@@ -252,17 +259,17 @@ namespace app
         );
 
         char str[256];
-        
+
         _snprintf(str, 256, "CPU select time - %f ms", cpu_timer_measured(&terrain.cpuSelectTimer) / 1000.0f);
-        vg::drawString(vg::defaultFont, 25.0f, 83.0f, str, strlen(str));
-        
+        vg::drawString(vg::defaultFont, 25.0f, 83.0f, 0xFFFFFFFF, str, strlen(str));
+
         _snprintf(str, 256, "CPU draw time - %f ms", cpu_timer_measured(&terrain.cpuRenderTimer) / 1000.0f);
-        vg::drawString(vg::defaultFont, 25.0f, 101.0f, str, strlen(str));
-        
+        vg::drawString(vg::defaultFont, 25.0f, 101.0f, 0xFFFFFFFF, str, strlen(str));
+
         int patches = terrain.patchCount;
         int vtx = patches*terrain.patchDim*terrain.patchDim;
         _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
-        vg::drawString(vg::defaultFont, 25.0f, 119.0f, str, strlen(str));
+        vg::drawString(vg::defaultFont, 25.0f, 119.0f, 0xFFFFFFFF, str, strlen(str));
     }
 
     void update(float dt)

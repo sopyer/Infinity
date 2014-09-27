@@ -91,12 +91,15 @@ namespace vg
         GLuint textID;
         glGenTextures(1, (GLuint*)&textID);
 
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-        glTextureImage2DEXT(textID, GL_TEXTURE_2D, 0, GL_ALPHA, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_ALPHA, GL_UNSIGNED_BYTE, 0);
+        glTextureImage2DEXT(textID, GL_TEXTURE_2D, 0, GL_R8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+
+        GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
+        glTextureParameterivEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
         return textID;
     }
@@ -156,21 +159,15 @@ namespace vg
 
                     if( tempGlyph->width && tempGlyph->height)
                     {
-                        glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-                        glPixelStorei(GL_UNPACK_LSB_FIRST, GL_FALSE);
-                        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
                         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
                         glTextureSubImage2DEXT(
                             tempGlyph->glTextureID,
                             GL_TEXTURE_2D, 0,
                             font->xOffset, font->yOffset,
                             tempGlyph->width, tempGlyph->height,
-                            GL_ALPHA, GL_UNSIGNED_BYTE,
+                            GL_RED, GL_UNSIGNED_BYTE,
                             bitmap.buffer
-                            );
-
-                        glPopClientAttrib();
+                        );
                     }
 
                     tempGlyph->u0 = (float)(font->xOffset)/(float)(TEXTURE_WIDTH);
@@ -261,17 +258,16 @@ namespace vg
     }
 
     template<typename T>
-    void drawString(Font font, float x, float y, const T* str, size_t len)
+    void drawString(Font font, float x, float y, uint32_t color, const T* str, size_t len)
     {
         if (!font) return;
+        PROFILER_CPU_TIMESLICE("vg::drawString");
 
-        glUseProgram(0);
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR|gfx::STD_FEATURE_TEXTURE);
+        gfx::setMVP();
 
-        glPushAttrib(GL_ENABLE_BIT|GL_COLOR_BUFFER_BIT);
-
-        glEnable(GL_TEXTURE_2D);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // GL_ONE
+        glBindVertexArray(vf::p2uv2cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2uv2cu4_vertex_t));
 
         font->activeTextureID = 0;
 
@@ -304,19 +300,16 @@ namespace vg
                       w  = (float)glyph->width,
                       h  = (float)glyph->height;
 
-                glBegin(GL_QUADS);
-                glTexCoord2f(u0, v0);
-                glVertex2f(px, py);
+                GLuint baseVertex;
 
-                glTexCoord2f(u0, v1);
-                glVertex2f(px, py+h);
+                vf::p2uv2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2uv2cu4_vertex_t>(4, &baseVertex);
 
-                glTexCoord2f(u1, v1);
-                glVertex2f(w+px, py+h);
+                vf::set(v++, px,   py,   u0, v0, color);
+                vf::set(v++, px,   py+h, u0, v1, color);
+                vf::set(v++, w+px, py,   u1, v0, color);
+                vf::set(v++, w+px, py+h, u1, v1, color);
 
-                glTexCoord2f(u1, v0);
-                glVertex2f(w+px, py);
-                glEnd();
+                glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 4);
 
                 x += xkern+glyph->xadvance;
                 y += ykern+glyph->yadvance;
@@ -324,16 +317,14 @@ namespace vg
 
             left = right;
         }
-
-        glPopAttrib();
     }
 
-    template<> void drawString<char>(Font font, float x, float y, const char* str, size_t len)
+    template<> void drawString<char>(Font font, float x, float y, uint32_t color, const char* str, size_t len)
     {
-        drawString<unsigned char>(font, x, y, (const unsigned char*)str, len);
+        drawString<unsigned char>(font, x, y, color, (const unsigned char*)str, len);
     }
 
-    template void drawString<wchar_t>(Font font, float x, float y, const wchar_t* str, size_t len);
+    template void drawString<wchar_t>(Font font, float x, float y, uint32_t color, const wchar_t* str, size_t len);
 
     //Optimize: advance>0, x always increases
     template<typename T>

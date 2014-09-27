@@ -7,10 +7,9 @@ layout(std140, column_major, binding = 0) uniform uniMVP
 
 layout(location=0) in vec3  aVertex;
 
-out vec3 gaPosition;
+out vec3  vPosition;
 
 void main()
 {
     gl_Position = uMVP * vec4(aVertex, 1.0);
-    gaPosition  = aVertex;
 }

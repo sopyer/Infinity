@@ -21,3 +21,5 @@ void      etlsf_free   (etlsf_arena_t arena, uint16_t block);
 /* Returns internal block size, not original request size */
 uint32_t  etlsf_block_size  (etlsf_arena_t arena, uint16_t block);
 uint32_t  etlsf_block_offset(etlsf_arena_t arena, uint16_t block);
+
+int  etlsf_is_block_valid(etlsf_arena_t arena, uint16_t block);

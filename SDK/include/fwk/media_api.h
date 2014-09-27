@@ -17,7 +17,6 @@ void mediaStopPlayback(media_player_t mediaPlayer);
 void mediaPausePlayback(media_player_t mediaPlayer);
 void mediaSeekPosition(media_player_t mediaPlayer, float time);
 void mediaPlayerUpdate(media_player_t mediaPlayer);
-void mediaPlayerRender(media_player_t mediaPlayer);
 void mediaPlayerPrepareRender(media_player_t player);
 
 #endif

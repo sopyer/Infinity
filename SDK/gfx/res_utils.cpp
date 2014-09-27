@@ -66,6 +66,8 @@ namespace res
             GLenum type = va_arg(args, GLenum);
             char*  str  = va_arg(args, char*);
 
+            if (!str) continue;
+
             shader = createShaderFromFile(type, str, headerCount, headers);
             
             if (shader)
@@ -220,7 +222,7 @@ namespace res
             int imgWidth, imgHeight;
 
             texture = SOIL_load_OGL_texture_from_memory(texData.buffer, texData.size, 0, 0, SOIL_FLAG_DDS_LOAD_DIRECT | (forceSRGB ? SOIL_FLAG_FORCE_SRGB : 0));
-            glGenerateTextureMipmapEXT(texture, GL_TEXTURE_2D);
+            if (genMipmap) glGenerateTextureMipmapEXT(texture, GL_TEXTURE_2D);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
             glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 

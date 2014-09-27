@@ -1711,8 +1711,6 @@ namespace app
         double mx, my;
         int width, height, xx, yy;
 
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-
         ui::mouseAbsOffset(&xx, &yy);
 
         mx = xx; my = yy;
@@ -1728,20 +1726,8 @@ namespace app
         else
             glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_CULL_FACE);
-        glDisable(GL_TEXTURE_2D);
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho(0,width,height,0,-1,1);
 
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glDisable(GL_DEPTH_TEST);
-        glColor4ub(255,255,255,255);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+        gfx::set2DStates();
 
         float t = timerAbsoluteTime() / 1000000.0f;
         //float x,y,popy;
@@ -1814,9 +1800,6 @@ namespace app
             screenshot = 0;
             saveScreenShot(width, height, premult, "dump.png");
         }
-
-        glEnable(GL_DEPTH_TEST);
-        glPopAttrib();
     }
 
     void update(float dt)

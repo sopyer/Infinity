@@ -58,22 +58,6 @@ typedef struct media_player_data_t* media_player_t;
 
 static int extAudioFormatsPresent;
 
-const char srcYUV2RGB[] = 
-    "layout(binding = 0) uniform sampler2D samY;                                                    \n"
-    "layout(binding = 1) uniform sampler2D samU;                                                    \n"
-    "layout(binding = 2) uniform sampler2D samV;                                                    \n"
-    "                                                                                               \n"
-    "void main()                                                                                    \n"
-    "{                                                                                              \n"
-    "    float y   = texture2D(samY, gl_TexCoord[0].xy).r;                                          \n"
-    "    float u   = texture2D(samU, gl_TexCoord[0].xy).r - 0.5;                                    \n"
-    "    float v   = texture2D(samV, gl_TexCoord[0].xy).r - 0.5;                                    \n"
-    "                                                                                               \n"
-    "    vec3 rgb = vec3(y) + u*vec3(0.0, -0.344, 1.770) + v*vec3(1.403, -0.714, 0.0);              \n"
-    "                                                                                               \n"
-    "    gl_FragColor = vec4(rgb, 1.0)*gl_Color;                                                    \n"
-    "}                                                                                              \n";
-
 GLuint progYUV2RGB;
 
 static void closeAudioStream(media_player_t player);
@@ -131,7 +115,7 @@ static void closeAudioStream(media_player_t player)
 
 static void initTexture(GLuint tex, GLuint width, GLuint height)
 {
-    glTextureImage2DEXT(tex, GL_TEXTURE_2D, 0, GL_LUMINANCE8, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, 0);
+    glTextureImage2DEXT(tex, GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
     glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -182,7 +166,7 @@ static void closeVideoStream(media_player_t player)
 
         avcodec_close(player->videoCodecContext);
 
-        glDeleteTextures(2, player->texY );
+        glDeleteTextures(2, player->texY);
         glDeleteTextures(2, player->texU);
         glDeleteTextures(2, player->texV);
 
@@ -304,13 +288,13 @@ static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLu
     PROFILER_CPU_TIMESLICE("uploadVideoData");
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
+    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
+    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_LUMINANCE, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
+    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
@@ -322,7 +306,13 @@ void mediaInit()
     // Register all formats and codecs
     av_register_all();
 
-    progYUV2RGB = res::createProgram(GL_FRAGMENT_SHADER, srcYUV2RGB);
+    const char* headers[] = {
+        "#version 430\n",
+        "#define ENABLE_TEXTURE\n",
+        "#define ENABLE_COLOR\n"
+    };
+
+    progYUV2RGB = res::createProgramFromFiles("MESH.std.vert", "MEDIA.Texture.YUV.frag", ARRAY_SIZE(headers), headers);
 
     extAudioFormatsPresent = alIsExtensionPresent("AL_EXT_MCFORMATS");
 }
@@ -518,18 +508,4 @@ void mediaPlayerPrepareRender(media_player_t player)
 
     GLuint textures[] = {player->texY[0], player->texU[0], player->texV[0]};
     glBindTextures(0, ARRAY_SIZE(textures), textures);
-}
-
-void mediaPlayerRender(media_player_t player)
-{
-    mediaPlayerPrepareRender(player);
-
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0f,  1.0f);
-    glTexCoord2f(1.0f, 0.0f); glVertex2f( 1.0f,  1.0f);
-    glTexCoord2f(1.0f, 1.0f); glVertex2f( 1.0f, -1.0f);
-    glTexCoord2f(0.0f, 1.0f); glVertex2f(-1.0f, -1.0f);
-    glEnd();
-
-    glUseProgram(0);
 }

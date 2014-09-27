@@ -64,10 +64,10 @@ struct model_t
 
 struct light_t
 {
-  ml::vec3 pos;
-  float    range;
-  ml::vec3 color;
-  uint32_t pad;
+    ml::vec3 pos;
+    float    range;
+    ml::vec3 color;
+    uint32_t pad;
 };
 
 #define DEBUG_SHADER
@@ -284,7 +284,11 @@ namespace app
 
         v128 m[4];
         camera.getViewMatrix(m);
-        memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
+
+        gfx::set3DStates();
+
+        gfx::setProjectionMatrix(proj);
+        gfx::setModelViewMatrix(m);
 
         assignLightsToClustersCpu(m, proj);
         glEnable(GL_FRAMEBUFFER_SRGB);
@@ -292,6 +296,9 @@ namespace app
         renderModels();
 
         glDisable(GL_FRAMEBUFFER_SRGB);
+
+        gfx::set2DStates();
+        gfx::setUIMatrices();
 
         {
             PROFILER_CPU_TIMESLICE("ui::displayStats");
@@ -316,11 +323,6 @@ namespace app
     void resize(int width, int height)
     {
         ml::make_perspective_mat4(proj, fov, (float)width/(float)height, znear, zfar);
-
-        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
-        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
-        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
-        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
     }
 
     size_t  numModels;
@@ -1127,7 +1129,7 @@ namespace app
         numClusters = gridDimX * gridDimY * gridDimZ;
 
         float b = 4.0f;
-        float q = 1.03805;//1.116;//1.0098;
+        float q = 1.03805f;//1.116;//1.0098;
         zLogScale = 1.0f / logf(q);
         zscale  = -(q-1)/b;
         zoffset = 1.0f;

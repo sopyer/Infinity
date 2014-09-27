@@ -59,7 +59,7 @@ namespace vg
     template<typename T> float  getTextHExtent(Font font, const T* str);
     template<typename T> void   calcTextBasePt(Font font, float w, float h, size_t flags, const T* str, float& bx, float& by);
     template<typename T> void   getBounds(Font font, const T* str, float& xmin, float& ymin, float& xmax, float& ymax);
-    template<typename T> void   drawString(Font font, float x, float y, const T* str, size_t len);
+    template<typename T> void   drawString(Font font, float x, float y, uint32_t color, const T* str, size_t len);
 
     //Paint API
     Paint   createSolidPaint(float* color4f);
@@ -76,13 +76,9 @@ namespace vg
     void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2);
 
     //Drawing API
-    void drawPath(Path path, Paint paint);
+    void drawPath(Path path, Paint paint, bool useNonZero, bool useAA);
+    void drawPath(Path path, uint32_t color, bool useNonZero);
     void drawPathAA(Path path, Paint paint);
-    void drawPathA2C(Path path, Paint paint);
-    void drawPathNZ(Path path, Paint paint);
-    void drawPathNZA2C(Path path, Paint paint);
-    void drawPath(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
-    void drawPathNZ(Path path, VGubyte red, VGubyte green, VGubyte blue, VGubyte alpha);
 
     //SUI API
     void drawRect(float x0, float y0, float x1, float y1, VGuint fillColor, VGuint borderColor);

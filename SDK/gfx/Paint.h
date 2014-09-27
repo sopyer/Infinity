@@ -1,12 +1,15 @@
 #pragma once
 
-#include <opengl.h>
+#include <gfx/gfx.h>
 
 namespace vg
 {
-	struct PaintOpaque
-	{
-		GLuint displayList;
-		GLuint texture;
-	};
+    struct PaintOpaque
+    {
+        GLuint    program;
+        uint16_t  allocUniforms;
+        GLsizei   size;
+        GLsizei   offset;
+        GLuint    texture;
+    };
 }

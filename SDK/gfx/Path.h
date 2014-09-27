@@ -1,41 +1,37 @@
 #pragma once
 
 #include <vg/openvg.h>
-#include <core/ml.h>
+#include <gfx/gfx.h>
 
 namespace vg
 {
-    struct B3Vertex
-    {
-        ml::vec2  p;
-        ml::vec3  klm;
-    };
-
     struct geometry_t
     {
         size_t  numIndices;
         size_t  numVertices;
         size_t  numB3Vertices;
         
-        uint16_t*  indices;
-        ml::vec2*  vertices;
-        B3Vertex*  b3vertices;
+        uint16_t*           indices;
+        vf::p2_vertex_t*    vertices;
+        vf::p2uv3_vertex_t* b3vertices;
     };
 
     struct path_data_t
     {
         float xmin, ymin, xmax, ymax;
 
-        size_t  numVertices;
+        uint16_t  allocVertices;
+        uint16_t  allocIndices;
+        uint16_t  allocB3Vertices;
+        uint16_t  allocB3Indices;
+
+        GLuint  baseVertex;
+        GLuint  offsetIndices;
         size_t  numIndices;
-        size_t  numB3Vertices;
+
+        GLuint  baseB3Vertex;
+        GLuint  offsetB3Indices;
         size_t  numB3Indices;
-
-        ml::vec2*  vertices;
-        uint16_t*  indices;
-
-        B3Vertex*  b3vertices;
-        uint16_t*  b3indices;
     };
 
     uint16_t     geomAddVertex    (geometry_t* geom, const ml::vec2& v);
@@ -43,7 +39,5 @@ namespace vg
     void         geomAddB3Vertices(geometry_t* geom, ml::vec2 pos[4], ml::vec3 klm[4]);
     path_data_t* geomToPath       (geometry_t* geom);
 
-    void rasterizeEvenOddAA(path_data_t* path);
-
-    void stencilPath(path_data_t* path, int useAA, int useNonZero);
+    void stencilPath(path_data_t* path, int useAA);
 }

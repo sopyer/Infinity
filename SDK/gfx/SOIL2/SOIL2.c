@@ -164,10 +164,9 @@ int query_DXT_capability( void );
 #define SOIL_SRGB8						0x8C41
 #define SOIL_SRGB_ALPHA					0x8C42
 #define SOIL_SRGB8_ALPHA8				0x8C43
-#define SOIL_SLUMINANCE_ALPHA			0x8C44
-#define SOIL_SLUMINANCE8_ALPHA8			0x8C45
-#define SOIL_SLUMINANCE					0x8C46
-#define SOIL_SLUMINANCE8				0x8C47
+#define SOIL_R8							0x8229
+#define SOIL_RG8						0x822B
+#define SOIL_RG							0x8227
 
 typedef void (APIENTRY * P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC) (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid * data);
 static P_SOIL_GLCOMPRESSEDTEXIMAGE2DPROC soilGlCompressedTexImage2D = NULL;
@@ -1624,12 +1623,12 @@ unsigned int
 		switch( channels )
 		{
 		case 1:
-			original_texture_format = GL_LUMINANCE;
-			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SLUMINANCE : GL_LUMINANCE;
+			original_texture_format = GL_RED;
+			internal_texture_format = SOIL_R8;
 			break;
 		case 2:
-			original_texture_format = GL_LUMINANCE_ALPHA;
-			internal_texture_format = (flags&SOIL_FLAG_FORCE_SRGB) ? SOIL_SLUMINANCE_ALPHA : GL_LUMINANCE_ALPHA;
+			original_texture_format = SOIL_RG;
+			internal_texture_format = SOIL_RG8;
 			break;
 		case 3:
 			original_texture_format = GL_RGB;

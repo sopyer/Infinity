@@ -291,46 +291,55 @@ namespace lighting
 
     void draw()
     {
-        glDisable(GL_CULL_FACE);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadMatrixf((float*)proj);
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-
         v128 vm[4];
         camera.getViewMatrix(vm);
-        glLoadMatrixf((float*)vm);
 
-        glUseProgram(0);
-        glBegin(GL_TRIANGLES);
-        glColor3f(1, 0, 0);
-        glVertex3f(-3, -1, -10);
-        glColor3f(0, 1, 0);
-        glVertex3f( 3, -1, -10);
-        glColor3f(0, 0, 1);
-        glVertex3f( 0, 4, -10);
-        glEnd();
+        gfx::set3DStates();
 
-        //glEnable   (GL_CULL_FACE);
+        gfx::setProjectionMatrix(proj);
+        gfx::setModelViewMatrix(vm);
 
-        glTranslatef(0, 9, 0);
-        glScalef(4, 4, 4);
+        glDisable(GL_CULL_FACE);
+        gfx::setMVP();
+
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+
+        glBindVertexArray(vf::p3cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p3cu4_vertex_t));
+
+        GLuint baseVertex;
+        vf::p3cu4_vertex_t* v = gfx::frameAllocVertices<vf::p3cu4_vertex_t>(3, &baseVertex);
+
+        vf::set(v++, -3.0f, -1.0f, -10.0f, 0xFF0000FF);
+        vf::set(v++,  3.0f, -1.0f, -10.0f, 0xFF00FF00);
+        vf::set(v++,  0.0f,  4.0f, -10.0f, 0xFFFF0000);
+        glDrawArrays(GL_TRIANGLES, baseVertex, 3);
+
+        // Imitate following code:
+        //     glTranslatef(0, 9, 0);
+        //     glScalef(4, 4, 4);
+        v128 m[4] = {
+            vi_set(4.0f, 0.0f, 0.0f, 0.0f),
+            vi_set(0.0f, 4.0f, 0.0f, 0.0f),
+            vi_set(0.0f, 0.0f, 4.0f, 0.0f),
+            vi_set(0.0f, 9.0f, 0.0f, 1.0f),
+        };
+
+        v128 modelView[4];
+
+        ml::mul_mat4(modelView, vm, m);
+        gfx::setModelViewMatrix(modelView);
+        gfx::setMVP();
+
         glBindBufferRange(GL_UNIFORM_BUFFER, 2, ubo, 0, 160);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
         glBufferSubData(GL_UNIFORM_BUFFER, 0, 160, shPoly);
         glUseProgram(prgSH);
         drawBox();
 
+        gfx::setModelViewMatrix(vm);
+        gfx::setMVP();
         drawSkybox(texSkyboxCubemap);
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-
-        glDisable(GL_BLEND);
     }
 
     void update(float dt)
@@ -341,12 +350,20 @@ namespace lighting
 
     void drawBox()
     {
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, cubeVertices);
+        GLuint baseVertex, indexOffset;
 
-        glDrawElements(GL_TRIANGLES, 6*2*3, GL_UNSIGNED_SHORT, cubeIndices);
+        glBindVertexArray(vf::p3_vertex_t::vao);
 
-        glDisableVertexAttribArray(0);
+        ml::vec3* v = gfx::frameAllocVertices<ml::vec3>(ARRAY_SIZE(cubeVertices), &baseVertex);
+        memcpy(v, cubeVertices, sizeof(cubeVertices));
+
+        uint16_t* i = gfx::frameAllocArray<uint16_t>(ARRAY_SIZE(cubeIndices), 0, &indexOffset);
+        memcpy(i, cubeIndices, sizeof(cubeIndices));
+
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p3_vertex_t));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx::dynBuffer);
+        glDrawElementsBaseVertex(GL_TRIANGLES, ARRAY_SIZE(cubeIndices), GL_UNSIGNED_SHORT, BUFFER_OFFSET(indexOffset), baseVertex);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
     void drawSkybox(GLuint cubemap)
@@ -360,7 +377,6 @@ namespace lighting
 
         drawBox();
 
-        glUseProgram(0);
         glBindSampler(0, 0);
 
         glCullFace(GL_BACK);

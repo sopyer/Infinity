@@ -66,22 +66,27 @@ namespace app
 
     void render()
     {
-        glClearDepth(1.0);
+        v128 m[4];
+        camera.getViewMatrix(m);
+
+        gfx::setProjectionMatrix(proj);
+        gfx::setModelViewMatrix(m);
+        gfx::set3DStates();
 
         //!!!!!TODO: fix culling
         //glFrontFace(GL_CW);
         //glCullFace (GL_BACK);
         //glEnable   (GL_CULL_FACE);
-
-        v128 m[4];
-        camera.getViewMatrix(m);
-        memcpy(&gfx::autoVars.matMV, (float*)m, sizeof(float) * 16);
+        glDisable(GL_CULL_FACE);
 
         gfx::drawXZGrid(-500.0f, -500.0f, 500.0f, 500.0f, 40, vi_set(0.0f, 1.0f, 1.0f, 1.0f));
 
         gpu_timer_start(&gpuTimer);
         Model::render(&model, &skel, &pose);
         gpu_timer_stop(&gpuTimer);
+
+        gfx::set2DStates();
+        gfx::setUIMatrices();
 
         ui::displayStats(
             10.0f, 10.0f, 300.0f, 70.0f,
@@ -106,10 +111,5 @@ namespace app
     void resize(int width, int height)
     {
         ml::make_perspective_mat4(proj, 30.0f * FLT_DEG_TO_RAD_SCALE, (float)width/(float)height, 0.1f, 10000.0f);
-
-        gfx::autoVars.projParams.x = proj[0].m128_f32[0];
-        gfx::autoVars.projParams.y = proj[1].m128_f32[1];
-        gfx::autoVars.projParams.z = proj[2].m128_f32[2];
-        gfx::autoVars.projParams.w = proj[3].m128_f32[2];
     }
 }

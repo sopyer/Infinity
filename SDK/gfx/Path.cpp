@@ -9,7 +9,10 @@ namespace vg
         size_t idx = geom->numVertices;
 
         assert(idx<USHRT_MAX);
-        geom->vertices[geom->numVertices++] = v;
+        geom->vertices[geom->numVertices].x = v.x;
+        geom->vertices[geom->numVertices].y = v.y;
+
+        ++geom->numVertices;
 
         return (uint16_t)idx;
     }
@@ -24,83 +27,35 @@ namespace vg
     void geomAddB3Vertices(geometry_t* geom, ml::vec2 pos[4], ml::vec3 klm[4])
     {
         size_t idx = geom->numB3Vertices;
+        assert(idx+4<USHRT_MAX);
 
-        geom->b3vertices[idx].p   = pos[0];
-        geom->b3vertices[idx].klm = klm[0];
-        ++idx;
-
-        geom->b3vertices[idx].p   = pos[1];
-        geom->b3vertices[idx].klm = klm[1];
-        ++idx;
-
-        geom->b3vertices[idx].p   = pos[2];
-        geom->b3vertices[idx].klm = klm[2];
-        ++idx;
-
-        geom->b3vertices[idx].p   = pos[3];
-        geom->b3vertices[idx].klm = klm[3];
-        ++idx;
+        vf::set(&geom->b3vertices[idx++], pos[0].x, pos[0].y, klm[0].x, klm[0].y, klm[0].z);
+        vf::set(&geom->b3vertices[idx++], pos[1].x, pos[1].y, klm[1].x, klm[1].y, klm[1].z);
+        vf::set(&geom->b3vertices[idx++], pos[2].x, pos[2].y, klm[2].x, klm[2].y, klm[2].z);
+        vf::set(&geom->b3vertices[idx++], pos[3].x, pos[3].y, klm[3].x, klm[3].y, klm[3].z);
 
         geom->numB3Vertices = idx;
     }
 
     path_data_t* geomToPath(geometry_t* geom)
     {
-        memory_t  pathBlob;
-
         assert(geom->numB3Vertices % 4 == 0);
         assert(geom->numB3Vertices <= USHRT_MAX);
 
-        size_t  numB3Indices = geom->numB3Vertices / 4 * 6;
+        path_data_t* path = mem::alloc<path_data_t>(gfx::memArena);
 
-        size_t  verticesSize   = sizeof(ml::vec2) * geom->numVertices;
-        size_t  indicesSize    = sizeof(uint16_t) * geom->numIndices;
-        size_t  b3verticesSize = sizeof(B3Vertex) * geom->numB3Vertices;
-        size_t  b3indicesSize  = sizeof(B3Vertex) * numB3Indices;
-        size_t  totalSize = sizeof(path_data_t) + verticesSize + indicesSize + b3verticesSize + b3indicesSize;
-
-        mem_area(&pathBlob, totalSize);
-
-        path_data_t* path = mem_raw_data<path_data_t>(&pathBlob);
-
-        path->numVertices   = geom->numVertices;
-        path->numIndices    = geom->numIndices;
-        path->numB3Vertices = geom->numB3Vertices;
-        path->numB3Indices  = numB3Indices;
-
-        path->vertices   = mem_raw_array<ml::vec2>(&pathBlob, geom->numVertices);
-        path->indices    = mem_raw_array<uint16_t>(&pathBlob, geom->numIndices);
-        path->b3vertices = mem_raw_array<B3Vertex>(&pathBlob, geom->numB3Vertices);
-        path->b3indices  = mem_raw_array<uint16_t>(&pathBlob, numB3Indices);
-
-        memcpy(path->vertices,   geom->vertices,   verticesSize);
-        memcpy(path->indices,    geom->indices,    indicesSize);
-        memcpy(path->b3vertices, geom->b3vertices, b3verticesSize);
-
-        numB3Indices = 0;
-        for (size_t i = 0; i<path->numB3Vertices; i+=4)
-        {
-            path->b3indices[numB3Indices++] = (uint16_t)i+0;
-            path->b3indices[numB3Indices++] = (uint16_t)i+1;
-            path->b3indices[numB3Indices++] = (uint16_t)i+3;
-
-            path->b3indices[numB3Indices++] = (uint16_t)i+1;
-            path->b3indices[numB3Indices++] = (uint16_t)i+2;
-            path->b3indices[numB3Indices++] = (uint16_t)i+3;
-        }
-
-        assert(numB3Indices == path->numB3Indices);
+        memset(path, 0, sizeof(path_data_t));
 
         //stupid initialization
-        if (path->numVertices > 0)
+        if (geom->numVertices > 0)
         {
-            path->xmin = path->xmax = path->vertices[0].x;
-            path->ymin = path->ymax = path->vertices[0].y;
+            path->xmin = path->xmax = geom->vertices[0].x;
+            path->ymin = path->ymax = geom->vertices[0].y;
         }
-        else if (path->numB3Vertices > 0)
+        else if (geom->numB3Vertices > 0)
         {
-            path->xmin = path->xmax = path->b3vertices[0].p.x;
-            path->ymin = path->ymax = path->b3vertices[0].p.y;
+            path->xmin = path->xmax = geom->b3vertices[0].x;
+            path->ymin = path->ymax = geom->b3vertices[0].y;
         }
         else
         {
@@ -108,20 +63,73 @@ namespace vg
             return path;
         }
 
-        for(size_t i = 0; i < path->numVertices; ++i)
+        for(size_t i = 0; i < geom->numVertices; ++i)
         {
-            path->xmin = core::min(path->xmin, path->vertices[i].x);
-            path->ymin = core::min(path->ymin, path->vertices[i].y);
-            path->xmax = core::max(path->xmax, path->vertices[i].x);
-            path->ymax = core::max(path->ymax, path->vertices[i].y);
+            path->xmin = core::min(path->xmin, geom->vertices[i].x);
+            path->ymin = core::min(path->ymin, geom->vertices[i].y);
+            path->xmax = core::max(path->xmax, geom->vertices[i].x);
+            path->ymax = core::max(path->ymax, geom->vertices[i].y);
         }
 
-        for(size_t i = 0; i < path->numB3Vertices; ++i)
+        for(size_t i = 0; i < geom->numB3Vertices; ++i)
         {
-            path->xmin = core::min(path->xmin, path->b3vertices[i].p.x);
-            path->ymin = core::min(path->ymin, path->b3vertices[i].p.y);
-            path->xmax = core::max(path->xmax, path->b3vertices[i].p.x);
-            path->ymax = core::max(path->ymax, path->b3vertices[i].p.y);
+            path->xmin = core::min(path->xmin, geom->b3vertices[i].x);
+            path->ymin = core::min(path->ymin, geom->b3vertices[i].y);
+            path->xmax = core::max(path->xmax, geom->b3vertices[i].x);
+            path->ymax = core::max(path->ymax, geom->b3vertices[i].y);
+        }
+
+        if (geom->numIndices)
+        {
+            size_t  verticesSize = sizeof(vf::p2_vertex_t) * geom->numVertices;
+            size_t  indicesSize  = sizeof(uint16_t) * geom->numIndices;
+
+            path->allocVertices = gfx::allocBufferMem(gfx::vgBuffer, verticesSize, sizeof(vf::p2_vertex_t));
+            path->allocIndices  = gfx::allocBufferMem(gfx::vgBuffer, indicesSize);
+
+            vf::p2_vertex_t* vertices = gfx::lockBufferVertices<vf::p2_vertex_t>(gfx::vgBuffer, path->allocVertices);
+            memcpy(vertices, geom->vertices, verticesSize);
+            gfx::unlockBufferMem(gfx::vgBuffer);
+
+            uint16_t* indices = gfx::lockBufferMem<uint16_t>(gfx::vgBuffer, path->allocIndices);
+            memcpy(indices, geom->indices, indicesSize);
+            gfx::unlockBufferMem(gfx::vgBuffer);
+
+            path->baseVertex    = gfx::getBufferFirstVertex(gfx::vgBuffer, path->allocVertices, sizeof(vf::p2_vertex_t));
+            path->offsetIndices = gfx::getBufferMemOffset(gfx::vgBuffer, path->allocIndices);
+            path->numIndices    = geom->numIndices;
+        }
+
+        if (geom->numB3Vertices)
+        {
+            size_t  numB3Indices = geom->numB3Vertices / 4 * 6;
+            size_t  b3verticesSize = sizeof(vf::p2uv3_vertex_t) * geom->numB3Vertices;
+            size_t  b3indicesSize  = sizeof(uint16_t) * numB3Indices;
+
+            path->allocB3Vertices = gfx::allocBufferMem(gfx::vgBuffer, b3verticesSize, sizeof(vf::p2uv3_vertex_t));
+            path->allocB3Indices  = gfx::allocBufferMem(gfx::vgBuffer, b3indicesSize);
+
+            vf::p2uv3_vertex_t* b3vertices = gfx::lockBufferVertices<vf::p2uv3_vertex_t>(gfx::vgBuffer, path->allocB3Vertices);
+            memcpy(b3vertices, geom->b3vertices, b3verticesSize);
+            gfx::unlockBufferMem(gfx::vgBuffer);
+
+            uint16_t* b3indices = gfx::lockBufferMem<uint16_t>(gfx::vgBuffer, path->allocB3Indices);
+            numB3Indices = 0;
+            for (size_t i = 0; i<geom->numB3Vertices; i+=4)
+            {
+                b3indices[numB3Indices++] = (uint16_t)i+0;
+                b3indices[numB3Indices++] = (uint16_t)i+1;
+                b3indices[numB3Indices++] = (uint16_t)i+3;
+
+                b3indices[numB3Indices++] = (uint16_t)i+1;
+                b3indices[numB3Indices++] = (uint16_t)i+2;
+                b3indices[numB3Indices++] = (uint16_t)i+3;
+            }
+            gfx::unlockBufferMem(gfx::vgBuffer);
+
+            path->baseB3Vertex    = gfx::getBufferFirstVertex(gfx::vgBuffer, path->allocB3Vertices, sizeof(vf::p2uv3_vertex_t));
+            path->offsetB3Indices = gfx::getBufferMemOffset(gfx::vgBuffer, path->allocB3Indices);
+            path->numB3Indices    = numB3Indices;
         }
 
         return path;
@@ -418,84 +426,31 @@ namespace vg
         geomAddB3Vertices(geom, cp, klm);
     }
 
-    void rasterizeEvenOddAA(path_data_t* path)
+    void stencilPath(path_data_t* path, int useAA)
     {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glDisable(GL_STENCIL_TEST);
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-
-        glEnableClientState(GL_VERTEX_ARRAY);
+        gfx::setMVP();
 
         if (path->numIndices > 0)
         {
-            glUseProgram(0);
-            glColor4ub(0, 0, 0, 255);
-            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), path->vertices);
-            glDrawElements(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, path->indices);
+            gfx::setStdProgram(0);
+            glBindVertexArray(vf::p2_vertex_t::vao);
+            glBindVertexBuffer(0, gfx::getGPUBuffer(gfx::vgBuffer), 0, sizeof(vf::p2_vertex_t));
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx::getGPUBuffer(gfx::vgBuffer));
+            glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, BUFFER_OFFSET(path->offsetIndices), path->baseVertex);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
-
-        glClientActiveTexture(GL_TEXTURE0);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
         if (path->numB3Indices > 0)
         {
-            glVertexPointer(2, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].p);
-            glTexCoordPointer(3, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].klm);
-            glUseProgram(impl::stencilCubicAreaAAProgram);
-            glDrawElements(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, path->b3indices);
+            glUseProgram(useAA ? gfx_res::prgRasterCubicAA : gfx_res::prgRasterCubic);
+            glBindVertexArray(vf::p2uv3_vertex_t::vao);
+            glBindVertexBuffer(0, gfx::getGPUBuffer(gfx::vgBuffer), 0, sizeof(vf::p2uv3_vertex_t));
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx::getGPUBuffer(gfx::vgBuffer));
+            glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, BUFFER_OFFSET(path->offsetB3Indices), path->baseB3Vertex);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
 
-        glPopClientAttrib();
-        glPopAttrib();
-    }
-
-    void stencilPath(path_data_t* path, int useAA, int useNonZero)
-    {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glPushClientAttrib(GL_CLIENT_ALL_ATTRIB_BITS);
-
-        glEnable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
-        glStencilMask(0xFF); //TODO: make mask configurable
-        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, useNonZero?GL_INCR_WRAP:GL_INVERT);
-        glStencilOpSeparate(GL_BACK,  GL_KEEP, GL_KEEP, useNonZero?GL_DECR_WRAP:GL_INVERT);
-
-        glEnableClientState(GL_VERTEX_ARRAY);
-
-        if (path->numIndices > 0)
-        {
-            glUseProgram(0);
-            glVertexPointer(2, GL_FLOAT, sizeof(ml::vec2), path->vertices);
-            glDrawElements(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, path->indices);
-        }
-
-        if (useAA) glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-
-        glClientActiveTexture(GL_TEXTURE0);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-
-        if (path->numB3Indices > 0)
-        {
-            glVertexPointer(2, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].p.x);
-            glTexCoordPointer(3, GL_FLOAT, sizeof(B3Vertex), &path->b3vertices[0].klm.x);
-            glUseProgram(useAA?impl::stencilCubicAreaAAProgram:impl::stencilCubicAreaProgram);
-            glDrawElements(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, path->b3indices);
-        }
-
-        if (useAA) glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-
-        glPopClientAttrib();
-        glPopAttrib();
+        glBindVertexArray(0);
     }
 
     void getPathBounds(Path path, float& x1, float& y1, float& x2, float& y2)
@@ -513,8 +468,8 @@ namespace vg
         geometry_t pathGeom = {
             0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
-            (ml::vec2*)core::thread_stack_alloc(sizeof(ml::vec2)*maxVertices),
-            (B3Vertex*)core::thread_stack_alloc(sizeof(B3Vertex)*maxB3Vertices)
+            (vf::p2_vertex_t*) core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
+            (vf::p2uv3_vertex_t*) core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
         };
 
         ml::vec2  cp0 = {0.0f, 0.0f},
@@ -649,6 +604,10 @@ namespace vg
 
     void destroyPath(Path path)
     {
-        delete path;
+        gfx::freeBufferMem(gfx::vgBuffer, path->allocVertices);
+        gfx::freeBufferMem(gfx::vgBuffer, path->allocIndices);
+        gfx::freeBufferMem(gfx::vgBuffer, path->allocB3Vertices);
+        gfx::freeBufferMem(gfx::vgBuffer, path->allocB3Indices);
+        mem::free(gfx::memArena, path);
     }
 }

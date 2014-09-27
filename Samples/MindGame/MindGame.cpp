@@ -1,15 +1,23 @@
 #include <fwk/fwk.h>
 #include <time.h>
 
-void drawFrame(float x0, float y0, float x1, float y1)
+void drawFrame(float x0, float y0, float x1, float y1, uint32_t color)
 {
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(x0, y0);
-    glVertex2f(x1, y0);
-    glVertex2f(x1, y1);
-    glVertex2f(x0, y1);
-    glVertex2f(x0, y0);
-    glEnd();
+    GLuint baseVertex;
+    vf::p2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2cu4_vertex_t>(10, &baseVertex);
+
+    vf::set(v++, x0,      y0,      color);
+    vf::set(v++, x0+1.0f, y0+1.0f, color);
+    vf::set(v++, x1,      y0,      color);
+    vf::set(v++, x1-1.0f, y0+1.0f, color);
+    vf::set(v++, x1,      y1,      color);
+    vf::set(v++, x1-1.0f, y1-1.0f, color);
+    vf::set(v++, x0,      y1,      color);
+    vf::set(v++, x0+1.0f, y1-1.0f, color);
+    vf::set(v++, x0,      y0,      color);
+    vf::set(v++, x0+1.0f, y0+1.0f, color);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 10);
 }
 
 enum ArrowDir
@@ -27,7 +35,7 @@ enum GameState
     GS_GAME_COMPLETED
 };
 
-void drawArrowTri(float x0, float y0, float R, int dir)
+void drawArrowTri(float x0, float y0, float R, int dir, uint32_t color)
 {
     float dx0, dy0;
     float dx1, dy1;
@@ -59,12 +67,22 @@ void drawArrowTri(float x0, float y0, float R, int dir)
         assert(0);
     }
 
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(x0+dx0*R, y0+dy0*R);
-    glVertex2f(x0+dx1*R, y0+dy1*R);
-    glVertex2f(x0+dx2*R, y0+dy2*R);
-    glVertex2f(x0+dx0*R, y0+dy0*R);
-    glEnd();
+    GLuint baseVertex;
+    vf::p2cu4_vertex_t* v = gfx::frameAllocVertices<vf::p2cu4_vertex_t>(8, &baseVertex);
+
+    float R0 = R;
+    float R1 = R - 2.0f;
+
+    vf::set(v++, x0+dx0*R0, y0+dy0*R0, color);
+    vf::set(v++, x0+dx0*R1, y0+dy0*R1, color);
+    vf::set(v++, x0+dx1*R0, y0+dy1*R0, color);
+    vf::set(v++, x0+dx1*R1, y0+dy1*R1, color);
+    vf::set(v++, x0+dx2*R0, y0+dy2*R0, color);
+    vf::set(v++, x0+dx2*R1, y0+dy2*R1, color);
+    vf::set(v++, x0+dx0*R0, y0+dy0*R0, color);
+    vf::set(v++, x0+dx0*R1, y0+dy0*R1, color);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, 8);
 }
 
 namespace app
@@ -193,28 +211,35 @@ namespace app
 
         float x;
 
+        gfx::set2DStates();
+        gfx::setUIMatrices();
+
+        gfx::setStdProgram(gfx::STD_FEATURE_COLOR);
+        gfx::setMVP();
+
+        glBindVertexArray(vf::p2cu4_vertex_t::vao);
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(vf::p2cu4_vertex_t));
+
         x= bx;
-        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         for (int i=0; i < maxElements; ++i)
         {
-            drawFrame(x, by, x+size, by+size);
+            drawFrame(x, by, x+size, by+size, 0xFF0000FF);
             x += size+margin*2.0f;
         }
 
         assert(guessed<=maxElements);
 
         x= bx;
-        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
         for (int i=0; i < guessed; ++i)
         {
             assert(seq[i]<AD_COUNT);
-            drawArrowTri(x+0.5f*size, by+0.5f*size, 0.5f*size-padding, seq[i]);
+            drawArrowTri(x+0.5f*size, by+0.5f*size, 0.5f*size-padding, seq[i], 0xFF00FF00);
             x += size+margin*2.0f;
         }
 
         if (state == GS_GAME_COMPLETED)
         {
-            drawFrame(bx-padding, by-padding, bx+size*maxElements+margin*2*(maxElements-1)+padding, by+size+padding);
+            drawFrame(bx-padding, by-padding, bx+size*maxElements+margin*2*(maxElements-1)+padding, by+size+padding, 0xFF00FF00);
         }
     }
 

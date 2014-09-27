@@ -111,57 +111,68 @@ namespace app
         _time64(&curtime);
         _gmtime64_s(&dt, &curtime);
 
-        glTranslatef(mOffsetX, mOffsetY, 0.0f);
-        glScalef(mScale, mScale, 1.0f);
+        gfx::set2DStates();
+        gfx::setUIMatrices();
+
+        v128 mv[4] = {
+            vi_set(  mScale,     0.0f, 0.0f, 0.0f),
+            vi_set(    0.0f,   mScale, 0.0f, 0.0f),
+            vi_set(    0.0f,     0.0f, 1.0f, 0.0f),
+            vi_set(mOffsetX, mOffsetY, 0.0f, 1.0f),
+        };
+
+        gfx::setModelViewMatrix(mv);
+
+        v128 mvt[4], t[4];
 
 #ifdef RASTER_ACTORS
         glAlphaFunc(GL_GREATER, 0.0f);
         glEnable(GL_ALPHA_TEST);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glPushMatrix();
         vg::drawImage(-w/2.0f, h/2.0f, w/2.0f, -h/2.0f, mTextures[IMG_BACKGROUND]);
-        glPopMatrix();
 
-        glPushMatrix();
-        glRotatef(30.0f*(dt.tm_hour%12)+90.0f, 0.0f, 0.0f, 1.0f);
+        ml::make_rotation_mat4(t, (30.0f*(dt.tm_hour%12)-90.0f) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
         vg::drawImage(-w/2.0f, h/2.0f, w/2.0f, -h/2.0f, mTextures[IMG_HOUR_HAND]);
-        glPopMatrix();
 
-        glPushMatrix();
-        glRotatef(6.0f*dt.tm_min, 0.0f, 0.0f, 1.0f);
+        ml::make_rotation_mat4(t, (6.0f*dt.tm_min - 180.0f) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
         vg::drawImage(-w/2.0f, h/2.0f, w/2.0f, -h/2.0f, mTextures[IMG_MINUTE_HAND]);
-        glPopMatrix();
 
-        glPushMatrix();
-        glRotatef(6.0f*dt.tm_sec, 0.0f, 0.0f, 1.0f);
+        ml::make_rotation_mat4(t, (6.0f*dt.tm_sec - 180.0f) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
         vg::drawImage(-w/2.0f, h/2.0f, w/2.0f, -h/2.0f, mTextures[IMG_SECOND_HAND]);
-        glPopMatrix();
 #else
-        glPushMatrix();
-        glTranslatef(bkgOffsetX, bkgOffsetY, 0.0f);
-        vg::drawPathA2C(mClockPaths[PATH_CLOCK_BKG],           mWhite);
-        vg::drawPathA2C(mClockPaths[PATH_MARKERS_1],           mBlack);
-        vg::drawPathA2C(mClockPaths[PATH_MARKERS_2_AND_3],     mBlack);
-        vg::drawPathA2C(mClockPaths[PATH_CIRCLES_AND_CIPHERS], mBlack);
-        glPopMatrix();
+        ml::make_translation_mat4(t, bkgOffsetX, bkgOffsetY, 0.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
+        vg::drawPath(mClockPaths[PATH_CLOCK_BKG],           mWhite, false, true);
+        vg::drawPath(mClockPaths[PATH_MARKERS_1],           mBlack, false, true);
+        vg::drawPath(mClockPaths[PATH_MARKERS_2_AND_3],     mBlack, false, true);
+        vg::drawPath(mClockPaths[PATH_CIRCLES_AND_CIPHERS], mBlack, false, true);
 
-        glPushMatrix();
-        glRotatef(30.0f*(dt.tm_hour%12), 0.0f, 0.0f, 1.0f);
-        vg::drawPathA2C(mClockPaths[PATH_HOUR_HAND], mBlack);
-        glPopMatrix();
+        ml::make_rotation_mat4(t, 30.0f*(dt.tm_hour%12) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
+        vg::drawPath(mClockPaths[PATH_HOUR_HAND], mBlack, false, true);
 
-        glPushMatrix();
-        glRotatef(6.0f*dt.tm_min-90.0f, 0.0f, 0.0f, 1.0f);
-        vg::drawPathA2C(mClockPaths[PATH_MINUTE_HAND], mBlack);
-        glPopMatrix();
+        ml::make_rotation_mat4(t, (6.0f*dt.tm_min-90.0f) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
+        vg::drawPath(mClockPaths[PATH_MINUTE_HAND], mBlack, false, true);
 
-        glPushMatrix();
-        glRotatef(6.0f*dt.tm_sec-90.0f, 0.0f, 0.0f, 1.0f);
-        vg::drawPathA2C(mClockPaths[PATH_SECOND_HAND], mRed);
-        glPopMatrix();
+        ml::make_rotation_mat4(t, (6.0f*dt.tm_sec-90.0f) * FLT_DEG_TO_RAD_SCALE, 0.0f, 0.0f, 1.0f);
+        ml::mul_mat4(mvt, mv, t);
+        gfx::setModelViewMatrix(mvt);
+        vg::drawPath(mClockPaths[PATH_SECOND_HAND], mRed, false, true);
 #endif
+
+        ml::make_identity_mat4(mv);
+        gfx::setModelViewMatrix(mv);
+
     }
 
     void recompilePrograms() {}

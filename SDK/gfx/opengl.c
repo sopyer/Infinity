@@ -1,5 +1,3 @@
-/* WARNING: This file was automatically generated */
-/* Do not edit. */
 
 #include "opengl.h"
 
@@ -25,7 +23,6 @@ int importOpenGL(void)
     GLint minor, major;
     GLint num_extensions;
     int i;
-    GLint profile;
 
     glextLoadModule();
     glextLoadFunctions();
@@ -34,6 +31,7 @@ int importOpenGL(void)
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
 
+    /* --- Check for minimal version and profile --- */
     if (10 * major + minor < 44) {
         fprintf(stderr, "Error: OpenGL version 4.4 not supported.\n");
         fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
@@ -42,29 +40,6 @@ int importOpenGL(void)
     }
 
     
-    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
-
-    if ((profile & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) == 0) {
-        fprintf(stderr, "Error: This application requires a compatibility profile\n");
-        return GL_FALSE;
-    }
-    
-    /* --- Check for minimal version and profile --- */
-
-    if (major * 10 + minor < 44) {
-    fprintf(stderr, "Error: OpenGL version 4.4 not supported.\n");
-        fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-
-    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
-
-    if ((profile & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) == 0) {
-    fprintf(stderr, "Error: This application requires a compatibility profile\n");
-        return GL_FALSE;
-    }
-
     /* --- Check for extensions --- */
 
     glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
@@ -73,66 +48,6 @@ int importOpenGL(void)
         glextAddExtension((const char*)glGetStringi(GL_EXTENSIONS, i));
     }
 
-    if (!GLEXT_ARB_seamless_cubemap_per_texture) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_seamless_cubemap_per_texture not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_bindless_texture) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_bindless_texture not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_sparse_texture) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_sparse_texture not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_shader_draw_parameters) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_shader_draw_parameters not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_indirect_parameters) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_indirect_parameters not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_shader_group_vote) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_shader_group_vote not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_query_buffer_object) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_query_buffer_object not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_enhanced_layouts) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_enhanced_layouts not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_texture_mirror_clamp_to_edge) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_texture_mirror_clamp_to_edge not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_texture_stencil8) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_texture_stencil8 not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_compute_variable_group_size) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_compute_variable_group_size not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    if (!GLEXT_ARB_vertex_type_10f_11f_11f_rev) {
-        fprintf(stderr, "Error: OpenGL extension GL_ARB_vertex_type_10f_11f_11f_rev not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
     if (!GLEXT_EXT_direct_state_access) {
         fprintf(stderr, "Error: OpenGL extension GL_EXT_direct_state_access not supported.\n");
         fprintf(stderr, "       Try updating your graphics driver.\n");
@@ -168,43 +83,6 @@ void glextLoadFunctions(void)
     glpfCompressedTexSubImage2D = (PFNGLCOMPRESSEDTEXSUBIMAGE2D_PROC*)glextGetProc("glCompressedTexSubImage2D");
     glpfCompressedTexSubImage1D = (PFNGLCOMPRESSEDTEXSUBIMAGE1D_PROC*)glextGetProc("glCompressedTexSubImage1D");
     glpfGetCompressedTexImage = (PFNGLGETCOMPRESSEDTEXIMAGE_PROC*)glextGetProc("glGetCompressedTexImage");
-    glpfClientActiveTexture = (PFNGLCLIENTACTIVETEXTURE_PROC*)glextGetProc("glClientActiveTexture");
-    glpfMultiTexCoord1d = (PFNGLMULTITEXCOORD1D_PROC*)glextGetProc("glMultiTexCoord1d");
-    glpfMultiTexCoord1dv = (PFNGLMULTITEXCOORD1DV_PROC*)glextGetProc("glMultiTexCoord1dv");
-    glpfMultiTexCoord1f = (PFNGLMULTITEXCOORD1F_PROC*)glextGetProc("glMultiTexCoord1f");
-    glpfMultiTexCoord1fv = (PFNGLMULTITEXCOORD1FV_PROC*)glextGetProc("glMultiTexCoord1fv");
-    glpfMultiTexCoord1i = (PFNGLMULTITEXCOORD1I_PROC*)glextGetProc("glMultiTexCoord1i");
-    glpfMultiTexCoord1iv = (PFNGLMULTITEXCOORD1IV_PROC*)glextGetProc("glMultiTexCoord1iv");
-    glpfMultiTexCoord1s = (PFNGLMULTITEXCOORD1S_PROC*)glextGetProc("glMultiTexCoord1s");
-    glpfMultiTexCoord1sv = (PFNGLMULTITEXCOORD1SV_PROC*)glextGetProc("glMultiTexCoord1sv");
-    glpfMultiTexCoord2d = (PFNGLMULTITEXCOORD2D_PROC*)glextGetProc("glMultiTexCoord2d");
-    glpfMultiTexCoord2dv = (PFNGLMULTITEXCOORD2DV_PROC*)glextGetProc("glMultiTexCoord2dv");
-    glpfMultiTexCoord2f = (PFNGLMULTITEXCOORD2F_PROC*)glextGetProc("glMultiTexCoord2f");
-    glpfMultiTexCoord2fv = (PFNGLMULTITEXCOORD2FV_PROC*)glextGetProc("glMultiTexCoord2fv");
-    glpfMultiTexCoord2i = (PFNGLMULTITEXCOORD2I_PROC*)glextGetProc("glMultiTexCoord2i");
-    glpfMultiTexCoord2iv = (PFNGLMULTITEXCOORD2IV_PROC*)glextGetProc("glMultiTexCoord2iv");
-    glpfMultiTexCoord2s = (PFNGLMULTITEXCOORD2S_PROC*)glextGetProc("glMultiTexCoord2s");
-    glpfMultiTexCoord2sv = (PFNGLMULTITEXCOORD2SV_PROC*)glextGetProc("glMultiTexCoord2sv");
-    glpfMultiTexCoord3d = (PFNGLMULTITEXCOORD3D_PROC*)glextGetProc("glMultiTexCoord3d");
-    glpfMultiTexCoord3dv = (PFNGLMULTITEXCOORD3DV_PROC*)glextGetProc("glMultiTexCoord3dv");
-    glpfMultiTexCoord3f = (PFNGLMULTITEXCOORD3F_PROC*)glextGetProc("glMultiTexCoord3f");
-    glpfMultiTexCoord3fv = (PFNGLMULTITEXCOORD3FV_PROC*)glextGetProc("glMultiTexCoord3fv");
-    glpfMultiTexCoord3i = (PFNGLMULTITEXCOORD3I_PROC*)glextGetProc("glMultiTexCoord3i");
-    glpfMultiTexCoord3iv = (PFNGLMULTITEXCOORD3IV_PROC*)glextGetProc("glMultiTexCoord3iv");
-    glpfMultiTexCoord3s = (PFNGLMULTITEXCOORD3S_PROC*)glextGetProc("glMultiTexCoord3s");
-    glpfMultiTexCoord3sv = (PFNGLMULTITEXCOORD3SV_PROC*)glextGetProc("glMultiTexCoord3sv");
-    glpfMultiTexCoord4d = (PFNGLMULTITEXCOORD4D_PROC*)glextGetProc("glMultiTexCoord4d");
-    glpfMultiTexCoord4dv = (PFNGLMULTITEXCOORD4DV_PROC*)glextGetProc("glMultiTexCoord4dv");
-    glpfMultiTexCoord4f = (PFNGLMULTITEXCOORD4F_PROC*)glextGetProc("glMultiTexCoord4f");
-    glpfMultiTexCoord4fv = (PFNGLMULTITEXCOORD4FV_PROC*)glextGetProc("glMultiTexCoord4fv");
-    glpfMultiTexCoord4i = (PFNGLMULTITEXCOORD4I_PROC*)glextGetProc("glMultiTexCoord4i");
-    glpfMultiTexCoord4iv = (PFNGLMULTITEXCOORD4IV_PROC*)glextGetProc("glMultiTexCoord4iv");
-    glpfMultiTexCoord4s = (PFNGLMULTITEXCOORD4S_PROC*)glextGetProc("glMultiTexCoord4s");
-    glpfMultiTexCoord4sv = (PFNGLMULTITEXCOORD4SV_PROC*)glextGetProc("glMultiTexCoord4sv");
-    glpfLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXF_PROC*)glextGetProc("glLoadTransposeMatrixf");
-    glpfLoadTransposeMatrixd = (PFNGLLOADTRANSPOSEMATRIXD_PROC*)glextGetProc("glLoadTransposeMatrixd");
-    glpfMultTransposeMatrixf = (PFNGLMULTTRANSPOSEMATRIXF_PROC*)glextGetProc("glMultTransposeMatrixf");
-    glpfMultTransposeMatrixd = (PFNGLMULTTRANSPOSEMATRIXD_PROC*)glextGetProc("glMultTransposeMatrixd");
 
 
     /* GL_VERSION_1_4 */
@@ -216,44 +94,6 @@ void glextLoadFunctions(void)
     glpfPointParameterfv = (PFNGLPOINTPARAMETERFV_PROC*)glextGetProc("glPointParameterfv");
     glpfPointParameteri = (PFNGLPOINTPARAMETERI_PROC*)glextGetProc("glPointParameteri");
     glpfPointParameteriv = (PFNGLPOINTPARAMETERIV_PROC*)glextGetProc("glPointParameteriv");
-    glpfFogCoordf = (PFNGLFOGCOORDF_PROC*)glextGetProc("glFogCoordf");
-    glpfFogCoordfv = (PFNGLFOGCOORDFV_PROC*)glextGetProc("glFogCoordfv");
-    glpfFogCoordd = (PFNGLFOGCOORDD_PROC*)glextGetProc("glFogCoordd");
-    glpfFogCoorddv = (PFNGLFOGCOORDDV_PROC*)glextGetProc("glFogCoorddv");
-    glpfFogCoordPointer = (PFNGLFOGCOORDPOINTER_PROC*)glextGetProc("glFogCoordPointer");
-    glpfSecondaryColor3b = (PFNGLSECONDARYCOLOR3B_PROC*)glextGetProc("glSecondaryColor3b");
-    glpfSecondaryColor3bv = (PFNGLSECONDARYCOLOR3BV_PROC*)glextGetProc("glSecondaryColor3bv");
-    glpfSecondaryColor3d = (PFNGLSECONDARYCOLOR3D_PROC*)glextGetProc("glSecondaryColor3d");
-    glpfSecondaryColor3dv = (PFNGLSECONDARYCOLOR3DV_PROC*)glextGetProc("glSecondaryColor3dv");
-    glpfSecondaryColor3f = (PFNGLSECONDARYCOLOR3F_PROC*)glextGetProc("glSecondaryColor3f");
-    glpfSecondaryColor3fv = (PFNGLSECONDARYCOLOR3FV_PROC*)glextGetProc("glSecondaryColor3fv");
-    glpfSecondaryColor3i = (PFNGLSECONDARYCOLOR3I_PROC*)glextGetProc("glSecondaryColor3i");
-    glpfSecondaryColor3iv = (PFNGLSECONDARYCOLOR3IV_PROC*)glextGetProc("glSecondaryColor3iv");
-    glpfSecondaryColor3s = (PFNGLSECONDARYCOLOR3S_PROC*)glextGetProc("glSecondaryColor3s");
-    glpfSecondaryColor3sv = (PFNGLSECONDARYCOLOR3SV_PROC*)glextGetProc("glSecondaryColor3sv");
-    glpfSecondaryColor3ub = (PFNGLSECONDARYCOLOR3UB_PROC*)glextGetProc("glSecondaryColor3ub");
-    glpfSecondaryColor3ubv = (PFNGLSECONDARYCOLOR3UBV_PROC*)glextGetProc("glSecondaryColor3ubv");
-    glpfSecondaryColor3ui = (PFNGLSECONDARYCOLOR3UI_PROC*)glextGetProc("glSecondaryColor3ui");
-    glpfSecondaryColor3uiv = (PFNGLSECONDARYCOLOR3UIV_PROC*)glextGetProc("glSecondaryColor3uiv");
-    glpfSecondaryColor3us = (PFNGLSECONDARYCOLOR3US_PROC*)glextGetProc("glSecondaryColor3us");
-    glpfSecondaryColor3usv = (PFNGLSECONDARYCOLOR3USV_PROC*)glextGetProc("glSecondaryColor3usv");
-    glpfSecondaryColorPointer = (PFNGLSECONDARYCOLORPOINTER_PROC*)glextGetProc("glSecondaryColorPointer");
-    glpfWindowPos2d = (PFNGLWINDOWPOS2D_PROC*)glextGetProc("glWindowPos2d");
-    glpfWindowPos2dv = (PFNGLWINDOWPOS2DV_PROC*)glextGetProc("glWindowPos2dv");
-    glpfWindowPos2f = (PFNGLWINDOWPOS2F_PROC*)glextGetProc("glWindowPos2f");
-    glpfWindowPos2fv = (PFNGLWINDOWPOS2FV_PROC*)glextGetProc("glWindowPos2fv");
-    glpfWindowPos2i = (PFNGLWINDOWPOS2I_PROC*)glextGetProc("glWindowPos2i");
-    glpfWindowPos2iv = (PFNGLWINDOWPOS2IV_PROC*)glextGetProc("glWindowPos2iv");
-    glpfWindowPos2s = (PFNGLWINDOWPOS2S_PROC*)glextGetProc("glWindowPos2s");
-    glpfWindowPos2sv = (PFNGLWINDOWPOS2SV_PROC*)glextGetProc("glWindowPos2sv");
-    glpfWindowPos3d = (PFNGLWINDOWPOS3D_PROC*)glextGetProc("glWindowPos3d");
-    glpfWindowPos3dv = (PFNGLWINDOWPOS3DV_PROC*)glextGetProc("glWindowPos3dv");
-    glpfWindowPos3f = (PFNGLWINDOWPOS3F_PROC*)glextGetProc("glWindowPos3f");
-    glpfWindowPos3fv = (PFNGLWINDOWPOS3FV_PROC*)glextGetProc("glWindowPos3fv");
-    glpfWindowPos3i = (PFNGLWINDOWPOS3I_PROC*)glextGetProc("glWindowPos3i");
-    glpfWindowPos3iv = (PFNGLWINDOWPOS3IV_PROC*)glextGetProc("glWindowPos3iv");
-    glpfWindowPos3s = (PFNGLWINDOWPOS3S_PROC*)glextGetProc("glWindowPos3s");
-    glpfWindowPos3sv = (PFNGLWINDOWPOS3SV_PROC*)glextGetProc("glWindowPos3sv");
     glpfBlendColor = (PFNGLBLENDCOLOR_PROC*)glextGetProc("glBlendColor");
     glpfBlendEquation = (PFNGLBLENDEQUATION_PROC*)glextGetProc("glBlendEquation");
 
@@ -545,36 +385,6 @@ void glextLoadFunctions(void)
     glpfVertexAttribP3uiv = (PFNGLVERTEXATTRIBP3UIV_PROC*)glextGetProc("glVertexAttribP3uiv");
     glpfVertexAttribP4ui = (PFNGLVERTEXATTRIBP4UI_PROC*)glextGetProc("glVertexAttribP4ui");
     glpfVertexAttribP4uiv = (PFNGLVERTEXATTRIBP4UIV_PROC*)glextGetProc("glVertexAttribP4uiv");
-    glpfVertexP2ui = (PFNGLVERTEXP2UI_PROC*)glextGetProc("glVertexP2ui");
-    glpfVertexP2uiv = (PFNGLVERTEXP2UIV_PROC*)glextGetProc("glVertexP2uiv");
-    glpfVertexP3ui = (PFNGLVERTEXP3UI_PROC*)glextGetProc("glVertexP3ui");
-    glpfVertexP3uiv = (PFNGLVERTEXP3UIV_PROC*)glextGetProc("glVertexP3uiv");
-    glpfVertexP4ui = (PFNGLVERTEXP4UI_PROC*)glextGetProc("glVertexP4ui");
-    glpfVertexP4uiv = (PFNGLVERTEXP4UIV_PROC*)glextGetProc("glVertexP4uiv");
-    glpfTexCoordP1ui = (PFNGLTEXCOORDP1UI_PROC*)glextGetProc("glTexCoordP1ui");
-    glpfTexCoordP1uiv = (PFNGLTEXCOORDP1UIV_PROC*)glextGetProc("glTexCoordP1uiv");
-    glpfTexCoordP2ui = (PFNGLTEXCOORDP2UI_PROC*)glextGetProc("glTexCoordP2ui");
-    glpfTexCoordP2uiv = (PFNGLTEXCOORDP2UIV_PROC*)glextGetProc("glTexCoordP2uiv");
-    glpfTexCoordP3ui = (PFNGLTEXCOORDP3UI_PROC*)glextGetProc("glTexCoordP3ui");
-    glpfTexCoordP3uiv = (PFNGLTEXCOORDP3UIV_PROC*)glextGetProc("glTexCoordP3uiv");
-    glpfTexCoordP4ui = (PFNGLTEXCOORDP4UI_PROC*)glextGetProc("glTexCoordP4ui");
-    glpfTexCoordP4uiv = (PFNGLTEXCOORDP4UIV_PROC*)glextGetProc("glTexCoordP4uiv");
-    glpfMultiTexCoordP1ui = (PFNGLMULTITEXCOORDP1UI_PROC*)glextGetProc("glMultiTexCoordP1ui");
-    glpfMultiTexCoordP1uiv = (PFNGLMULTITEXCOORDP1UIV_PROC*)glextGetProc("glMultiTexCoordP1uiv");
-    glpfMultiTexCoordP2ui = (PFNGLMULTITEXCOORDP2UI_PROC*)glextGetProc("glMultiTexCoordP2ui");
-    glpfMultiTexCoordP2uiv = (PFNGLMULTITEXCOORDP2UIV_PROC*)glextGetProc("glMultiTexCoordP2uiv");
-    glpfMultiTexCoordP3ui = (PFNGLMULTITEXCOORDP3UI_PROC*)glextGetProc("glMultiTexCoordP3ui");
-    glpfMultiTexCoordP3uiv = (PFNGLMULTITEXCOORDP3UIV_PROC*)glextGetProc("glMultiTexCoordP3uiv");
-    glpfMultiTexCoordP4ui = (PFNGLMULTITEXCOORDP4UI_PROC*)glextGetProc("glMultiTexCoordP4ui");
-    glpfMultiTexCoordP4uiv = (PFNGLMULTITEXCOORDP4UIV_PROC*)glextGetProc("glMultiTexCoordP4uiv");
-    glpfNormalP3ui = (PFNGLNORMALP3UI_PROC*)glextGetProc("glNormalP3ui");
-    glpfNormalP3uiv = (PFNGLNORMALP3UIV_PROC*)glextGetProc("glNormalP3uiv");
-    glpfColorP3ui = (PFNGLCOLORP3UI_PROC*)glextGetProc("glColorP3ui");
-    glpfColorP3uiv = (PFNGLCOLORP3UIV_PROC*)glextGetProc("glColorP3uiv");
-    glpfColorP4ui = (PFNGLCOLORP4UI_PROC*)glextGetProc("glColorP4ui");
-    glpfColorP4uiv = (PFNGLCOLORP4UIV_PROC*)glextGetProc("glColorP4uiv");
-    glpfSecondaryColorP3ui = (PFNGLSECONDARYCOLORP3UI_PROC*)glextGetProc("glSecondaryColorP3ui");
-    glpfSecondaryColorP3uiv = (PFNGLSECONDARYCOLORP3UIV_PROC*)glextGetProc("glSecondaryColorP3uiv");
 
 
     /* GL_VERSION_4_0 */
@@ -794,42 +604,6 @@ void glextLoadFunctions(void)
     glpfBindSamplers = (PFNGLBINDSAMPLERS_PROC*)glextGetProc("glBindSamplers");
     glpfBindImageTextures = (PFNGLBINDIMAGETEXTURES_PROC*)glextGetProc("glBindImageTextures");
     glpfBindVertexBuffers = (PFNGLBINDVERTEXBUFFERS_PROC*)glextGetProc("glBindVertexBuffers");
-
-
-    /* GL_ARB_bindless_texture */
-
-    glpfGetTextureHandleARB = (PFNGLGETTEXTUREHANDLEARB_PROC*)glextGetProc("glGetTextureHandleARB");
-    glpfGetTextureSamplerHandleARB = (PFNGLGETTEXTURESAMPLERHANDLEARB_PROC*)glextGetProc("glGetTextureSamplerHandleARB");
-    glpfMakeTextureHandleResidentARB = (PFNGLMAKETEXTUREHANDLERESIDENTARB_PROC*)glextGetProc("glMakeTextureHandleResidentARB");
-    glpfMakeTextureHandleNonResidentARB = (PFNGLMAKETEXTUREHANDLENONRESIDENTARB_PROC*)glextGetProc("glMakeTextureHandleNonResidentARB");
-    glpfGetImageHandleARB = (PFNGLGETIMAGEHANDLEARB_PROC*)glextGetProc("glGetImageHandleARB");
-    glpfMakeImageHandleResidentARB = (PFNGLMAKEIMAGEHANDLERESIDENTARB_PROC*)glextGetProc("glMakeImageHandleResidentARB");
-    glpfMakeImageHandleNonResidentARB = (PFNGLMAKEIMAGEHANDLENONRESIDENTARB_PROC*)glextGetProc("glMakeImageHandleNonResidentARB");
-    glpfUniformHandleui64ARB = (PFNGLUNIFORMHANDLEUI64ARB_PROC*)glextGetProc("glUniformHandleui64ARB");
-    glpfUniformHandleui64vARB = (PFNGLUNIFORMHANDLEUI64VARB_PROC*)glextGetProc("glUniformHandleui64vARB");
-    glpfProgramUniformHandleui64ARB = (PFNGLPROGRAMUNIFORMHANDLEUI64ARB_PROC*)glextGetProc("glProgramUniformHandleui64ARB");
-    glpfProgramUniformHandleui64vARB = (PFNGLPROGRAMUNIFORMHANDLEUI64VARB_PROC*)glextGetProc("glProgramUniformHandleui64vARB");
-    glpfIsTextureHandleResidentARB = (PFNGLISTEXTUREHANDLERESIDENTARB_PROC*)glextGetProc("glIsTextureHandleResidentARB");
-    glpfIsImageHandleResidentARB = (PFNGLISIMAGEHANDLERESIDENTARB_PROC*)glextGetProc("glIsImageHandleResidentARB");
-    glpfVertexAttribL1ui64ARB = (PFNGLVERTEXATTRIBL1UI64ARB_PROC*)glextGetProc("glVertexAttribL1ui64ARB");
-    glpfVertexAttribL1ui64vARB = (PFNGLVERTEXATTRIBL1UI64VARB_PROC*)glextGetProc("glVertexAttribL1ui64vARB");
-    glpfGetVertexAttribLui64vARB = (PFNGLGETVERTEXATTRIBLUI64VARB_PROC*)glextGetProc("glGetVertexAttribLui64vARB");
-
-
-    /* GL_ARB_sparse_texture */
-
-    glpfTexPageCommitmentARB = (PFNGLTEXPAGECOMMITMENTARB_PROC*)glextGetProc("glTexPageCommitmentARB");
-
-
-    /* GL_ARB_indirect_parameters */
-
-    glpfMultiDrawArraysIndirectCountARB = (PFNGLMULTIDRAWARRAYSINDIRECTCOUNTARB_PROC*)glextGetProc("glMultiDrawArraysIndirectCountARB");
-    glpfMultiDrawElementsIndirectCountARB = (PFNGLMULTIDRAWELEMENTSINDIRECTCOUNTARB_PROC*)glextGetProc("glMultiDrawElementsIndirectCountARB");
-
-
-    /* GL_ARB_compute_variable_group_size */
-
-    glpfDispatchComputeGroupSizeARB = (PFNGLDISPATCHCOMPUTEGROUPSIZEARB_PROC*)glextGetProc("glDispatchComputeGroupSizeARB");
 
 
     /* GL_EXT_direct_state_access */
@@ -1094,18 +868,6 @@ void glextLoadFunctions(void)
 }
 
 /* ----------------------- Extension flag definitions ---------------------- */
-int GLEXT_ARB_seamless_cubemap_per_texture = GL_FALSE;
-int GLEXT_ARB_bindless_texture = GL_FALSE;
-int GLEXT_ARB_sparse_texture = GL_FALSE;
-int GLEXT_ARB_shader_draw_parameters = GL_FALSE;
-int GLEXT_ARB_indirect_parameters = GL_FALSE;
-int GLEXT_ARB_shader_group_vote = GL_FALSE;
-int GLEXT_ARB_query_buffer_object = GL_FALSE;
-int GLEXT_ARB_enhanced_layouts = GL_FALSE;
-int GLEXT_ARB_texture_mirror_clamp_to_edge = GL_FALSE;
-int GLEXT_ARB_texture_stencil8 = GL_FALSE;
-int GLEXT_ARB_compute_variable_group_size = GL_FALSE;
-int GLEXT_ARB_vertex_type_10f_11f_11f_rev = GL_FALSE;
 int GLEXT_EXT_direct_state_access = GL_FALSE;
 
 /* ---------------------- Function pointer definitions --------------------- */
@@ -1128,43 +890,6 @@ PFNGLCOMPRESSEDTEXSUBIMAGE3D_PROC* glpfCompressedTexSubImage3D = NULL;
 PFNGLCOMPRESSEDTEXSUBIMAGE2D_PROC* glpfCompressedTexSubImage2D = NULL;
 PFNGLCOMPRESSEDTEXSUBIMAGE1D_PROC* glpfCompressedTexSubImage1D = NULL;
 PFNGLGETCOMPRESSEDTEXIMAGE_PROC* glpfGetCompressedTexImage = NULL;
-PFNGLCLIENTACTIVETEXTURE_PROC* glpfClientActiveTexture = NULL;
-PFNGLMULTITEXCOORD1D_PROC* glpfMultiTexCoord1d = NULL;
-PFNGLMULTITEXCOORD1DV_PROC* glpfMultiTexCoord1dv = NULL;
-PFNGLMULTITEXCOORD1F_PROC* glpfMultiTexCoord1f = NULL;
-PFNGLMULTITEXCOORD1FV_PROC* glpfMultiTexCoord1fv = NULL;
-PFNGLMULTITEXCOORD1I_PROC* glpfMultiTexCoord1i = NULL;
-PFNGLMULTITEXCOORD1IV_PROC* glpfMultiTexCoord1iv = NULL;
-PFNGLMULTITEXCOORD1S_PROC* glpfMultiTexCoord1s = NULL;
-PFNGLMULTITEXCOORD1SV_PROC* glpfMultiTexCoord1sv = NULL;
-PFNGLMULTITEXCOORD2D_PROC* glpfMultiTexCoord2d = NULL;
-PFNGLMULTITEXCOORD2DV_PROC* glpfMultiTexCoord2dv = NULL;
-PFNGLMULTITEXCOORD2F_PROC* glpfMultiTexCoord2f = NULL;
-PFNGLMULTITEXCOORD2FV_PROC* glpfMultiTexCoord2fv = NULL;
-PFNGLMULTITEXCOORD2I_PROC* glpfMultiTexCoord2i = NULL;
-PFNGLMULTITEXCOORD2IV_PROC* glpfMultiTexCoord2iv = NULL;
-PFNGLMULTITEXCOORD2S_PROC* glpfMultiTexCoord2s = NULL;
-PFNGLMULTITEXCOORD2SV_PROC* glpfMultiTexCoord2sv = NULL;
-PFNGLMULTITEXCOORD3D_PROC* glpfMultiTexCoord3d = NULL;
-PFNGLMULTITEXCOORD3DV_PROC* glpfMultiTexCoord3dv = NULL;
-PFNGLMULTITEXCOORD3F_PROC* glpfMultiTexCoord3f = NULL;
-PFNGLMULTITEXCOORD3FV_PROC* glpfMultiTexCoord3fv = NULL;
-PFNGLMULTITEXCOORD3I_PROC* glpfMultiTexCoord3i = NULL;
-PFNGLMULTITEXCOORD3IV_PROC* glpfMultiTexCoord3iv = NULL;
-PFNGLMULTITEXCOORD3S_PROC* glpfMultiTexCoord3s = NULL;
-PFNGLMULTITEXCOORD3SV_PROC* glpfMultiTexCoord3sv = NULL;
-PFNGLMULTITEXCOORD4D_PROC* glpfMultiTexCoord4d = NULL;
-PFNGLMULTITEXCOORD4DV_PROC* glpfMultiTexCoord4dv = NULL;
-PFNGLMULTITEXCOORD4F_PROC* glpfMultiTexCoord4f = NULL;
-PFNGLMULTITEXCOORD4FV_PROC* glpfMultiTexCoord4fv = NULL;
-PFNGLMULTITEXCOORD4I_PROC* glpfMultiTexCoord4i = NULL;
-PFNGLMULTITEXCOORD4IV_PROC* glpfMultiTexCoord4iv = NULL;
-PFNGLMULTITEXCOORD4S_PROC* glpfMultiTexCoord4s = NULL;
-PFNGLMULTITEXCOORD4SV_PROC* glpfMultiTexCoord4sv = NULL;
-PFNGLLOADTRANSPOSEMATRIXF_PROC* glpfLoadTransposeMatrixf = NULL;
-PFNGLLOADTRANSPOSEMATRIXD_PROC* glpfLoadTransposeMatrixd = NULL;
-PFNGLMULTTRANSPOSEMATRIXF_PROC* glpfMultTransposeMatrixf = NULL;
-PFNGLMULTTRANSPOSEMATRIXD_PROC* glpfMultTransposeMatrixd = NULL;
 
 /* GL_VERSION_1_4 */
 
@@ -1175,44 +900,6 @@ PFNGLPOINTPARAMETERF_PROC* glpfPointParameterf = NULL;
 PFNGLPOINTPARAMETERFV_PROC* glpfPointParameterfv = NULL;
 PFNGLPOINTPARAMETERI_PROC* glpfPointParameteri = NULL;
 PFNGLPOINTPARAMETERIV_PROC* glpfPointParameteriv = NULL;
-PFNGLFOGCOORDF_PROC* glpfFogCoordf = NULL;
-PFNGLFOGCOORDFV_PROC* glpfFogCoordfv = NULL;
-PFNGLFOGCOORDD_PROC* glpfFogCoordd = NULL;
-PFNGLFOGCOORDDV_PROC* glpfFogCoorddv = NULL;
-PFNGLFOGCOORDPOINTER_PROC* glpfFogCoordPointer = NULL;
-PFNGLSECONDARYCOLOR3B_PROC* glpfSecondaryColor3b = NULL;
-PFNGLSECONDARYCOLOR3BV_PROC* glpfSecondaryColor3bv = NULL;
-PFNGLSECONDARYCOLOR3D_PROC* glpfSecondaryColor3d = NULL;
-PFNGLSECONDARYCOLOR3DV_PROC* glpfSecondaryColor3dv = NULL;
-PFNGLSECONDARYCOLOR3F_PROC* glpfSecondaryColor3f = NULL;
-PFNGLSECONDARYCOLOR3FV_PROC* glpfSecondaryColor3fv = NULL;
-PFNGLSECONDARYCOLOR3I_PROC* glpfSecondaryColor3i = NULL;
-PFNGLSECONDARYCOLOR3IV_PROC* glpfSecondaryColor3iv = NULL;
-PFNGLSECONDARYCOLOR3S_PROC* glpfSecondaryColor3s = NULL;
-PFNGLSECONDARYCOLOR3SV_PROC* glpfSecondaryColor3sv = NULL;
-PFNGLSECONDARYCOLOR3UB_PROC* glpfSecondaryColor3ub = NULL;
-PFNGLSECONDARYCOLOR3UBV_PROC* glpfSecondaryColor3ubv = NULL;
-PFNGLSECONDARYCOLOR3UI_PROC* glpfSecondaryColor3ui = NULL;
-PFNGLSECONDARYCOLOR3UIV_PROC* glpfSecondaryColor3uiv = NULL;
-PFNGLSECONDARYCOLOR3US_PROC* glpfSecondaryColor3us = NULL;
-PFNGLSECONDARYCOLOR3USV_PROC* glpfSecondaryColor3usv = NULL;
-PFNGLSECONDARYCOLORPOINTER_PROC* glpfSecondaryColorPointer = NULL;
-PFNGLWINDOWPOS2D_PROC* glpfWindowPos2d = NULL;
-PFNGLWINDOWPOS2DV_PROC* glpfWindowPos2dv = NULL;
-PFNGLWINDOWPOS2F_PROC* glpfWindowPos2f = NULL;
-PFNGLWINDOWPOS2FV_PROC* glpfWindowPos2fv = NULL;
-PFNGLWINDOWPOS2I_PROC* glpfWindowPos2i = NULL;
-PFNGLWINDOWPOS2IV_PROC* glpfWindowPos2iv = NULL;
-PFNGLWINDOWPOS2S_PROC* glpfWindowPos2s = NULL;
-PFNGLWINDOWPOS2SV_PROC* glpfWindowPos2sv = NULL;
-PFNGLWINDOWPOS3D_PROC* glpfWindowPos3d = NULL;
-PFNGLWINDOWPOS3DV_PROC* glpfWindowPos3dv = NULL;
-PFNGLWINDOWPOS3F_PROC* glpfWindowPos3f = NULL;
-PFNGLWINDOWPOS3FV_PROC* glpfWindowPos3fv = NULL;
-PFNGLWINDOWPOS3I_PROC* glpfWindowPos3i = NULL;
-PFNGLWINDOWPOS3IV_PROC* glpfWindowPos3iv = NULL;
-PFNGLWINDOWPOS3S_PROC* glpfWindowPos3s = NULL;
-PFNGLWINDOWPOS3SV_PROC* glpfWindowPos3sv = NULL;
 PFNGLBLENDCOLOR_PROC* glpfBlendColor = NULL;
 PFNGLBLENDEQUATION_PROC* glpfBlendEquation = NULL;
 
@@ -1497,36 +1184,6 @@ PFNGLVERTEXATTRIBP3UI_PROC* glpfVertexAttribP3ui = NULL;
 PFNGLVERTEXATTRIBP3UIV_PROC* glpfVertexAttribP3uiv = NULL;
 PFNGLVERTEXATTRIBP4UI_PROC* glpfVertexAttribP4ui = NULL;
 PFNGLVERTEXATTRIBP4UIV_PROC* glpfVertexAttribP4uiv = NULL;
-PFNGLVERTEXP2UI_PROC* glpfVertexP2ui = NULL;
-PFNGLVERTEXP2UIV_PROC* glpfVertexP2uiv = NULL;
-PFNGLVERTEXP3UI_PROC* glpfVertexP3ui = NULL;
-PFNGLVERTEXP3UIV_PROC* glpfVertexP3uiv = NULL;
-PFNGLVERTEXP4UI_PROC* glpfVertexP4ui = NULL;
-PFNGLVERTEXP4UIV_PROC* glpfVertexP4uiv = NULL;
-PFNGLTEXCOORDP1UI_PROC* glpfTexCoordP1ui = NULL;
-PFNGLTEXCOORDP1UIV_PROC* glpfTexCoordP1uiv = NULL;
-PFNGLTEXCOORDP2UI_PROC* glpfTexCoordP2ui = NULL;
-PFNGLTEXCOORDP2UIV_PROC* glpfTexCoordP2uiv = NULL;
-PFNGLTEXCOORDP3UI_PROC* glpfTexCoordP3ui = NULL;
-PFNGLTEXCOORDP3UIV_PROC* glpfTexCoordP3uiv = NULL;
-PFNGLTEXCOORDP4UI_PROC* glpfTexCoordP4ui = NULL;
-PFNGLTEXCOORDP4UIV_PROC* glpfTexCoordP4uiv = NULL;
-PFNGLMULTITEXCOORDP1UI_PROC* glpfMultiTexCoordP1ui = NULL;
-PFNGLMULTITEXCOORDP1UIV_PROC* glpfMultiTexCoordP1uiv = NULL;
-PFNGLMULTITEXCOORDP2UI_PROC* glpfMultiTexCoordP2ui = NULL;
-PFNGLMULTITEXCOORDP2UIV_PROC* glpfMultiTexCoordP2uiv = NULL;
-PFNGLMULTITEXCOORDP3UI_PROC* glpfMultiTexCoordP3ui = NULL;
-PFNGLMULTITEXCOORDP3UIV_PROC* glpfMultiTexCoordP3uiv = NULL;
-PFNGLMULTITEXCOORDP4UI_PROC* glpfMultiTexCoordP4ui = NULL;
-PFNGLMULTITEXCOORDP4UIV_PROC* glpfMultiTexCoordP4uiv = NULL;
-PFNGLNORMALP3UI_PROC* glpfNormalP3ui = NULL;
-PFNGLNORMALP3UIV_PROC* glpfNormalP3uiv = NULL;
-PFNGLCOLORP3UI_PROC* glpfColorP3ui = NULL;
-PFNGLCOLORP3UIV_PROC* glpfColorP3uiv = NULL;
-PFNGLCOLORP4UI_PROC* glpfColorP4ui = NULL;
-PFNGLCOLORP4UIV_PROC* glpfColorP4uiv = NULL;
-PFNGLSECONDARYCOLORP3UI_PROC* glpfSecondaryColorP3ui = NULL;
-PFNGLSECONDARYCOLORP3UIV_PROC* glpfSecondaryColorP3uiv = NULL;
 
 /* GL_VERSION_4_0 */
 
@@ -1741,38 +1398,6 @@ PFNGLBINDTEXTURES_PROC* glpfBindTextures = NULL;
 PFNGLBINDSAMPLERS_PROC* glpfBindSamplers = NULL;
 PFNGLBINDIMAGETEXTURES_PROC* glpfBindImageTextures = NULL;
 PFNGLBINDVERTEXBUFFERS_PROC* glpfBindVertexBuffers = NULL;
-
-/* GL_ARB_bindless_texture */
-
-PFNGLGETTEXTUREHANDLEARB_PROC* glpfGetTextureHandleARB = NULL;
-PFNGLGETTEXTURESAMPLERHANDLEARB_PROC* glpfGetTextureSamplerHandleARB = NULL;
-PFNGLMAKETEXTUREHANDLERESIDENTARB_PROC* glpfMakeTextureHandleResidentARB = NULL;
-PFNGLMAKETEXTUREHANDLENONRESIDENTARB_PROC* glpfMakeTextureHandleNonResidentARB = NULL;
-PFNGLGETIMAGEHANDLEARB_PROC* glpfGetImageHandleARB = NULL;
-PFNGLMAKEIMAGEHANDLERESIDENTARB_PROC* glpfMakeImageHandleResidentARB = NULL;
-PFNGLMAKEIMAGEHANDLENONRESIDENTARB_PROC* glpfMakeImageHandleNonResidentARB = NULL;
-PFNGLUNIFORMHANDLEUI64ARB_PROC* glpfUniformHandleui64ARB = NULL;
-PFNGLUNIFORMHANDLEUI64VARB_PROC* glpfUniformHandleui64vARB = NULL;
-PFNGLPROGRAMUNIFORMHANDLEUI64ARB_PROC* glpfProgramUniformHandleui64ARB = NULL;
-PFNGLPROGRAMUNIFORMHANDLEUI64VARB_PROC* glpfProgramUniformHandleui64vARB = NULL;
-PFNGLISTEXTUREHANDLERESIDENTARB_PROC* glpfIsTextureHandleResidentARB = NULL;
-PFNGLISIMAGEHANDLERESIDENTARB_PROC* glpfIsImageHandleResidentARB = NULL;
-PFNGLVERTEXATTRIBL1UI64ARB_PROC* glpfVertexAttribL1ui64ARB = NULL;
-PFNGLVERTEXATTRIBL1UI64VARB_PROC* glpfVertexAttribL1ui64vARB = NULL;
-PFNGLGETVERTEXATTRIBLUI64VARB_PROC* glpfGetVertexAttribLui64vARB = NULL;
-
-/* GL_ARB_sparse_texture */
-
-PFNGLTEXPAGECOMMITMENTARB_PROC* glpfTexPageCommitmentARB = NULL;
-
-/* GL_ARB_indirect_parameters */
-
-PFNGLMULTIDRAWARRAYSINDIRECTCOUNTARB_PROC* glpfMultiDrawArraysIndirectCountARB = NULL;
-PFNGLMULTIDRAWELEMENTSINDIRECTCOUNTARB_PROC* glpfMultiDrawElementsIndirectCountARB = NULL;
-
-/* GL_ARB_compute_variable_group_size */
-
-PFNGLDISPATCHCOMPUTEGROUPSIZEARB_PROC* glpfDispatchComputeGroupSizeARB = NULL;
 
 /* GL_EXT_direct_state_access */
 
@@ -2036,42 +1661,6 @@ PFNGLVERTEXARRAYVERTEXATTRIBDIVISOREXT_PROC* glpfVertexArrayVertexAttribDivisorE
 
 static void glextAddExtension(const char* extension)
 {
-    if (strcmp("GL_ARB_seamless_cubemap_per_texture", extension) == 0) {
-        GLEXT_ARB_seamless_cubemap_per_texture = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_bindless_texture", extension) == 0) {
-        GLEXT_ARB_bindless_texture = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_sparse_texture", extension) == 0) {
-        GLEXT_ARB_sparse_texture = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_shader_draw_parameters", extension) == 0) {
-        GLEXT_ARB_shader_draw_parameters = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_indirect_parameters", extension) == 0) {
-        GLEXT_ARB_indirect_parameters = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_shader_group_vote", extension) == 0) {
-        GLEXT_ARB_shader_group_vote = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_query_buffer_object", extension) == 0) {
-        GLEXT_ARB_query_buffer_object = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_enhanced_layouts", extension) == 0) {
-        GLEXT_ARB_enhanced_layouts = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_texture_mirror_clamp_to_edge", extension) == 0) {
-        GLEXT_ARB_texture_mirror_clamp_to_edge = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_texture_stencil8", extension) == 0) {
-        GLEXT_ARB_texture_stencil8 = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_compute_variable_group_size", extension) == 0) {
-        GLEXT_ARB_compute_variable_group_size = GL_TRUE;
-    }
-    if (strcmp("GL_ARB_vertex_type_10f_11f_11f_rev", extension) == 0) {
-        GLEXT_ARB_vertex_type_10f_11f_11f_rev = GL_TRUE;
-    }
     if (strcmp("GL_EXT_direct_state_access", extension) == 0) {
         GLEXT_EXT_direct_state_access = GL_TRUE;
     }

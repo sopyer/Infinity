@@ -50,8 +50,8 @@ void ppInit()
     glGenSamplers(1, &samLinearClamp);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP );
-    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP );
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE );
+    glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE );
 }
 
 void ppOnShaderReload()
@@ -76,6 +76,8 @@ void ppFini()
 
 void ppBegin()
 {
+    glDisable(GL_BLEND);
+
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
     glBindVertexArray(vf::empty_geom_t::vao);
