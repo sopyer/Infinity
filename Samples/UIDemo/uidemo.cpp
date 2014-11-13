@@ -37,6 +37,13 @@ ml::vec2 dim[MAX_UI_ELEMENTS];
 size_t activeAreaCount;
 uint16_t activeArea[MAX_UI_ELEMENTS];
 
+namespace blendish_demo
+{
+    void init();
+    void fini();
+    void draw(NVGcontext* _vg, float w, float h);
+}
+
 void resetHierData()
 {
     usedElements = 0;
@@ -1686,11 +1693,15 @@ namespace app
         events.activeArea = ui::INVALID_ID;
         events.eventMask  = 0;
 
+        blendish_demo::init();
+
         gfx::gpu_timer_init(&gpuTimer);
     }
 
     void fini()
     {
+        blendish_demo::fini();
+
         gfx::gpu_timer_fini(&gpuTimer);
 
         freeDemoData(vg::ctx, &data);
@@ -1776,16 +1787,18 @@ namespace app
 
         //nvgRestore(vg::ctx);
 
-        nvgBeginFrame(vg::ctx, width, height, 1.0f);
-
         cpu_timer_start(&cpuTimer);
         gpu_timer_start(&gpuTimer);
+
+        nvgBeginFrame(vg::ctx, width, height, 1.0f);
 
         renderDemo(vg::ctx, mx, my, width, height, t, blowup, &data);
 
         renderGraph(vg::ctx, 5,5, &fps);
         renderGraph(vg::ctx, 5+200+5,5, &cpuGraph);
         renderGraph(vg::ctx, 5+200+5+200+5,5, &gpuGraph);
+
+        blendish_demo::draw(vg::ctx, width, height);
 
         nvgEndFrame(vg::ctx);
 
@@ -1800,6 +1813,9 @@ namespace app
             screenshot = 0;
             saveScreenShot(width, height, premult, "dump.png");
         }
+
+        gfx::set2DStates();
+        gfx::setUIMatrices();
     }
 
     void update(float dt)

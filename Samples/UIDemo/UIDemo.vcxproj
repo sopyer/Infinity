@@ -86,7 +86,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="example.cpp" />
     <ClCompile Include="uidemo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="blendish.h" />
+    <ClInclude Include="oui.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

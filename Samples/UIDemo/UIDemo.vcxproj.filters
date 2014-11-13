@@ -18,5 +18,16 @@
     <ClCompile Include="uidemo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="example.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="blendish.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="oui.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
