@@ -29,7 +29,6 @@
 #include <scintilla/Indicator.h>
 #include <scintilla/XPM.h>
 #include <scintilla/LineMarker.h>
-#include <scintilla/Style.h>
 #include <scintilla/ViewStyle.h>
 #include <scintilla/Decoration.h>
 #include <scintilla/CharClassify.h>

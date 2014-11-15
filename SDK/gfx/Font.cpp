@@ -364,10 +364,10 @@ namespace vg
 
                 if (GlyphData* glyph = getGlyphData(font, left))
                 {
-                    xmin = std::min(xmin, glyph->xmin+advance);
-                    ymin = std::min(ymin, glyph->ymin);
-                    xmax = std::max(xmax, glyph->xmax+advance);
-                    ymax = std::max(ymax, glyph->ymax);
+                    xmin = core::min(xmin, glyph->xmin+advance);
+                    ymin = core::min(ymin, glyph->ymin);
+                    xmax = core::max(xmax, glyph->xmax+advance);
+                    ymax = core::max(ymax, glyph->ymax);
 
                     float xadvance, yadvance;
 
@@ -378,7 +378,7 @@ namespace vg
                 left = right;
             }
 
-            xmax = std::max(xmax, advance);
+			xmax = core::max(xmax, advance);
         }
     }
 

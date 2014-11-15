@@ -4,7 +4,7 @@
 // The License.txt file describes the conditions under which this software may be distributed.
 
 #include <string.h>
-#include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <math.h>
@@ -31,12 +31,12 @@ Colour Platform::ChromeHighlight() {
     return MakeRGBA(0xff, 0xff, 0xff);
 }
 
-const char *Platform::DefaultFont() {
-    return "Lucida Console";
+vg::font_t Platform::defaultFont() {
+    return 0;
 }
 
-int Platform::DefaultFontSize() {
-    return 10;
+int Platform::defaultFontSize() {
+    return 16;
 }
 
 unsigned int Platform::DoubleClickTime() {
@@ -60,22 +60,6 @@ void Platform::Assert(const char *c, const char *file, int line) {
 
 CLIPFORMAT cfColumnSelect;
 CLIPFORMAT cfLineSelect;
-
-void Platform_Initialise()
-{
-    // There does not seem to be a real standard for indicating that the clipboard
-    // contains a rectangular selection, so copy Developer Studio.
-    cfColumnSelect = static_cast<CLIPFORMAT>(
-        ::RegisterClipboardFormat(TEXT("MSDEVColumnSelect")));
-
-    // Likewise for line-copy (copies a full line when no text is selected)
-    cfLineSelect = static_cast<CLIPFORMAT>(
-        ::RegisterClipboardFormat(TEXT("MSDEVLineSelect")));
-}
-
-void Platform_Finalise()
-{
-}
 
 class GlobalMemory {
     HGLOBAL hand;
@@ -231,20 +215,6 @@ namespace Scintilla {
 
         virtual void DrawPixmap(PRectangle rc, Point from, Pixmap pixmap);
         virtual void DrawRGBAImage(PRectangle rc, int width, int height, const unsigned char *pixelsImage);
-
-        void DrawTextBase(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore);
-        void DrawTextNoClip(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore, Colour back);
-        void DrawTextClipped(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore, Colour back);
-        void DrawTextTransparent(PRectangle rc, Font &font_, float ybase, const char *s, int len, Colour fore);
-        void MeasureWidths(Font &font_, const char *s, int len, float *positions);
-        float WidthText(Font &font_, const char *s, int len);
-        float WidthChar(Font &font_, char ch);
-        float Ascent(Font &font_);
-        float Descent(Font &font_);
-        float InternalLeading(Font &font_);
-        float ExternalLeading(Font &font_);
-        float Height(Font &font_);
-        float AverageCharWidth(Font &font_);
 
         void SetClip(PRectangle rc);
         void FlushCachedState();
@@ -424,96 +394,242 @@ void SurfaceImpl::Ellipse(PRectangle /*rc*/, Colour /*fore*/, Colour /*back*/) {
 
 const int maxLengthTextRun = 10000;
 
-Font::Font() : fid(0)
+namespace vg
 {
-}
+    const size_t MAX_FONTS = 2;
+    const size_t MAX_FACES = 100;
 
-Font::~Font()
-{
-}
+    struct FontDesc
+    {
+        const char* name;
+        const char* normalFace;
+        const char* semiBoldFace;
+        const char* boldFace;
+        const char* italicFace;
+        const char* semiBoldItalicFace;
+        const char* boldItalicFace;
+    };
 
-void Font::Create(const FontParameters &fp)
-{
-    fid = vg::defaultFont;
-}
+    FontDesc fontDesc[MAX_FONTS] = 
+    {
+        {"Default", "", "", "", "", "", ""},
+        {
+            "Courier New",
+            "c:/windows/fonts/cour.ttf",
+            "c:/windows/fonts/cour.ttf"
+            "c:/windows/fonts/courbd.ttf"
+            "c:/windows/fonts/couri.ttf",
+            "c:/windows/fonts/couri.ttf"
+            "c:/windows/fonts/courbi.ttf"
+        },
+    };
 
-void Font::Release()
-{
-}
+    struct FaceDesc
+    {
+        font_t    font;
+        uint32_t  flags;
+        float     size;
+		
+		vg::Font  face;
+        float     scale;
+    };
 
-void SurfaceImpl::DrawTextBase(PRectangle rc, Font &font_, float ybase, const char *s, int len,
-    Colour fore)
-{
-    vg::drawString((vg::Font)font_.fid, rc.left, ybase, fore|0xFF000000, s, len);
-}
+	FaceDesc  faces[MAX_FACES];
+    size_t    faceCount = 0;
 
-void SurfaceImpl::DrawTextNoClip(PRectangle rc, Font &font_, float ybase, const char *s, int len,
-    Colour fore, Colour /*back*/) {
-        DrawTextBase(rc, font_, ybase, s, len, fore);
-}
+    void fontInit()
+    {
+    }
 
-void SurfaceImpl::DrawTextClipped(PRectangle rc, Font &font_, float ybase, const char *s, int len,
-    Colour fore, Colour /*back*/) {
-        DrawTextBase(rc, font_, ybase, s, len, fore);
-}
+    void fontFini()
+    {
+        for (size_t i = 0; i < faceCount; ++i)
+        {
+			::vg::destroyFont(faces[i].face);
+        }
+		faceCount = 0;
+    }
 
-void SurfaceImpl::DrawTextTransparent(PRectangle rc, Font &font_, float ybase, const char *s, int len,
-    Colour fore) {
-        DrawTextBase(rc, font_, ybase, s, len, fore);
-}
+    font_t findFont(const char* name)
+    {
+        for (size_t i = 0; i < MAX_FONTS; ++i)
+        {
+            if (strcmp(name, fontDesc[i].name) == 0)
+                return i;
+        }
 
-void SurfaceImpl::MeasureWidths(Font &font_, const char *s, int len, float *positions) {
-    char* tmp = (char*)malloc(len+1);
-    strncpy(tmp, s, len+1);
-    char* c = tmp+1;
-    while (len--) {
-        char t = *c;
-        *c = 0;
-        *positions++  = vg::getTextHExtent((vg::Font)font_.fid, tmp);
-        *c++ = t;
+        return INVALID_HANDLE;
+    }
+
+    face_t findFace(font_t font, float size, uint32_t flags)
+    {
+        for (size_t i = 0; i < faceCount; ++i)
+        {
+            if (faces[i].font  == font &&
+                faces[i].size  == size &&
+                faces[i].flags == flags
+            )
+                return i;
+        }
+
+        return INVALID_HANDLE;
+    }
+
+    face_t createFace(font_t font, float size, uint32_t flags)
+    {
+        assert(font < MAX_FONTS);
+
+        face_t face = findFace(font, size, flags);
+
+        if (face != INVALID_HANDLE) return face;
+
+        vg::Font fnt = ::vg::defaultFont;
+
+        if (font == 0)
+        {
+			fnt = flags & 3 ? ::vg::defaultFont : vg::defaultFont;
+        }
+        else
+        {
+            const char* name;
+            switch (flags&3)
+            {
+                case FACE_WEIGHT_NORMAL:
+                    name = (flags&FACE_ITALIC) ? fontDesc[font].italicFace : fontDesc[font].normalFace;
+                    break;
+                case FACE_WEIGHT_SEMIBOLD:
+                    name = (flags&FACE_ITALIC) ? fontDesc[font].semiBoldItalicFace : fontDesc[font].semiBoldFace;
+                    break;
+                case FACE_WEIGHT_BOLD:
+                    name = (flags&FACE_ITALIC) ? fontDesc[font].boldItalicFace : fontDesc[font].boldFace;
+                    break;
+                default:
+                    assert(0);
+            }
+
+			//!!!TODO: load font from data(instead of name)
+        }
+
+        assert(faceCount < MAX_FACES);
+        face = faceCount++;
+
+        faces[face].font  = font;
+        faces[face].size  = size;
+        faces[face].flags = flags;
+
+		faces[face].face = fnt;
+
+		faces[face].scale = 1.0f;// stbtt_ScaleForPixelHeight(&faces[face].fontinfo, size);
+
+        return face;
+    }
+
+    void destroyFace(face_t face)
+    {
+    }
+
+    font_t getFaceFont(face_t face)
+    {
+        assert(face < MAX_FACES);
+        return faces[face].font;
+    }
+
+    float getFaceSize(face_t face)
+    {
+        assert(face < MAX_FACES);
+        return faces[face].size;
+    }
+
+    uint32_t getFaceFlags(face_t face)
+    {
+        assert(face < MAX_FACES);
+        return faces[face].flags;
+    }
+
+    void measureWidths(face_t face, size_t len, const char *str, float *positions)
+    {
+        assert(face < MAX_FACES);
+        //TODO: implement proper UTF-8 handling
+		char* tmp = (char*)malloc(len + 1);
+		strncpy(tmp, str, len + 1);
+		char* c = tmp + 1;
+		while (len--) {
+			char t = *c;
+			*c = 0;
+			*positions++ = vg::getTextHExtent(faces[face].face, tmp);
+			*c++ = t;
+		}
+	}
+
+    float getTextWidth(face_t face, size_t len, const char *str)
+    {
+        assert(face < MAX_FACES);
+        //TODO: implement proper UTF-8 handling
+		assert(len == strlen(str));
+		return vg::getTextHExtent(faces[face].face, str);
+	}
+
+    float getCharWidth(face_t face, char ch)
+    {
+        assert(face < MAX_FACES);
+		const char s[2] = { ch, 0 };
+		return vg::getTextHExtent(faces[face].face, s);
+	}
+
+    float getSpaceWidth(face_t face)
+    {
+        return getCharWidth(face, ' ');
+    }
+
+    float getAscent(face_t face)
+    {
+        assert(face < MAX_FACES);
+		return vg::getTextAscender(faces[face].face);
+    }
+
+    float getDescent(face_t face)
+    {
+        assert(face < MAX_FACES);
+		return -vg::getTextDescender(faces[face].face);
+    }
+
+    float getInternalLeading(face_t face)
+    {
+        assert(face < MAX_FACES);
+        //WTF is this?????
+        return 0;
+    }
+
+    float getExternalLeading(face_t face)
+    {
+        assert(face < MAX_FACES);
+        //WTF is this?????
+        return 4;
+    }
+
+    float getHeight(face_t face)
+    {
+        return getAscent(face) + getDescent(face);
+    }
+
+    float getAverageCharWidth(face_t face)
+    {
+        return getCharWidth(face, 'n');
+    }
+
+    void drawText(PRectangle rc, vg::face_t face, float ybase, int len, const char *s, Colour fore)
+    {
+        assert(face < MAX_FACES);
+
+		vg::drawString(faces[face].face, rc.left, ybase, fore | 0xFF000000, s, len);
     }
 }
 
-float SurfaceImpl::WidthText(Font &font_, const char *s, int len) {
-    assert(len==strlen(s));
-    return vg::getTextHExtent((vg::Font)font_.fid, s);
-}
-
-float SurfaceImpl::WidthChar(Font &font_, char ch) {
-    const char s[2] = {ch, 0};
-    return vg::getTextHExtent((vg::Font)font_.fid, s);
-}
-
-float SurfaceImpl::Ascent(Font &font_) {
-    return vg::getTextAscender((vg::Font)font_.fid);
-}
-
-float SurfaceImpl::Descent(Font &font_) {
-    return -vg::getTextDescender((vg::Font)font_.fid);
-}
-
-float SurfaceImpl::InternalLeading(Font &) {
-    //WTF is this?????
-    return 0;
-}
-
-float SurfaceImpl::ExternalLeading(Font& font_) {
-    //WTF is this?????
-    return 4;
-}
-
-float SurfaceImpl::Height(Font &font_) {
-    return Ascent(font_) + Descent(font_);
-}
-
-float SurfaceImpl::AverageCharWidth(Font &font_) {
-    return WidthChar(font_, 'n');
-}
 
 void SurfaceImpl::SetClip(PRectangle rc)
 {
     //!!!!!!TODO: fix this, editors should know exact coordinates, remove matrix trick!!!!
-    assert(0);
+    //assert(0);
     ml::vec4 res;
     vi_storeu_v4(&res, ml::mul_mat4_vec4(gfx::autoVars.matMV, vi_set(rc.left, rc.bottom, 0.0f, 1.0f)));
     glScissor(res.x, gfx::height-res.y, rc.right-rc.left, rc.bottom-rc.top);
@@ -523,4 +639,22 @@ void SurfaceImpl::FlushCachedState() {}
 
 Surface *Surface::Allocate() {
     return new SurfaceImpl;
+}
+
+void Platform_Initialise()
+{
+	// There does not seem to be a real standard for indicating that the clipboard
+	// contains a rectangular selection, so copy Developer Studio.
+	cfColumnSelect = static_cast<CLIPFORMAT>(
+		::RegisterClipboardFormat(TEXT("MSDEVColumnSelect")));
+
+	// Likewise for line-copy (copies a full line when no text is selected)
+	cfLineSelect = static_cast<CLIPFORMAT>(
+		::RegisterClipboardFormat(TEXT("MSDEVLineSelect")));
+	vg::fontInit();
+}
+
+void Platform_Finalise()
+{
+	vg::fontFini();
 }

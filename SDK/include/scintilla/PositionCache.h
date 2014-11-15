@@ -99,22 +99,6 @@ public:
 	void Dispose(LineLayout *ll);
 };
 
-class PositionCacheEntry {
-	unsigned int styleNumber:8;
-	unsigned int len:8;
-	unsigned int clock:16;
-	short *positions;
-public:
-	PositionCacheEntry();
-	~PositionCacheEntry();
-	void Set(unsigned int styleNumber_, const char *s_, unsigned int len_, float *positions_, unsigned int clock);
-	void Clear();
-	bool Retrieve(unsigned int styleNumber_, const char *s_, unsigned int len_, float *positions_) const;
-	static int Hash(unsigned int styleNumber_, const char *s, unsigned int len);
-	bool NewerThan(const PositionCacheEntry &other) const;
-	void ResetClock();
-};
-
 // Class to break a line of text into shorter runs at sensible places.
 class BreakFinder {
 	LineLayout *ll;
@@ -141,21 +125,6 @@ public:
 	~BreakFinder();
 	int First() const;
 	int Next();
-};
-
-class PositionCache {
-	PositionCacheEntry *pces;
-	size_t size;
-	unsigned int clock;
-	bool allClear;
-public:
-	PositionCache();
-	~PositionCache();
-	void Clear();
-	void SetSize(size_t size_);
-	size_t GetSize() const { return size; }
-	void MeasureWidths(Surface *surface, ViewStyle &vstyle, unsigned int styleNumber,
-		const char *s, unsigned int len, float *positions, Document *pdoc);
 };
 
 inline bool IsSpaceOrTab(int ch) {

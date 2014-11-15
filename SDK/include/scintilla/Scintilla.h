@@ -15,11 +15,6 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32)
-/* Return false on failure: */
-int Scintilla_RegisterClasses(void *hInstance);
-int Scintilla_ReleaseResources();
-#endif
 int Scintilla_LinkLexers();
 
 #ifdef __cplusplus
@@ -194,42 +189,9 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SC_CHARSET_THAI 222
 #define SC_CHARSET_8859_15 1000
 #define SCI_STYLECLEARALL 2050
-#define SCI_STYLESETFORE 2051
-#define SCI_STYLESETBACK 2052
-#define SCI_STYLESETBOLD 2053
-#define SCI_STYLESETITALIC 2054
-#define SCI_STYLESETSIZE 2055
-#define SCI_STYLESETFONT 2056
-#define SCI_STYLESETEOLFILLED 2057
 #define SCI_STYLERESETDEFAULT 2058
-#define SCI_STYLESETUNDERLINE 2059
-#define SC_CASE_MIXED 0
-#define SC_CASE_UPPER 1
-#define SC_CASE_LOWER 2
-#define SCI_STYLEGETFORE 2481
-#define SCI_STYLEGETBACK 2482
-#define SCI_STYLEGETBOLD 2483
-#define SCI_STYLEGETITALIC 2484
-#define SCI_STYLEGETSIZE 2485
-#define SCI_STYLEGETFONT 2486
-#define SCI_STYLEGETEOLFILLED 2487
-#define SCI_STYLEGETUNDERLINE 2488
-#define SCI_STYLEGETCASE 2489
-#define SCI_STYLEGETCHARACTERSET 2490
-#define SCI_STYLEGETVISIBLE 2491
-#define SCI_STYLEGETCHANGEABLE 2492
-#define SCI_STYLEGETHOTSPOT 2493
-#define SCI_STYLESETCASE 2060
-#define SC_FONT_SIZE_MULTIPLIER 100
 #define SCI_STYLESETSIZEFRACTIONAL 2061
 #define SCI_STYLEGETSIZEFRACTIONAL 2062
-#define SC_WEIGHT_NORMAL 400
-#define SC_WEIGHT_SEMIBOLD 600
-#define SC_WEIGHT_BOLD 700
-#define SCI_STYLESETWEIGHT 2063
-#define SCI_STYLEGETWEIGHT 2064
-#define SCI_STYLESETCHARACTERSET 2066
-#define SCI_STYLESETHOTSPOT 2409
 #define SCI_SETSELFORE 2067
 #define SCI_SETSELBACK 2068
 #define SCI_GETSELALPHA 2477
@@ -359,7 +321,6 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SCFIND_REGEXP 0x00200000
 #define SCFIND_POSIX 0x00400000
 #define SCI_FINDTEXT 2150
-#define SCI_FORMATRANGE 2151
 #define SCI_GETFIRSTVISIBLELINE 2152
 #define SCI_GETLINE 2153
 #define SCI_GETLINECOUNT 2154
@@ -394,8 +355,6 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SCI_GETTEXTLENGTH 2183
 #define SCI_GETDIRECTFUNCTION 2184
 #define SCI_GETDIRECTPOINTER 2185
-#define SCI_SETOVERTYPE 2186
-#define SCI_GETOVERTYPE 2187
 #define SCI_SETCARETWIDTH 2188
 #define SCI_GETCARETWIDTH 2189
 #define SCI_SETTARGETSTART 2190
@@ -533,7 +492,6 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SCI_PAGEUPEXTEND 2321
 #define SCI_PAGEDOWN 2322
 #define SCI_PAGEDOWNEXTEND 2323
-#define SCI_EDITTOGGLEOVERTYPE 2324
 #define SCI_CANCEL 2325
 #define SCI_DELETEBACK 2326
 #define SCI_TAB 2327
@@ -703,7 +661,6 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SCI_GETCARETLINEBACKALPHA 2471
 #define CARETSTYLE_INVISIBLE 0
 #define CARETSTYLE_LINE 1
-#define CARETSTYLE_BLOCK 2
 #define SCI_SETCARETSTYLE 2512
 #define SCI_GETCARETSTYLE 2513
 #define SCI_SETINDICATORCURRENT 2500
@@ -716,8 +673,6 @@ typedef sptr_t (*SciFnDirect)(sptr_t ptr, unsigned int iMessage, uptr_t wParam, 
 #define SCI_INDICATORVALUEAT 2507
 #define SCI_INDICATORSTART 2508
 #define SCI_INDICATOREND 2509
-#define SCI_SETPOSITIONCACHE 2514
-#define SCI_GETPOSITIONCACHE 2515
 #define SCI_COPYALLOWLINE 2519
 #define SCI_GETCHARACTERPOINTER 2520
 #define SCI_SETKEYSUNICODE 2521
@@ -969,19 +924,6 @@ struct Sci_Rectangle {
 	int bottom;
 };
 
-/* This structure is used in printing and requires some of the graphics types
- * from Platform.h.  Not needed by most client code. */
-
-struct Sci_RangeToFormat {
-	Sci_SurfaceID hdc;
-	Sci_SurfaceID hdcTarget;
-	struct Sci_Rectangle rc;
-	struct Sci_Rectangle rcPage;
-	struct Sci_CharacterRange chrg;
-};
-
-#define RangeToFormat Sci_RangeToFormat
-
 struct Sci_NotifyHeader {
 	/* Compatible with Windows NMHDR.
 	 * hwndFrom is really an environment specific window handle or pointer
@@ -1002,30 +944,30 @@ struct SCNotification {
 	/* SCN_INDICATORCLICK, SCN_INDICATORRELEASE, */
 	/* SCN_USERLISTSELECTION, SCN_AUTOCSELECTION */
 
-	int ch;		/* SCN_CHARADDED, SCN_KEY */
+	int ch;     /* SCN_CHARADDED, SCN_KEY */
 	int modifiers;
 	/* SCN_KEY, SCN_DOUBLECLICK, SCN_HOTSPOTCLICK, SCN_HOTSPOTDOUBLECLICK, */
 	/* SCN_HOTSPOTRELEASECLICK, SCN_INDICATORCLICK, SCN_INDICATORRELEASE, */
 
-	int modificationType;	/* SCN_MODIFIED */
+	int modificationType;   /* SCN_MODIFIED */
 	const char *text;
 	/* SCN_MODIFIED, SCN_USERLISTSELECTION, SCN_AUTOCSELECTION, SCN_URIDROPPED */
 
-	int length;		/* SCN_MODIFIED */
-	int linesAdded;	/* SCN_MODIFIED */
-	int message;	/* SCN_MACRORECORD */
-	uptr_t wParam;	/* SCN_MACRORECORD */
-	sptr_t lParam;	/* SCN_MACRORECORD */
-	int line;		/* SCN_MODIFIED */
-	int foldLevelNow;	/* SCN_MODIFIED */
-	int foldLevelPrev;	/* SCN_MODIFIED */
-	int margin;		/* SCN_MARGINCLICK */
-	int listType;	/* SCN_USERLISTSELECTION */
-	int x;			/* SCN_DWELLSTART, SCN_DWELLEND */
-	int y;		/* SCN_DWELLSTART, SCN_DWELLEND */
-	int token;		/* SCN_MODIFIED with SC_MOD_CONTAINER */
-	int annotationLinesAdded;	/* SCN_MODIFIED with SC_MOD_CHANGEANNOTATION */
-	int updated;	/* SCN_UPDATEUI */
+	int length;     /* SCN_MODIFIED */
+	int linesAdded; /* SCN_MODIFIED */
+	int message;    /* SCN_MACRORECORD */
+	uptr_t wParam;  /* SCN_MACRORECORD */
+	sptr_t lParam;  /* SCN_MACRORECORD */
+	int line;       /* SCN_MODIFIED */
+	int foldLevelNow;   /* SCN_MODIFIED */
+	int foldLevelPrev;  /* SCN_MODIFIED */
+	int margin;     /* SCN_MARGINCLICK */
+	int listType;   /* SCN_USERLISTSELECTION */
+	int x;          /* SCN_DWELLSTART, SCN_DWELLEND */
+	int y;          /* SCN_DWELLSTART, SCN_DWELLEND */
+	int token;      /* SCN_MODIFIED with SC_MOD_CONTAINER */
+	int annotationLinesAdded;   /* SCN_MODIFIED with SC_MOD_CHANGEANNOTATION */
+	int updated;    /* SCN_UPDATEUI */
 };
 
 #ifdef SCI_NAMESPACE

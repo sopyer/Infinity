@@ -90,16 +90,6 @@ void ShaderEditOverlay::addPrograms(size_t count, GLuint* programs)
     mPrograms.insert(mPrograms.end(), programs, programs+count);
 }
 
-void SetAStyle(Editor& ed, int style, Colour fore, Colour back=0xFFFFFFFF, int size=-1, const char *face=0)
-{
-    ed.Command(SCI_STYLESETFORE, style, fore);
-    ed.Command(SCI_STYLESETBACK, style, back);
-    if (size >= 1)
-        ed.Command(SCI_STYLESETSIZE, style, size);
-    if (face) 
-        ed.Command(SCI_STYLESETFONT, style, reinterpret_cast<sptr_t>(face));
-}
-
 const char glslKeyword[] =
     "discard struct if else switch case default break goto return for while do continue";
 
@@ -197,8 +187,8 @@ const int markersArray[][NB_FOLDER_STATE] = {
     {SC_MARK_BOXMINUS,      SC_MARK_BOXPLUS,   SC_MARK_VLINE,        SC_MARK_LCORNER,       SC_MARK_BOXPLUSCONNECTED,    SC_MARK_BOXMINUSCONNECTED,    SC_MARK_TCORNER}
 };
 
-void ShaderEditOverlay::initialiseShaderEditor() {
-
+void ShaderEditOverlay::initialiseShaderEditor()
+{
     mShaderEditor.Command(SCI_SETSTYLEBITS, 7);
 
     mLexer->SetLexer(SCLEX_CPP);
@@ -207,13 +197,15 @@ void ShaderEditOverlay::initialiseShaderEditor() {
     mLexer->SetWordList(4, glslBuiltin);
     mLexer->PropSet("fold", "1");
 
+    vg::font_t font = vg::findFont("Courier New");
+
     // Set up the global default style. These attributes are used wherever no explicit choices are made.
-    SetAStyle(mShaderEditor, STYLE_DEFAULT,     0xFFFFFFFF, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
+    mShaderEditor.setStyle(STYLE_DEFAULT, 0xFFFFFFFF, 0xD0000000, font, 16);
     mShaderEditor.Command(SCI_STYLECLEARALL);	// Copies global style to all others
-    SetAStyle(mShaderEditor, STYLE_INDENTGUIDE, 0xFFC0C0C0, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
-    SetAStyle(mShaderEditor, STYLE_BRACELIGHT,  0xFF00FF00, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
-    SetAStyle(mShaderEditor, STYLE_BRACEBAD,    0xFF0000FF, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
-    SetAStyle(mShaderEditor, STYLE_LINENUMBER,  0xFFC0C0C0, 0xD0333333, 16, "c:/windows/fonts/cour.ttf");
+    mShaderEditor.setStyle(STYLE_INDENTGUIDE, 0xFFC0C0C0, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(STYLE_BRACELIGHT,  0xFF00FF00, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(STYLE_BRACEBAD,    0xFF0000FF, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(STYLE_LINENUMBER,  0xFFC0C0C0, 0xD0333333, font, 16);
     mShaderEditor.Command(SCI_SETFOLDMARGINCOLOUR,   1, 0xD01A1A1A);
     mShaderEditor.Command(SCI_SETFOLDMARGINHICOLOUR, 1, 0xD01A1A1A);
     mShaderEditor.Command(SCI_SETSELBACK,            1, 0xD0CC9966);
@@ -237,22 +229,23 @@ void ShaderEditOverlay::initialiseShaderEditor() {
     mShaderEditor.Command(SCI_SETTABWIDTH, 4);
     mShaderEditor.Command(SCI_SETINDENTATIONGUIDES, SC_IV_REAL);
 
-    SetAStyle(mShaderEditor, SCE_C_DEFAULT,      0xFFFFFFFF, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
-    SetAStyle(mShaderEditor, SCE_C_WORD,         0xFF0066FF, 0xD0000000);
-    SetAStyle(mShaderEditor, SCE_C_WORD2,        0xFFFFFF00, 0xD0000000);
-    //WTF??? SetAStyle(SCE_C_GLOBALCLASS, 0xFF0000FF, 0xFF000000);
-    SetAStyle(mShaderEditor, SCE_C_PREPROCESSOR, 0xFFC0C0C0, 0xD0000000);
-    SetAStyle(mShaderEditor, SCE_C_NUMBER,       0xFF0080FF, 0xD0000000);
-    SetAStyle(mShaderEditor, SCE_C_OPERATOR,     0xFF00CCFF, 0xD0000000);
-    SetAStyle(mShaderEditor, SCE_C_COMMENT,      0xFF00FF00, 0xD0000000);
-    SetAStyle(mShaderEditor, SCE_C_COMMENTLINE,  0xFF00FF00, 0xD0000000);
+    mShaderEditor.setStyle(SCE_C_DEFAULT,      0xFFFFFFFF, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_WORD,         0xFF0066FF, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_WORD2,        0xFFFFFF00, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_PREPROCESSOR, 0xFFC0C0C0, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_NUMBER,       0xFF0080FF, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_OPERATOR,     0xFF00CCFF, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_COMMENT,      0xFF00FF00, 0xD0000000, font, 16);
+    mShaderEditor.setStyle(SCE_C_COMMENTLINE,  0xFF00FF00, 0xD0000000, font, 16);
 }
 
 void ShaderEditOverlay::initialiseDebugOutputView() {
     mDebugOutputView.Command(SCI_SETSTYLEBITS, 7);
 
+    vg::font_t font = vg::findFont("Courier New");
+
     // Set up the global default style. These attributes are used wherever no explicit choices are made.
-    SetAStyle(mDebugOutputView, STYLE_DEFAULT,     0xFFFFFFFF, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
+    mDebugOutputView.setStyle(STYLE_DEFAULT, 0xFFFFFFFF, 0xD0000000, font, 16);
     mDebugOutputView.Command(SCI_STYLECLEARALL);	// Copies global style to all others
     mDebugOutputView.Command(SCI_SETMARGINWIDTHN, 1, 0);//Calculate correct width
 
@@ -269,8 +262,10 @@ void ShaderEditOverlay::initialiseDebugOutputView() {
 void ShaderEditOverlay::initialiseSelectionList() {
     mSelectionList.Command(SCI_SETSTYLEBITS, 7);
 
+    vg::font_t font = vg::findFont("Courier New");
+
     // Set up the global default style. These attributes are used wherever no explicit choices are made.
-    SetAStyle(mSelectionList, STYLE_DEFAULT,     0xFFFFFFFF, 0xD0000000, 16, "c:/windows/fonts/cour.ttf");
+    mSelectionList.setStyle(STYLE_DEFAULT, 0xFFFFFFFF, 0xD0000000, font, 16);
     mSelectionList.Command(SCI_STYLECLEARALL);	// Copies global style to all others
     mSelectionList.Command(SCI_SETMARGINWIDTHN, 1, 0);//Calculate correct width
 

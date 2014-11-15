@@ -982,11 +982,11 @@ namespace app
             if (nc < 0.0f) 
             {        
                 // Left side boundary
-                clipMin = std::max(clipMin, c);
+                clipMin = core::max(clipMin, c);
             } 
             else 
             {                          // Right side boundary
-                clipMax = std::min(clipMax, c);
+				clipMax = core::min(clipMax, c);
             }
         }
     }
