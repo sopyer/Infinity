@@ -162,17 +162,17 @@ namespace gfx_res
         prgRasterCubicAA    = res::createProgramFromFiles("VG.Cubic.vert",   "VG.Mask.Cubic.AA.frag");
         prgPaintSolid       = res::createProgramFromFiles("VG.Paint.vert",   "VG.Paint.Solid.frag");
         prgPaintLinGradient = res::createProgramFromFiles("VG.Paint.vert",   "VG.Paint.LinearGradient.frag");
-        prgLine             = res::createProgramFromFiles("MESH.Line.vert",  "MESH.Color.frag");
-        prgPoint            = res::createProgramFromFiles("MESH.Point.vert", "MESH.Color.frag");
 
         const char* version       = "#version 430\n\n";
         const char* enableColor   = "#define ENABLE_COLOR\n";
         const char* enableTexture = "#define ENABLE_TEXTURE\n";
+
         const char* headers[3] = {version};
+        size_t numHeaders;
+
         for (size_t i=0; i<STD_PROGRAM_COUNT; ++i)
         {
-            size_t numHeaders = 1;
-
+            numHeaders = 1;
             if (i&gfx::STD_FEATURE_COLOR)
             {
                 headers[numHeaders++] = enableColor;
@@ -183,6 +183,11 @@ namespace gfx_res
             }
             stdPrograms[i] = res::createProgramFromFiles("MESH.std.vert", "MESH.std.frag", numHeaders, headers);
         }
+        
+        headers[1] = enableColor;
+        numHeaders = 2;
+        prgLine = res::createProgramFromFiles("MESH.Line.vert", "MESH.std.frag", numHeaders, headers);
+        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.std.frag", numHeaders, headers);
     }
 
     void fini()

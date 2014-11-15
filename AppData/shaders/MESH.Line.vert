@@ -1,4 +1,3 @@
-#version 430
 
 struct line_t
 {
