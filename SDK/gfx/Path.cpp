@@ -483,7 +483,7 @@ namespace vg
         for (size_t s=0; s<numCmd; ++s)
         {
             int      segment = cmd[s]&0x1E;
-            ml::vec2 origin  = (cmd[s]&1) ? o : ml::make_vec2(0.0f, 0.0f);
+            ml::vec2 origin = (cmd[s] & 1) ? o : ml::vec2{0.0f, 0.0f};
 
             if (segment==VG_CLOSE_PATH)
             {

@@ -1246,7 +1246,7 @@ namespace app
 
             gpu_clustered_lighting_t* data = (gpu_clustered_lighting_t*)gfx::dynbufAllocMem(clusterListSize, gfx::caps.uboAlignment, &clusterListOffset);
 
-            data->uAmbientGlobal = ml::make_vec3(0.02f, 0.02f, 0.02f);
+            data->uAmbientGlobal = { 0.02f, 0.02f, 0.02f };
             data->uGridTileX = LIGHT_GRID_TILE_DIM_X;
             data->uGridTileY = LIGHT_GRID_TILE_DIM_Y;
             data->uGridDimX  = gridDimX;
