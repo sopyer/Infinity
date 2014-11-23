@@ -7,7 +7,7 @@ layout(std140, column_major, binding = 0) uniform uniMVP
 layout(location=0) in vec3  vaVertex;
 
 #ifdef ENABLE_TEXTURE
-layout(location=1) in vec2  vaUV0;
+layout(location=3) in vec2  vaUV0;
 out vec2  faUV0;
 #endif
 

@@ -15,8 +15,8 @@ struct dual_quat_t
 layout(std140, column_major) uniform;
 
 layout(location=0) in vec3  aVertex;
-layout(location=3) in ivec4 aBoneIndices;
-layout(location=4) in vec4  aBoneWeights;
+layout(location=5) in ivec4 aBoneIndices;
+layout(location=6) in vec4  aBoneWeights;
 
 layout(binding = UNI_GLOBAL) uniform uniGlobal
 {

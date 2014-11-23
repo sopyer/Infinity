@@ -17,18 +17,18 @@ namespace vf
 
     static const gfx::vertex_element_t descSkinnedGeom[5] = 
     {
-        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, b),  3, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, w),  4, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
+        { 0, offsetof(vf::skinned_geom_t, px), gfx::ATTR_POSITION,      GL_FLOAT,         3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, nx), gfx::ATTR_NORMAL,        GL_FLOAT,         3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, u),  gfx::ATTR_UV0,           GL_FLOAT,         2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, b),  gfx::ATTR_BLEND_INDICES, GL_UNSIGNED_BYTE, 4, GL_TRUE,  GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, w),  gfx::ATTR_BLEND_WEIGHTS, GL_FLOAT,         4, GL_FALSE, GL_FALSE },
     };
 
     static const gfx::vertex_element_t descStaticGeom[3] = 
     {
-        {0, offsetof(vf::skinned_geom_t, px), 0, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, nx), 1, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::skinned_geom_t, u),  2, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
+        { 0, offsetof(vf::skinned_geom_t, px), gfx::ATTR_POSITION, GL_FLOAT, 3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, nx), gfx::ATTR_NORMAL,   GL_FLOAT, 3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::skinned_geom_t, u),  gfx::ATTR_UV0,      GL_FLOAT, 2, GL_FALSE, GL_FALSE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p2[1] = 
@@ -38,45 +38,45 @@ namespace vf
 
     static const gfx::vertex_element_t fmtdesc_p2uv2[2] = 
     {
-        {0, offsetof(vf::p2uv2_vertex_t, x), 0, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p2uv2_vertex_t, u), 1, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
+        { 0, offsetof(vf::p2uv2_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT, 2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p2uv2_vertex_t, u), gfx::ATTR_UV0,      GL_FLOAT, 2, GL_FALSE, GL_FALSE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p2uv3[2] = 
     {
-        {0, offsetof(vf::p2uv3_vertex_t, x), 0, GL_FLOAT, 2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p2uv3_vertex_t, u), 1, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
+        { 0, offsetof(vf::p2uv3_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT, 2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p2uv3_vertex_t, u), gfx::ATTR_UV0,      GL_FLOAT, 3, GL_FALSE, GL_FALSE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p2cu4[2] = 
     {
-        {0, offsetof(vf::p2cu4_vertex_t, x), 0, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p2cu4_vertex_t, c), 2, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE},
+        { 0, offsetof(vf::p2cu4_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT,         2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p2cu4_vertex_t, c), gfx::ATTR_COLOR,    GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p2uv2cu4[3] = 
     {
-        {0, offsetof(vf::p2uv2cu4_vertex_t, x), 0, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p2uv2cu4_vertex_t, u), 1, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p2uv2cu4_vertex_t, c), 2, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE},
+        { 0, offsetof(vf::p2uv2cu4_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT,         2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p2uv2cu4_vertex_t, u), gfx::ATTR_UV0,      GL_FLOAT,         2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p2uv2cu4_vertex_t, c), gfx::ATTR_COLOR,    GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p3[1] = 
     {
-        {0, 0, 0, GL_FLOAT, 3, GL_FALSE, GL_FALSE},
+        { 0, 0, gfx::ATTR_POSITION, GL_FLOAT, 3, GL_FALSE, GL_FALSE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p3cu4[2] = 
     {
-        {0, offsetof(vf::p3cu4_vertex_t, x), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p3cu4_vertex_t, c), 2, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE},
+        { 0, offsetof(vf::p3cu4_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT,         3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p3cu4_vertex_t, c), gfx::ATTR_COLOR,    GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
     };
 
     static const gfx::vertex_element_t fmtdesc_p3uv2cu4[3] = 
     {
-        {0, offsetof(vf::p3uv2cu4_vertex_t, x), 0, GL_FLOAT,         3, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p3uv2cu4_vertex_t, u), 1, GL_FLOAT,         2, GL_FALSE, GL_FALSE},
-        {0, offsetof(vf::p3uv2cu4_vertex_t, c), 2, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE},
+        { 0, offsetof(vf::p3uv2cu4_vertex_t, x), gfx::ATTR_POSITION, GL_FLOAT,         3, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p3uv2cu4_vertex_t, u), gfx::ATTR_UV0,      GL_FLOAT,         2, GL_FALSE, GL_FALSE },
+        { 0, offsetof(vf::p3uv2cu4_vertex_t, c), gfx::ATTR_COLOR,    GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
     };
 
     void set(p2uv2_vertex_t* vert, float x, float y, float u, float v)

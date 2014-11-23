@@ -110,6 +110,14 @@ namespace gfx
     static const GLuint     NUM_FRAMES_DELAY = 2; //2 * number of GPUs
     static const GLsizeiptr DYNAMIC_BUFFER_FRAME_SIZE = 10 * (1<<20);
 
+    static const GLuint ATTR_POSITION      = 0;
+    static const GLuint ATTR_NORMAL        = 1;
+    static const GLuint ATTR_COLOR         = 2;
+    static const GLuint ATTR_UV0           = 3;
+    static const GLuint ATTR_UV1           = 4;
+    static const GLuint ATTR_BLEND_INDICES = 5;
+    static const GLuint ATTR_BLEND_WEIGHTS = 6;
+
     extern int width;
     extern int height;
 
@@ -166,7 +174,7 @@ namespace gfx
     void beginFrame();
     void endFrame();
 
-    GLuint createVAO(GLuint numEntries, const vertex_element_t* entries, GLuint numStreams, GLuint* streamDivisors);
+    GLuint createVAO(GLuint numEntries, const vertex_element_t* entries, GLuint numStreams=0, GLuint* streamDivisors=0);
 
     bool  dynbufAlignMem(GLuint align, GLuint* offset);
     void* dynbufAlloc(GLsizeiptr size);
