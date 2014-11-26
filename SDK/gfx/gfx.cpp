@@ -492,7 +492,7 @@ namespace gfx
         return desc;
     }
 
-    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLuint numVars, var_desc_t* desc)
+    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLint numVars, var_desc_t* desc)
     {
         stack_mem_t stalloc = core::get_thread_data_stack();
 
@@ -510,12 +510,14 @@ namespace gfx
         struct uni_props_t
         {
             GLint nameLen;
-            GLint type;
+            GLenum type;
             GLint arraySize;
             GLint arrayStride;
             GLint offset;
         };
         static const GLenum reqUniProps[5]   = {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE, GL_ARRAY_STRIDE, GL_OFFSET};
+
+        if (numVars<=0 || !desc) return MATCH_INVALID_PARAMS;
 
         GLuint block = glGetProgramResourceIndex(prg, type, name);
 

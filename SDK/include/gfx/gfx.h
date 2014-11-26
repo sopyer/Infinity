@@ -150,6 +150,7 @@ namespace gfx
     enum
     {
         MATCH_SUCCESS,
+        MATCH_INVALID_PARAMS,
         MATCH_INVALID_BLOCK,
         MATCH_COUNT_MISMATCH,
         MATCH_VAR_N_DESC_MISMATCH // Should be last
@@ -162,7 +163,7 @@ namespace gfx
         STD_FEATURE_COUNT = 2
     };
 
-    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLuint numVars, var_desc_t* desc);
+    int matchInterface(GLuint prg, const char* name, bool ubuffer, GLint numVars, var_desc_t* desc);
 
     extern gl_caps_t caps;
 
