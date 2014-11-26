@@ -1,4 +1,5 @@
-#include <stdlib.h>
+#define SPUT_MAIN
+#include <sput.h>
 
 int run_vg_tests();
 int run_etlsf_tests();

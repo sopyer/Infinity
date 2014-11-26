@@ -61,10 +61,10 @@ extern "C" {
 
 
 /* ======================================================================= */
-/*                        sput global variable                             */
+/*                        sput global structure                            */
 /* ======================================================================= */
 
-    static struct
+    struct __sput_t
     {
         FILE *out;
         char  initialized;
@@ -105,8 +105,13 @@ extern "C" {
             time_t start;
             time_t end;
         } time;
-    } __sput;
+    };
 
+#ifdef SPUT_MAIN
+    struct __sput_t __sput;
+#else
+    extern struct __sput_t __sput;
+#endif
 
 /* ======================================================================= */
 /*                        sput internal macros                             */
