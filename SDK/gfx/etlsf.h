@@ -8,10 +8,16 @@
 #include <stdint.h>
 #include <core/core.h>
 
+//Allocator is not threadsafe
+//Supports spaces up to 2^30
+//Supports arbitrary alignments up to 256
+//Supports up to 65535 allocation max
+//Uses 16 bytes per possible allocation
+
 struct   etlsf_arena_data_t;
 typedef  etlsf_arena_data_t*  etlsf_arena_t;
 
-etlsf_arena_t  etlsf_create (mem::arena_t marena, uint32_t size, uint16_t max_allocs);
+etlsf_arena_t  etlsf_create (mem::arena_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs);
 void           etlsf_destroy(etlsf_arena_t arena);
 
 // All allocations are always aligned up to 256 bytes

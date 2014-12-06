@@ -79,41 +79,48 @@ namespace vg
             path->ymax = core::max(path->ymax, geom->b3vertices[i].y);
         }
 
+
+        uint32_t  verticesSize = sizeof(vf::p2_vertex_t) * geom->numVertices;
+        uint32_t  indicesSize  = sizeof(uint16_t) * geom->numIndices;
+        uint32_t  numB3Indices = geom->numB3Vertices / 4 * 6;
+        uint32_t  b3verticesSize = sizeof(vf::p2uv3_vertex_t) * geom->numB3Vertices;
+        uint32_t  b3indicesSize  = sizeof(uint16_t) * numB3Indices;
+        uint32_t  verticesBase, b3verticesBase;
+        uint32_t  totalSize = 0;
+        
+        totalSize += indicesSize + b3indicesSize;
+        totalSize += verticesSize + sizeof(vf::p2_vertex_t);
+        totalSize += b3verticesSize + sizeof(vf::p2uv3_vertex_t);
+
+        path->gpuMemHandle = gfx::allocBufferMem(gfx::vgBuffer, totalSize);
+
+        uint8_t*  basePtr    = gfx::lockBufferMem<uint8_t>(gfx::vgBuffer, path->gpuMemHandle);
+        uint32_t  baseOffset = gfx::getBufferMemOffset(gfx::vgBuffer, path->gpuMemHandle);
+
+        assert ((baseOffset&0x01) == 0);
+
+        verticesBase   = core::align_up<vf::p2_vertex_t>   (baseOffset + indicesSize + b3indicesSize);
+        b3verticesBase = core::align_up<vf::p2uv3_vertex_t>(verticesBase + verticesSize);
+
         if (geom->numIndices)
         {
-            size_t  verticesSize = sizeof(vf::p2_vertex_t) * geom->numVertices;
-            size_t  indicesSize  = sizeof(uint16_t) * geom->numIndices;
-
-            path->allocVertices = gfx::allocBufferMem(gfx::vgBuffer, verticesSize, sizeof(vf::p2_vertex_t));
-            path->allocIndices  = gfx::allocBufferMem(gfx::vgBuffer, indicesSize);
-
-            vf::p2_vertex_t* vertices = gfx::lockBufferVertices<vf::p2_vertex_t>(gfx::vgBuffer, path->allocVertices);
+            vf::p2_vertex_t* vertices = (vf::p2_vertex_t*)(basePtr + (verticesBase - baseOffset));
             memcpy(vertices, geom->vertices, verticesSize);
-            gfx::unlockBufferMem(gfx::vgBuffer);
 
-            uint16_t* indices = gfx::lockBufferMem<uint16_t>(gfx::vgBuffer, path->allocIndices);
+            uint16_t* indices = (uint16_t*)basePtr;
             memcpy(indices, geom->indices, indicesSize);
-            gfx::unlockBufferMem(gfx::vgBuffer);
 
-            path->baseVertex    = gfx::getBufferFirstVertex(gfx::vgBuffer, path->allocVertices, sizeof(vf::p2_vertex_t));
-            path->offsetIndices = gfx::getBufferMemOffset(gfx::vgBuffer, path->allocIndices);
+            path->baseVertex    = verticesBase / sizeof(vf::p2_vertex_t);
+            path->offsetIndices = baseOffset;
             path->numIndices    = geom->numIndices;
         }
 
         if (geom->numB3Vertices)
         {
-            size_t  numB3Indices = geom->numB3Vertices / 4 * 6;
-            size_t  b3verticesSize = sizeof(vf::p2uv3_vertex_t) * geom->numB3Vertices;
-            size_t  b3indicesSize  = sizeof(uint16_t) * numB3Indices;
-
-            path->allocB3Vertices = gfx::allocBufferMem(gfx::vgBuffer, b3verticesSize, sizeof(vf::p2uv3_vertex_t));
-            path->allocB3Indices  = gfx::allocBufferMem(gfx::vgBuffer, b3indicesSize);
-
-            vf::p2uv3_vertex_t* b3vertices = gfx::lockBufferVertices<vf::p2uv3_vertex_t>(gfx::vgBuffer, path->allocB3Vertices);
+            vf::p2uv3_vertex_t* b3vertices = (vf::p2uv3_vertex_t*)(basePtr + (b3verticesBase - baseOffset));
             memcpy(b3vertices, geom->b3vertices, b3verticesSize);
-            gfx::unlockBufferMem(gfx::vgBuffer);
 
-            uint16_t* b3indices = gfx::lockBufferMem<uint16_t>(gfx::vgBuffer, path->allocB3Indices);
+            uint16_t* b3indices = (uint16_t*)(basePtr + indicesSize);
             numB3Indices = 0;
             for (size_t i = 0; i<geom->numB3Vertices; i+=4)
             {
@@ -125,12 +132,13 @@ namespace vg
                 b3indices[numB3Indices++] = (uint16_t)i+2;
                 b3indices[numB3Indices++] = (uint16_t)i+3;
             }
-            gfx::unlockBufferMem(gfx::vgBuffer);
 
-            path->baseB3Vertex    = gfx::getBufferFirstVertex(gfx::vgBuffer, path->allocB3Vertices, sizeof(vf::p2uv3_vertex_t));
-            path->offsetB3Indices = gfx::getBufferMemOffset(gfx::vgBuffer, path->allocB3Indices);
+            path->baseB3Vertex    = b3verticesBase / sizeof(vf::p2uv3_vertex_t);
+            path->offsetB3Indices = baseOffset + indicesSize;
             path->numB3Indices    = numB3Indices;
         }
+
+        gfx::unlockBufferMem(gfx::vgBuffer);
 
         return path;
     }
@@ -466,10 +474,10 @@ namespace vg
         const size_t maxB3Vertices = numCmd * 10;
 
         geometry_t pathGeom = {
-            0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
             (vf::p2_vertex_t*) core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
-            (vf::p2uv3_vertex_t*) core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
+            (vf::p2uv3_vertex_t*) core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices),
+            0, 0, 0
         };
 
         ml::vec2  cp0 = {0.0f, 0.0f},
@@ -604,10 +612,7 @@ namespace vg
 
     void destroyPath(Path path)
     {
-        gfx::freeBufferMem(gfx::vgBuffer, path->allocVertices);
-        gfx::freeBufferMem(gfx::vgBuffer, path->allocIndices);
-        gfx::freeBufferMem(gfx::vgBuffer, path->allocB3Vertices);
-        gfx::freeBufferMem(gfx::vgBuffer, path->allocB3Indices);
+        gfx::freeBufferMem(gfx::vgBuffer, path->gpuMemHandle);
         mem::free(gfx::memArena, path);
     }
 }

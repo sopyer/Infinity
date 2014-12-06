@@ -278,6 +278,16 @@ namespace core
         y = tmp;
     }
 
+    template<typename T>
+    inline size_t align_up(size_t offset)
+    {
+        size_t stride = sizeof(T);
+        size_t rem    = offset % stride;
+        size_t adjust = (rem==0)? 0 : (stride - rem);
+
+        return offset + adjust;
+    }
+
 /*------------------ Ring buffer--------------------*/
     template<typename T, size_t N>
     struct ring_buffer_t

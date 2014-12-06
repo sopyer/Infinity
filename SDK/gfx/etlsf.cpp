@@ -2,6 +2,8 @@
 
 #include "etlsf.h"
 
+#define BLOCK_MEM(block, mem) (arena->storage[block].mem)
+
 enum etlsf_private
 {
     /* All allocation sizes and addresses are aligned to 256 bytes. */
@@ -31,9 +33,20 @@ enum etlsf_private
     BLOCK_SIZE_MIN = (size_t)1 << ALIGN_SIZE_LOG2,
     BLOCK_SIZE_MAX = (size_t)1 << FL_INDEX_MAX,
 
-    BLOCK_FREE_BIT      = 1 << 0,
-
     BLOCK_COUNT_MAX = 0xFFFE,
+};
+
+struct used_block_data_t
+{
+    uint32_t  size;
+};
+
+struct free_block_data_t
+{
+    uint32_t  sl : 8;
+    uint32_t  fl : 8;
+    uint16_t  next_free;
+    uint16_t  prev_free;
 };
 
 struct block_t
@@ -41,12 +54,14 @@ struct block_t
     uint16_t  next_phys;
     uint16_t  prev_phys;
 
-    uint16_t  next_free;
-    uint16_t  prev_free;
+    uint32_t  offset  : 31;
+    uint32_t  is_free :  1;
 
-    uint32_t  offset;
-    uint32_t  size         : 31;
-    uint32_t  is_free      : 1;
+    union
+    {
+        used_block_data_t used_data;
+        free_block_data_t free_data;
+    };
 };
 
 struct etlsf_arena_data_t
@@ -60,9 +75,11 @@ struct etlsf_arena_data_t
     /* Head of free lists. */
     uint16_t blocks[FL_INDEX_COUNT][SL_INDEX_COUNT];
 
-    uint16_t size;
-    uint16_t unused;
-    uint16_t first_ava;
+    uint32_t offset;
+    uint32_t size;
+    uint16_t total_blocks;
+    uint16_t unused_blocks;
+    uint16_t first_free_block;
 
     block_t  storage[1];
 };
@@ -73,48 +90,28 @@ static uint32_t   arena_total_size(uint16_t max_allocs);
 static uint16_t   storage_new_block (etlsf_arena_t arena);
 static void       storage_free_block(etlsf_arena_t arena, uint16_t id);
 
-static  void      block_set_offset   (etlsf_arena_t arena, uint16_t id, uint32_t offset);
-static  void      block_set_size     (etlsf_arena_t arena, uint16_t id, uint32_t size);
-static  void      block_set_free     (etlsf_arena_t arena, uint16_t id);
-static  void      block_set_used     (etlsf_arena_t arena, uint16_t id);
-static  void      block_set_next_free(etlsf_arena_t arena, uint16_t id, uint16_t next);
-static  void      block_set_prev_free(etlsf_arena_t arena, uint16_t id, uint16_t prev);
-static  void      block_set_next_phys(etlsf_arena_t arena, uint16_t id, uint16_t next);
-static  void      block_set_prev_phys(etlsf_arena_t arena, uint16_t id, uint16_t prev);
-
-static  uint32_t  block_get_offset   (etlsf_arena_t arena, uint16_t id);
-static  uint32_t  block_get_size     (etlsf_arena_t arena, uint16_t id);
-static  int       block_is_free      (etlsf_arena_t arena, uint16_t id);
-static  uint16_t  block_get_next_free(etlsf_arena_t arena, uint16_t id);
-static  uint16_t  block_get_prev_free(etlsf_arena_t arena, uint16_t id);
-static  uint16_t  block_get_next_phys(etlsf_arena_t arena, uint16_t id);
-static  uint16_t  block_get_prev_phys(etlsf_arena_t arena, uint16_t id);
-
-static  int       block_is_last      (etlsf_arena_t arena, uint16_t id);
-
-static  void      block_insert_free_list  (etlsf_arena_t arena, uint16_t id);
-static  void      block_remove_free_list  (etlsf_arena_t arena, uint16_t id, uint32_t fl, uint32_t sl);
-static  uint16_t  block_find_suitable_free(etlsf_arena_t arena, uint32_t size);
-static  uint16_t  block_merge_next        (etlsf_arena_t arena, uint16_t id);
-static  void      block_trim              (etlsf_arena_t arena, uint16_t id, uint32_t size);
-
-static  void      size_to_fl_sl(uint32_t size, uint32_t& fl, uint32_t& sl);
-
+static  void      block_register_free  (etlsf_arena_t arena, uint16_t id);
+static  void      block_unregister_free(etlsf_arena_t arena, uint16_t id);
+static  uint16_t  block_find_free      (etlsf_arena_t arena, uint32_t size);
+static  void      block_trim           (etlsf_arena_t arena, uint16_t id);
 
 //-------------------------  API implementation  ----------------------------//
-etlsf_arena_t etlsf_create(mem::arena_t marena, uint32_t size, uint16_t max_allocs)
+etlsf_arena_t etlsf_create(mem::arena_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs)
 {
     assert(max_allocs < BLOCK_COUNT_MAX);
     assert(size % ALIGN_SIZE == 0);
+    assert(offset % ALIGN_SIZE == 0);
 
     etlsf_arena_t arena = (etlsf_arena_t)mem::alloc(marena, arena_total_size(max_allocs + 1));
 
     memset(arena, 0, sizeof(etlsf_arena_data_t)); // sets also all lists point to zero block
 
-    arena->marena    = marena;
-    arena->size      = max_allocs + 1;
-    arena->unused    = max_allocs;
-    arena->first_ava = 0;
+    arena->marena           = marena;
+    arena->offset           = offset;
+    arena->size             = size;
+    arena->total_blocks     = max_allocs + 1;
+    arena->unused_blocks    = max_allocs;
+    arena->first_free_block = 0;
 
     assert(BLOCK_SIZE_MIN <= size && size <= BLOCK_SIZE_MAX);
 
@@ -124,10 +121,7 @@ etlsf_arena_t etlsf_create(mem::arena_t marena, uint32_t size, uint16_t max_allo
     ** it will never be used.
     */
     uint16_t id = storage_new_block(arena);
-    block_set_offset      (arena, id, 0);
-    block_set_size        (arena, id, size);
-    block_set_free        (arena, id);
-    block_insert_free_list(arena, id);
+    block_register_free(arena, id);
 
     return arena;
 }
@@ -147,15 +141,13 @@ uint16_t etlsf_alloc(etlsf_arena_t arena, uint32_t size)
     assert(size <= BLOCK_SIZE_MAX);
 
     const size_t adjust = bit_align_up(size, BLOCK_SIZE_MIN);
-    uint16_t id = block_find_suitable_free(arena, adjust);
 
-    if (id)
-    {
-        //block should be marked as used before trim, as trim will try to merge
-        //it with trimmed again
-        block_set_used(arena, id);
-        block_trim(arena, id, adjust);
-    }
+    //!!!!!TODO: add support for arbitrary size and alignment
+    uint16_t id = block_find_free(arena, adjust);
+    BLOCK_MEM(id, used_data.size) = adjust;
+    block_trim(arena, id);
+
+    assert(BLOCK_MEM(id, offset) % BLOCK_SIZE_MIN == 0);
 
     return id;
 }
@@ -164,24 +156,26 @@ void etlsf_free(etlsf_arena_t arena, uint16_t block)
 {
     if (block)
     {
-        assert(!block_is_free(arena, block) && "block already marked as free");
-        block_insert_free_list(arena, block);
+        assert(etlsf_is_block_valid(arena, block) && "block already marked as free");
+        block_register_free(arena, block);
     }
 }
 
 uint32_t etlsf_block_size(etlsf_arena_t arena, uint16_t block)
 {
-    return block_get_size(arena, block);
+    assert(etlsf_is_block_valid(arena, block));
+    return BLOCK_MEM(block, used_data.size);
 }
 
 uint32_t etlsf_block_offset(etlsf_arena_t arena, uint16_t block)
 {
-    return block_get_offset(arena, block);
+    assert(etlsf_is_block_valid(arena, block));
+    return arena->offset + BLOCK_MEM(block, offset);
 }
 
 int etlsf_is_block_valid(etlsf_arena_t arena, uint16_t block)
 {
-    return !block_is_free(arena, block);
+    return !BLOCK_MEM(block, is_free);
 }
 
 
@@ -200,20 +194,20 @@ static uint32_t arena_total_size(uint16_t max_allocs)
 //----------------------------  Storage utils  --------------------------------//
 static uint16_t storage_new_block(etlsf_arena_t arena)
 {
-    if (arena->first_ava)
+    if (arena->first_free_block)
     {
-        assert(arena->first_ava < arena->size);
+        assert(arena->first_free_block < arena->total_blocks);
 
-        uint16_t id = arena->first_ava;
-        arena->first_ava = block_get_next_free(arena, id);
+        uint16_t id = arena->first_free_block;
+        arena->first_free_block = BLOCK_MEM(id, next_phys);
 
         return id;
     }
 
-    if (arena->unused > 0)
+    if (arena->unused_blocks > 0)
     {
-        uint16_t id = arena->size - arena->unused;
-        --arena->unused;
+        uint16_t id = arena->total_blocks - arena->unused_blocks;
+        --arena->unused_blocks;
 
         return id;
     }
@@ -224,17 +218,17 @@ static uint16_t storage_new_block(etlsf_arena_t arena)
 static void storage_free_block(etlsf_arena_t arena, uint16_t id)
 {
     assert(id > 0);
-    assert(id < arena->size);
-    assert(id+arena->unused < arena->size);
+    assert(id < arena->total_blocks);
+    assert(id+arena->unused_blocks < arena->total_blocks);
 
-    if (id + 1 + arena->unused == arena->size)
+    if (id + 1 + arena->unused_blocks == arena->total_blocks)
     {
-        ++arena->unused;
+        ++arena->unused_blocks;
     }
     else
     {
-        block_set_next_free(arena, id, arena->first_ava);
-        arena->first_ava = id;
+        BLOCK_MEM(id, next_phys) = arena->first_free_block;
+        arena->first_free_block = id;
     }
 }
 
@@ -256,147 +250,25 @@ static void size_to_fl_sl(uint32_t size, uint32_t& fl, uint32_t& sl)
     }
 }
 
-
-//------------------------------  Block accessors  ------------------------------//
-static void block_set_offset(etlsf_arena_t arena, uint16_t id, uint32_t offset)
-{
-    assert(id < arena->size);
-
-    arena->storage[id].offset = offset;
-}
-
-static void block_set_size(etlsf_arena_t arena, uint16_t id, uint32_t size)
-{
-    assert(id < arena->size);
-    assert(size >= BLOCK_SIZE_MIN);
-    uint32_t oldsize = arena->storage[id].size;
-    arena->storage[id].size = size | (oldsize & BLOCK_FREE_BIT);
-}
-
-static void block_set_free(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    arena->storage[id].size |= BLOCK_FREE_BIT;
-}
-
-static void block_set_used(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    arena->storage[id].size &= ~BLOCK_FREE_BIT;
-}
-
-static void block_set_next_free(etlsf_arena_t arena, uint16_t id, uint16_t next)
-{
-    assert(id < arena->size);
-    assert(next < arena->size);
-    arena->storage[id].next_free = next;
-}
-
-static void block_set_prev_free(etlsf_arena_t arena, uint16_t id, uint16_t prev)
-{
-    assert(id < arena->size);
-    assert(prev < arena->size);
-    arena->storage[id].prev_free = prev;
-}
-
-static void block_set_next_phys(etlsf_arena_t arena, uint16_t id, uint16_t next)
-{
-    assert(id < arena->size);
-    assert(next < arena->size);
-    arena->storage[id].next_phys = next;
-}
-
-static void block_set_prev_phys(etlsf_arena_t arena, uint16_t id, uint16_t prev)
-{
-    assert(id < arena->size);
-    assert(prev < arena->size);
-    arena->storage[id].prev_phys = prev;
-}
-
-static uint32_t block_get_offset(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].offset;
-}
-
-static uint32_t block_get_size(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].size & ~BLOCK_FREE_BIT;
-}
-
-static int block_is_free(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].size & BLOCK_FREE_BIT;
-}
-
-static uint16_t block_get_next_free(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].next_free;
-}
-
-static uint16_t block_get_prev_free(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].prev_free;
-}
-
-static uint16_t block_get_next_phys(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].next_phys;
-}
-
-static uint16_t block_get_prev_phys(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return arena->storage[id].prev_phys;
-}
-
-
-//----------------------------  Block utils  ------------------------------
-static int block_is_last(etlsf_arena_t arena, uint16_t id)
-{
-    assert(id < arena->size);
-    return block_get_next_phys(arena, id) == 0;
-}
-
-
 //------------------------------  Block operations  ------------------------------//
-static uint16_t block_merge_next(etlsf_arena_t arena, uint16_t id)
+static uint32_t block_get_actual_size(etlsf_arena_t arena, uint16_t id)
 {
-    assert(id && "next physical block can't be null");
-    assert(!block_is_last(arena, id) && "previous block can't be last!");
-
-    uint16_t next = block_get_next_phys(arena, id);
-    uint32_t size_next = block_get_size(arena, next);
-    uint32_t size      = block_get_size(arena, id);
-    block_set_size(arena, id, size + size_next);
-    block_set_next_phys(arena, id, next);
-    block_set_prev_phys(arena, next, id);
-
-    if (block_is_free(arena, next))
-    {
-        uint32_t fl, sl;
-        size_to_fl_sl(size_next, fl, sl);
-        block_remove_free_list(arena, next, fl, sl);
-    }
-
-    storage_free_block(arena, next);
-
-    return id;
+    uint16_t next = BLOCK_MEM(id, next_phys);
+    return (next ? BLOCK_MEM(next, offset) : arena->size) - BLOCK_MEM(id, offset);
 }
 
-static void block_trim(etlsf_arena_t arena, uint16_t id, uint32_t size)
+static void block_trim(etlsf_arena_t arena, uint16_t id)
 {
+    uint32_t bsize = block_get_actual_size(arena, id);
+    uint32_t size  = BLOCK_MEM(id, used_data.size);
+
+    assert(!BLOCK_MEM(id, is_free));
     assert(size>=BLOCK_SIZE_MIN);
-    uint32_t bsize = block_get_size(arena, id);
+
     if (bsize >= size + BLOCK_SIZE_MIN)
     {
-        uint16_t next   = block_get_next_phys(arena, id);
-        uint32_t offset = block_get_offset(arena, id);
+        uint16_t next   = BLOCK_MEM(id, next_phys);
+        uint32_t offset = BLOCK_MEM(id, offset);
 
         uint16_t new_block = storage_new_block(arena);
 
@@ -406,46 +278,70 @@ static void block_trim(etlsf_arena_t arena, uint16_t id, uint32_t size)
             return;
         }
 
-        block_set_size(arena, id, size);
+        BLOCK_MEM(new_block, offset) = offset+size;
 
-        block_set_offset(arena, new_block, offset+size);
-        block_set_size  (arena, new_block, bsize-size);
+        BLOCK_MEM(id, next_phys) = new_block;
 
-        block_set_next_phys(arena, id, new_block);
+        BLOCK_MEM(new_block, next_phys) = next;
+        BLOCK_MEM(new_block, prev_phys) = id;
 
-        block_set_next_phys(arena, new_block, next);
-        block_set_prev_phys(arena, new_block, id);
+        BLOCK_MEM(next, prev_phys) = new_block;
 
-        block_set_prev_phys(arena, next, new_block);
-
-        block_insert_free_list(arena, new_block);
+        block_register_free(arena, new_block);
     }
 }
 
-static void block_insert_free_list(etlsf_arena_t arena, uint16_t id)
+//Probably a bug when prev block is free
+static void block_register_free(etlsf_arena_t arena, uint16_t id)
 {
     assert(id);
 
-    uint16_t prev = block_get_prev_phys(arena, id);
-    uint16_t next = block_get_next_phys(arena, id);
-    if (block_is_free(arena, prev))
-        id = block_merge_next(arena, prev);
-    if (block_is_free(arena, next))
-        id = block_merge_next(arena, id);
+    uint16_t prev = BLOCK_MEM(id, prev_phys);
+    uint16_t next = BLOCK_MEM(id, next_phys);
+    //Merge prev block if free
+    if (BLOCK_MEM(prev, is_free))
+    {
+        uint16_t prev_prev = BLOCK_MEM(prev, prev_phys);
 
-    block_set_free(arena, id);
+        assert(prev != 0 && "block must not be first");
+
+        BLOCK_MEM(id, offset) = BLOCK_MEM(prev, offset);
+
+        BLOCK_MEM(id,        prev_phys)      = prev_prev;
+        BLOCK_MEM(prev_prev, next_phys)      = id;
+
+        block_unregister_free(arena, prev);
+        storage_free_block(arena, prev);
+    }
+    //Merge next block if free
+    if (BLOCK_MEM(next, is_free))
+    {
+        uint16_t next_next = BLOCK_MEM(next, next_phys);
+
+        assert(next != 0 && "block must not be last");
+
+        BLOCK_MEM(id,        next_phys)      = next_next;
+        BLOCK_MEM(next_next, prev_phys)      = id;
+
+        block_unregister_free(arena, next);
+        storage_free_block(arena, next);
+    }
 
     uint32_t fl = 0, sl = 0;
-    uint32_t size = block_get_size(arena, id);
+    uint32_t size = block_get_actual_size(arena, id);
     size_to_fl_sl(size, fl, sl);
 
-    next = arena->blocks[fl][sl];
-    assert(id < arena->size);
-    assert(next < arena->size);
+    uint16_t next_free = arena->blocks[fl][sl];
+    assert(id < arena->total_blocks);
+    assert(next_free < arena->total_blocks);
 
-    block_set_prev_free(arena, id, 0);
-    block_set_next_free(arena, id, next);
-    block_set_prev_free(arena, next, id);
+    BLOCK_MEM(id,        free_data.prev_free)   = 0;
+    BLOCK_MEM(id,        free_data.next_free)   = next_free;
+    BLOCK_MEM(next_free, free_data.prev_free) = id;
+
+    BLOCK_MEM(id, free_data.fl) = fl;
+    BLOCK_MEM(id, free_data.sl) = sl;
+    BLOCK_MEM(id, is_free)      = TRUE;
 
     /*
     ** Insert the new block at the head of the list, and mark the first-
@@ -456,14 +352,20 @@ static void block_insert_free_list(etlsf_arena_t arena, uint16_t id)
     arena->sl_bitmap[fl] |= (1 << sl);
 }
 
-static void block_remove_free_list(etlsf_arena_t arena, uint16_t id, uint32_t fl, uint32_t sl)
+static void block_unregister_free(etlsf_arena_t arena, uint16_t id)
 {
-    uint16_t prev = block_get_prev_free(arena, id);
-    uint16_t next = block_get_next_free(arena, id);
-    assert(prev < arena->size);
-    assert(next < arena->size);
-    block_set_prev_free(arena, next, prev);
-    block_set_next_free(arena, prev, next);
+    uint32_t fl = BLOCK_MEM(id, free_data.fl);
+    uint32_t sl = BLOCK_MEM(id, free_data.sl);
+
+    uint16_t prev = BLOCK_MEM(id, free_data.prev_free);
+    uint16_t next = BLOCK_MEM(id, free_data.next_free);
+
+    assert(prev < arena->total_blocks);
+    assert(next < arena->total_blocks);
+
+    BLOCK_MEM(next, free_data.prev_free) = prev;
+    BLOCK_MEM(prev, free_data.next_free) = next;
+    BLOCK_MEM(id, is_free) = FALSE;
 
     /* If this block is the head of the free list, set new head. */
     if (arena->blocks[fl][sl] == id)
@@ -484,7 +386,7 @@ static void block_remove_free_list(etlsf_arena_t arena, uint16_t id, uint32_t fl
     }
 }
 
-static uint16_t block_find_suitable_free(etlsf_arena_t arena, uint32_t size)
+static uint16_t block_find_free(etlsf_arena_t arena, uint32_t size)
 {
     uint32_t  fl = 0, sl = 0;
     uint16_t  id = 0;
@@ -516,8 +418,8 @@ static uint16_t block_find_suitable_free(etlsf_arena_t arena, uint32_t size)
 
     if (id)
     {
-        assert(block_get_size(arena, id) >= size);
-        block_remove_free_list(arena, id, fl, sl);
+        assert(block_get_actual_size(arena, id) >= size);
+        block_unregister_free(arena, id);
     }
 
     return id;

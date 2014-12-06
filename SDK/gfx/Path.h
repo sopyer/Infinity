@@ -7,31 +7,28 @@ namespace vg
 {
     struct geometry_t
     {
-        size_t  numIndices;
-        size_t  numVertices;
-        size_t  numB3Vertices;
-        
         uint16_t*           indices;
         vf::p2_vertex_t*    vertices;
         vf::p2uv3_vertex_t* b3vertices;
+
+        uint32_t  numIndices;
+        uint32_t  numVertices;
+        uint32_t  numB3Vertices;
     };
 
     struct path_data_t
     {
         float xmin, ymin, xmax, ymax;
 
-        uint16_t  allocVertices;
-        uint16_t  allocIndices;
-        uint16_t  allocB3Vertices;
-        uint16_t  allocB3Indices;
+        uint16_t  gpuMemHandle;
 
-        GLuint  baseVertex;
-        GLuint  offsetIndices;
-        size_t  numIndices;
+        uint32_t  baseVertex;
+        uint32_t  offsetIndices;
+        uint32_t  numIndices;
 
-        GLuint  baseB3Vertex;
-        GLuint  offsetB3Indices;
-        size_t  numB3Indices;
+        uint32_t  baseB3Vertex;
+        uint32_t  offsetB3Indices;
+        uint32_t  numB3Indices;
     };
 
     uint16_t     geomAddVertex    (geometry_t* geom, const ml::vec2& v);

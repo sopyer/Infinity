@@ -517,17 +517,17 @@ namespace app
         const size_t maxB3Vertices = 100 * 10;
 
         vg::geometry_t  geomPath = {
-            0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
             (vf::p2_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
-            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
+            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices),
+            0, 0, 0
         };
 
         vg::geometry_t  geomPathOff = {
-            0, 0, 0,
             (uint16_t*)core::thread_stack_alloc(sizeof(uint16_t)*maxIndices),
             (vf::p2_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2_vertex_t)*maxVertices),
-            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices)
+            (vf::p2uv3_vertex_t*)core::thread_stack_alloc(sizeof(vf::p2uv3_vertex_t)*maxB3Vertices),
+            0, 0, 0
         };
 
         uint16_t  prevIdx,  curIdx;

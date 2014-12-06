@@ -8,11 +8,16 @@ enum test_private
     ARENA_EXTMEM_SIZE = 20*1024,
 };
 
-etlsf_arena_t  arena;
 
 void test_alloc_free()
 {
+    etlsf_arena_t  arena;
+    mem::arena_t  marena;
+
     uint16_t id0, id1, id2, id3, id4, id5;
+
+    marena = mem::create_arena(ARENA_SYSMEM_SIZE, 0);
+    arena = etlsf_create(marena, 0, ARENA_EXTMEM_SIZE, 128);
 
     id0 = etlsf_alloc(arena, ARENA_EXTMEM_SIZE);
     sput_fail_unless(id0, "Allocation succeeded");
@@ -61,24 +66,111 @@ void test_alloc_free()
     sput_fail_unless(id4, "Allocation succeeded");
     sput_fail_unless(etlsf_block_offset(arena, id4) == 11*1024 + 4*1024+512, "Single allocation offset test");
     sput_fail_unless(etlsf_block_size(arena, id4) == 256, "Single allocation size test");
+
+    etlsf_destroy(arena);
+    mem::destroy_arena(marena);
+}
+
+void test_merge_prev()
+{
+    etlsf_arena_t  arena;
+    mem::arena_t  marena;
+
+    uint16_t id0, id1, id2;
+
+    marena = mem::create_arena(ARENA_SYSMEM_SIZE, 0);
+    arena = etlsf_create(marena, 0, 1024, 128);
+
+    id0 = etlsf_alloc(arena, 256);
+    id1 = etlsf_alloc(arena, 256);
+    id2 = etlsf_alloc(arena, 256);
+
+    sput_fail_unless(id0, "Allocation succeeded");
+    sput_fail_unless(id1, "Allocation succeeded");
+    sput_fail_unless(id2, "Allocation succeeded");
+
+    sput_fail_unless(etlsf_block_offset(arena, id0) ==    0, "Allocation offset test");
+    sput_fail_unless(etlsf_block_offset(arena, id1) ==  256, "Allocation offset test");
+    sput_fail_unless(etlsf_block_offset(arena, id2) ==  512, "Allocation offset test");
+
+    sput_fail_unless(etlsf_block_size(arena, id0) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_block_size(arena, id2) == 256, "Allocation size test");
+
+    etlsf_free(arena, id0);
+    etlsf_free(arena, id1);
+
+    id0 = etlsf_alloc(arena, 512);
+    id1 = etlsf_alloc(arena, 256);
+
+    sput_fail_unless(id0, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id0) == 0, "Allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id0) == 512, "Allocation size test");
+
+    sput_fail_unless(id1, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id1) == 768, "Allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+
+    etlsf_destroy(arena);
+    mem::destroy_arena(marena);
+}
+
+void test_merge_next()
+{
+    etlsf_arena_t  arena;
+    mem::arena_t  marena;
+
+    uint16_t id0, id1, id2;
+
+    marena = mem::create_arena(ARENA_SYSMEM_SIZE, 0);
+    arena = etlsf_create(marena, 0, 1024, 128);
+
+    id0 = etlsf_alloc(arena, 256);
+    id1 = etlsf_alloc(arena, 256);
+    id2 = etlsf_alloc(arena, 256);
+
+    sput_fail_unless(id0, "Allocation succeeded");
+    sput_fail_unless(id1, "Allocation succeeded");
+    sput_fail_unless(id2, "Allocation succeeded");
+
+    sput_fail_unless(etlsf_block_offset(arena, id0) ==    0, "Allocation offset test");
+    sput_fail_unless(etlsf_block_offset(arena, id1) ==  256, "Allocation offset test");
+    sput_fail_unless(etlsf_block_offset(arena, id2) ==  512, "Allocation offset test");
+
+    sput_fail_unless(etlsf_block_size(arena, id0) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_block_size(arena, id2) == 256, "Allocation size test");
+
+    etlsf_free(arena, id1);
+    etlsf_free(arena, id0);
+
+    id0 = etlsf_alloc(arena, 512);
+    id1 = etlsf_alloc(arena, 256);
+
+    sput_fail_unless(id0, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id0) == 0, "Allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id0) == 512, "Allocation size test");
+
+    sput_fail_unless(id1, "Allocation succeeded");
+    sput_fail_unless(etlsf_block_offset(arena, id1) == 768, "Allocation offset test");
+    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+
+    etlsf_destroy(arena);
+    mem::destroy_arena(marena);
 }
 
 int run_etlsf_tests()
 {
-    mem::arena_t  marena;
-
-    marena = mem::create_arena(ARENA_SYSMEM_SIZE, 0);
-    arena = etlsf_create(marena, ARENA_EXTMEM_SIZE, 128);
-
     sput_start_testing();
 
     sput_enter_suite("ETLSF: alloc/free");
     sput_run_test(test_alloc_free);
+    sput_enter_suite("ETLSF: merge prev");
+    sput_run_test(test_merge_prev);
+    sput_enter_suite("ETLSF: merge next");
+    sput_run_test(test_merge_next);
 
     sput_finish_testing();
-
-    etlsf_destroy(arena);
-    mem::destroy_arena(marena);
 
     return sput_get_return_value();
 }

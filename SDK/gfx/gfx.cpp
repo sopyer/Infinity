@@ -509,11 +509,11 @@ namespace gfx
         GLenum vartype = ubuffer ? GL_UNIFORM : GL_BUFFER_VARIABLE;
         struct uni_props_t
         {
-            GLint nameLen;
+            GLint  nameLen;
             GLenum type;
-            GLint arraySize;
-            GLint arrayStride;
-            GLint offset;
+            GLint  arraySize;
+            GLint  arrayStride;
+            GLint  offset;
         };
         static const GLenum reqUniProps[5]   = {GL_NAME_LENGTH, GL_TYPE, GL_ARRAY_SIZE, GL_ARRAY_STRIDE, GL_OFFSET};
 
@@ -732,7 +732,7 @@ namespace gfx
     {
         gpu_buffer_t buffer = mem::alloc<gpu_buffer_data_t>(memArena);
 
-        buffer->gpu_arena = etlsf_create(memArena, size, GFX_MAX_ALLOCS);
+        buffer->gpu_arena = etlsf_create(memArena, 0, size, GFX_MAX_ALLOCS);
 
         glGenBuffers(1, &buffer->buffer);
         glNamedBufferStorageEXT(buffer->buffer, size, 0, flags);
