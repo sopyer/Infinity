@@ -41,6 +41,9 @@
     <ClCompile Include="nedmalloc.cpp">
       <Filter>nedmalloc</Filter>
     </ClCompile>
+    <ClCompile Include="etlsf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nedmalloc.h">
@@ -74,6 +77,9 @@
       <Filter>Public Headers</Filter>
     </ClInclude>
     <ClInclude Include="..\include\core\mt.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\core\etlsf.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
   </ItemGroup>

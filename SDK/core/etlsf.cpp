@@ -1,6 +1,6 @@
 #include <stddef.h>
 
-#include "etlsf.h"
+#include <core/etlsf.h>
 
 #define BLOCK_MEM(block, mem) (arena->storage[block].mem)
 

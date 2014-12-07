@@ -78,6 +78,7 @@
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="etlsf.cpp" />
     <ClCompile Include="memory.cpp" />
     <ClCompile Include="mjson.c" />
     <ClCompile Include="ml.cpp" />
@@ -89,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\core\core.h" />
+    <ClInclude Include="..\include\core\etlsf.h" />
     <ClInclude Include="..\include\core\memory.h" />
     <ClInclude Include="..\include\core\ml.h" />
     <ClInclude Include="..\include\core\mt.h" />

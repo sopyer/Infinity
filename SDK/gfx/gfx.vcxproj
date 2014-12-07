@@ -85,7 +85,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DefaultFontData.cpp" />
-    <ClCompile Include="etlsf.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="gfx.cpp" />
     <ClCompile Include="gfx_res.cpp" />
@@ -109,7 +108,6 @@
     <ClInclude Include="..\include\gfx\vg.h" />
     <ClInclude Include="..\include\opengl.h" />
     <ClInclude Include="DefaultFontData.h" />
-    <ClInclude Include="etlsf.h" />
     <ClInclude Include="gfx_res.h" />
     <ClInclude Include="nanovg\fontstash.h" />
     <ClInclude Include="nanovg\nanovg.h" />

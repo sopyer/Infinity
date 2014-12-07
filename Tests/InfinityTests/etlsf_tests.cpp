@@ -1,6 +1,6 @@
 #include <sput.h>
 
-#include <gfx/etlsf.h>
+#include <core/etlsf.h>
 
 enum test_private
 {
