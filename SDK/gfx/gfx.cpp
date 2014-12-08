@@ -23,7 +23,6 @@ namespace gfx
     gl_caps_t caps;
 
     mem::arena_t memArena = 0;
-    gpu_buffer_t vgBuffer = 0;
 
 //!!!!!TODO: implements proper simple caching solution with bitset
     //enum RevObjects
@@ -102,8 +101,6 @@ namespace gfx
     {
         memArena = mem::create_arena(512 * (1<<10), 1);
 
-        vgBuffer = createBuffer(1 * (1<<20), GL_MAP_WRITE_BIT);
-
 #ifdef _DEBUG
         glDebugMessageCallback(debugCallback, NULL);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
@@ -137,8 +134,6 @@ namespace gfx
 
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);
-
-        destroyBuffer(vgBuffer);
 
         mem::destroy_arena(memArena);
     }
@@ -720,94 +715,4 @@ namespace gfx
     {
         return timer->measuredTime / 1000;
     }
-
-    struct gpu_buffer_data_t
-    {
-        etlsf_arena_t gpu_arena;
-        GLuint        buffer;
-        GLuint        flags;
-    };
-
-    gpu_buffer_t createBuffer(GLsizeiptr size, GLuint flags)
-    {
-        gpu_buffer_t buffer = mem::alloc<gpu_buffer_data_t>(memArena);
-
-        buffer->gpu_arena = etlsf_create(memArena, 0, size, GFX_MAX_ALLOCS);
-
-        glGenBuffers(1, &buffer->buffer);
-        glNamedBufferStorageEXT(buffer->buffer, size, 0, flags);
-
-        buffer->flags = flags & ~(GL_CLIENT_STORAGE_BIT|GL_DYNAMIC_STORAGE_BIT);
-
-        return buffer;
-    }
-
-    void destroyBuffer(gpu_buffer_t buffer)
-    {
-        assert(buffer);
-        etlsf_destroy(buffer->gpu_arena);
-        glDeleteBuffers(1, &buffer->buffer);
-        memset(buffer, 0, sizeof(gpu_buffer_data_t));
-    }
-
-    uint16_t allocBufferMem(gpu_buffer_t buffer, GLsizeiptr size, GLuint align)
-    {
-        assert(buffer);
-        return etlsf_alloc(buffer->gpu_arena, size+align);
-    }
-
-    void freeBufferMem(gpu_buffer_t buffer, uint16_t alloc)
-    {
-        assert(buffer);
-        etlsf_free(buffer->gpu_arena, alloc);
-    }
-
-    void* lockBufferMem(gpu_buffer_t buffer, uint16_t alloc)
-    {
-        assert(buffer);
-
-        GLuint offset = etlsf_block_offset(buffer->gpu_arena, alloc);
-        GLuint size   = etlsf_block_size(buffer->gpu_arena, alloc);
-
-        return glMapNamedBufferRangeEXT(buffer->buffer, offset, size, buffer->flags|GL_MAP_INVALIDATE_RANGE_BIT);
-    }
-
-    void unlockBufferMem(gpu_buffer_t buffer)
-    {
-        assert(buffer);
-        glUnmapNamedBufferEXT(buffer->buffer);
-    }
-
-    GLuint getBufferMemOffset(gpu_buffer_t buffer, uint16_t alloc)
-    {
-        assert(buffer);
-        return etlsf_block_offset(buffer->gpu_arena, alloc);
-    }
-
-    GLuint getBufferMemSize(gpu_buffer_t buffer, uint16_t alloc)
-    {
-        assert(buffer);
-        return etlsf_block_size(buffer->gpu_arena, alloc);
-    }
-
-    GLuint getBufferFirstVertex(gpu_buffer_t buffer, uint16_t alloc, GLuint stride)
-    {
-        assert(buffer);
-
-        GLuint offset = getBufferMemOffset(buffer, alloc);
-        GLuint rem    = offset % stride;
-        GLuint offsetAdjust = (rem==0)? 0 : (stride - rem);
-
-        assert((offset+offsetAdjust) % stride == 0);
-
-        return (offset+offsetAdjust) / stride;
-    }
-
-    GLuint getGPUBuffer(gpu_buffer_t buffer)
-    {
-        assert(buffer);
-
-        return buffer->buffer;
-    }
-
 }

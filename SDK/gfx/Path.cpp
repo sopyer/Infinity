@@ -92,10 +92,10 @@ namespace vg
         totalSize += verticesSize + sizeof(vf::p2_vertex_t);
         totalSize += b3verticesSize + sizeof(vf::p2uv3_vertex_t);
 
-        path->gpuMemHandle = gfx::allocBufferMem(gfx::vgBuffer, totalSize);
+        path->gpuMemHandle = etlsf_alloc(gfx_res::vgGArena, totalSize);
+        uint32_t  baseOffset = etlsf_block_offset(gfx_res::vgGArena, path->gpuMemHandle);
 
-        uint8_t*  basePtr    = gfx::lockBufferMem<uint8_t>(gfx::vgBuffer, path->gpuMemHandle);
-        uint32_t  baseOffset = gfx::getBufferMemOffset(gfx::vgBuffer, path->gpuMemHandle);
+        uint8_t*  basePtr    = (uint8_t*)glMapNamedBufferRangeEXT(gfx_res::buffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
 
         assert ((baseOffset&0x01) == 0);
 
@@ -138,7 +138,7 @@ namespace vg
             path->numB3Indices    = numB3Indices;
         }
 
-        gfx::unlockBufferMem(gfx::vgBuffer);
+        glUnmapNamedBufferEXT(gfx_res::buffer);
 
         return path;
     }
@@ -442,8 +442,8 @@ namespace vg
         {
             gfx::setStdProgram(0);
             glBindVertexArray(vf::p2_vertex_t::vao);
-            glBindVertexBuffer(0, gfx::getGPUBuffer(gfx::vgBuffer), 0, sizeof(vf::p2_vertex_t));
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx::getGPUBuffer(gfx::vgBuffer));
+            glBindVertexBuffer(0, gfx_res::buffer, 0, sizeof(vf::p2_vertex_t));
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx_res::buffer);
             glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)path->numIndices, GL_UNSIGNED_SHORT, BUFFER_OFFSET(path->offsetIndices), path->baseVertex);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
@@ -452,8 +452,8 @@ namespace vg
         {
             glUseProgram(useAA ? gfx_res::prgRasterCubicAA : gfx_res::prgRasterCubic);
             glBindVertexArray(vf::p2uv3_vertex_t::vao);
-            glBindVertexBuffer(0, gfx::getGPUBuffer(gfx::vgBuffer), 0, sizeof(vf::p2uv3_vertex_t));
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx::getGPUBuffer(gfx::vgBuffer));
+            glBindVertexBuffer(0, gfx_res::buffer, 0, sizeof(vf::p2uv3_vertex_t));
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gfx_res::buffer);
             glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)path->numB3Indices, GL_UNSIGNED_SHORT, BUFFER_OFFSET(path->offsetB3Indices), path->baseB3Vertex);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         }
@@ -612,7 +612,7 @@ namespace vg
 
     void destroyPath(Path path)
     {
-        gfx::freeBufferMem(gfx::vgBuffer, path->gpuMemHandle);
+        etlsf_free(gfx_res::vgGArena, path->gpuMemHandle);
         mem::free(gfx::memArena, path);
     }
 }

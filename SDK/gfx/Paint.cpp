@@ -18,14 +18,16 @@ namespace vg
         Paint  newPaint = mem::alloc<PaintOpaque>(gfx::memArena);
 
         newPaint->program       = gfx_res::prgPaintSolid;
-        newPaint->allocUniforms = gfx::allocBufferMem(gfx::vgBuffer, sizeof(v128), gfx::caps.uboAlignment);
-        newPaint->offset        = gfx::getBufferMemOffset(gfx::vgBuffer, newPaint->allocUniforms);
+        newPaint->allocUniforms = etlsf_alloc(gfx_res::vgGArena, sizeof(v128));
+        newPaint->offset        = etlsf_block_offset(gfx_res::vgGArena, newPaint->allocUniforms);
         newPaint->size          = sizeof(v128);
         newPaint->texture       = 0;
 
-        v128* udata = gfx::lockBufferMem<v128>(gfx::vgBuffer, newPaint->allocUniforms);
+        assert(newPaint->offset%gfx::caps.uboAlignment == 0);
+
+        v128* udata = (v128*)glMapNamedBufferRangeEXT(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
         memcpy(udata, color4f, sizeof(v128));
-        gfx::unlockBufferMem(gfx::vgBuffer);
+        glUnmapNamedBufferEXT(gfx_res::buffer);
 
         return newPaint;
     }
@@ -48,11 +50,13 @@ namespace vg
 
         newPaint->program = gfx_res::prgPaintLinGradient;
 
-        newPaint->allocUniforms = gfx::allocBufferMem(gfx::vgBuffer, sizeof(uPaintLinGradient), gfx::caps.uboAlignment);
-        newPaint->offset        = gfx::getBufferMemOffset(gfx::vgBuffer, newPaint->allocUniforms);
-        newPaint->size          = sizeof(v128);
+        newPaint->allocUniforms = etlsf_alloc(gfx_res::vgGArena, sizeof(uPaintLinGradient));
+        newPaint->offset        = etlsf_block_offset(gfx_res::vgGArena, newPaint->allocUniforms);
+        newPaint->size          = sizeof(uPaintLinGradient);
 
-        uPaintLinGradient* udata = gfx::lockBufferMem<uPaintLinGradient>(gfx::vgBuffer, newPaint->allocUniforms);
+        assert(newPaint->offset%gfx::caps.uboAlignment == 0);
+ 
+        uPaintLinGradient* udata = (uPaintLinGradient*)glMapNamedBufferRangeEXT(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
         
         float stopsData[8*4], scalesData[8*4];
 
@@ -82,7 +86,7 @@ namespace vg
         udata->uDirection.y = scale?dy/scale:FLT_MAX;
         udata->uInvStopCount = 1.0f/stopCount;
 
-        gfx::unlockBufferMem(gfx::vgBuffer);
+        glUnmapNamedBufferEXT(gfx_res::buffer);
 
         return newPaint;
     }
@@ -91,7 +95,7 @@ namespace vg
     {
         glUseProgram(paint->program);
         gfx::setMVP();
-        glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::getGPUBuffer(gfx::vgBuffer), paint->offset, paint->size);
+        glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx_res::buffer, paint->offset, paint->size);
         if (paint->texture)
         {
             glBindTextures(0, 1, &paint->texture);
@@ -101,7 +105,7 @@ namespace vg
     void destroyPaint(Paint paint)
     {
         if (paint->texture) glDeleteTextures(1, &paint->texture);
-        gfx::freeBufferMem(gfx::vgBuffer, paint->allocUniforms);
+        etlsf_free(gfx_res::vgGArena, paint->allocUniforms);
 
         mem::free(gfx::memArena, paint);
     }

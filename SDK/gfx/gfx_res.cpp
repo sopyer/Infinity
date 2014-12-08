@@ -133,6 +133,15 @@ namespace vf
 
 namespace gfx_res
 {
+    enum Constants
+    {
+        VG_BUFFER_SIZE = 1 * (1<<20),
+        GFX_MAX_ALLOCS = 1<<14,
+    };
+
+    etlsf_arena_t vgGArena;
+    GLuint        buffer;
+
     GLuint stdPrograms[STD_PROGRAM_COUNT];
 
     GLuint prgUI;
@@ -188,10 +197,18 @@ namespace gfx_res
         numHeaders = 2;
         prgLine = res::createProgramFromFiles("MESH.Line.vert", "MESH.std.frag", numHeaders, headers);
         prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.std.frag", numHeaders, headers);
+
+        vgGArena = etlsf_create(gfx::memArena, 0, VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
+        glGenBuffers(1, &buffer);
+        glNamedBufferStorageEXT(buffer, VG_BUFFER_SIZE, 0, GL_MAP_WRITE_BIT);
+
     }
 
     void fini()
     {
+        etlsf_destroy(vgGArena);
+        glDeleteBuffers(1, &buffer);
+
         glDeleteProgram(prgUI);
         glDeleteProgram(prgRasterCubic);
         glDeleteProgram(prgRasterCubicAA);

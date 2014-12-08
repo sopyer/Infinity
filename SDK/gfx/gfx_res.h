@@ -4,8 +4,7 @@
 
 namespace gfx
 {
-    extern mem::arena_t memArena;
-    extern gpu_buffer_t vgBuffer;
+    extern mem::arena_t  memArena;
 }
 
 namespace gfx_res
@@ -21,6 +20,9 @@ namespace gfx_res
     extern GLuint prgPaintLinGradient;
     extern GLuint prgLine;
     extern GLuint prgPoint;
+
+    extern etlsf_arena_t vgGArena;
+    extern GLuint        buffer;
 
     void init();
     void fini();
