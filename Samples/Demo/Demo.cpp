@@ -35,8 +35,6 @@ struct mesh_header_v0
 
 struct mesh_t
 {
-    GLuint    vbo;
-    GLuint    ibo;
     GLuint    firstVertex;
     GLenum    idxFormat;
     GLsizei   idxOffset;
@@ -52,14 +50,9 @@ struct material_t
 
 struct model_t
 {
-    GLuint       vbo;
-    GLuint       ibo;
     float        minx, miny, minz;
     float        maxx, maxy, maxz;
-    GLenum       idxFormat;
     uint32_t     numSubmeshes;
-    uint32_t     offsetSize[16*2];
-    material_t*  materials[16];
 };
 
 struct light_t
@@ -137,8 +130,10 @@ namespace app
     GLuint matBufferSize;
     GLuint materialSize;
 
-    GLuint vertexBuffer;
-    GLuint indexBuffer;
+    GLuint staticBuffer;
+    GLuint staticBufferAllocated;
+
+    const size_t staticBufferSize = 10 * (1<<20);
 
     const size_t vertexBufferSize = 7 * (1<<20);
     const size_t indexBufferSize  = 5 * (1<<20);
@@ -170,6 +165,7 @@ namespace app
     void init()
     {
         appArena = mem::create_arena(20*1024*1024, 0);
+        staticBufferAllocated = 0;
 
         const char* version        = "#version 430\n\n";
         const char* enableDebug    = "#define ENABLE_DEBUG\n";
@@ -225,11 +221,8 @@ namespace app
         glGenBuffers(1, &materialUBO);
         glNamedBufferStorageEXT(materialUBO, matBufferSize, 0, GL_MAP_WRITE_BIT);
 
-        glGenBuffers(1, &vertexBuffer);
-        glNamedBufferStorageEXT(vertexBuffer, vertexBufferSize, 0, GL_MAP_WRITE_BIT);
-
-        glGenBuffers(1, &indexBuffer);
-        glNamedBufferStorageEXT(indexBuffer, indexBufferSize, 0, GL_MAP_WRITE_BIT);
+        glGenBuffers(1, &staticBuffer);
+        glNamedBufferStorageEXT(staticBuffer, staticBufferSize, 0, GL_MAP_WRITE_BIT);
 
         loadMaterials();
         loadModels();
@@ -247,8 +240,7 @@ namespace app
 
     void fini()
     {
-        glDeleteBuffers(1, &vertexBuffer);
-        glDeleteBuffers(1, &indexBuffer);
+        glDeleteBuffers(1, &staticBuffer);
         glDeleteBuffers(1, &materialUBO);
 
         glDeleteTextures(1, &texLightData);
@@ -336,12 +328,7 @@ namespace app
     material_t   materials    [MAX_MATERIALS];
     const char*  materialNames[MAX_MATERIALS];
 
-    void loadModel(
-        const char* name,
-        int& first, int& count,
-        uint8_t* vertices, GLuint& vertexOffset,
-        uint8_t* indices,  GLuint& indexOffset
-    );
+    void loadMesh(const char* name);
     material_t* findMaterial(const char* name);
 
     void loadModels()
@@ -362,11 +349,6 @@ namespace app
 
             mjson_element_t modelDesc, key, value;
             mjson_element_t matList, mat;
-
-            uint8_t* vertexPtr = (uint8_t*)glMapNamedBufferRangeEXT(vertexBuffer, 0, vertexBufferSize, GL_MAP_WRITE_BIT);
-            uint8_t* indexPtr  = (uint8_t*)glMapNamedBufferRangeEXT(indexBuffer,  0, indexBufferSize,  GL_MAP_WRITE_BIT);
-            GLuint vertexOffset = 0;
-            GLuint indexOffset  = 0;
 
             modelDesc = mjson_get_element_first(root);
             while (modelDesc)
@@ -393,20 +375,21 @@ namespace app
                     key = mjson_get_member_next(modelDesc, key, &value);
                 }
 
-                int first, count;
-                loadModel(model, first, count, vertexPtr, vertexOffset, indexPtr, indexOffset);
+                int start, end;
+
+                start = numMeshes;
+                loadMesh(model);
+                end = numMeshes;
+
                 mat = mjson_get_element_first(matList);
-                for (int i = 0; i<count; ++i)
+                for (int i = start; i<end; ++i)
                 {
-                    materialRefs[first+i] = findMaterial(mjson_get_string(mat, ""));
+                    materialRefs[i] = findMaterial(mjson_get_string(mat, ""));
                     mat = mjson_get_element_next(matList, mat);
                 }
 
                 modelDesc = mjson_get_element_next(root, modelDesc);
             }
-
-            glUnmapNamedBufferEXT(vertexBuffer);
-            glUnmapNamedBufferEXT(indexBuffer);
 
             mem_free(&inText);
             mem_free(&bjson);
@@ -590,18 +573,6 @@ namespace app
 
     void destroyModels()
     {
-        for (size_t i=0; i < numModels; ++i)
-        {
-            if (models[i].vbo)
-            {
-                glDeleteBuffers(1, &models[i].vbo);
-            }
-
-            if (models[i].ibo)
-            {
-                glDeleteBuffers(1, &models[i].ibo);
-            }
-        }
         memset(meshes, 0, sizeof(mesh_t)*MAX_MESHES);
         memset(models, 0, sizeof(model_t)*MAX_MODELS);
     }
@@ -684,8 +655,8 @@ namespace app
 
         glBindVertexArray(vf::static_geom_t::vao);
 
-        glBindVertexBuffer(0, vertexBuffer, 0, sizeof(vf::static_geom_t));
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
+        glBindVertexBuffer(0, staticBuffer, 0, sizeof(vf::static_geom_t));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, staticBuffer);
 
         GLuint      currentPrg = 0;
         material_t* currentMat = 0;
@@ -734,12 +705,7 @@ namespace app
         return 0;
     }
 
-    void loadModel(
-        const char* name,
-        int& first, int& count,
-        uint8_t* vertices, GLuint& vertexOffset,
-        uint8_t* indices,  GLuint& indexOffset
-    )
+    void loadMesh(const char* name)
     {
         memory_t  data = {0, 0, 0};
 
@@ -769,39 +735,40 @@ namespace app
                 scene_max.z = core::max(scene_max.z, header->maxz);
             }
 
-            GLuint baseVOffset = vertexOffset;
-
-            assert(indexOffset % 4 ==0);
-
-            GLuint rem = vertexOffset % sizeof(vf::static_geom_t) * header->numVertices;
-            baseVOffset += (rem==0) ? 0 : (sizeof(vf::static_geom_t) - rem);
-
             GLuint verticesSize = sizeof(vf::static_geom_t) * header->numVertices;
             GLuint indicesSize  = sizeof(uint32_t) * header->numIndices;
 
-            memcpy(vertices+baseVOffset, fvertices, verticesSize);
-            memcpy(indices+indexOffset,  findices,  indicesSize);
+            GLuint baseOffset = staticBufferAllocated;
+            GLuint totalSize;
 
-            models[numModels].idxFormat    = GL_UNSIGNED_INT;
+            totalSize  = sizeof(vf::static_geom_t) + verticesSize;
+            totalSize += sizeof(uint32_t) + indicesSize;
+
+            staticBufferAllocated += totalSize;
+            assert(staticBufferAllocated<=staticBufferSize);
+
+            uint32_t vertexOffset = core::align_up<vf::static_geom_t>(baseOffset);
+            uint32_t indexOffset  = bit_align_up(vertexOffset+verticesSize, sizeof(uint32_t));
+
+            assert(vertexOffset % sizeof(vf::static_geom_t) == 0);
+            assert(indexOffset % sizeof(uint32_t) == 0);
+
+            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
+            memcpy(ptr+(vertexOffset-baseOffset), fvertices, verticesSize);
+            memcpy(ptr+(indexOffset-baseOffset),  findices,  indicesSize);
+            glUnmapNamedBufferEXT(staticBuffer);
+
             models[numModels].numSubmeshes = header->numSubmeshes;
-
-            first = numMeshes;
-            count = header->numSubmeshes;
 
             for (size_t i = 0; i < header->numSubmeshes; ++i)
             {
-                meshes[numMeshes].vbo = vertexBuffer;
-                meshes[numMeshes].ibo = indexBuffer;
-                meshes[numMeshes].firstVertex = baseVOffset / sizeof(vf::static_geom_t);
+                meshes[numMeshes].firstVertex = vertexOffset / sizeof(vf::static_geom_t);
                 meshes[numMeshes].idxFormat   = GL_UNSIGNED_INT;
-                meshes[numMeshes].idxOffset   = indexOffset+header->offsetSize[i*2  ] * sizeof(uint32_t);
+                meshes[numMeshes].idxOffset   = indexOffset + header->offsetSize[i*2]*sizeof(uint32_t);
                 meshes[numMeshes].numIndices  = header->offsetSize[i*2+1];
 
                 ++numMeshes;
             }
-
-            vertexOffset  = baseVOffset+verticesSize;
-            indexOffset  += indicesSize;
 
             ++numModels;
             mem_free(&data);
@@ -1144,7 +1111,7 @@ namespace app
         memset(counts, 0,  sizeof(int32_t)*numClusters);
         memset(offsets, 0, sizeof(int32_t)*numClusters);
 
-        uint32_t totalus = 0;
+        int32_t totalus = 0;
         {  
             PROFILER_CPU_TIMESLICE("Pass1");
             for (size_t i = 0; i < numRects; ++i)
@@ -1197,7 +1164,7 @@ namespace app
             PROFILER_CPU_TIMESLICE("Pass2");
 
             lightListOffset = 0;
-            lightListSize   = core::max(4U, totalus) * sizeof(uint16_t);
+            lightListSize   = core::max(4, totalus) * sizeof(uint16_t);
 
             int16_t* data = (int16_t*)gfx::dynbufAllocMem(lightListSize, gfx::caps.tboAlignment, &lightListOffset);
 
