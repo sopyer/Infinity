@@ -3,12 +3,6 @@
 // Copyright 2011 by Mykhailo Parfeniuk
 // The License.txt file describes the conditions under which this software may be distributed.
 
-#include <string.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <math.h>
-#include <assert.h>
 #include <vector>
 #include <map>
 

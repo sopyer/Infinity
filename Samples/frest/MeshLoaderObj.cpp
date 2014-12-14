@@ -16,11 +16,8 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include "MeshLoaderObj.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <core/core.h>
+#include "MeshLoaderObj.h"
 
 rcMeshLoaderObj::rcMeshLoaderObj() :
 	m_verts(0),
