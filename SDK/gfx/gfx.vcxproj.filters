@@ -65,6 +65,9 @@
     <ClCompile Include="DefaultFontData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="nanovg_gfx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Paint.h">

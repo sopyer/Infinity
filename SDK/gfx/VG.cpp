@@ -9,10 +9,12 @@
 //Path rendering use 0 as base refence value - it should work fine with GL_*_WRAP stencil operations
 //Path rendering avoids explicit stencil clear - cover/paint operation resets stencil
 
-#define NANOVG_GL3_IMPLEMENTATION
 #include <stdio.h>
 #include <memory.h>
 #include "nanovg/nanovg_gl.h"
+
+NVGcontext* nvgCreateGL3(int flags);
+void nvgDeleteGL3(NVGcontext* ctx);
 
 namespace vg
 {
