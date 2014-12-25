@@ -86,6 +86,7 @@
     <ClCompile Include="mt.cpp" />
     <ClCompile Include="nedmalloc.cpp" />
     <ClCompile Include="profiler.cpp" />
+    <ClCompile Include="Remotery.c" />
     <ClCompile Include="timer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -98,6 +99,7 @@
     <ClInclude Include="..\include\core\timer.h" />
     <ClInclude Include="..\include\core\vi.h" />
     <ClInclude Include="..\include\mjson.h" />
+    <ClInclude Include="..\include\Remotery.h" />
     <ClInclude Include="bits.h" />
     <ClInclude Include="malloc.c.h" />
     <ClInclude Include="nedmalloc.h" />

@@ -1,4 +1,5 @@
 #include <fwk/fwk.h>
+#include <Remotery.h>
 
 namespace gfx
 {
@@ -15,6 +16,8 @@ namespace fwk
     SDL_Window*      window;
     SDL_GLContext    context;
 
+    Remotery* rmt;
+
     uint64_t prevTime;
     bool     runLoop;
     bool     recompileGLPrograms;
@@ -23,6 +26,8 @@ namespace fwk
 
     void init(const char* argv0)
     {
+        rmt_CreateGlobalInstance(&rmt);
+
         PHYSFS_init(argv0);
 
         PHYSFS_mount("AppData",       0, 1);
@@ -153,6 +158,8 @@ namespace fwk
         SDL_Quit();
 
         PHYSFS_deinit();
+
+        rmt_DestroyGlobalInstance(rmt);
     }
 
     void notifyResize(int w, int h)
