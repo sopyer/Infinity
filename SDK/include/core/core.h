@@ -108,6 +108,91 @@ type* mem_raw_data(memory_t* mem)
     return (type*)var;
 }
 
+//////////////////////////////////////////////////////////////
+
+template <typename type>
+type* mem_raw_data(memory_t& mem, size_t size)
+{
+    uint8_t* var = mem.buffer + mem.allocated;
+
+    mem.allocated += size;
+    assert(mem.allocated<=mem.size);
+
+    return (type*)var;
+}
+
+template <typename type>
+type* mem_raw_data_offset(memory_t& mem, size_t offset)
+{
+    assert(offset<mem.size);
+
+    return (type*)(mem.buffer + offset);
+}
+
+template <typename type>
+type* mem_raw_array(memory_t& mem, size_t count)
+{
+    uint8_t* var = mem.buffer + mem.allocated;
+
+    mem.allocated += sizeof(type)*count;
+    assert(mem.allocated <= mem.size);
+
+    return (type*)var;
+}
+
+template <typename type>
+type mem_read(memory_t& mem)
+{
+    type* value = (type*)(mem.buffer + mem.allocated);
+
+    mem.allocated += sizeof(type);
+    assert(mem.allocated <= mem.size);
+
+    return *value;
+}
+
+template <typename type>
+type* mem_raw_data(memory_t& mem)
+{
+    uint8_t* var = mem.buffer + mem.allocated;
+
+    mem.allocated += sizeof(type);
+    assert(mem.allocated <= mem.size);
+
+    return (type*)var;
+}
+
+template<typename T>
+void mem_skip(memory_t& mem)
+{
+    assert(mem.allocated + sizeof(T) <= mem.size);
+    mem.allocated += sizeof(T);
+}
+
+template<typename T>
+void mem_skip_array(memory_t& mem, size_t count)
+{
+    assert(mem.allocated + sizeof(T)*count <= mem.size);
+    mem.allocated += sizeof(T)*count;
+}
+
+inline void mem_skip(memory_t& mem, size_t size)
+{
+    assert(mem.allocated+size<=mem.size);
+    mem.allocated += size;
+}
+
+inline memory_t mem_submem(memory_t& mem, size_t offset, size_t size)
+{
+    assert(offset + size <= mem.size);
+    return { mem.buffer + offset, size, 0 };
+}
+
+inline void mem_rewind(memory_t& mem)
+{
+    mem.allocated = 0;
+}
+
 #define TRUE  1
 #define FALSE 0
 
@@ -282,6 +367,14 @@ namespace core
     inline size_t align_up(size_t offset)
     {
         size_t stride = sizeof(T);
+        size_t rem    = offset % stride;
+        size_t adjust = (rem==0)? 0 : (stride - rem);
+
+        return offset + adjust;
+    }
+
+    inline size_t align_up(size_t offset, size_t stride)
+    {
         size_t rem    = offset % stride;
         size_t adjust = (rem==0)? 0 : (stride - rem);
 

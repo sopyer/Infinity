@@ -123,6 +123,9 @@ namespace ml
 
 namespace ml
 {
+    /*****************************************/
+    /****************   vec2   ***************/
+    /*****************************************/
     inline vec2 operator-(const vec2& arg)
     {
         return { -arg.x, -arg.y };
@@ -153,6 +156,10 @@ namespace ml
         return { arg0.x / arg1.x, arg0.y / arg1.y };
     }
 
+
+    /*****************************************/
+    /****************   vec3   ***************/
+    /*****************************************/
     inline vec3 operator-(const vec3& arg)
     {
         return { -arg.x, -arg.y, -arg.z };
@@ -183,6 +190,28 @@ namespace ml
         return { arg0.x / arg1.x, arg0.y / arg1.y, arg0.z / arg1.z };
     }
 
+    inline vec3 min(const vec3& arg0, const vec3& arg1)
+    {
+        return {
+            arg0.x < arg1.x ? arg0.x : arg1.x,
+            arg0.y < arg1.y ? arg0.y : arg1.y,
+            arg0.z < arg1.z ? arg0.z : arg1.z
+        };
+    }
+
+    inline vec3 max(const vec3& arg0, const vec3& arg1)
+    {
+        return{
+            arg0.x > arg1.x ? arg0.x : arg1.x,
+            arg0.y > arg1.y ? arg0.y : arg1.y,
+            arg0.z > arg1.z ? arg0.z : arg1.z
+        };
+    }
+
+
+    /*****************************************/
+    /****************   vec4   ***************/
+    /*****************************************/
     inline vec4 operator-(const vec4& arg)
     {
         return { -arg.x, -arg.y, -arg.z, -arg.w };

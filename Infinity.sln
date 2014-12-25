@@ -1,14 +1,12 @@
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual C++ Express 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "frest", "Samples\frest\frest.vcxproj", "{814BDB66-E7F1-4E66-B2F4-3891EB66B9A4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
 		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "exest", "Samples\exest\exest.vcxproj", "{701F7AFE-EC33-4B05-9388-2226A3B3229D}"
@@ -16,10 +14,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "exest", "Samples\exest\exes
 		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
 		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
 		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
-	EndProjectSection
-	ProjectSection(WebsiteProperties) = preProject
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.Debug = "False"
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Video", "Samples\Video\Video.vcxproj", "{3B5EC04A-DDDB-4760-B264-9043388B9F76}"
@@ -108,6 +102,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Demo", "Samples\Demo\Demo.v
 		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Med", "Samples\Med\Med.vcxproj", "{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -178,6 +174,10 @@ Global
 		{113A1A49-1185-48AF-AC66-D304CB3B14FA}.Debug|Win32.Build.0 = Debug|Win32
 		{113A1A49-1185-48AF-AC66-D304CB3B14FA}.Release|Win32.ActiveCfg = Release|Win32
 		{113A1A49-1185-48AF-AC66-D304CB3B14FA}.Release|Win32.Build.0 = Release|Win32
+		{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}.Debug|Win32.Build.0 = Debug|Win32
+		{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}.Release|Win32.ActiveCfg = Release|Win32
+		{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
