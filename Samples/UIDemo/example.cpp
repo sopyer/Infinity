@@ -254,6 +254,7 @@ namespace blendish_demo
 
     void draw(NVGcontext* _vg, float w, float h)
     {
-        draw_demostuff(_vg, 0, 0, w, h);
+        PROFILER_CPU_TIMESLICE("Blendish draw");
+        draw_demostuff(_vg, 0, 100, w, h);
     }
 }

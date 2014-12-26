@@ -1719,6 +1719,8 @@ namespace app
 
     void render()
     {
+        PROFILER_CPU_TIMESLICE("UIDemo draw");
+     
         double mx, my;
         int width, height, xx, yy;
 
@@ -1726,7 +1728,6 @@ namespace app
 
         mx = xx; my = yy;
 
-        //glfwGetFramebufferSize(window, &width, &height);
         width  = gfx::width;
         height = gfx::height;
 

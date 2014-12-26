@@ -81,7 +81,7 @@ struct GLNVGcall {
     int pathCount;
     int triangleOffset;
     int triangleCount;
-    int uniformOffset;
+    GLuint uniformOffset;
 };
 typedef struct GLNVGcall GLNVGcall;
 
@@ -117,7 +117,6 @@ struct GLNVGcontext {
     int ntextures;
     int ctextures;
     int textureId;
-    GLuint vertBuf;
     GLuint vertArr;
     int flags;
 
@@ -130,14 +129,11 @@ struct GLNVGcontext {
     int npaths;
 
     struct NVGvertex* verts;
+    GLuint vertBuf;
     int cverts;
     int nverts;
 
-    unsigned char* uniforms;
-    int cuniforms;
-    int nuniforms;
-    GLuint fragBuf;
-    int fragSize;
+    GLuint fragSize;
 };
 typedef struct GLNVGcontext GLNVGcontext;
 
@@ -288,7 +284,6 @@ static void glnvg__deleteShader(GLNVGshader* shader)
 static int glnvg__renderCreate(void* uptr)
 {
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
-    int align = 4;
 
     // TODO: mediump float may not be enough for GLES2 in iOS.
     // see the following discussion: https://github.com/memononen/nanovg/issues/46
@@ -405,10 +400,7 @@ static int glnvg__renderCreate(void* uptr)
     glGenVertexArrays(1, &gl->vertArr);
     glGenBuffers(1, &gl->vertBuf);
 
-    // Create UBOs
-    glGenBuffers(1, &gl->fragBuf);
-    glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &align);
-    gl->fragSize = sizeof(GLNVGfragUniforms) + align - sizeof(GLNVGfragUniforms) % align;
+    gl->fragSize = bit_align_up(sizeof(GLNVGfragUniforms), gfx::caps.uboAlignment);
 
     glnvg__checkError("create done");
 
@@ -592,7 +584,7 @@ static GLNVGfragUniforms* nvg__fragUniformPtr(GLNVGcontext* gl, int i);
 
 static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 {
-    glBindBufferRange(GL_UNIFORM_BUFFER, GFX_NVG_BINDING_FRAG_UBO, gl->fragBuf, uniformOffset, sizeof(GLNVGfragUniforms));
+    glBindBufferRange(GL_UNIFORM_BUFFER, GFX_NVG_BINDING_FRAG_UBO, gfx::dynBuffer, uniformOffset, sizeof(GLNVGfragUniforms));
 
     if (image != 0) {
         GLNVGtexture* tex = glnvg__findTexture(gl, image);
@@ -612,6 +604,8 @@ static void glnvg__renderViewport(void* uptr, int width, int height)
 
 static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend fill");
+
     GLNVGpath* paths = &gl->paths[call->pathOffset];
     int i, npaths = call->pathCount;
 
@@ -656,6 +650,8 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 
 static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend convexFill");
+
     GLNVGpath* paths = &gl->paths[call->pathOffset];
     int i, npaths = call->pathCount;
 
@@ -673,6 +669,8 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 
 static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend stroke");
+
     GLNVGpath* paths = &gl->paths[call->pathOffset];
     int npaths = call->pathCount, i;
 
@@ -720,6 +718,8 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 
 static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend triangles");
+
     glnvg__setUniforms(gl, call->uniformOffset, call->image);
     glnvg__checkError("triangles fill");
 
@@ -728,6 +728,8 @@ static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
 
 static void glnvg__renderFlush(void* uptr)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend flush");
+
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     int i;
 
@@ -748,9 +750,6 @@ static void glnvg__renderFlush(void* uptr)
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
         glStencilFunc(GL_ALWAYS, 0, 0xffffffff);
         glActiveTexture(GL_TEXTURE0);
-
-        // Upload ubo for frag shaders
-        glNamedBufferDataEXT(gl->fragBuf, gl->nuniforms * gl->fragSize, gl->uniforms, GL_STREAM_DRAW);
 
         // Upload vertex data
         glBindVertexArray(gl->vertArr);
@@ -787,7 +786,6 @@ static void glnvg__renderFlush(void* uptr)
     gl->nverts = 0;
     gl->npaths = 0;
     gl->ncalls = 0;
-    gl->nuniforms = 0;
 }
 
 static int glnvg__maxVertCount(const NVGpath* paths, int npaths)
@@ -846,27 +844,6 @@ static int glnvg__allocVerts(GLNVGcontext* gl, int n)
     ret = gl->nverts;
     gl->nverts += n;
     return ret;
-}
-
-static int glnvg__allocFragUniforms(GLNVGcontext* gl, int n)
-{
-    int ret = 0, structSize = gl->fragSize;
-    if (gl->nuniforms + n > gl->cuniforms) {
-        unsigned char* uniforms;
-        int cuniforms = core::max(gl->nuniforms + n, 128) + gl->cuniforms / 2; // 1.5x Overallocate
-        uniforms = (unsigned char*)realloc(gl->uniforms, structSize * cuniforms);
-        if (uniforms == NULL) return -1;
-        gl->uniforms = uniforms;
-        gl->cuniforms = cuniforms;
-    }
-    ret = gl->nuniforms * structSize;
-    gl->nuniforms += n;
-    return ret;
-}
-
-static GLNVGfragUniforms* nvg__fragUniformPtr(GLNVGcontext* gl, int i)
-{
-    return (GLNVGfragUniforms*)&gl->uniforms[i];
 }
 
 static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
@@ -932,22 +909,26 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
     glnvg__vset(&quad[4], bounds[2], bounds[1], 0.5f, 1.0f);
     glnvg__vset(&quad[5], bounds[0], bounds[1], 0.5f, 1.0f);
 
+    gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
+
     // Setup uniforms for draw calls
     if (call->type == GLNVG_FILL) {
-        call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
-        if (call->uniformOffset == -1) goto error;
         // Simple shader for stencil
-        frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
         memset(frag, 0, sizeof(*frag));
         frag->strokeThr = -1.0f;
         frag->type = NSVG_SHADER_SIMPLE;
+
         // Fill shader
-        glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, fringe, fringe, -1.0f);
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
+        glnvg__convertPaint(gl, frag, paint, scissor, fringe, fringe, -1.0f);
     } else {
-        call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
-        if (call->uniformOffset == -1) goto error;
         // Fill shader
-        glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, fringe, fringe, -1.0f);
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
+        glnvg__convertPaint(gl, frag, paint, scissor, fringe, fringe, -1.0f);
     }
 
     return;
@@ -990,19 +971,25 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor
         }
     }
 
+    GLNVGfragUniforms* frag;
+
+    gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
+
     if (gl->flags & NVG_STENCIL_STROKES) {
         // Fill shader
-        call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
-        if (call->uniformOffset == -1) goto error;
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
+        glnvg__convertPaint(gl, frag, paint, scissor, strokeWidth, fringe, -1.0f);
 
-        glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe, -1.0f);
-        glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, strokeWidth, fringe, 1.0f - 0.5f / 255.0f);
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
+        glnvg__convertPaint(gl, frag, paint, scissor, strokeWidth, fringe, 1.0f - 0.5f / 255.0f);
 
     } else {
         // Fill shader
-        call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
-        if (call->uniformOffset == -1) goto error;
-        glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe, -1.0f);
+        frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+        if (!frag) goto error;
+        glnvg__convertPaint(gl, frag, paint, scissor, strokeWidth, fringe, -1.0f);
     }
 
     return;
@@ -1032,10 +1019,11 @@ static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGscissor* scis
 
     memcpy(&gl->verts[call->triangleOffset], verts, sizeof(NVGvertex) * nverts);
 
+    gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
+
     // Fill shader
-    call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
-    if (call->uniformOffset == -1) goto error;
-    frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+    frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
+    if (!frag) goto error;
     glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, 1.0f, -1.0f);
     frag->type = NSVG_SHADER_IMG;
 
@@ -1055,8 +1043,6 @@ static void glnvg__renderDelete(void* uptr)
 
     glnvg__deleteShader(&gl->shader);
 
-    if (gl->fragBuf != 0)
-        glDeleteBuffers(1, &gl->fragBuf);
     if (gl->vertArr != 0)
         glDeleteVertexArrays(1, &gl->vertArr);
     if (gl->vertBuf != 0)
@@ -1070,7 +1056,6 @@ static void glnvg__renderDelete(void* uptr)
 
     free(gl->paths);
     free(gl->verts);
-    free(gl->uniforms);
     free(gl->calls);
 
     free(gl);
