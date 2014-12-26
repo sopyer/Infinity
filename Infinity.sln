@@ -103,6 +103,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Demo", "Samples\Demo\Demo.v
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Med", "Samples\Med\Med.vcxproj", "{D78935B0-5E1C-43EA-9A61-BA18A93C48B7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{176B584F-06B8-4986-A800-7B02CF813062} = {176B584F-06B8-4986-A800-7B02CF813062}
+		{0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4} = {0F3EA0C9-4231-432F-9FD9-92C54DC3F3C4}
+		{61F6A3D7-F203-40CA-95B6-FDE1ADEF0163} = {61F6A3D7-F203-40CA-95B6-FDE1ADEF0163}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
