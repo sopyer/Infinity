@@ -133,12 +133,6 @@
     <ClInclude Include="nanovg\nanovg.h">
       <Filter>nanovg</Filter>
     </ClInclude>
-    <ClInclude Include="nanovg\nanovg_gl.h">
-      <Filter>nanovg</Filter>
-    </ClInclude>
-    <ClInclude Include="nanovg\nanovg_gl_utils.h">
-      <Filter>nanovg</Filter>
-    </ClInclude>
     <ClInclude Include="nanovg\stb_truetype.h">
       <Filter>nanovg</Filter>
     </ClInclude>

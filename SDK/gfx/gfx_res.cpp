@@ -151,6 +151,8 @@ namespace gfx_res
     GLuint prgPaintLinGradient;
     GLuint prgLine;
     GLuint prgPoint;
+    GLuint prgNanoVG;
+    GLuint prgNanoVGAA;
 
     void init()
     {
@@ -175,6 +177,7 @@ namespace gfx_res
         const char* version       = "#version 430\n\n";
         const char* enableColor   = "#define ENABLE_COLOR\n";
         const char* enableTexture = "#define ENABLE_TEXTURE\n";
+        const char* enableVGAA    = "#define EDGE_AA 1\n";
 
         const char* headers[3] = {version};
         size_t numHeaders;
@@ -194,9 +197,12 @@ namespace gfx_res
         }
         
         headers[1] = enableColor;
-        numHeaders = 2;
-        prgLine = res::createProgramFromFiles("MESH.Line.vert", "MESH.std.frag", numHeaders, headers);
-        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.std.frag", numHeaders, headers);
+        prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.std.frag", 2, headers);
+        prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.std.frag", 2, headers);
+
+        headers[1] = enableVGAA;
+        prgNanoVG   = res::createProgramFromFiles("NanoVG.vert",  "NanoVG.frag", 1, headers);
+        prgNanoVGAA = res::createProgramFromFiles("NanoVG.vert",  "NanoVG.frag", 2, headers);
 
         vgGArena = etlsf_create(gfx::memArena, 0, VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
         glGenBuffers(1, &buffer);

@@ -112,8 +112,6 @@
     <ClInclude Include="gfx_res.h" />
     <ClInclude Include="nanovg\fontstash.h" />
     <ClInclude Include="nanovg\nanovg.h" />
-    <ClInclude Include="nanovg\nanovg_gl.h" />
-    <ClInclude Include="nanovg\nanovg_gl_utils.h" />
     <ClInclude Include="nanovg\stb_truetype.h" />
     <ClInclude Include="Paint.h" />
     <ClInclude Include="Path.h" />

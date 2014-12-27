@@ -20,6 +20,8 @@ namespace gfx_res
     extern GLuint prgPaintLinGradient;
     extern GLuint prgLine;
     extern GLuint prgPoint;
+    extern GLuint prgNanoVG;
+    extern GLuint prgNanoVGAA;
 
     extern etlsf_arena_t vgGArena;
     extern GLuint        buffer;
@@ -27,3 +29,19 @@ namespace gfx_res
     void init();
     void fini();
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// NanoVG backend declarations
+
+
+// Create flags
+
+// Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).
+#define NVG_ANTIALIAS 1 	
+
+// Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
+// slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
+#define NVG_STENCIL_STROKES 2
+
+NVGcontext* nvgCreateGL3(int flags);
+void nvgDeleteGL3(NVGcontext* ctx);

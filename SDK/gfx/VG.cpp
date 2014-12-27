@@ -11,10 +11,6 @@
 
 #include <stdio.h>
 #include <memory.h>
-#include "nanovg/nanovg_gl.h"
-
-NVGcontext* nvgCreateGL3(int flags);
-void nvgDeleteGL3(NVGcontext* ctx);
 
 namespace vg
 {
