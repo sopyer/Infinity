@@ -79,17 +79,17 @@ struct GLNVGcall {
     int image;
     int pathOffset;
     int pathCount;
-    int triangleOffset;
-    int triangleCount;
+    GLuint triangleOffset;
+    GLuint triangleCount;
     GLuint uniformOffset;
 };
 typedef struct GLNVGcall GLNVGcall;
 
 struct GLNVGpath {
-    int fillOffset;
-    int fillCount;
-    int strokeOffset;
-    int strokeCount;
+    GLuint fillOffset;
+    GLuint fillCount;
+    GLuint strokeOffset;
+    GLuint strokeCount;
 };
 typedef struct GLNVGpath GLNVGpath;
 
@@ -126,11 +126,6 @@ struct GLNVGcontext {
     GLNVGpath* paths;
     int cpaths;
     int npaths;
-
-    struct NVGvertex* verts;
-    GLuint vertBuf;
-    int cverts;
-    int nverts;
 
     GLuint fragSize;
 };
@@ -392,11 +387,6 @@ static int glnvg__renderCreate(void* uptr)
         if (glnvg__createShader(&gl->shader, "shader", shaderHeader, NULL, fillVertShader, fillFragShader) == 0)
             return 0;
     }
-
-    glnvg__checkError("uniform locations");
-
-    // Create dynamic vertex array
-    glGenBuffers(1, &gl->vertBuf);
 
     gl->fragSize = bit_align_up(sizeof(GLNVGfragUniforms), gfx::caps.uboAlignment);
 
@@ -750,9 +740,8 @@ static void glnvg__renderFlush(void* uptr)
         glActiveTexture(GL_TEXTURE0);
 
         // Upload vertex data
-        glNamedBufferDataEXT(gl->vertBuf, gl->nverts * sizeof(NVGvertex), gl->verts, GL_STREAM_DRAW);
         glBindVertexArray(vf::p2uv2_vertex_t::vao);
-        glBindVertexBuffer(0, gl->vertBuf, 0, sizeof(NVGvertex));
+        glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(NVGvertex));
 
         // Set view and texture just once per frame.
         glUniform2fv(GFX_NVG_LOC_VIEWSIZE, 1, gl->view);
@@ -775,7 +764,6 @@ static void glnvg__renderFlush(void* uptr)
     }
 
     // Reset calls
-    gl->nverts = 0;
     gl->npaths = 0;
     gl->ncalls = 0;
 }
@@ -822,22 +810,6 @@ static int glnvg__allocPaths(GLNVGcontext* gl, int n)
     return ret;
 }
 
-static int glnvg__allocVerts(GLNVGcontext* gl, int n)
-{
-    int ret = 0;
-    if (gl->nverts + n > gl->cverts) {
-        NVGvertex* verts;
-        int cverts = core::max(gl->nverts + n, 4096) + gl->cverts / 2; // 1.5x Overallocate
-        verts = (NVGvertex*)realloc(gl->verts, sizeof(NVGvertex) * cverts);
-        if (verts == NULL) return -1;
-        gl->verts = verts;
-        gl->cverts = cverts;
-    }
-    ret = gl->nverts;
-    gl->nverts += n;
-    return ret;
-}
-
 static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe,
     const float* bounds, const NVGpath* paths, int npaths)
 {
@@ -845,9 +817,8 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
 
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     GLNVGcall* call = glnvg__allocCall(gl);
-    NVGvertex* quad;
     GLNVGfragUniforms* frag;
-    int i, maxverts, offset;
+    GLuint maxverts, offset;
 
     if (call == NULL) return;
 
@@ -862,38 +833,39 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
 
     // Allocate vertices for all the paths.
     maxverts = glnvg__maxVertCount(paths, npaths) + 6;
-    offset = glnvg__allocVerts(gl, maxverts);
-    if (offset == -1) goto error;
+    NVGvertex* vtx = gfx::frameAllocVertices<NVGvertex>(maxverts, &offset);
+    if (!vtx) goto error;
 
-    for (i = 0; i < npaths; i++) {
+    for (int i = 0; i < npaths; i++) {
         GLNVGpath* copy = &gl->paths[call->pathOffset + i];
         const NVGpath* path = &paths[i];
         memset(copy, 0, sizeof(GLNVGpath));
         if (path->nfill > 0) {
             copy->fillOffset = offset;
             copy->fillCount = path->nfill;
-            memcpy(&gl->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
+            memcpy(vtx, path->fill, sizeof(NVGvertex) * path->nfill);
             offset += path->nfill;
+            vtx    += path->nfill;
         }
         if (path->nstroke > 0) {
             copy->strokeOffset = offset;
             copy->strokeCount = path->nstroke;
-            memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+            memcpy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
             offset += path->nstroke;
+            vtx    += path->nstroke;
         }
     }
 
     // Quad
     call->triangleOffset = offset;
     call->triangleCount = 6;
-    quad = &gl->verts[call->triangleOffset];
-    quad[0] = {bounds[0], bounds[3], 0.5f, 1.0f};
-    quad[1] = {bounds[2], bounds[3], 0.5f, 1.0f};
-    quad[2] = {bounds[2], bounds[1], 0.5f, 1.0f};
+    *vtx++ = {bounds[0], bounds[3], 0.5f, 1.0f};
+    *vtx++ = {bounds[2], bounds[3], 0.5f, 1.0f};
+    *vtx++ = {bounds[2], bounds[1], 0.5f, 1.0f};
 
-    quad[3] = {bounds[0], bounds[3], 0.5f, 1.0f};
-    quad[4] = {bounds[2], bounds[1], 0.5f, 1.0f};
-    quad[5] = {bounds[0], bounds[1], 0.5f, 1.0f};
+    *vtx++ = {bounds[0], bounds[3], 0.5f, 1.0f};
+    *vtx++ = {bounds[2], bounds[1], 0.5f, 1.0f};
+    *vtx++ = {bounds[0], bounds[1], 0.5f, 1.0f};
 
     gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
 
@@ -932,7 +904,7 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor
 
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     GLNVGcall* call = glnvg__allocCall(gl);
-    int i, maxverts, offset;
+    GLuint maxverts, offset;
 
     if (call == NULL) return;
 
@@ -944,18 +916,19 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor
 
     // Allocate vertices for all the paths.
     maxverts = glnvg__maxVertCount(paths, npaths);
-    offset = glnvg__allocVerts(gl, maxverts);
-    if (offset == -1) goto error;
+    NVGvertex* vtx = gfx::frameAllocVertices<NVGvertex>(maxverts, &offset);
+    if (!vtx) goto error;
 
-    for (i = 0; i < npaths; i++) {
+    for (int i = 0; i < npaths; i++) {
         GLNVGpath* copy = &gl->paths[call->pathOffset + i];
         const NVGpath* path = &paths[i];
         memset(copy, 0, sizeof(GLNVGpath));
         if (path->nstroke) {
             copy->strokeOffset = offset;
-            copy->strokeCount = path->nstroke;
-            memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+            copy->strokeCount  = path->nstroke;
+            memcpy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
             offset += path->nstroke;
+            vtx    += path->nstroke;
         }
     }
 
@@ -1003,11 +976,11 @@ static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGscissor* scis
     call->image = paint->image;
 
     // Allocate vertices for all the paths.
-    call->triangleOffset = glnvg__allocVerts(gl, nverts);
-    if (call->triangleOffset == -1) goto error;
-    call->triangleCount = nverts;
+    NVGvertex* vtx = gfx::frameAllocVertices<NVGvertex>(nverts, &call->triangleOffset);
+    if (!vtx) goto error;
 
-    memcpy(&gl->verts[call->triangleOffset], verts, sizeof(NVGvertex) * nverts);
+    call->triangleCount = nverts;
+    memcpy(vtx, verts, sizeof(NVGvertex) * nverts);
 
     gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
 
@@ -1033,9 +1006,6 @@ static void glnvg__renderDelete(void* uptr)
 
     glnvg__deleteShader(&gl->shader);
 
-    if (gl->vertBuf != 0)
-        glDeleteBuffers(1, &gl->vertBuf);
-
     for (i = 0; i < gl->ntextures; i++) {
         if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
             glDeleteTextures(1, &gl->textures[i].tex);
@@ -1043,7 +1013,6 @@ static void glnvg__renderDelete(void* uptr)
     free(gl->textures);
 
     free(gl->paths);
-    free(gl->verts);
     free(gl->calls);
 
     free(gl);
