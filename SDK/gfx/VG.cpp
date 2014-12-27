@@ -26,7 +26,7 @@ namespace vg
 
     void init()
     {
-        ctx = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+        ctx = nvgCreateGL3(0);
         initFontSubsystem();
         defaultFont = createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
     }
