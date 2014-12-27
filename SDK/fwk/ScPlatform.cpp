@@ -439,7 +439,8 @@ namespace vg
     {
         for (size_t i = 0; i < faceCount; ++i)
         {
-			::vg::destroyFont(faces[i].face);
+            if (faces[i].face != ::vg::defaultFont)
+			    ::vg::destroyFont(faces[i].face);
         }
 		faceCount = 0;
     }
