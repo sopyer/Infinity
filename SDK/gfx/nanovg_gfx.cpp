@@ -117,7 +117,6 @@ struct GLNVGcontext {
     int ntextures;
     int ctextures;
     int textureId;
-    GLuint vertArr;
     int flags;
 
     // Per frame buffers
@@ -292,8 +291,8 @@ static int glnvg__renderCreate(void* uptr)
 
     static const char* fillVertShader =
         "	layout(location=0) uniform vec2 viewSize;\n"
-        "	in vec2 vertex;\n"
-        "	in vec2 tcoord;\n"
+        "	layout(location=0) in vec2 vertex;\n"
+        "	layout(location=3) in vec2 tcoord;\n"
         "	out vec2 ftcoord;\n"
         "	out vec2 fpos;\n"
         "void main(void) {\n"
@@ -397,7 +396,6 @@ static int glnvg__renderCreate(void* uptr)
     glnvg__checkError("uniform locations");
 
     // Create dynamic vertex array
-    glGenVertexArrays(1, &gl->vertArr);
     glGenBuffers(1, &gl->vertBuf);
 
     gl->fragSize = bit_align_up(sizeof(GLNVGfragUniforms), gfx::caps.uboAlignment);
@@ -752,13 +750,9 @@ static void glnvg__renderFlush(void* uptr)
         glActiveTexture(GL_TEXTURE0);
 
         // Upload vertex data
-        glBindVertexArray(gl->vertArr);
-        glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
         glNamedBufferDataEXT(gl->vertBuf, gl->nverts * sizeof(NVGvertex), gl->verts, GL_STREAM_DRAW);
-        glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(size_t)0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(0 + 2 * sizeof(float)));
+        glBindVertexArray(vf::p2uv2_vertex_t::vao);
+        glBindVertexBuffer(0, gl->vertBuf, 0, sizeof(NVGvertex));
 
         // Set view and texture just once per frame.
         glUniform2fv(GFX_NVG_LOC_VIEWSIZE, 1, gl->view);
@@ -775,8 +769,6 @@ static void glnvg__renderFlush(void* uptr)
                 glnvg__triangles(gl, call);
         }
 
-        glDisableVertexAttribArray(0);
-        glDisableVertexAttribArray(1);
         glBindVertexArray(0);
         glUseProgram(0);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -846,17 +838,11 @@ static int glnvg__allocVerts(GLNVGcontext* gl, int n)
     return ret;
 }
 
-static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
-{
-    vtx->x = x;
-    vtx->y = y;
-    vtx->u = u;
-    vtx->v = v;
-}
-
 static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe,
     const float* bounds, const NVGpath* paths, int npaths)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend renderFill");
+
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     GLNVGcall* call = glnvg__allocCall(gl);
     NVGvertex* quad;
@@ -901,13 +887,13 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
     call->triangleOffset = offset;
     call->triangleCount = 6;
     quad = &gl->verts[call->triangleOffset];
-    glnvg__vset(&quad[0], bounds[0], bounds[3], 0.5f, 1.0f);
-    glnvg__vset(&quad[1], bounds[2], bounds[3], 0.5f, 1.0f);
-    glnvg__vset(&quad[2], bounds[2], bounds[1], 0.5f, 1.0f);
+    quad[0] = {bounds[0], bounds[3], 0.5f, 1.0f};
+    quad[1] = {bounds[2], bounds[3], 0.5f, 1.0f};
+    quad[2] = {bounds[2], bounds[1], 0.5f, 1.0f};
 
-    glnvg__vset(&quad[3], bounds[0], bounds[3], 0.5f, 1.0f);
-    glnvg__vset(&quad[4], bounds[2], bounds[1], 0.5f, 1.0f);
-    glnvg__vset(&quad[5], bounds[0], bounds[1], 0.5f, 1.0f);
+    quad[3] = {bounds[0], bounds[3], 0.5f, 1.0f};
+    quad[4] = {bounds[2], bounds[1], 0.5f, 1.0f};
+    quad[5] = {bounds[0], bounds[1], 0.5f, 1.0f};
 
     gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
 
@@ -942,6 +928,8 @@ error:
 static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor, float fringe,
     float strokeWidth, const NVGpath* paths, int npaths)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend renderStroke");
+
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     GLNVGcall* call = glnvg__allocCall(gl);
     int i, maxverts, offset;
@@ -1003,6 +991,8 @@ error:
 static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGscissor* scissor,
     const NVGvertex* verts, int nverts)
 {
+    PROFILER_CPU_TIMESLICE("NVG backend renderTriangles");
+
     GLNVGcontext* gl = (GLNVGcontext*)uptr;
     GLNVGcall* call = glnvg__allocCall(gl);
     GLNVGfragUniforms* frag;
@@ -1043,8 +1033,6 @@ static void glnvg__renderDelete(void* uptr)
 
     glnvg__deleteShader(&gl->shader);
 
-    if (gl->vertArr != 0)
-        glDeleteVertexArrays(1, &gl->vertArr);
     if (gl->vertBuf != 0)
         glDeleteBuffers(1, &gl->vertBuf);
 
