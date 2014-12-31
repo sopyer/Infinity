@@ -93,6 +93,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bit_tests.cpp" />
     <ClCompile Include="etlsf_tests.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="vg_tests.cpp" />

@@ -22,18 +22,18 @@
 #if defined (__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)) \
     && defined (__GNUC_PATCHLEVEL__)
 
-inline int bit_ffs(unsigned int word)
+inline int bit_ffs(uint32_t word)
 {
     return __builtin_ffs(word) - 1;
 }
 
-inline int bit_fls(unsigned int word)
+inline int bit_fls(uint32_t word)
 {
     const int bit = word ? 32 - __builtin_clz(word) : 0;
     return bit - 1;
 }
 
-#elif defined (_MSC_VER) && (_MSC_VER >= 1400) && (defined (_M_IX86) || defined (_M_X64))
+#elif defined (_MSC_VER) && (_MSC_VER >= 1400) && defined (_M_IX86)
 /* Microsoft Visual C++ support on x86/X64 architectures. */
 
 #include <intrin.h>
@@ -41,74 +41,86 @@ inline int bit_fls(unsigned int word)
 #pragma intrinsic(_BitScanReverse)
 #pragma intrinsic(_BitScanForward)
 
-inline int bit_fls(unsigned int word)
+inline int bit_fls(uint32_t word)
 {
     unsigned long index;
     return _BitScanReverse(&index, word) ? index : -1;
 }
 
-inline int bit_ffs(unsigned int word)
+inline int bit_ffs(uint32_t word)
 {
     unsigned long index;
     return _BitScanForward(&index, word) ? index : -1;
 }
 
-#elif defined (_MSC_VER) && defined (_M_PPC)
-/* Microsoft Visual C++ support on PowerPC architectures. */
-
-#include <ppcintrinsics.h>
-
-inline int bit_fls(unsigned int word)
+inline int bit_fls(uint64_t word)
 {
-    const int bit = 32 - _CountLeadingZeros(word);
-    return bit - 1;
+    unsigned long index;
+
+    if (_BitScanReverse(&index, word>>32)) return index+32;
+    return _BitScanReverse(&index, word&0xFFFFFFFF) ? index : -1;
 }
 
-inline int bit_ffs(unsigned int word)
+inline int bit_ffs(uint64_t word)
 {
-    const unsigned int reverse = word & (~word + 1);
-    const int bit = 32 - _CountLeadingZeros(reverse);
-    return bit - 1;
+    unsigned long index;
+
+    if (_BitScanForward(&index, word&0xFFFFFFFF)) return index;
+    return _BitScanForward(&index, word>>32) ? index+32 : -1;
+}
+
+#elif defined (_MSC_VER) && (_MSC_VER >= 1400) && defined (_M_X64)
+/* Microsoft Visual C++ support on x86/X64 architectures. */
+
+#include <intrin.h>
+
+#pragma intrinsic(_BitScanReverse)
+#pragma intrinsic(_BitScanForward)
+
+inline int bit_fls(uint32_t word)
+{
+    unsigned long index;
+    return _BitScanReverse(&index, word) ? index : -1;
+}
+
+inline int bit_ffs(uint32_t word)
+{
+    unsigned long index;
+    return _BitScanForward(&index, word) ? index : -1;
+}
+
+inline int bit_fls(uint64_t word)
+{
+    unsigned long index;
+    return _BitScanReverse64(&index, word) ? index : -1;
+}
+
+inline int bit_ffs(uint64_t word)
+{
+    unsigned long index;
+    return _BitScanForward64(&index, word) ? index : -1;
 }
 
 #elif defined (__ARMCC_VERSION)
 /* RealView Compilation Tools for ARM */
 
-inline int bit_ffs(unsigned int word)
+inline int bit_ffs(uint32_t word)
 {
     const unsigned int reverse = word & (~word + 1);
     const int bit = 32 - __clz(reverse);
     return bit - 1;
 }
 
-inline int bit_fls(unsigned int word)
+inline int bit_fls(uint32_t word)
 {
     const int bit = word ? 32 - __clz(word) : 0;
-    return bit - 1;
-}
-
-#elif defined (__ghs__)
-/* Green Hills support for PowerPC */
-
-#include <ppc_ghs.h>
-
-inline int bit_ffs(unsigned int word)
-{
-    const unsigned int reverse = word & (~word + 1);
-    const int bit = 32 - __CLZ32(reverse);
-    return bit - 1;
-}
-
-inline int bit_fls(unsigned int word)
-{
-    const int bit = word ? 32 - __CLZ32(word) : 0;
     return bit - 1;
 }
 
 #else
 /* Fall back to generic implementation. */
 
-inline int bit_fls_generic(unsigned int word)
+inline int bit_fls_generic(uint32_t word)
 {
     int bit = 32;
 
@@ -123,19 +135,19 @@ inline int bit_fls_generic(unsigned int word)
 }
 
 /* Implement ffs in terms of fls. */
-inline int bit_ffs(unsigned int word)
+inline int bit_ffs(uint32_t word)
 {
     return bit_fls_generic(word & (~word + 1)) - 1;
 }
 
-inline int bit_fls(unsigned int word)
+inline int bit_fls(uint32_t word)
 {
     return bit_fls_generic(word) - 1;
 }
 
 #endif
 
-inline bool bit_is_pow2(uint32_t x)
+inline int bit_is_pow2(uint32_t x)
 {
     return (x != 0) && ((x & (x - 1)) == 0);
 }

@@ -331,6 +331,17 @@ extern "C" {
     } while (0)
 
 
+#define sput_run_test1(_func, arg)                                         \
+    do {                                                                   \
+        _sput_die_unless_initialized();                                    \
+        _sput_die_unless_suite_set();                                      \
+                                                                           \
+        memset(&__sput.test, 0, sizeof(__sput.test));                      \
+        __sput.test.name = #_func;                                         \
+                                                                           \
+        _func(arg);                                                           \
+    } while (0)
+
 #ifdef __cplusplus
 }
 #endif
