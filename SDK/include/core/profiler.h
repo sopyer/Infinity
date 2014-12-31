@@ -15,18 +15,24 @@ enum EventPhase
     PROF_EVENT_PHASE_COUNT
 };
 
+#define TIME_BITS  30
+#define PHASE_BITS  2
+
 struct profiler_event_t
 {
-    size_t   id;
-    size_t   phase;
-    uint64_t timestamp;
-    uint64_t threadID;
+    uint64_t threadID;          //TODO: make it uint16_t
+    size_t   id;                //TODO: make it uint16_t
+    uint32_t timestamp : TIME_BITS;
+    uint32_t phase     : PHASE_BITS;
 };
 
 struct profiler_desc_t
 {
     const char* name;
 };
+
+void profilerInit();
+void profilerFini();
 
 void profilerStartCapture   ();
 void profilerStopCapture    ();

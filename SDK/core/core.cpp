@@ -132,12 +132,14 @@ namespace core
         threadDataStackMem = (uint8_t*)malloc(THREAD_DATA_STACK_SIZE);
         stack_mem_init(&mainThreadDataStack, threadDataStackMem, THREAD_DATA_STACK_SIZE);
 
+        profilerInit();
         mt::init(1, 128);
     }
 
     void fini()
     {
         mt::fini();
+        profilerFini();
 
         free(threadDataStackMem);
     }

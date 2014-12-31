@@ -101,7 +101,7 @@ void ProfilerOverlay::loadProfilerData()
 
     rectData.resize(numEvents * 4);
 
-    uint64_t minTime = events[0].timestamp,
+    uint32_t minTime = events[0].timestamp,
              maxTime = events[0].timestamp;
 
     for (size_t i = 1; i < numEvents; ++i)

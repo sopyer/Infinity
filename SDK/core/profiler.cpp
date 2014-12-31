@@ -2,6 +2,7 @@
 #include <core/core.h>
 
 #define MAX_PROFILER_EVENTS     16384
+#define LOG2_RES 21
 
 extern "C"
 {
@@ -9,11 +10,31 @@ extern "C"
     static profiler_event_t     events[MAX_PROFILER_EVENTS];
     static volatile long        doCapture = FALSE;
     static long                 captureActive = FALSE;
+    static uint32_t             quantShift;     //Precision shift for timestamp
+    static uint64_t             maxPeriod;      //Max timespan for capture
+    static uint64_t             startTime;
+    static uint64_t             endTime;
 
+    void profilerInit()
+    {
+        uint64_t freq = SDL_GetPerformanceFrequency();
+        assert(freq);
+
+        int log2 = bit_fls(freq);
+        quantShift = log2 > LOG2_RES ? log2-LOG2_RES : 0;
+        maxPeriod = ((0xFFFFFFFFu)>>PHASE_BITS)<<quantShift;
+    }
+
+    void profilerFini()
+    {
+    }
+    
     void profilerStartCapture()
     {
         numEvents     = 0;
         captureActive = TRUE;
+        startTime     = SDL_GetPerformanceCounter();
+        endTime       = startTime + maxPeriod;
     }
 
     void profilerStopCapture()
@@ -42,7 +63,7 @@ extern "C"
             // convert timestamps to microseconds
             for (long i = 0; i < numEvents; ++i)
             {
-                events[i].timestamp = events[i].timestamp * 1000000 / ticksPerSecond;
+                events[i].timestamp = ((uint64_t)events[i].timestamp<<quantShift)* 1000000 / ticksPerSecond;
             }
         }
     }
@@ -52,7 +73,8 @@ extern "C"
         if (!doCapture) return;
 
         size_t count = _InterlockedIncrement(&numEvents);
-        if (count<=MAX_PROFILER_EVENTS)
+        uint64_t ts = SDL_GetPerformanceCounter();
+        if (count<=MAX_PROFILER_EVENTS && ts<=endTime)
         {
             size_t              i     = count-1;
             profiler_event_t&   event = events[i];
@@ -60,7 +82,7 @@ extern "C"
             event.id        = id;
             event.phase     = eventPhase;
             event.threadID  = SDL_ThreadID();
-            event.timestamp = SDL_GetPerformanceCounter();
+            event.timestamp = (ts-startTime) >> quantShift;
         }
         else
         {
