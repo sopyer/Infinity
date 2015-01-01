@@ -1,5 +1,6 @@
 #include <gfx/gfx.h>
 #include "gfx_res.h"
+#include "DefaultFontData.h"
 
 namespace vf
 {
@@ -131,6 +132,12 @@ namespace vf
     }
 }
 
+namespace vg
+{
+    Font  defaultFont;
+    int   nvgDefFont;
+}
+
 namespace gfx_res
 {
     enum Constants
@@ -208,10 +215,14 @@ namespace gfx_res
         glGenBuffers(1, &buffer);
         glNamedBufferStorageEXT(buffer, VG_BUFFER_SIZE, 0, GL_MAP_WRITE_BIT);
 
+        vg::defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
+        vg::nvgDefFont  = nvgCreateFontMem(vg::ctx, "default", anonymousProBTTF, sizeof(anonymousProBTTF), 0);
     }
 
     void fini()
     {
+        vg::destroyFont(vg::defaultFont);
+
         etlsf_destroy(vgGArena);
         glDeleteBuffers(1, &buffer);
 

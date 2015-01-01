@@ -22,6 +22,7 @@ namespace vg
 
     extern NVGcontext* ctx;
     extern Font        defaultFont;
+    extern int         nvgDefFont;
 
     enum TextAlign
     {

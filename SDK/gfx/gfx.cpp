@@ -121,16 +121,16 @@ namespace gfx
         glNamedBufferStorageEXT(dynBuffer, size, 0, flags);
         dynBufBasePtr = (uint8_t*)glMapNamedBufferRangeEXT(dynBuffer, 0, size, flags);
 
-        gfx_res::init();
-
         vg::init();
+
+        gfx_res::init();
     }
 
     void fini()
     {
-        vg::fini();
-
         gfx_res::fini();
+
+        vg::fini();
 
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);

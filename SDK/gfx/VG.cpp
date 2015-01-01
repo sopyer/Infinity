@@ -1,7 +1,6 @@
 #include <gfx/gfx.h>
 #include "gfx_res.h"
 #include "Path.h"
-#include "DefaultFontData.h"
 
 //TODO: API change: vgBeginDraw vgEndDraw for common state setting
 //TODO: make stencil configurable - make it possible to allocate bits using mask
@@ -15,7 +14,6 @@
 namespace vg
 {
     NVGcontext*  ctx;
-    Font         defaultFont;
 
     void initFontSubsystem();
     void shutdownFontSubsystem();
@@ -24,12 +22,10 @@ namespace vg
     {
         ctx = nvgCreateGL3(0);
         initFontSubsystem();
-        defaultFont = createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
     }
 
     void fini()
     {
-        destroyFont(defaultFont);
         shutdownFontSubsystem();
         nvgDeleteGL3(ctx);
     }
