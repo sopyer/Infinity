@@ -233,18 +233,11 @@ namespace blendish_demo
 
     void init()
     {
-        memory_t data;
-        if (mem_file(&data, "ui/blender_icons16.png"))
-        {
-            icons = nvgCreateImageMem(vg::ctx, 0, data.buffer, data.size);
-            mem_free(&data);
-            bndSetIconImage(icons);
-        }
-        if (mem_file(&data, "ui/DejaVuSans.ttf"))
-        {
-            font = nvgCreateFontMem(vg::ctx, "ui_font", data.buffer, data.size, 0);
-            bndSetFont(font);
-        }
+        icons = res::createNVGImage(vg::ctx, "ui/blender_icons16.png");
+        font  = res::createNVGFont(vg::ctx, "ui_font", "ui/DejaVuSans.ttf");
+
+        bndSetIconImage(icons);
+        bndSetFont(font);
     }
 
     void fini()

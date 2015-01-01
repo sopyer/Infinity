@@ -6,6 +6,35 @@
 
 namespace res
 {
+    int createNVGFont(NVGcontext* vg, const char* name, const char* path)
+    {
+        //TODO: intentional leaking... Need better solution
+        memory_t fileData;
+        int font  = -1;
+
+        if (mem_file(&fileData, path))
+        {
+            font = nvgCreateFontMem(vg, name, fileData.buffer, fileData.size, 0);
+        }
+
+        return font;
+    }
+
+    int createNVGImage(NVGcontext* vg, const char* path)
+    {
+        memory_t fileData;
+        int img  = -1;
+
+        if (mem_file(&fileData, path))
+        {
+            img = nvgCreateImageMem(vg, 0, fileData.buffer, fileData.size);
+            mem_free(&fileData);
+        }
+
+        return img;
+    }
+
+
     GLuint createShaderFromFile(GLenum shaderType, const char* filePath, size_t headerCount, const char** headers)
     {
         char path[1024] = "shaders/";

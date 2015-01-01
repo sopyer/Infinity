@@ -298,6 +298,10 @@ namespace gfx
 
 namespace res
 {
+
+    int createNVGFont(NVGcontext* vg, const char* name, const char* path);
+    int createNVGImage(NVGcontext* vg, const char* path);
+
     //Up to 15 headers, others are ignored
     GLuint createShaderFromFile  (GLenum shaderType, const char* path, size_t numHdr=0, const char** headers=0);
     GLuint createProgramFromFiles(const char* vshPath, const char* fshPath, size_t numHdr=0, const char** headers=0);

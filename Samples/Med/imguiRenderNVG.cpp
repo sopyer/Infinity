@@ -76,15 +76,9 @@ int font = -1;
 
 bool imguiRenderNVGInit(const char* fontPath)
 {
-    memory_t fileData;
-    if (mem_file(&fileData, fontPath))
-    {
-        //fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
-        font = nvgCreateFontMem(vg::ctx, "imguifont", fileData.buffer, fileData.size, 0);
-    	return true;
-    }
+    font = res::createNVGFont(vg::ctx, "imguifont", fontPath);
 
-    return false;
+    return font != -1;
 }
 
 void imguiRenderNVGDestroy()

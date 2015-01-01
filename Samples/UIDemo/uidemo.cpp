@@ -1048,7 +1048,7 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
     nvgSave(vg);
     pts[0] = -s*0.25f + ml::cos(t*0.3f) * s*0.5f;
     pts[1] = ml::sin(t*0.3f) * s*0.5f;
-    pts[2] = -s*0.25;
+    pts[2] = -s*0.25f;
     pts[3] = 0;
     pts[4] = s*0.25f;
     pts[5] = 0;
@@ -1092,55 +1092,30 @@ void drawLines(NVGcontext* vg, float x, float y, float w, float h, float t)
 
 int loadDemoData(NVGcontext* vg, DemoData* data)
 {
-    int i;
-
     if (vg == NULL)
         return -1;
-
-    memory_t f1, f2, f3;
-    memory_t fileData;
 
     for (size_t i = 0; i < 12; i++)
     {
         char file[128];
         _snprintf(file, 128, "uidemo/images/image%d.jpg", i+1);
-        if (mem_file(&fileData, file))
-        {
-            data->images[i] = nvgCreateImageMem(vg::ctx, 0, fileData.buffer, fileData.size);
-            mem_free(&fileData);
-        }
+        data->images[i] = res::createNVGImage(vg::ctx, file);
+
         if (data->images[i] == 0)
-        {
             printf("Could not load %s.\n", file);
-        }
     }
 
-    if (mem_file(&f1, "uidemo/entypo.ttf"))
-    {
-        data->fontIcons = nvgCreateFontMem(vg::ctx, "icons", f1.buffer, f1.size, 0);
-    }
+    data->fontIcons  = res::createNVGFont(vg::ctx, "icons",     "uidemo/entypo.ttf");
+    data->fontNormal = res::createNVGFont(vg::ctx, "sans",      "uidemo/Roboto-Regular.ttf");
+    data->fontBold   = res::createNVGFont(vg::ctx, "sans-bold", "uidemo/Roboto-Bold.ttf");
+
     if (data->fontIcons == -1)
-    {
         printf("Could not add font icons.\n");
-    }
-    if (mem_file(&f2, "uidemo/Roboto-Regular.ttf"))
-    {
-        //fontNormal = nvgAddFont(vg, "sans", "../example/FiraSans-Regular.ttf");
-        data->fontNormal = nvgCreateFontMem(vg::ctx, "sans", f2.buffer, f2.size, 0);
-    }
     if (data->fontNormal == -1)
-    {
         printf("Could not add font italic.\n");
-    }
-    if (mem_file(&f3, "uidemo/Roboto-Bold.ttf"))
-    {
-        //fontBold = nvgAddFont(vg, "sans-bold", "../example/FiraSans-Bold.ttf");
-        data->fontBold = nvgCreateFontMem(vg::ctx, "sans-bold", f3.buffer, f3.size, 0);
-    }
     if (data->fontBold == -1)
-    {
         printf("Could not add font bold.\n");
-    }
+
     return 0;
 }
 
@@ -1665,8 +1640,6 @@ namespace app
 
     void init()
     {
-        memory_t fileData;
-
         if (loadDemoData(vg::ctx, &data) == -1)
             return;
 
@@ -1721,7 +1694,7 @@ namespace app
     {
         PROFILER_CPU_TIMESLICE("UIDemo draw");
      
-        double mx, my;
+        float mx, my;
         int width, height, xx, yy;
 
         ui::mouseAbsOffset(&xx, &yy);
