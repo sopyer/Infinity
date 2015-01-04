@@ -76,7 +76,8 @@ namespace mt
         uint32_t index  = handle & ID_INDEX_OFFSET;
         assert(index < MAX_EVENTS);
 
-        eventPool[index].handle = handle;
+        eventPool[index].handle   = handle;
+        eventPool[index].signaled = false;
 
         return handle;
     }
@@ -99,7 +100,7 @@ namespace mt
         assert(event);
 
         SDL_LockMutex(event->mutex);
-        if (!event->signaled)
+        while (!event->signaled)
         {
             SDL_CondWait(event->cond, event->mutex);
         }
@@ -362,16 +363,11 @@ namespace mt
             /* Unlock */
             SDL_UnlockMutex(pool->lock);
 
-            /* Get to work */
-            if (task.event)
-            {
-                SDL_LockMutex(task.event->mutex);
-            }
-
             (*(task.function))(task.argument);
 
             if (task.event)
             {
+                SDL_LockMutex(task.event->mutex);
                 task.event->signaled = true;
                 SDL_CondBroadcast(task.event->cond);
                 SDL_UnlockMutex(task.event->mutex);
