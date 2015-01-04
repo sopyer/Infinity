@@ -691,6 +691,21 @@ namespace ml
         return ::pow(x, y);
     }
 
+    float ln(float x)
+    {
+        return ::logf(x);
+    }
+
+    float lg2(float x)
+    {
+        return ::log2f(x);
+    }
+
+    float lg10(float x)
+    {
+        return ::log10f(x);
+    }
+
     float sqrt(float x)
     {
         return _mm_cvtss_f32(_mm_sqrt_ss(_mm_set_ss(x)));

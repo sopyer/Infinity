@@ -124,6 +124,28 @@ namespace ml
 namespace ml
 {
     /*****************************************/
+    /**************   scalar   ***************/
+    /*****************************************/
+
+    template<typename T>
+    inline T min(T x, T y)
+    {
+        return (x < y) ? x : y;
+    }
+
+    template<typename T>
+    inline T max(T x, T y)
+    {
+        return (x > y) ? x : y;
+    }
+
+    template<typename T>
+    inline T clamp(T val, T minVal, T maxVal)
+    {
+        return max(minVal, min(val, maxVal));
+    }
+
+    /*****************************************/
     /****************   vec2   ***************/
     /*****************************************/
     inline vec2 operator-(const vec2& arg)
@@ -249,8 +271,11 @@ namespace ml
     int32_t asint(float f);
     float   asfloat(int32_t i);
 
-    float exp  (float x);
     float pow  (float x, float y);
+    float exp  (float x);
+    float ln   (float x);
+    float lg2  (float x);
+    float lg10 (float x);
     float sqrt (float x);
     float sin  (float x);
     float cos  (float x);
