@@ -22,6 +22,9 @@ namespace gfx_res
     extern GLuint prgPoint;
     extern GLuint prgNanoVG;
     extern GLuint prgNanoVGAA;
+    extern GLuint prgRect;
+
+    extern GLuint vaoRect;
 
     extern etlsf_arena_t vgGArena;
     extern GLuint        buffer;

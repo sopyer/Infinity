@@ -374,6 +374,32 @@ namespace gfx
         glDrawArrays(GL_TRIANGLE_STRIP, baseVertex, numLines*4);
     }
 
+    void drawRects(size_t count, float* rects, uint32_t* colors)
+    {
+        glUseProgram(gfx_res::prgRect);
+        gfx::setMVP();
+
+        GLuint rectOffset, colOffset;
+
+        float*   rectDst = (float*)  gfx::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
+        uint8_t* colDst  = (uint8_t*)gfx::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
+
+        {
+            PROFILER_CPU_TIMESLICE("Data copy");
+            memcpy(rectDst, rects, sizeof(float)*4*count);
+            memcpy(colDst,  colors,   sizeof(uint8_t)*4*count);
+        }
+
+        glBindVertexArray(gfx_res::vaoRect);
+
+        glBindVertexBuffer(0, gfx::dynBuffer, rectOffset, sizeof(float)*4);
+        glBindVertexBuffer(1, gfx::dynBuffer, colOffset,  sizeof(uint8_t)*4);
+
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+
+        glBindVertexArray(0);
+    }
+
     auto_vars_t autoVars;
 
     static const size_t AUTO_VARS_COUNT = 4;

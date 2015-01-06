@@ -160,6 +160,9 @@ namespace gfx_res
     GLuint prgPoint;
     GLuint prgNanoVG;
     GLuint prgNanoVGAA;
+    GLuint prgRect;
+
+    GLuint vaoRect;
 
     void init()
     {
@@ -206,10 +209,20 @@ namespace gfx_res
         headers[1] = enableColor;
         prgLine  = res::createProgramFromFiles("MESH.Line.vert",  "MESH.std.frag", 2, headers);
         prgPoint = res::createProgramFromFiles("MESH.Point.vert", "MESH.std.frag", 2, headers);
+        prgRect  = res::createProgramFromFiles("MESH.Rect.vert",  "MESH.std.frag", 2, headers);
 
         headers[1] = enableVGAA;
         prgNanoVG   = res::createProgramFromFiles("NanoVG.vert",  "NanoVG.frag", 1, headers);
         prgNanoVGAA = res::createProgramFromFiles("NanoVG.vert",  "NanoVG.frag", 2, headers);
+
+        gfx::vertex_element_t ve[2] = {
+            {0, 0, 0, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
+            {1, 0, 1, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
+        };
+
+        GLuint divs[2] = {1, 1};
+
+        vaoRect = gfx::createVAO(2, ve, 2, divs);
 
         vgGArena = etlsf_create(gfx::memArena, 0, VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
         glGenBuffers(1, &buffer);
@@ -225,6 +238,8 @@ namespace gfx_res
 
         etlsf_destroy(vgGArena);
         glDeleteBuffers(1, &buffer);
+
+        glDeleteVertexArrays(1, &vaoRect);
 
         glDeleteProgram(prgUI);
         glDeleteProgram(prgRasterCubic);
