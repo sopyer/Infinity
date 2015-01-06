@@ -88,8 +88,9 @@
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="gfx.cpp" />
     <ClCompile Include="gfx_res.cpp" />
-    <ClCompile Include="nanovg\nanovg.c" />
+    <ClCompile Include="nanovg.c" />
     <ClCompile Include="nanovg_gfx.cpp" />
+    <ClCompile Include="nanovg_utils.c" />
     <ClCompile Include="opengl.c" />
     <ClCompile Include="Paint.cpp" />
     <ClCompile Include="Path.cpp" />
@@ -106,13 +107,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\gfx\gfx.h" />
+    <ClInclude Include="..\include\gfx\nanovg_utils.h" />
     <ClInclude Include="..\include\gfx\vg.h" />
     <ClInclude Include="..\include\opengl.h" />
     <ClInclude Include="DefaultFontData.h" />
     <ClInclude Include="gfx_res.h" />
-    <ClInclude Include="nanovg\fontstash.h" />
-    <ClInclude Include="nanovg\nanovg.h" />
-    <ClInclude Include="nanovg\stb_truetype.h" />
+    <ClInclude Include="fontstash.h" />
+    <ClInclude Include="nanovg.h" />
+    <ClInclude Include="stb_truetype.h" />
     <ClInclude Include="Paint.h" />
     <ClInclude Include="Path.h" />
     <ClInclude Include="SOIL2\etc1_utils.h" />

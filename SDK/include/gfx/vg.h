@@ -5,7 +5,8 @@
 
 extern "C"
 {
-#include <gfx/nanovg/nanovg.h>
+#include <gfx/nanovg.h>
+#include <gfx/nanovg_utils.h>
 }
 
 extern "C" struct NVGcontext;

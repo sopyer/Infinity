@@ -55,8 +55,7 @@ struct point_t
 
 struct rect_t
 {
-    float x, y;
-    float w, h;
+    float x, y, w, h;
 };
 
 bool testPtInRect(const point_t& pt, const rect_t& rect);

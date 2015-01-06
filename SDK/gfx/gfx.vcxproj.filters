@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="nanovg">
-      <UniqueIdentifier>{865ea68f-0d60-40ec-b889-fd048480473d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SOIL2">
       <UniqueIdentifier>{8d44dcd3-db31-40cd-82f3-bfe4abcfbc23}</UniqueIdentifier>
     </Filter>
@@ -59,13 +56,16 @@
     <ClCompile Include="SOIL2\SOIL2.c">
       <Filter>SOIL2</Filter>
     </ClCompile>
-    <ClCompile Include="nanovg\nanovg.c">
-      <Filter>nanovg</Filter>
-    </ClCompile>
     <ClCompile Include="DefaultFontData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="nanovg_gfx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nanovg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="nanovg_utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -127,15 +127,6 @@
     <ClInclude Include="SOIL2\stbi_pvr_c.h">
       <Filter>SOIL2</Filter>
     </ClInclude>
-    <ClInclude Include="nanovg\fontstash.h">
-      <Filter>nanovg</Filter>
-    </ClInclude>
-    <ClInclude Include="nanovg\nanovg.h">
-      <Filter>nanovg</Filter>
-    </ClInclude>
-    <ClInclude Include="nanovg\stb_truetype.h">
-      <Filter>nanovg</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\gfx\gfx.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
@@ -146,6 +137,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\opengl.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="nanovg.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="fontstash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\gfx\nanovg_utils.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
   </ItemGroup>

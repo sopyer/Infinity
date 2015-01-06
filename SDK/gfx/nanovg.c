@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include "nanovg.h"
+#include <gfx/nanovg.h>
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"
 #include "stb_image.h"
