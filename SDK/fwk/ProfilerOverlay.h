@@ -17,6 +17,7 @@
 struct Interval
 {
     const char* name;
+    float       start;
     float       duration;
 };
 
@@ -35,20 +36,23 @@ private:
     void drawBars(uint32_t* colorArray);
 
 private:
+    size_t numThreads;
     std::vector<float>    rectData;
     std::vector<Interval> intervals;
     std::vector<uint32_t> colors;
-    std::vector<uint32_t> ids;
-    float mWidth;
-    float mHeight;
+
+    int width;
+    int height;
+    
+    rect_t graphArea;
+
+    uint32_t    startInterval, endInterval, interval;
+    uint32_t    minTime, maxTime;
+    const char* unitFormat;
+    uint32_t    unitScale;
+    float       pxIntervalStep;
 
     size_t mSelection;
-    float  mScale;
+    float  sx, sy, dx;
     bool   mDoDrag;
-    float  mOffsetX;
-
-    GLuint vboRectData;
-    GLuint vboColorData;
-    GLint  uniMVP;
-    GLuint vao;
 };

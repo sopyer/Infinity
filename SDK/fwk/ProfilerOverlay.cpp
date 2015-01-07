@@ -5,95 +5,36 @@
 
 static const uint32_t profilerIntervalMask = 0xFEDC0000;
 
-const char vsQuadSource[] = 
-    "#version 430                                                           \n"
-    "                                                                       \n"
-    "layout(std140, column_major, binding = 0) uniform uniMVP               \n"
-    "{                                                                      \n"
-    "    mat4  uMVP;                                                        \n"
-    "};                                                                     \n"
-    "                                                                       \n"
-    "layout(location=0) in vec4  vaRect;                                    \n"
-    "layout(location=1) in vec4  vaColor;                                   \n"
-    "                                                                       \n"
-    "out vec4 faColor;                                                      \n"
-    "                                                                       \n"
-    "void main()                                                            \n"
-    "{                                                                      \n"
-    "   float x = ((gl_VertexID & 1) != 0) ? vaRect.x : vaRect.z;           \n"
-    "   float y = ((gl_VertexID & 2) != 0) ? vaRect.y : vaRect.w;           \n"
-    "                                                                       \n"
-    "   gl_Position = uMVP * vec4(x, y, 0, 1);                              \n"
-    "   faColor     = vaColor;                                              \n"
-    "}                                                                      \n";
-
-const char fsQuadSource[] = 
-    "#version 430                                                           \n"
-    "                                                                       \n"
-    "in vec4 faColor;                                                       \n"
-    "                                                                       \n"
-    "layout(location = 0, index = 0) out vec4 rt0;                          \n"
-    "                                                                       \n"
-    "void main()                                                            \n"
-    "{                                                                      \n"
-    "   rt0 = faColor;                                                      \n"
-    "}                                                                      \n";
-
 GLuint prgQuad;
 
 #define INVALID_SELECTION 0xFFFFFFFF
 
+static const size_t MAX_STACK_DEPTH  = 8;
+static const size_t MAX_THREAD_COUNT = 8;
+static const size_t firstThreadRow = 3;
+static const float  graphMargin = 25.0f;
+static const float  tickSize = 3;
+
+//TODO: handle resize - remove w, h
 void ProfilerOverlay::init(int w, int h)
 {
-    mWidth = (float)w; mHeight=(float)h;
+    width = w; height = h;
 
-    float w1=mWidth-60.0f, h1=mHeight-60.0f;/*60=30+30*/
+    graphArea = {graphMargin, graphMargin, w - 2.0f * graphMargin, h - 2.0f * graphMargin};
 
     mSelection = INVALID_SELECTION;
-    mScale = 1.0f;
+    sx = sy =  1.0f;
+    dx = 0.0f;
     mDoDrag = false;
-    mOffsetX = 0.0f;
-
-    prgQuad = glCreateProgram();
-    res::compileAndAttachShader(prgQuad, GL_VERTEX_SHADER,   sizeof(vsQuadSource)-1, vsQuadSource);
-    res::compileAndAttachShader(prgQuad, GL_FRAGMENT_SHADER, sizeof(fsQuadSource)-1, fsQuadSource);
-    glLinkProgram(prgQuad);
-
-    const size_t LOG_STR_LEN = 1024;
-    char         infoLog[LOG_STR_LEN] = {0};
-    GLsizei      length;
-
-    glGetProgramInfoLog(prgQuad, LOG_STR_LEN-1, &length, infoLog);
-    infoLog[length] = 0;
-
-    if (infoLog[0])
-    {
-        fprintf(stderr, "%s\n", infoLog);
-    }
-
-    uniMVP = glGetUniformLocation(prgQuad, "uMVP");
-
-    gfx::vertex_element_t ve[2] = {
-        {0, 0, 0, GL_FLOAT,         4, GL_FALSE, GL_FALSE},
-        {1, 0, 1, GL_UNSIGNED_BYTE, 4, GL_FALSE, GL_TRUE },
-    };
-
-    GLuint divs[2] = {1, 1};
-
-    vao = gfx::createVAO(2, ve, 2, divs);
 }
 
 void ProfilerOverlay::fini()
 {
-    glDeleteVertexArrays(1, &vao);
     glDeleteProgram(prgQuad);
 }
 
 void ProfilerOverlay::loadProfilerData()
 {
-    static const size_t MAX_STACK_DEPTH  = 8;
-    static const size_t MAX_THREAD_COUNT = 8;
-
     size_t                  numEvents;
     const profiler_event_t* events;
 
@@ -101,8 +42,8 @@ void ProfilerOverlay::loadProfilerData()
 
     rectData.resize(numEvents * 4);
 
-    uint32_t minTime = events[0].timestamp,
-             maxTime = events[0].timestamp;
+    minTime = events[0].timestamp,
+    maxTime = events[0].timestamp;
 
     for (size_t i = 1; i < numEvents; ++i)
     {
@@ -114,10 +55,12 @@ void ProfilerOverlay::loadProfilerData()
     struct
     {
         size_t   id;
-        uint64_t sliceBegin;
+        uint32_t sliceBegin;
     } stack[MAX_THREAD_COUNT][MAX_STACK_DEPTH];
 
-    float scale = (mWidth-70.0f) / float(maxTime-minTime);
+    sx = graphArea.w/(maxTime - minTime);
+    sy = 20.0f;
+    dx = 0.0f;
 
     core::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
     core::index_t<uint64_t, 32>                       threadMap = {0};
@@ -125,7 +68,8 @@ void ProfilerOverlay::loadProfilerData()
     rectData.clear();
     intervals.clear();
     colors.clear();
-    ids.clear();
+
+    numThreads = 0;
 
     for (size_t i=0; i<numEvents; ++i)
     {
@@ -133,6 +77,8 @@ void ProfilerOverlay::loadProfilerData()
         uint32_t         threadIdx;
 
         threadIdx = core::index_lookup_or_add(&threadMap, event.threadID);
+
+        numThreads = core::max(numThreads, threadIdx);
 
         int& top = stackTop[threadIdx];
 
@@ -151,13 +97,13 @@ void ProfilerOverlay::loadProfilerData()
 
             assert (stack[threadIdx][top].id == event.id); //implement backtracking end fixing later
 
-            float xstart = (stack[threadIdx][top].sliceBegin-minTime) * scale + 5.0f;
-            float xend   = (event.timestamp-minTime) * scale + 5.0f;
-            float ystart = 20.0f+top*20;
-            float yend   = 20.0f+top*20+15;
+            float xstart = (float)stack[threadIdx][top].sliceBegin;
+            float xend   = (float)event.timestamp;
+            float ystart = top+0.1f;
+            float yend   = top+0.9f;
 
-            ystart += threadIdx * 200;
-            yend   += threadIdx * 200;
+            ystart += threadIdx * (MAX_STACK_DEPTH + 2) + firstThreadRow;
+            yend   += threadIdx * (MAX_STACK_DEPTH + 2) + firstThreadRow;
 
             uint32_t colorIdx;
             uint32_t color;
@@ -167,8 +113,6 @@ void ProfilerOverlay::loadProfilerData()
 
             colors.push_back(color);
 
-            ids.push_back(intervals.size()|profilerIntervalMask);
-
             rectData.push_back(xstart);
             rectData.push_back(ystart);
             rectData.push_back(xend);
@@ -177,7 +121,8 @@ void ProfilerOverlay::loadProfilerData()
             Interval inter = 
             {
                 (const char*) event.id,
-                (event.timestamp-stack[threadIdx][top].sliceBegin) / 1000.0f
+                xstart / 1000.0f,
+                (xend-xstart) / 1000.0f
             };
 
             intervals.push_back(inter);
@@ -185,50 +130,126 @@ void ProfilerOverlay::loadProfilerData()
             --top;
         }
     }
+
+    ++numThreads;
+}
+
+uint32_t roundInterval(uint32_t interval)
+{
+    uint32_t roundedInterval = 100;
+    for (; roundedInterval < 100000000; roundedInterval *= 10)
+    {
+        if (roundedInterval>interval)
+            break;
+    }
+
+    if (interval < roundedInterval/2)
+    {
+        if (interval > roundedInterval/5)
+            roundedInterval /= 2;
+        else if (interval > roundedInterval/10)
+            roundedInterval /= 5;
+    }
+
+    return roundedInterval;
+}
+
+void selectUnits(uint32_t interval, uint32_t* unitScale, const char** unitFormat)
+{
+    assert(unitScale);
+    assert(unitFormat);
+
+    *unitScale  = interval;
+    *unitFormat = "%dus";
+    if (interval>=1000)
+    {
+        *unitFormat = "%dms";
+        *unitScale  = interval/1000;
+    }
+    else if (interval>=1000000)
+    {
+        *unitFormat = "%ds";
+        *unitScale  = interval / 1000000;
+    }
 }
 
 void ProfilerOverlay::drawBars(uint32_t* colorArray)
 {
     PROFILER_CPU_TIMESLICE("ProfilerOverlay::drawBars");
-    float w1=mWidth-80.0f, h1=mHeight-80.0f;
 
-    v128 mv[4] = {
-        vi_set(  mScale,       0.0f, 0.0f, 0.0f),
-        vi_set(    0.0f,       1.0f, 0.0f, 0.0f),
-        vi_set(    0.0f,       0.0f, 1.0f, 0.0f),
-        vi_set(30.0f+mOffsetX, 30.0f, 0.0f, 1.0f),
-    };
-
-    gfx::setModelViewMatrix(mv);
-
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(30, 30, (int)mWidth-60, (int)mHeight-60);
+    char  strBuf[128];
+    float tx = graphArea.x+dx;
 
     {
-        PROFILER_CPU_TIMESLICE("ModernGL");
-        glUseProgram(prgQuad);
-        gfx::setMVP();
+        PROFILER_CPU_TIMESLICE("NanoVG");
+        nvgBeginFrame(vg::ctx, gfx::width, gfx::height, (float)gfx::width/gfx::height);
 
-        GLuint rectOffset, colOffset;
-        size_t count = colors.size();
 
-        float*   rectDst = (float*)  gfx::dynbufAllocMem(sizeof(float)*4*count,   0, &rectOffset);
-        uint8_t* colDst  = (uint8_t*)gfx::dynbufAllocMem(sizeof(uint8_t)*4*count, 0, &colOffset);
-
+        float basey = graphArea.y+sy;
+        //Bars rendering
+        nvgScissor(vg::ctx, graphArea.x, graphArea.y, graphArea.w, graphArea.h);
+        for (uint32_t i = startInterval; i < endInterval; ++i)
         {
-            PROFILER_CPU_TIMESLICE("Data copy");
-            memcpy(rectDst, &rectData[0], sizeof(float)*4*count);
-            memcpy(colDst,  colorArray,   sizeof(uint8_t)*4*count);
+            nvgFillColor(vg::ctx, (i%2) ? nvgRGB(32, 32, 32) : nvgRGB(8, 8, 8));
+            nvguRect(vg::ctx, i*pxIntervalStep + tx, basey, pxIntervalStep, graphArea.h-sy);
+        }
+        nvgResetScissor(vg::ctx);
+
+        nvgFontSize(vg::ctx, 14.0f);
+        nvgFontFace(vg::ctx, "default");
+        nvgTextAlign(vg::ctx, NVG_ALIGN_CENTER|NVG_ALIGN_BOTTOM);
+        nvgFillColor(vg::ctx, nvgRGB(255,255,255));
+        nvgStrokeColor(vg::ctx, nvgRGB(192,192,192));
+        nvgStrokeWidth(vg::ctx, 2.0f);
+        //Labels and ticks rendering
+        for (uint32_t i = startInterval; i <= endInterval; ++i)
+        {
+            float x = i*pxIntervalStep + tx;
+            if (x<graphArea.x || x>graphArea.x+graphArea.w)
+                continue;
+            nvguLine(vg::ctx, x, basey, x, basey+tickSize);
+            sprintf_s(strBuf, unitFormat, i*unitScale);
+            nvgText(vg::ctx, x, basey-tickSize, strBuf, 0);
+        }
+        nvguLine(vg::ctx, graphArea.x, basey, graphArea.x+graphArea.w, basey);
+
+        nvgFontSize(vg::ctx, 14.0f);
+        nvgFontFace(vg::ctx, "default");
+        nvgTextAlign(vg::ctx, NVG_ALIGN_LEFT|NVG_ALIGN_BOTTOM);
+        nvgFillColor(vg::ctx, nvgRGB(128,128,128));
+        nvgStrokeColor(vg::ctx, nvgRGB(128,128,128));
+        nvgStrokeWidth(vg::ctx, 3.0f);
+
+        float dy = (MAX_STACK_DEPTH+2)*sy;
+        float y = graphArea.y + firstThreadRow*sy-2;
+        for (size_t i = 0; i<numThreads; ++i, y+=dy)
+        {
+            sprintf_s(strBuf, "Thread%d", i);
+            nvgText(vg::ctx, graphArea.x+10.0f, y, strBuf, 0);
+            nvguLine(vg::ctx, graphArea.x+5.0f, y, graphArea.x+graphArea.w-10.0f, y);
         }
 
-        glBindVertexArray(vao);
+        nvgEndFrame(vg::ctx);
+    }
 
-        glBindVertexBuffer(0, gfx::dynBuffer, rectOffset, sizeof(float)*4);
-        glBindVertexBuffer(1, gfx::dynBuffer, colOffset,  sizeof(uint8_t)*4);
+    v128 mv[4] = {
+        vi_set(  sx,        0.0f, 0.0f, 0.0f),
+        vi_set(0.0f,          sy, 0.0f, 0.0f),
+        vi_set(0.0f,        0.0f, 1.0f, 0.0f),
+        vi_set(  tx, graphArea.y, 0.0f, 1.0f),
+    };
 
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor((GLint)graphArea.x, (GLint)graphArea.y, (GLint)graphArea.w, (GLint)graphArea.h);
 
-        glBindVertexArray(0);
+    //TODO: convert to nanovg
+    {
+        PROFILER_CPU_TIMESLICE("ModernGL");
+
+        gfx::set2DStates();
+        gfx::setModelViewMatrix(mv);
+
+        gfx::drawRects(colors.size(), &rectData[0], &colors[0]);
     }
 
     glDisable(GL_SCISSOR_TEST);
@@ -238,16 +259,14 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
 
 void ProfilerOverlay::updateUI(float delta)
 {
-    int offx;
-
     float keybScaleSpeed  = 0.50f; // (increase/s)
-    float mouseScaleSpeed = 0.10f; // (increase/s)
+    float mouseScaleSpeed = 0.10f; // (increase)
 
     int x, y;
 
     ui::mouseAbsOffset(&x, &y);
 
-    point_t pt = {(x-30.0f-mOffsetX)/mScale, y-30.0f};
+    point_t pt = {(x-graphArea.x-dx)/sx, (y-graphArea.y)/sy};
 
     if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
     for (size_t i = 0; i < rectData.size(); i +=4)
@@ -261,49 +280,64 @@ void ProfilerOverlay::updateUI(float delta)
         }
     }
 
-    if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) || ui::mouseWasWheelUp())
-    {
-        float scaleUp = 1.0f + (ui::mouseWasWheelUp() ? mouseScaleSpeed : keybScaleSpeed * delta);
+    float scale = 1.0f;
 
-        ui::mouseAbsOffset(&offx, NULL);
-        mScale *= scaleUp;
-        offx -= 30;
-        mOffsetX = (1.0f-scaleUp) * offx + scaleUp * mOffsetX;
+    if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) ||
+       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelUp()))
+    {
+        scale = 1.0f + (ui::mouseWasWheelUp() ? mouseScaleSpeed : keybScaleSpeed * delta);
     }
-    if (ui::keyIsPressed(SDL_SCANCODE_MINUS) || ui::mouseWasWheelDown())
+    if (ui::keyIsPressed(SDL_SCANCODE_MINUS) ||
+       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelDown()))
     {
-        float scaleDown  = 1.0f / (1.0f + (ui::mouseWasWheelDown() ? mouseScaleSpeed : keybScaleSpeed * delta));
-
-        ui::mouseAbsOffset(&offx, NULL);
-        mScale*=scaleDown;
-        offx -= 30;
-        mOffsetX = (1.0f-scaleDown) * offx + scaleDown * mOffsetX;
+        scale  = 1.0f / (1.0f + (ui::mouseWasWheelDown() ? mouseScaleSpeed : keybScaleSpeed * delta));
     }
 
-    if (ui::mouseWasPressed(SDL_BUTTON_LEFT))
+    float scaleMin = graphArea.w/(maxTime - minTime);
+    float scaleMax = 1.0f;
+    scale = ml::clamp(scale, scaleMin/sx, scaleMax/sx);
+
+    sx *= scale;
+    dx = (1.0f-scale) * (x-this->graphArea.x) + scale * dx;
+
+    if (ui::mouseWasPressed(SDL_BUTTON_RIGHT))
     {
         mDoDrag = true;
     }
     if (mDoDrag)
     {
+        int offx;
         ui::mouseRelOffset(&offx, NULL);
-        mOffsetX += offx;
+        dx += offx;
     }
-    if (ui::mouseWasReleased(SDL_BUTTON_LEFT) && mDoDrag)
+    if (ui::mouseWasReleased(SDL_BUTTON_RIGHT) && mDoDrag)
     {
         mDoDrag = false;
     }
+
+    float    minMarkerDist = 80.0f;
+    uint32_t interval      = roundInterval(uint32_t(minMarkerDist/sx));
+
+    startInterval = minTime / interval;
+    endInterval   = (maxTime + interval - 1) / interval;
+
+    pxIntervalStep = interval * sx;
+    float pxWidth = (endInterval - startInterval)*pxIntervalStep;
+    dx = ml::clamp(dx, graphArea.w-pxWidth, -(startInterval*pxIntervalStep));
+
+    startInterval = (int)ml::floor(-dx/sx) / interval;
+    endInterval   = ((int)ml::ceil((graphArea.w-dx)/sx) + interval - 1) / interval;
+
+    selectUnits(interval, &unitScale, &unitFormat);
 }
 
 void ProfilerOverlay::renderFullscreen()
 {
     PROFILER_CPU_TIMESLICE("ProfilerOverlay::renderFullscreen");
-    glViewport(0, 0, mWidth, mHeight);
-
-    float w1=mWidth-80.0f, h1=mHeight-80.0f;
+    glViewport(0, 0, width, height);
 
     // Background
-    vg::drawRect(30.0f, 30.0f, mWidth-30.0f, mHeight-30.0f, 0xF01A1A1A, 0xF01A1A1A);
+    vg::drawRect(0.0f, 0.0f, width, height, 0xF01A1A1A, 0xF01A1A1A);
 
     if (!rectData.empty())
         drawBars(&colors[0]);
@@ -312,10 +346,18 @@ void ProfilerOverlay::renderFullscreen()
     {
         char str[256];
 
-        _snprintf(str, 256, "name     : %s", intervals[mSelection].name);
+        Interval& interval = intervals[mSelection];
+
+        sprintf_s(str, "name     : %s", interval.name);
         vg::drawString(vg::defaultFont, 50, 550, 0xFFFFFFFF, str, strlen(str));
 
-        _snprintf(str, 256, "duration : %.4f", intervals[mSelection].duration);
+        sprintf_s(str, "duration : %.4f", interval.duration);
         vg::drawString(vg::defaultFont, 50, 565, 0xFFFFFFFF, str, strlen(str));
+
+        sprintf_s(str, "start    : %.4f", interval.start);
+        vg::drawString(vg::defaultFont, 50, 580, 0xFFFFFFFF, str, strlen(str));
+
+        sprintf_s(str, "end      : %.4f", interval.start+interval.duration);
+        vg::drawString(vg::defaultFont, 50, 595, 0xFFFFFFFF, str, strlen(str));
     }
 }
