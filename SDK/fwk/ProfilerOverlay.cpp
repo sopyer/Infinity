@@ -322,8 +322,7 @@ void ProfilerOverlay::updateUI(float delta)
     endInterval   = (maxTime + interval - 1) / interval;
 
     pxIntervalStep = interval * sx;
-    float pxWidth = (endInterval - startInterval)*pxIntervalStep;
-    dx = ml::clamp(dx, graphArea.w-pxWidth, -(startInterval*pxIntervalStep));
+    dx = ml::clamp(dx, graphArea.w-(endInterval*pxIntervalStep), -(startInterval*pxIntervalStep));
 
     startInterval = (int)ml::floor(-dx/sx) / interval;
     endInterval   = ((int)ml::ceil((graphArea.w-dx)/sx) + interval - 1) / interval;
