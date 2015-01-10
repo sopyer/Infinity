@@ -40,7 +40,7 @@ namespace res
         char path[1024] = "shaders/";
         memory_t source;
 
-        strcat(path, filePath);
+        strcat_s(path, filePath);
 
         if (mem_file(&source, path))
         {

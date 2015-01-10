@@ -560,20 +560,19 @@ namespace app
                 if (selectedItem != -1)
                 {
                     char tempPath[1024];
-                    strcpy(tempPath, curDir);
-                    strcat(tempPath, files[selectedItem]);
+                    strcpy_s(tempPath, curDir);
+                    strcat_s(tempPath, files[selectedItem]);
                     if (PHYSFS_isDirectory(tempPath))
                     {
-                        strcpy(curDir, tempPath);
-                        strcat(curDir, "/");
+                        strcpy_s(curDir, tempPath);
+                        strcat_s(curDir, "/");
                         if (files) PHYSFS_freeList(files);
                         files = PHYSFS_enumerateFiles(curDir);
                         levelScroll = 0;
                     }
                     else
                     {
-                        strncpy(meshName, files[selectedItem], sizeof(meshName));
-                        meshName[sizeof(meshName)-1] = '\0';
+                        strcpy_s(meshName, files[selectedItem]);
                         showLevels = false;
 
                         loadingFailed = !loadModel(tempPath);
@@ -711,7 +710,7 @@ namespace app
 
                 size_t len = strlen(matName);
                 materialNames[numMaterials] = (const char*)mem::alloc(appArena, len+1);
-                strcpy((char*)materialNames[numMaterials], matName);
+                strcpy_s((char*)materialNames[numMaterials], len+1, matName);
 
                 assert(mjson_get_type(dict) == MJSON_ID_DICT32);
 

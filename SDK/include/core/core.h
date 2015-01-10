@@ -15,6 +15,7 @@
 #include <core/profiler.h>
 #include <core/timer.h>
 #include <core/memory.h>
+#include <core/str.h>
 
 #define UNUSED(var)         ((void)(var))
 #define ARRAY_SIZE(arr)     sizeof(arr)/sizeof(arr[0])

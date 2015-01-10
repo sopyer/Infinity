@@ -607,9 +607,9 @@ bool imguiSlider(const char* text, float* val, float vmin, float vmax, float vin
 	// TODO: fix this, take a look at 'nicenum'.
 	int digits = (int)(ceilf(log10f(vinc)));
 	char fmt[16];
-	snprintf(fmt, 16, "%%.%df", digits >= 0 ? 0 : -digits);
+	sprintf_s(fmt, "%%.%df", digits >= 0 ? 0 : -digits);
 	char msg[128];
-	snprintf(msg, 128, fmt, *val);
+	sprintf_s(msg, fmt, *val);
 	
 	if (enabled)
 	{

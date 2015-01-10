@@ -444,7 +444,7 @@ namespace app
 
                 size_t len = strlen(matName);
                 materialNames[numMaterials] = (const char*)mem::alloc(appArena, len+1);
-                strcpy((char*)materialNames[numMaterials], matName);
+                strcpy_s((char*)materialNames[numMaterials], len+1, matName);
 
                 assert(mjson_get_type(dict) == MJSON_ID_DICT32);
 

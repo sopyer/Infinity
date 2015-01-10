@@ -491,8 +491,8 @@ cleanup:
         mjson_element_t root = 0;
         char            path[1024];
 
-        strcpy(path, name);
-        strcat(path, ".material");
+        strcpy_s(path, name);
+        strcat_s(path, ".material");
 
         if (mem_file(&inText, path))
         {

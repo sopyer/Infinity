@@ -160,7 +160,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 		if (row[0] == 'v' && row[1] != 'n' && row[1] != 't')
 		{
 			// Vertex pos
-			sscanf(row+1, "%f %f %f", &x, &y, &z);
+			sscanf_s(row+1, "%f %f %f", &x, &y, &z);
 			addVertex(x, y, z, vcap);
 		}
 		if (row[0] == 'f')
@@ -206,7 +206,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 		}
 	}
 	
-	strncpy(m_filename, filename, sizeof(m_filename));
+	strcpy_s(m_filename, filename);
 	m_filename[sizeof(m_filename)-1] = '\0';
 	
     mem_free(&mem);
