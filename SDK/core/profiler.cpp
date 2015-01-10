@@ -1,15 +1,16 @@
 #include <SDL2/SDL.h>
 #include <core/core.h>
 
-#define MAX_PROFILER_EVENTS     16384
+#define MAX_PROFILER_EVENTS     1*1024*1024
 #define LOG2_RES 21
 
 extern "C"
 {
-    static volatile long        numEvents = 0;
+    static volatile long        numEvents     = 0;
+    static volatile long        doCapture     = FALSE;
+    static volatile long        captureActive = FALSE;
     static profiler_event_t     events[MAX_PROFILER_EVENTS];
-    static volatile long        doCapture = FALSE;
-    static long                 captureActive = FALSE;
+
     static uint32_t             quantShift;     //Precision shift for timestamp
     static uint64_t             maxPeriod;      //Max timespan for capture
     static uint64_t             startTime;
@@ -22,7 +23,7 @@ extern "C"
 
         int log2 = bit_fls(freq);
         quantShift = log2 > LOG2_RES ? log2-LOG2_RES : 0;
-        maxPeriod = ((0xFFFFFFFFu)>>PHASE_BITS)<<quantShift;
+        maxPeriod = (1ul<<TIME_BITS)<<quantShift;
     }
 
     void profilerFini()
@@ -74,15 +75,19 @@ extern "C"
 
         size_t count = _InterlockedIncrement(&numEvents);
         uint64_t ts = SDL_GetPerformanceCounter();
-        if (count<=MAX_PROFILER_EVENTS && ts<=endTime)
+        if (count<=MAX_PROFILER_EVENTS && ts<endTime)
         {
-            size_t              i     = count-1;
-            profiler_event_t&   event = events[i];
+            size_t             i   = count-1;
+            profiler_event_t&  evt = events[i];
+            SDL_threadID       tid = SDL_ThreadID();
+            
+            //TODO: Quick hack! Works on win32
+            assert(tid<=65535);
 
-            event.id        = id;
-            event.phase     = eventPhase;
-            event.threadID  = SDL_ThreadID();
-            event.timestamp = (ts-startTime) >> quantShift;
+            evt.id        = id;
+            evt.phase     = eventPhase;
+            evt.tid       = (uint16_t)tid;
+            evt.timestamp = (ts-startTime) >> quantShift;
         }
         else
         {

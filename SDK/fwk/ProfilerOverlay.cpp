@@ -63,7 +63,7 @@ void ProfilerOverlay::loadProfilerData()
     dx = 0.0f;
 
     core::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
-    core::index_t<uint64_t, 32>                       threadMap = {0};
+    core::index_t<uint16_t, 32>                       threadMap = {0};
 
     rectData.clear();
     intervals.clear();
@@ -76,7 +76,7 @@ void ProfilerOverlay::loadProfilerData()
         profiler_event_t event = events[i];
         uint32_t         threadIdx;
 
-        threadIdx = core::index_lookup_or_add(&threadMap, event.threadID);
+        threadIdx = core::index_lookup_or_add(&threadMap, event.tid);
 
         numThreads = core::max(numThreads, threadIdx);
 

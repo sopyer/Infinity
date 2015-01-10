@@ -18,17 +18,14 @@ enum EventPhase
 #define TIME_BITS  30
 #define PHASE_BITS  2
 
+static_assert(TIME_BITS+PHASE_BITS <= 32, "Check that phase and timestamps use up to 32 bits");
+
 struct profiler_event_t
 {
-    uint64_t threadID;          //TODO: make it uint16_t
-    size_t   id;                //TODO: make it uint16_t
-    uint32_t timestamp : TIME_BITS;
+    size_t   id;       //TODO: make it uint16_t
+    uint16_t tid;
     uint32_t phase     : PHASE_BITS;
-};
-
-struct profiler_desc_t
-{
-    const char* name;
+    uint32_t timestamp : TIME_BITS;
 };
 
 void profilerInit();
@@ -41,7 +38,7 @@ int  profilerIsCaptureActive();
 void profilerStartSyncPoint();
 void profilerStopSyncPoint ();
 
-void profilerAddCPUEvent(size_t id, size_t eventPhase);
+void profilerAddCPUEvent(size_t id, uint32_t eventPhase);
 void profilerGetData    (size_t* numEvents, const profiler_event_t** events);
 
 #   ifdef __cplusplus
