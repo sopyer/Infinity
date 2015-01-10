@@ -15,17 +15,19 @@ static const size_t firstThreadRow = 3;
 static const float  graphMargin = 25.0f;
 static const float  tickSize = 3;
 
-//TODO: handle resize - remove w, h
-void ProfilerOverlay::init(int w, int h)
+void ProfilerOverlay::init()
 {
-    width = w; height = h;
-
-    graphArea = {graphMargin, graphMargin, w - 2.0f * graphMargin, h - 2.0f * graphMargin};
-
     mSelection = INVALID_SELECTION;
     sx = sy =  1.0f;
     dx = 0.0f;
     mDoDrag = false;
+}
+
+void ProfilerOverlay::resize(int w, int h)
+{
+    width = w; height = h;
+
+    graphArea = {graphMargin, graphMargin, w - 2.0f * graphMargin, h - 2.0f * graphMargin};
 }
 
 void ProfilerOverlay::fini()

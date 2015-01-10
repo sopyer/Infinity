@@ -24,8 +24,10 @@ struct Interval
 class ProfilerOverlay
 {
 public:
-    void init(int w, int h);
+    void init();
     void fini();
+
+    void resize(int w, int h);
 
     void loadProfilerData();
 

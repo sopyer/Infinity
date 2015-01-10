@@ -91,7 +91,7 @@ namespace ui
         overlayShaderEdit->initialise(width, height);
 
         overlayProfiler = new ProfilerOverlay;
-        overlayProfiler->init(width, height);
+        overlayProfiler->init();
 
         //TODO: HACK!!!!!
         SDL_StartTextInput();
@@ -131,6 +131,7 @@ namespace ui
     {
         width  = w;
         height = h;
+        overlayProfiler->resize(w, h);
     }
 
     void update(float dt)
