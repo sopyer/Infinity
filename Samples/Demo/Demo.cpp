@@ -1,7 +1,6 @@
 #include <fwk/fwk.h>
 
 #include "tiny_obj_loader.h"
-#include <set>
 
 #include <mjson.h>
 

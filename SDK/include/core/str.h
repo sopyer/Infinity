@@ -23,9 +23,12 @@ typedef int errno_t;
 typedef unsigned int rsize_t;
 #endif
 
-typedef char str128[128];
-typedef char str256[256];
-typedef char str1024[1024];
+// TODO: add tests
+
+typedef char* cstr;
+typedef char  cstr256[256];
+typedef char  cstr128[128];
+typedef char  cstr1024[1024];
 
 // TODO: Remove later
 #define strnlen_s strnlen_s_safe_c
