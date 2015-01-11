@@ -39,8 +39,8 @@ void ProfilerOverlay::loadProfilerData()
 {
     size_t                  numEvents;
     const profiler_event_t* events;
-
-    profilerGetData(&numEvents, &events);
+    const char**            names;
+    profilerGetData(&numEvents, &events, &names);
 
     rectData.resize(numEvents * 4);
 
@@ -62,9 +62,9 @@ void ProfilerOverlay::loadProfilerData()
 
     sx = graphArea.w/(maxTime - minTime);
     sy = 20.0f;
-    dx = 0.0f;
+    dx = -sx*maxTime;
 
-    core::index_t<uint32_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
+    core::index_t<uint16_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
     core::index_t<uint16_t, 32>                       threadMap = {0};
 
     rectData.clear();
@@ -122,7 +122,7 @@ void ProfilerOverlay::loadProfilerData()
 
             Interval inter = 
             {
-                (const char*) event.id,
+                names[event.id],
                 xstart / 1000.0f,
                 (xend-xstart) / 1000.0f
             };
@@ -338,7 +338,7 @@ void ProfilerOverlay::renderFullscreen()
     glViewport(0, 0, width, height);
 
     // Background
-    vg::drawRect(0.0f, 0.0f, width, height, 0xF01A1A1A, 0xF01A1A1A);
+    vg::drawRect(0.0f, 0.0f, (float)width, (float)height, 0xF01A1A1A, 0xF01A1A1A);
 
     if (!rectData.empty())
         drawBars(&colors[0]);

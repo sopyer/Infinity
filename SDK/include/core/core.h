@@ -30,8 +30,47 @@
 #define STATIC_ASSERT(exp) \
     typedef char UNIQUE_NAME(static_assert) [(exp) ? 1 : -1]
 
-#define PROFILER_CPU_TIMESLICE(name) \
-    ProfilerCPUAutoTimeslice UNIQUE_NAME(profiler_scope) (name)
+struct ProfilerCPUAutoTimeslice 
+{
+    uint16_t mid;
+
+     ProfilerCPUAutoTimeslice(uint16_t id)
+     {
+         mid = id;
+         profilerAddCPUEvent( mid, PROF_EVENT_PHASE_BEGIN );
+     }
+    ~ProfilerCPUAutoTimeslice()
+    {
+        profilerAddCPUEvent( mid, PROF_EVENT_PHASE_END );
+    }
+};
+
+typedef volatile long atomic_t;
+
+inline void atomicLock  (atomic_t* lock) { while (_InterlockedExchange(lock, 1) == 1); }
+inline void atomicUnlock(atomic_t* lock) { _InterlockedExchange(lock, 0); }
+
+// TODO : remove all usages 
+// NOTE: hack for fast profiling and quick integration
+#define PROFILER_CPU_TIMESLICE(name)                                \
+    static uint16_t scope_id = 0;                                   \
+    {                                                               \
+        static volatile atomic_t profiler_scope_initialized = 0;    \
+        static volatile atomic_t profiler_scope_spinlock = 0;       \
+        if (profiler_scope_initialized == 0)                        \
+        {                                                           \
+            atomicLock(&profiler_scope_spinlock);                   \
+            if (profiler_scope_initialized == 0)                    \
+            {                                                       \
+                scope_id = profilerGenerateId();                    \
+                profilerAddDesc(scope_id, name);                    \
+                profiler_scope_initialized = 1;                     \
+            }                                                       \
+            atomicUnlock(&profiler_scope_spinlock);                 \
+        }                                                           \
+    }                                                               \
+    ProfilerCPUAutoTimeslice profiler_autoscope(scope_id)           \
+
 
 char* cpToUTF8(int cp, char* str);
 

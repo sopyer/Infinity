@@ -22,11 +22,13 @@ static_assert(TIME_BITS+PHASE_BITS <= 32, "Check that phase and timestamps use u
 
 struct profiler_event_t
 {
-    size_t   id;       //TODO: make it uint16_t
+    uint16_t id;       //TODO: make it uint16_t
     uint16_t tid;
     uint32_t phase     : PHASE_BITS;
     uint32_t timestamp : TIME_BITS;
 };
+
+static_assert(sizeof(profiler_event_t)==8, "Fix packing in profiler_event_t in order ro maintain smaller event size");
 
 void profilerInit();
 void profilerFini();
@@ -38,18 +40,13 @@ int  profilerIsCaptureActive();
 void profilerStartSyncPoint();
 void profilerStopSyncPoint ();
 
-void profilerAddCPUEvent(size_t id, uint32_t eventPhase);
-void profilerGetData    (size_t* numEvents, const profiler_event_t** events);
+void profilerAddCPUEvent(uint16_t id, EventPhase eventPhase);
+
+uint16_t profilerGenerateId();
+
+void profilerAddDesc(uint16_t id, const char* name);
+void profilerGetData(size_t* numEvents, const profiler_event_t** events, const char*** names);
 
 #   ifdef __cplusplus
 }
-
-struct ProfilerCPUAutoTimeslice 
-{
-    size_t id;
-
-     ProfilerCPUAutoTimeslice(const char* name) { id = (size_t)name; profilerAddCPUEvent( id, PROF_EVENT_PHASE_BEGIN ); }
-    ~ProfilerCPUAutoTimeslice()                 { profilerAddCPUEvent( id, PROF_EVENT_PHASE_END ); }
-};
-
 #   endif

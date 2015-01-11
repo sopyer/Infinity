@@ -3,18 +3,23 @@
 
 #define MAX_PROFILER_EVENTS     1*1024*1024
 #define LOG2_RES 21
+#define MAX_PROFILER_IDS        2048
+
+static_assert(MAX_PROFILER_IDS<=0x10000, "Maximum id should not exceed capacity of uint16_t");
 
 extern "C"
 {
-    static volatile long        numEvents     = 0;
-    static volatile long        doCapture     = FALSE;
-    static volatile long        captureActive = FALSE;
-    static profiler_event_t     events[MAX_PROFILER_EVENTS];
+    static atomic_t          lastId        = 0;
+    static atomic_t          numEvents     = 0;
+    static atomic_t          doCapture     = 0;
+    static atomic_t          captureActive = 0;
+    static profiler_event_t  events[MAX_PROFILER_EVENTS];
+    static const char*       idNames[MAX_PROFILER_IDS];
 
-    static uint32_t             quantShift;     //Precision shift for timestamp
-    static uint64_t             maxPeriod;      //Max timespan for capture
-    static uint64_t             startTime;
-    static uint64_t             endTime;
+    static uint32_t  quantShift;     //Precision shift for timestamp
+    static uint64_t  maxPeriod;      //Max timespan for capture
+    static uint64_t  startTime;
+    static uint64_t  endTime;
 
     void profilerInit()
     {
@@ -69,8 +74,9 @@ extern "C"
         }
     }
 
-    void profilerAddCPUEvent(size_t id, size_t eventPhase)
+    void profilerAddCPUEvent(uint16_t id, EventPhase eventPhase)
     {
+        assert(id < lastId);
         if (!doCapture) return;
 
         size_t count = _InterlockedIncrement(&numEvents);
@@ -96,11 +102,25 @@ extern "C"
         }
     }
 
-    void profilerGetData(size_t* numEvents, const profiler_event_t** events)
+    uint16_t profilerGenerateId()
+    {
+        size_t id = _InterlockedIncrement(&lastId);
+        assert(id <= MAX_PROFILER_IDS);
+        return id - 1;
+    }
+
+    void profilerAddDesc(uint16_t id, const char* name)
+    {
+        assert(id<lastId);
+        idNames[id] = name;
+    }
+
+    void profilerGetData(size_t* numEvents, const profiler_event_t** events, const char*** names)
     {
         assert(!captureActive && !doCapture);
         *numEvents = ::numEvents;
         *events    = ::events;
+        *names     = ::idNames;
     }
 
 }
