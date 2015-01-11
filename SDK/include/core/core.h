@@ -51,7 +51,9 @@ inline void atomicLock  (atomic_t* lock) { while (_InterlockedExchange(lock, 1) 
 inline void atomicUnlock(atomic_t* lock) { _InterlockedExchange(lock, 0); }
 
 // TODO : remove all usages 
-// NOTE: hack for fast profiling and quick integration
+// NOTE: hack for fast profiling and quick integration;
+//       profiler_scope_initialized and profiler_scope_initialized
+//       add around 8-16Kb per 1K events + a lot of code;
 #define PROFILER_CPU_TIMESLICE(name)                                \
     static uint16_t scope_id = 0;                                   \
     {                                                               \

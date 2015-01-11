@@ -44,6 +44,7 @@ void profilerAddCPUEvent(uint16_t id, EventPhase eventPhase);
 
 uint16_t profilerGenerateId();
 
+// NOTE: name should be compile time(preferred) or has entire program lifetime
 void profilerAddDesc(uint16_t id, const char* name);
 void profilerGetData(size_t* numEvents, const profiler_event_t** events, const char*** names);
 
