@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <assert.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -9,6 +8,11 @@
 
 #include <physfs/physfs.h>
 
+#ifndef _NDEBUG
+#   define CORE_ENABLE_ASSERT
+#endif
+
+#include <core/debug.h>
 #include <core/bits.h>
 #include <core/mt.h>
 #include <core/ml.h>
@@ -27,9 +31,6 @@
 
 #define UNIQUE_NAME(base) PP_CAT(base, __LINE__)
 
-#define STATIC_ASSERT(exp) \
-    typedef char UNIQUE_NAME(static_assert) [(exp) ? 1 : -1]
-
 struct ProfilerCPUAutoTimeslice 
 {
     uint16_t mid;
@@ -46,6 +47,12 @@ struct ProfilerCPUAutoTimeslice
 };
 
 typedef volatile long atomic_t;
+
+namespace core
+{
+    void abort();
+}
+
 
 inline void atomicLock  (atomic_t* lock) { while (_InterlockedExchange(lock, 1) == 1); }
 inline void atomicUnlock(atomic_t* lock) { _InterlockedExchange(lock, 0); }
@@ -434,7 +441,7 @@ namespace core
     template<typename T, size_t N>
     void ring_buffer_reset(ring_buffer_t<T, N>& rb)
     {
-        STATIC_ASSERT((N & (N-1)) == 0);
+        static_assert((N & (N-1)) == 0, "N is not power of 2");
         rb.head = rb.tail = 0;
     }
 

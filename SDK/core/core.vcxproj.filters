@@ -94,6 +94,9 @@
     <ClInclude Include="..\include\core\str.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\core\debug.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\include\core\vi.inl">

@@ -195,3 +195,39 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+extern "C" int assert_handler(const char* cond, const char* file, int line)
+{
+    const SDL_MessageBoxButtonData buttons[] = {
+        { 0, 0, "Ignore" },
+        { 0, 1, "Abort" },
+        { SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 2, "Break" },
+    };
+
+    cstr1024 msg;
+
+    sprintf_s(msg, "Assertion:(%s) failed in %s:%d", cond, file, line);
+
+    SDL_MessageBoxData data = {
+        SDL_MESSAGEBOX_INFORMATION,
+        NULL, // no parent window
+        "ASSERTION",
+        msg,
+        3,
+        buttons,
+        NULL // Default color scheme
+    };
+
+    int button = -1;
+    int success = SDL_ShowMessageBox(&data, &button);
+
+    switch (button)
+    {
+        case 0:
+            return false;
+        case 1:
+            core::abort();
+    }
+
+    return  true;
+}

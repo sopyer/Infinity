@@ -89,7 +89,7 @@ struct gpu_material_t
     float     uMatSpecPow;
 };
 
-STATIC_ASSERT(sizeof(light_t)==32);
+static_assert(sizeof(light_t)==32, "Size of light_t shouud be 32 bytes");
 
 namespace app
 {

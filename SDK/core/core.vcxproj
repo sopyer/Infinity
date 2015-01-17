@@ -92,6 +92,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\core\core.h" />
+    <ClInclude Include="..\include\core\debug.h" />
     <ClInclude Include="..\include\core\etlsf.h" />
     <ClInclude Include="..\include\core\memory.h" />
     <ClInclude Include="..\include\core\ml.h" />

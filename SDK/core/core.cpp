@@ -163,3 +163,18 @@ namespace core
     }
 };
 
+#ifdef __WIN32__
+#include "windows.h"
+#endif
+
+namespace core
+{
+    void abort()
+    {
+#ifdef __WIN32__
+        ExitProcess(1);
+#else
+        _exit(1);
+#endif
+    }
+}
