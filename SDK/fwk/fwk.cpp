@@ -196,6 +196,14 @@ int main(int argc, char** argv)
     return 0;
 }
 
+#include "CameraDirector.cpp"
+#include "SpectatorCamera.cpp"
+#include "ui.cpp"
+
+#include "ProfilerOverlay.cpp"
+#include "ShaderEditOverlay.cpp"
+#include "ScPlatform.cpp"
+
 extern "C" int assert_handler(const char* cond, const char* file, int line)
 {
     const SDL_MessageBoxButtonData buttons[] = {

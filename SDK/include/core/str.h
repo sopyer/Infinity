@@ -31,10 +31,11 @@ typedef char  cstr128[128];
 typedef char  cstr1024[1024];
 
 // TODO: Remove later
-#define strnlen_s strnlen_s_safe_c
-#define strcat_s  strcat_s_safe_c
-#define strstr_s  strstr_s_safe_c
-#define strcpy_s  strcpy_s_safe_c
+#define strnlen_s  strnlen_s_core_c
+#define strcat_s   strcat_s_core_c
+#define strncat_s  strncat_s_core_c
+#define strstr_s   strstr_s_core_c
+#define strcpy_s   strcpy_s_core_c
 
 
 errno_t strcat_s(char *dest, rsize_t dmax, const char *src);

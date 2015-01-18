@@ -29,7 +29,7 @@
 #define PP_CAT_I(a, b) PP_CAT_II(a ## b)
 #define PP_CAT_II(res) res
 
-#define UNIQUE_NAME(base) PP_CAT(base, __LINE__)
+#define CORE_UNIQUE_NAME(base) PP_CAT(base, __LINE__)
 
 struct ProfilerCPUAutoTimeslice 
 {

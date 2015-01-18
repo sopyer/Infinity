@@ -2,8 +2,6 @@
 
 #include "gfx_res.h"
 
-#define GFX_MAX_ALLOCS (1<<14) 
-
 namespace gfx
 {
     static GLsync     frameSync[NUM_FRAMES_DELAY] = {0, 0};
@@ -741,4 +739,21 @@ namespace gfx
     {
         return timer->measuredTime / 1000;
     }
+}
+
+#include "DefaultFontData.cpp"
+#include "Font.cpp"
+#include "gfx_res.cpp"
+#include "nanovg_gfx.cpp"
+#include "Path.cpp"
+#include "Paint.cpp"
+#include "res_utils.cpp"
+#include "SUI.cpp"
+#include "VG.cpp"
+
+extern "C"
+{
+#include "nanovg.c"
+#include "nanovg_utils.c"
+#include "opengl.c"
 }

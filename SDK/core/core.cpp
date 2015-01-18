@@ -163,6 +163,25 @@ namespace core
     }
 };
 
+#include "etlsf.cpp"
+#include "memory.cpp"
+#include "ml.cpp"
+#include "mt.cpp"
+#include "timer.cpp"
+#include "profiler.cpp"
+
+extern "C"
+{
+#include "str.c"
+#include "mjson.c"
+#undef strnlen_s
+#undef strcat_s
+#undef strncat_s
+#undef strstr_s
+#undef strcpy_s
+#include "Remotery.c"
+}
+
 #ifdef __WIN32__
 #include "windows.h"
 #endif

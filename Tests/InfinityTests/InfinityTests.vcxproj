@@ -70,7 +70,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>core_d.lib;gfx_d.lib;fwk_d.lib;scintilla_d.lib;zlib_d.lib;physfs_d.lib;freetype_d.lib;sdl2_d.lib;sdl2main_d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>core_d.lib;gfx_d.lib;scintilla_d.lib;zlib_d.lib;physfs_d.lib;freetype_d.lib;sdl2_d.lib;sdl2main_d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

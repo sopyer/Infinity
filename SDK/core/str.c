@@ -148,200 +148,7 @@ errno_t strcat_s (char *dest, rsize_t dmax, const char *src)
     return RCNEGATE(ESNOSPC);
 }
 
-errno_t strcpy_s (char *dest, rsize_t dmax, const char *src)
-{
-    rsize_t orig_dmax;
-    char *orig_dest;
-    const char *overlap_bumper;
-
-    if (dest == 0) {
-        return RCNEGATE(ESNULLP);
-    }
-
-    if (dmax == 0) {
-        return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
-    }
-
-    if (src == 0) {
-#ifdef SAFECLIB_STR_NULL_SLACK
-        /* null string to clear data */
-        while (dmax) {  *dest = '\0'; dmax--; dest++; }
-#else
-        *dest = '\0';
-#endif
-        return RCNEGATE(ESNULLP);
-    }
-
-    if (dest == src) {
-        return RCNEGATE(EOK);
-    }
-
-    /* hold base of dest in case src was not copied */
-    orig_dmax = dmax;
-    orig_dest = dest;
-
-    if (dest < src) {
-        overlap_bumper = src;
-
-        while (dmax > 0) {
-            if (dest == overlap_bumper) {
-                return RCNEGATE(ESOVRLP);
-            }
-
-            *dest = *src;
-            if (*dest == '\0') {
-#ifdef SAFECLIB_STR_NULL_SLACK
-                /* null slack to clear any data */
-                while (dmax) { *dest = '\0'; dmax--; dest++; }
-#endif
-                return RCNEGATE(EOK);
-            }
-
-            dmax--;
-            dest++;
-            src++;
-        }
-
-    } else {
-        overlap_bumper = dest;
-
-        while (dmax > 0) {
-            if (src == overlap_bumper) {
-                return RCNEGATE(ESOVRLP);
-            }
-
-            *dest = *src;
-            if (*dest == '\0') {
-#ifdef SAFECLIB_STR_NULL_SLACK
-                /* null slack to clear any data */
-                while (dmax) { *dest = '\0'; dmax--; dest++; }
-#endif
-                return RCNEGATE(EOK);
-            }
-
-            dmax--;
-            dest++;
-            src++;
-        }
-    }
-
-    /*
-     * the entire src must have been copied, if not reset dest
-     * to null the string.
-     */
-    return RCNEGATE(ESNOSPC);
-}
-
-rsize_t strnlen_s (const char *dest, rsize_t dmax)
-{
-    rsize_t count;
-
-    if (dest == 0) {
-        return RCNEGATE(0);
-    }
-
-    if (dmax == 0) {
-        return RCNEGATE(0);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(0);
-    }
-
-    count = 0;
-    while (*dest && dmax) {
-        count++;
-        dmax--;
-        dest++;
-    }
-
-    return RCNEGATE(count);
-}
-
-errno_t strstr_s (char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring)
-{
-    rsize_t len;
-    rsize_t dlen;
-    int i;
-
-    if (substring == 0) {
-        return RCNEGATE(ESNULLP);
-    }
-    *substring = 0;
-
-    if (dest == 0) {
-        return RCNEGATE(ESNULLP);
-    }
-
-    if (dmax == 0) {
-        return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
-    }
-
-    if (src == 0) {
-        return RCNEGATE(ESNULLP);
-    }
-
-    if (slen == 0) {
-        return RCNEGATE(ESZEROL);
-    }
-
-    if (slen > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
-    }
-
-    /*
-     * src points to a string with zero length, or
-     * src equals dest, return dest
-     */
-    if (*src == '\0' || dest == src) {
-        *substring = dest;
-        return RCNEGATE(EOK);
-    }
-
-    while (*dest && dmax) {
-        i = 0;
-        len = slen;
-        dlen = dmax;
-
-        while (src[i] && dlen) {
-
-            /* not a match, not a substring */
-            if (dest[i] != src[i]) {
-                break;
-            }
-
-            /* move to the next char */
-            i++;
-            len--;
-            dlen--;
-
-            if (src[i] == '\0' || !len) {
-                *substring = dest;
-                return RCNEGATE(EOK);
-            }
-        }
-        dest++;
-        dmax--;
-    }
-
-    /*
-     * substring was not found, return NULL
-     */
-    *substring = 0;
-    return RCNEGATE(ESNOTFND);
-}
-
-
-static errno_t
-strncat_s (char *dest, rsize_t dmax, const char *src, rsize_t slen)
+static errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
 {
     rsize_t orig_dmax;
     char *orig_dest;
@@ -458,4 +265,195 @@ strncat_s (char *dest, rsize_t dmax, const char *src, rsize_t slen)
      * the entire src was not copied, so the string will be nulled.
      */
     return RCNEGATE(ESNOSPC);
+}
+
+errno_t strcpy_s (char *dest, rsize_t dmax, const char *src)
+{
+    rsize_t orig_dmax;
+    char *orig_dest;
+    const char *overlap_bumper;
+
+    if (dest == 0) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (dmax == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    if (dmax > RSIZE_MAX_STR) {
+        return RCNEGATE(ESLEMAX);
+    }
+
+    if (src == 0) {
+#ifdef SAFECLIB_STR_NULL_SLACK
+        /* null string to clear data */
+        while (dmax) {  *dest = '\0'; dmax--; dest++; }
+#else
+        *dest = '\0';
+#endif
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (dest == src) {
+        return RCNEGATE(EOK);
+    }
+
+    /* hold base of dest in case src was not copied */
+    orig_dmax = dmax;
+    orig_dest = dest;
+
+    if (dest < src) {
+        overlap_bumper = src;
+
+        while (dmax > 0) {
+            if (dest == overlap_bumper) {
+                return RCNEGATE(ESOVRLP);
+            }
+
+            *dest = *src;
+            if (*dest == '\0') {
+#ifdef SAFECLIB_STR_NULL_SLACK
+                /* null slack to clear any data */
+                while (dmax) { *dest = '\0'; dmax--; dest++; }
+#endif
+                return RCNEGATE(EOK);
+            }
+
+            dmax--;
+            dest++;
+            src++;
+        }
+
+    } else {
+        overlap_bumper = dest;
+
+        while (dmax > 0) {
+            if (src == overlap_bumper) {
+                return RCNEGATE(ESOVRLP);
+            }
+
+            *dest = *src;
+            if (*dest == '\0') {
+#ifdef SAFECLIB_STR_NULL_SLACK
+                /* null slack to clear any data */
+                while (dmax) { *dest = '\0'; dmax--; dest++; }
+#endif
+                return RCNEGATE(EOK);
+            }
+
+            dmax--;
+            dest++;
+            src++;
+        }
+    }
+
+    /*
+     * the entire src must have been copied, if not reset dest
+     * to null the string.
+     */
+    return RCNEGATE(ESNOSPC);
+}
+
+rsize_t strnlen_s (const char *dest, rsize_t dmax)
+{
+    rsize_t count;
+
+    if (dest == 0) {
+        return RCNEGATE(0);
+    }
+
+    if (dmax == 0) {
+        return RCNEGATE(0);
+    }
+
+    if (dmax > RSIZE_MAX_STR) {
+        return RCNEGATE(0);
+    }
+
+    count = 0;
+    while (*dest && dmax) {
+        count++;
+        dmax--;
+        dest++;
+    }
+
+    return RCNEGATE(count);
+}
+
+errno_t strstr_s(char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring)
+{
+    rsize_t len;
+    rsize_t dlen;
+    int i;
+
+    if (substring == 0) {
+        return RCNEGATE(ESNULLP);
+    }
+    *substring = 0;
+
+    if (dest == 0) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (dmax == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    if (dmax > RSIZE_MAX_STR) {
+        return RCNEGATE(ESLEMAX);
+    }
+
+    if (src == 0) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (slen == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    if (slen > RSIZE_MAX_STR) {
+        return RCNEGATE(ESLEMAX);
+    }
+
+    /*
+     * src points to a string with zero length, or
+     * src equals dest, return dest
+     */
+    if (*src == '\0' || dest == src) {
+        *substring = dest;
+        return RCNEGATE(EOK);
+    }
+
+    while (*dest && dmax) {
+        i = 0;
+        len = slen;
+        dlen = dmax;
+
+        while (src[i] && dlen) {
+
+            /* not a match, not a substring */
+            if (dest[i] != src[i]) {
+                break;
+            }
+
+            /* move to the next char */
+            i++;
+            len--;
+            dlen--;
+
+            if (src[i] == '\0' || !len) {
+                *substring = dest;
+                return RCNEGATE(EOK);
+            }
+        }
+        dest++;
+        dmax--;
+    }
+
+    /*
+     * substring was not found, return NULL
+     */
+    *substring = 0;
+    return RCNEGATE(ESNOTFND);
 }
