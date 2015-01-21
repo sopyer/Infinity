@@ -5,7 +5,6 @@
 **  from http://tlsf.baisoku.org
 */
 
-#include <stdint.h>
 #include <core/core.h>
 
 //Allocator is not threadsafe

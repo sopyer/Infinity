@@ -38,13 +38,11 @@ typedef char  cstr1024[1024];
 #define strcpy_s   strcpy_s_core_c
 
 
-errno_t strcat_s(char *dest, rsize_t dmax, const char *src);
-
-errno_t strcpy_s(char *dest, rsize_t dmax, const char *src);
-
+errno_t strcat_s (char *dest, rsize_t dmax, const char *src);
+errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen);
+errno_t strcpy_s (char *dest, rsize_t dmax, const char *src);
 rsize_t strnlen_s(const char *dest, rsize_t dmax);
-
-errno_t strstr_s(char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring);
+errno_t strstr_s (char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring);
 
 #ifdef __cplusplus
 }

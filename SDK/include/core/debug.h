@@ -21,7 +21,7 @@ int assert_handler(const char* cond, const char* file, int line);
 #endif
 
 #ifdef CORE_ENABLE_ASSERT
-#define assert(x) ((void)(!(x) && assert_handler(#x, __FILE__, __LINE__) && (CORE_BREAK(), 1)))
+	#define assert(x) ((void)(!(x) && assert_handler(#x, __FILE__, __LINE__) && (CORE_BREAK(), 1)))
 #else
-#define assert(x) ((void)sizeof(x))
+	#define assert(x) ((void)sizeof(x))
 #endif

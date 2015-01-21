@@ -148,7 +148,7 @@ errno_t strcat_s (char *dest, rsize_t dmax, const char *src)
     return RCNEGATE(ESNOSPC);
 }
 
-static errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
+errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
 {
     rsize_t orig_dmax;
     char *orig_dest;
