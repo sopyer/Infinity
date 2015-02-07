@@ -1,4 +1,6 @@
 @require(passthru, functions, enums, options, version, extensions)
+/* WARNING: This file was automatically generated */
+/* Do not edit. */
 
 #include "opengl.h"
 
@@ -11,12 +13,10 @@
 extern "C" {
 #endif
 
-typedef void(__stdcall *GLPROC)();
-
 static void   glextLoadFunctions(void);
 static void   glextLoadModule(void);
 static void   glextUnloadModule(void);
-static GLPROC glextGetProc(const char *proc);
+static void*  glextGetProc(const char *proc);
 static void   glextAddExtension(const char* extension);
 
 int importOpenGL(void)
@@ -109,30 +109,10 @@ int importOpenGL(void)
         fprintf(stderr, "       Try updating your graphics driver.\n");
         return GL_FALSE;
     }
-    @end  
+    @end
     @end
 
     return GL_TRUE;
-}
-
-
-
-void glextLoadFunctions(void)
-{
-    /* --- Function pointer loading --- */
-
-
-    @for category,funcs in functions:
-    @if category not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED']:
-    /* GL_@category */
-
-    @for f in funcs:
-    glpf@f.name = (PFNGL@f.name.upper()_PROC*)glextGetProc("gl@f.name");
-    @end
-
-
-    @end
-    @end
 }
 
 /* ----------------------- Extension flag definitions ---------------------- */
@@ -141,18 +121,26 @@ int GLEXT_@extension = GL_FALSE;
 @end
 
 /* ---------------------- Function pointer definitions --------------------- */
-
+GLFP glfp = {
 @for category,funcs in functions:
 @if len(funcs) > 0 and category not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED' ]:
 /* GL_@category */
-
+/* @str(len(funcs)) functions */
 @for f in funcs:
-PFNGL@f.name.upper()_PROC* glpf@f.name = NULL;
+    "gl@f.name",
 @end
+@end
+@end
+};
 
-@end
-@end
-
+void glextLoadFunctions(void)
+{
+    /* --- Function pointer loading --- */
+    int i;
+    for(i = 0 ; i < @str(sum((len(f) if c not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED' ] else 0) for c, f in functions)) ; i++){
+        glfp.fp[i] = glextGetProc((const char*)glfp.fp[i]);
+    }
+}
 
 static void glextAddExtension(const char* extension)
 {
@@ -162,7 +150,6 @@ static void glextAddExtension(const char* extension)
     }
 @end
 }
-
 
 /* ------------------ code from Slavomir Kaslev's gl3w ----------------- */
 
@@ -182,11 +169,9 @@ static void glextUnloadModule(void)
     FreeLibrary(libgl);
 }
 
-static GLPROC glextGetProc(const char *proc)
+static void* glextGetProc(const char *proc)
 {
-    GLPROC res;
-
-    res = wglGetProcAddress(proc);
+    void* res = wglGetProcAddress(proc);
     if (!res)
         res = GetProcAddress(libgl, proc);
     return res;
@@ -213,15 +198,32 @@ static void glextUnloadModule(void)
     CFRelease(bundleURL);
 }
 
-static GLPROC glextGetProc(const char *proc)
+static void* glextGetProc(const char *proc)
 {
-    GLPROC res;
+    void* res;
 
     CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, proc,
                 kCFStringEncodingASCII);
     res = CFBundleGetFunctionPointerForName(bundle, procname);
     CFRelease(procname);
     return res;
+}
+#elif defined(ANDROID)
+#include <EGL/egl.h>
+
+static void glextLoadModule(void)
+{
+    // nothing to do
+}
+
+static void glextUnloadModule(void)
+{
+    // nothing to do
+}
+
+static void* glextGetProc(const char *proc)
+{
+    return eglGetProcAddress((const char *) proc);
 }
 #else
 #include <dlfcn.h>
@@ -239,11 +241,9 @@ static void glextUnloadModule(void)
     dlclose(libgl);
 }
 
-static GLPROC glextGetProc(const char *proc)
+static void* glextGetProc(const char *proc)
 {
-    GLPROC res;
-
-    res = glXGetProcAddress((const GLubyte *) proc);
+    void* res = glXGetProcAddress((const GLubyte *) proc);
     if (!res)
         res = dlsym(libgl, proc);
     return res;
