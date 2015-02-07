@@ -1,10 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <string.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 #include <physfs/physfs.h>
 
@@ -30,6 +27,10 @@
 #define PP_CAT_II(res) res
 
 #define CORE_UNIQUE_NAME(base) PP_CAT(base, __LINE__)
+
+typedef unsigned char uchar;
+typedef unsigned int  uint;
+typedef unsigned long ulong;
 
 struct ProfilerCPUAutoTimeslice 
 {
@@ -473,3 +474,70 @@ namespace core
         ++rb.tail;
     }
 };
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+void mem_set(void *dest, size_t len, uint8_t value);
+void mem_set8(uint8_t *dp, size_t len, uint8_t value);
+void mem_set16(uint16_t *dp, size_t len, uint16_t value);
+void mem_set32(uint32_t *dp, size_t len, uint32_t value);
+
+void mem_move(void *dest, const void *src, size_t len);
+void mem_move8(uint8_t *dp, const uint8_t *sp, size_t len);
+void mem_move16(uint16_t *dp, const uint16_t *sp, size_t len);
+void mem_move32(uint32_t *dp, const uint32_t *sp, size_t len);
+
+void mem_copy(void *dest, const void *src, size_t len);
+void mem_copy8(uint8_t *dp, const uint8_t *sp, size_t len);
+void mem_copy16(uint16_t *dp, const uint16_t *sp, size_t len);
+void mem_copy32(uint32_t *dp, const uint32_t *sp, size_t len);
+#ifdef __cplusplus
+}
+
+template<typename T>
+void mem_zero(T* p)
+{
+    mem_set(p, sizeof(T), 0);
+}
+
+template<typename T>
+void mem_zero(T* p, size_t count)
+{
+    mem_set(p, count*sizeof(T), 0);
+}
+
+#endif
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+enum LogCategory
+{
+    LOG_CAT_APP,
+    LOG_CAT_VIDEO,
+    LOG_CAT_AUDIO,
+    LOG_CAT_FILEIO,
+    LOG_CAT_NET,
+    LOG_CAT_SYS,
+    LOG_CAT_INPUT,
+    LOG_CAT_CUSTOM
+};
+
+enum LogPriority
+{
+    LOG_PRIO_TRACE,
+    LOG_PRIO_DEBUG,
+    LOG_PRIO_INFO,
+    LOG_PRIO_WARN,
+    LOG_PRIO_ERROR,
+    LOG_PRIO_CRITICAL,
+    LOG_PRIO_COUNT
+};
+
+void core_log(int cat, int prio, const char* fmt, ...);
+#ifdef __cplusplus
+}
+#endif

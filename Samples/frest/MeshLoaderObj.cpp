@@ -42,7 +42,7 @@ void rcMeshLoaderObj::addVertex(float x, float y, float z, int& cap)
 		cap = !cap ? 8 : cap*2;
 		float* nv = new float[cap*3];
 		if (m_vertCount)
-			memcpy(nv, m_verts, m_vertCount*3*sizeof(float));
+			mem_copy(nv, m_verts, m_vertCount*3*sizeof(float));
 		delete [] m_verts;
 		m_verts = nv;
 	}
@@ -60,7 +60,7 @@ void rcMeshLoaderObj::addTriangle(int a, int b, int c, int& cap)
 		cap = !cap ? 8 : cap*2;
 		int* nv = new int[cap*3];
 		if (m_triCount)
-			memcpy(nv, m_tris, m_triCount*3*sizeof(int));
+			mem_copy(nv, m_tris, m_triCount*3*sizeof(int));
 		delete [] m_tris;
 		m_tris = nv;
 	}
@@ -111,26 +111,28 @@ static char* parseRow(char* buf, char* bufEnd, char* row, int len)
 
 static int parseFace(char* row, int* data, int n, int vcnt)
 {
-	int j = 0;
-	while (*row != '\0')
-	{
-		// Skip initial white space
-		while (*row != '\0' && (*row == ' ' || *row == '\t'))
-			row++;
-		char* s = row;
-		// Find vertex delimiter and terminated the string there for conversion.
-		while (*row != '\0' && *row != ' ' && *row != '\t')
-		{
-			if (*row == '/') *row = '\0';
-			row++;
-		}
-		if (*s == '\0')
-			continue;
-		int vi = atoi(s);
-		data[j++] = vi < 0 ? vi+vcnt : vi-1;
-		if (j >= n) return j;
-	}
-	return j;
+    int j = 0;
+    while (*row != '\0')
+    {
+        // Skip initial white space
+        while (*row != '\0' && (*row == ' ' || *row == '\t'))
+            row++;
+        char* s = row;
+        // Find vertex delimiter and terminated the string there for conversion.
+        while (*row != '\0' && *row != ' ' && *row != '\t')
+        {
+            if (*row == '/') *row = '\0';
+            row++;
+        }
+        if (*s == '\0')
+            continue;
+        intmax_t res;
+        cstr_toimax(s, 128, 0, 0, &res);
+        int vi = (int)res;
+        data[j++] = vi < 0 ? vi + vcnt : vi - 1;
+        if (j >= n) return j;
+    }
+    return j;
 }
 
 bool rcMeshLoaderObj::load(const char* filename)
@@ -160,7 +162,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 		if (row[0] == 'v' && row[1] != 'n' && row[1] != 't')
 		{
 			// Vertex pos
-			sscanf_s(row+1, "%f %f %f", &x, &y, &z);
+			cstr_scanf(row+1, 512-1, "%f %f %f", &x, &y, &z);
 			addVertex(x, y, z, vcap);
 		}
 		if (row[0] == 'f')
@@ -206,7 +208,7 @@ bool rcMeshLoaderObj::load(const char* filename)
 		}
 	}
 	
-	strcpy_s(m_filename, filename);
+	cstr_copy(m_filename, filename);
 	m_filename[sizeof(m_filename)-1] = '\0';
 	
     mem_free(&mem);

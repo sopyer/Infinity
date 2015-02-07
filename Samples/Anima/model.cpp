@@ -127,7 +127,7 @@ namespace Model
 
         vertexDataSize = sizeof(vf::skinned_geom_t)*md5Mesh->numVertices;
         vertices = (vf::skinned_geom_t*)malloc(vertexDataSize);
-        memset(vertices, 0, vertexDataSize);
+        mem_set(vertices, vertexDataSize, 0);
 
         for ( int i = 0; i < md5Mesh->numVertices; ++i )
         {
@@ -265,8 +265,8 @@ namespace Model
         memory_t inText    = {0, 0, 0};
         memory_t outBinary = {0, 0, 0};
 
-        memset(model, 0, sizeof(model_t   ));
-        memset(skel,  0, sizeof(skeleton_t));
+        mem_zero(model);
+        mem_zero(skel);
 
         if (mem_area(&outBinary, 4*1024*1024) &&
             mem_file(&inText, name)           &&
@@ -310,7 +310,7 @@ namespace Model
         memory_t inText    = {0, 0, 0};
         memory_t outBinary = {0, 0, 0};
 
-        memset(anim, 0, sizeof(animation_t));
+        mem_zero(anim);
 
         if (mem_file(&inText, name)            &&
             mem_area(&outBinary, 4*1024*1024)  &&
@@ -460,7 +460,7 @@ cleanup:
         void* memLighting = gfx::dynbufAllocMem(sizeLighting, gfx::caps.uboAlignment,  &offsetLighting);
         void* memBones    = gfx::dynbufAllocMem(sizeBones,    gfx::caps.ssboAlignment, &offsetBones);
 
-        memcpy(memBones, &pose->boneTransforms[0].real.x, sizeBones);
+        mem_copy(memBones, &pose->boneTransforms[0].real.x, sizeBones);
         gfx::updateUBO(ubufGlobal,   memGlobal,   sizeGlobal);
         gfx::updateUBO(ubufLighting, memLighting, sizeLighting);
 
@@ -478,7 +478,7 @@ cleanup:
 
     void createPose(pose_t* pose, skeleton_t* skel)
     {
-        memset(pose, 0, sizeof(pose_t));
+        mem_zero(pose);
 
         pose->boneTransforms = (ml::dual_quat*) malloc(skel->numJoints * sizeof(ml::dual_quat));
         pose->pose           = (ml::dual_quat*) malloc(skel->numJoints * sizeof(ml::dual_quat));
@@ -490,9 +490,10 @@ cleanup:
         memory_t        bjson  = {0, 0, 0};
         mjson_element_t root = 0;
         char            path[1024];
+        int             ind;
 
-        strcpy_s(path, name);
-        strcat_s(path, ".material");
+        cstr_copy(path, name);
+        cstr_concat(path, ".material");
 
         if (mem_file(&inText, path))
         {
@@ -508,11 +509,11 @@ cleanup:
             {
                 const char* name = mjson_get_string(key, "");
 
-                if (strcmp(name, "diffuse")==0)
+                if (cstr_comparen(name, "diffuse", &ind)==EOK && ind==0)
                 {
                     mat->diffuse = res::createTexture2D(mjson_get_string(value, ""));
                 }
-                else if (strcmp(name, "normal")==0)
+                else if (cstr_comparen(name, "normal", &ind)==EOK && ind==0)
                 {
                     mat->normal = res::createTexture2D(mjson_get_string(value, ""));
                 }
@@ -541,7 +542,7 @@ cleanup:
             glDeleteTextures(1, &mat->normal);
         }
 
-        memset(mat, 0, sizeof(material_t));
+        mem_zero(mat);
     }
 
     void destroyMesh(mesh_t* mesh)
@@ -556,7 +557,7 @@ cleanup:
             glDeleteBuffers(1, &mesh->ibo);
         }
 
-        memset(mesh, 0, sizeof(mesh_t));
+        mem_zero(mesh);
     }
 
     void destroyModel(model_t* model)
@@ -570,7 +571,7 @@ cleanup:
         if (model->meshes   ) free(model->meshes   );
         if (model->materials) free(model->materials);
 
-        memset(model, 0, sizeof(model_t));
+        mem_zero(model);
     }
 
     void destroySkeleton(skeleton_t* skel)
@@ -579,14 +580,14 @@ cleanup:
         if (skel->bindPose     ) free(skel->bindPose     );
         if (skel->invBindPose  ) free(skel->invBindPose  );
 
-        memset(skel, 0, sizeof(skeleton_t));
+        mem_zero(skel);
     }
 
     void destroyAnimation(animation_t* anim)
     {
         if (anim->framePoses) free(anim->framePoses);
 
-        memset(anim, 0, sizeof(animation_t));
+        mem_zero(anim);
     }
 
     void destroyPose(pose_t* pose)
@@ -594,6 +595,6 @@ cleanup:
         if (pose->boneTransforms) free(pose->boneTransforms);
         if (pose->pose          ) free(pose->pose          );
 
-        memset(pose, 0, sizeof(pose_t));
+        mem_zero(pose);
     }
 }

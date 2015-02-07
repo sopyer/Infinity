@@ -39,7 +39,7 @@ private:
 	void addVertex(float x, float y, float z, int& cap);
 	void addTriangle(int a, int b, int c, int& cap);
 	
-	char m_filename[260];
+	cstr256 m_filename;
 	
 	float* m_verts;
 	int* m_tris;

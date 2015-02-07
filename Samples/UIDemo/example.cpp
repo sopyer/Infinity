@@ -159,7 +159,7 @@ void draw_demostuff(NVGcontext *vg, int x, int y, float w, float h) {
     bndScrollBar(vg,rx,ry,rw,BND_SCROLLBAR_HEIGHT,BND_ACTIVE,s_offset,s_size);
     
     const char edit_text[] = "The quick brown fox";
-    int textlen = strnlen_s(edit_text)+1;
+    int textlen = cstr_len(edit_text)+1;
     int t = int(timerAbsoluteTime()/1000000*2);
     int idx1 = (t/textlen)%textlen;
     int idx2 = idx1 + (t%(textlen-idx1));

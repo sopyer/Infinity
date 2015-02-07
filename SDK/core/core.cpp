@@ -163,6 +163,14 @@ namespace core
     }
 };
 
+extern "C"
+{
+#include "str.c"
+#include "memory.c"
+#include "mjson.c"
+#include "Remotery.c"
+}
+
 #include "etlsf.cpp"
 #include "memory.cpp"
 #include "ml.cpp"
@@ -172,14 +180,13 @@ namespace core
 
 extern "C"
 {
-#include "str.c"
-#include "mjson.c"
-#undef strnlen_s
-#undef strcat_s
-#undef strncat_s
-#undef strstr_s
-#undef strcpy_s
-#include "Remotery.c"
+    void core_log(int cat, int prio, const char* fmt, ...)
+    {
+        va_list ap;
+        va_start(ap, fmt);
+        SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO, fmt, ap);
+        va_end(ap);
+    }
 }
 
 #ifdef __WIN32__

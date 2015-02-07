@@ -393,7 +393,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     terrainData.uAABB        = vi_set(minX, minZ, maxX, maxZ);
     terrainData.uUVXform     = vi_set(pixelsPerMeter*du, pixelsPerMeter*dv, (-minX*pixelsPerMeter+0.5f)*du, (-minZ*pixelsPerMeter+0.5f)*dv);
     terrainData.uHeightXform = vi_set(heightScale, minY, 0.0f, 0.0f);
-    memcpy(terrainData.uColors, colors, sizeof(terrainData.uColors));
+    mem_copy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 
     glUnmapNamedBufferEXT(ubo);
 

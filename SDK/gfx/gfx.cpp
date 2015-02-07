@@ -92,7 +92,12 @@ namespace gfx
         UNUSED(userParam);
         UNUSED(length);
         UNUSED(id);
-        fprintf(stderr, "SRC[%s] TYPE[%s] SEV[%s] : %s\n", glString(source), glString(type), glString(severity), message);
+        core_log(
+            LOG_CAT_VIDEO, LOG_PRIO_ERROR,
+            "SRC[%s] TYPE[%s] SEV[%s] : %s\n",
+            glString(source), glString(type),
+            glString(severity), message
+        );
     }
 
     void init(int w, int h)
@@ -273,7 +278,7 @@ namespace gfx
 
         global->uColor = color;
         global->uPixelScale = vi_set_f000(1.0f / autoVars.projParams.x / width);
-        memcpy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
+        mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 
         assert(sizeof(line_t)*count <= (size_t)size);
@@ -296,7 +301,7 @@ namespace gfx
 
         global->uColor = color;
         global->uPixelScale = vi_set_f000(ptsize / autoVars.projParams.x / width);
-        memcpy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
+        mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 
         assert(sizeof(point_t)*count <= (size_t)size);
@@ -384,8 +389,8 @@ namespace gfx
 
         {
             PROFILER_CPU_TIMESLICE("Data copy");
-            memcpy(rectDst, rects, sizeof(float)*4*count);
-            memcpy(colDst,  colors,   sizeof(uint8_t)*4*count);
+            mem_copy(rectDst, rects, sizeof(float)*4*count);
+            mem_copy(colDst,  colors,   sizeof(uint8_t)*4*count);
         }
 
         glBindVertexArray(gfx_res::vaoRect);
@@ -411,12 +416,15 @@ namespace gfx
 
     GLuint auto_var_get_index(size_t nameLen, const char* uname, GLenum type, GLint arraySize)
     {
+        int ind;
+
         for (size_t i = 0; i < AUTO_VARS_COUNT; ++i)
         {
             assert(arraySize<2 || nameLen>3);
             if (autoVarDesc[i].type != type) continue;
             if (arraySize > 1 && autoVarDesc[i].arraySize != arraySize) continue;
-            if (strncmp(autoVarDesc[i].name, uname, arraySize>1 ? nameLen-3 : nameLen) != 0) continue;
+            size_t len = arraySize>1 ? nameLen-3 : nameLen;
+            if (cstr_comparen(uname, autoVarDesc[i].name, len, &ind)==EOK && ind != 0) continue;
 
             return i;
         }
@@ -504,7 +512,7 @@ namespace gfx
 
         ubo_desc_data_t* desc = (ubo_desc_data_t*)malloc(descSize);
 
-        memcpy(desc, descProto, descSize);
+        mem_copy(desc, descProto, descSize);
 
         stack_mem_reset(stalloc, uniIndices);
 
@@ -563,7 +571,9 @@ namespace gfx
             if (desc[uni].offset != uniProps.offset) return MATCH_VAR_N_DESC_MISMATCH+uni;
             if (uniProps.arraySize > 1 && desc[uni].arraySize != uniProps.arraySize) return MATCH_VAR_N_DESC_MISMATCH+uni;
 
-            if (desc[uni].name && strncmp(desc[uni].name, uname, uniProps.arraySize>1 ? uniProps.nameLen-3 : uniProps.nameLen) != 0)
+            int ind;
+            size_t len = uniProps.arraySize>1 ? uniProps.nameLen-3 : uniProps.nameLen;
+            if (desc[uni].name && cstr_comparen(desc[uni].name, uname, len, &ind) == EOK && ind != 0)
             {
                 return MATCH_VAR_N_DESC_MISMATCH+uni;
             }
@@ -615,7 +625,7 @@ namespace gfx
             size_t                      sz  = gl_type_size(var.type);
             for (GLint i = 0; i < var.arraySize; ++i)
             {
-                memcpy(&dst[m.offset + m.arrayStride*i], &src[var.offset + sz*i], sz);
+                mem_copy(&dst[m.offset + m.arrayStride*i], &src[var.offset + sz*i], sz);
             }
         }
     }
@@ -644,7 +654,7 @@ namespace gfx
 
         std_transforms_t* transforms = (std_transforms_t*)gfx::dynbufAllocMem(size, gfx::caps.uboAlignment, &offset);
 
-        memcpy(transforms->uMV, &autoVars.matMV, 4*sizeof(v128));
+        mem_copy(transforms->uMV, &autoVars.matMV, 4*sizeof(v128));
         transforms->uProj = vi_loadu_v4(&autoVars.projParams);
 
         glBindBufferRange(GL_UNIFORM_BUFFER, index, dynBuffer, offset, size);
@@ -657,21 +667,21 @@ namespace gfx
 
         mvp_t* transforms = (mvp_t*)gfx::dynbufAllocMem(size, gfx::caps.uboAlignment, &offset);
 
-        memcpy(transforms->uMVP, &autoVars.matMVP, 4*sizeof(v128));
+        mem_copy(transforms->uMVP, &autoVars.matMVP, 4*sizeof(v128));
 
         glBindBufferRange(GL_UNIFORM_BUFFER, index, dynBuffer, offset, size);
     }
 
     void setModelViewMatrix(v128* view)
     {
-        memcpy(autoVars.matMV, view, sizeof(v128)*4);
+        mem_copy(autoVars.matMV, view, sizeof(v128)*4);
 
         ml::mul_mat4(autoVars.matMVP, autoVars.matP, view);
     }
 
     void setProjectionMatrix(v128* proj)
     {
-        memcpy(autoVars.matP, proj, sizeof(v128)*4);
+        mem_copy(autoVars.matP, proj, sizeof(v128)*4);
 
         ml::mul_mat4(autoVars.matMVP, proj, autoVars.matMV);
 

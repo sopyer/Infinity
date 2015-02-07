@@ -1,4 +1,5 @@
 #include <core/str.h>
+#include <limits.h>
 
 /*
 ------------------------------------------------------------------------------------------------------------------------
@@ -40,10 +41,9 @@
  *------------------------------------------------------------------
  */
 
-#define RSIZE_MAX_STR (4UL << 10)   /* 4KB */
 #define RCNEGATE(x) x
 
-errno_t strcat_s (char *dest, rsize_t dmax, const char *src)
+errno_t cstr_concat(char *dest, rsize_t dmax, const char *src)
 {
     rsize_t orig_dmax;
     char *orig_dest;
@@ -59,10 +59,6 @@ errno_t strcat_s (char *dest, rsize_t dmax, const char *src)
 
     if (dmax == 0) {
         return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
     }
 
     /* hold base of dest in case src was not copied */
@@ -148,7 +144,7 @@ errno_t strcat_s (char *dest, rsize_t dmax, const char *src)
     return RCNEGATE(ESNOSPC);
 }
 
-errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
+errno_t cstr_concatn(char *dest, rsize_t dmax, const char *src, rsize_t slen)
 {
     rsize_t orig_dmax;
     char *orig_dest;
@@ -162,16 +158,8 @@ errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
         return RCNEGATE(ESNULLP);
     }
 
-    if (slen > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
-    }
-
     if (dmax == 0) {
         return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
     }
 
     /* hold base of dest in case src was not copied */
@@ -267,7 +255,7 @@ errno_t strncat_s(char *dest, rsize_t dmax, const char *src, rsize_t slen)
     return RCNEGATE(ESNOSPC);
 }
 
-errno_t strcpy_s (char *dest, rsize_t dmax, const char *src)
+errno_t cstr_copy(char *dest, rsize_t dmax, const char *src)
 {
     rsize_t orig_dmax;
     char *orig_dest;
@@ -279,10 +267,6 @@ errno_t strcpy_s (char *dest, rsize_t dmax, const char *src)
 
     if (dmax == 0) {
         return RCNEGATE(ESZEROL);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
     }
 
     if (src == 0) {
@@ -355,7 +339,7 @@ errno_t strcpy_s (char *dest, rsize_t dmax, const char *src)
     return RCNEGATE(ESNOSPC);
 }
 
-rsize_t strnlen_s (const char *dest, rsize_t dmax)
+rsize_t cstr_len(const char *dest, rsize_t dmax)
 {
     rsize_t count;
 
@@ -364,10 +348,6 @@ rsize_t strnlen_s (const char *dest, rsize_t dmax)
     }
 
     if (dmax == 0) {
-        return RCNEGATE(0);
-    }
-
-    if (dmax > RSIZE_MAX_STR) {
         return RCNEGATE(0);
     }
 
@@ -381,7 +361,7 @@ rsize_t strnlen_s (const char *dest, rsize_t dmax)
     return RCNEGATE(count);
 }
 
-errno_t strstr_s(char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring)
+errno_t cstr_substr(char *dest, rsize_t dmax, const char *src, rsize_t slen, char **substring)
 {
     rsize_t len;
     rsize_t dlen;
@@ -400,20 +380,12 @@ errno_t strstr_s(char *dest, rsize_t dmax, const char *src, rsize_t slen, char *
         return RCNEGATE(ESZEROL);
     }
 
-    if (dmax > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
-    }
-
     if (src == 0) {
         return RCNEGATE(ESNULLP);
     }
 
     if (slen == 0) {
         return RCNEGATE(ESZEROL);
-    }
-
-    if (slen > RSIZE_MAX_STR) {
-        return RCNEGATE(ESLEMAX);
     }
 
     /*
@@ -457,3 +429,172 @@ errno_t strstr_s(char *dest, rsize_t dmax, const char *src, rsize_t slen, char *
     *substring = 0;
     return RCNEGATE(ESNOTFND);
 }
+
+errno_t cstr_compare(const char *str1, rsize_t s1max, const char *str2, rsize_t s2max, int *indicator)
+{
+    char cs1, cs2;
+    if (indicator == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+    *indicator = 0;
+
+    if (str1 == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (s1max == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    if (str2 == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (s2max == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    do 
+    {
+        cs1 = s1max ? *str1++ : 0;
+        cs2 = s2max ? *str2++ : 0;
+
+        s1max--;
+        s2max--;
+    } while (cs1==cs2 && cs1 && cs2);
+
+    *indicator = cs2 - cs1;
+    return RCNEGATE(EOK);
+}
+
+errno_t cstr_comparen(const char *dest, const char *src, rsize_t cmax, int *indicator)
+{
+    if (indicator == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+    *indicator = 0;
+
+    if (dest == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (src == NULL) {
+        return RCNEGATE(ESNULLP);
+    }
+
+    if (cmax == 0) {
+        return RCNEGATE(ESZEROL);
+    }
+
+    while (*dest && *src) {
+
+        if (*dest != *src) {
+            break;
+        }
+
+        if (--cmax == 0)
+            break;
+
+        dest++;
+        src++;
+    }
+
+    *indicator = *dest - *src;
+    return RCNEGATE(EOK);
+}
+
+//str, size - in/out
+//token, token_size - out
+errno_t cstr_tokenize(
+    const char* delims, rsize_t delim_size,
+    const char** str,   rsize_t* size,
+    const char** token, rsize_t* token_size
+)
+{
+    const char *pt;
+    const char *ptoken;
+    rsize_t dlen;
+    rsize_t slen;
+    const char* s;
+
+    if (str == NULL) { return (EINVAL); }
+
+    if (delim_size == 0) { return (ESZEROL); }
+
+    if (size == NULL) { return (EINVAL); }
+
+    if (*size == 0) { return (ESZEROL); }
+
+    if (token == NULL) { return (EINVAL); }
+
+    if (token_size == NULL) { return (EINVAL); }
+
+    if (delims == NULL) { return (EINVAL); }
+
+    /*
+     * scan dest for a delimiter
+     */
+    dlen = *size;
+    s = *str;
+    ptoken = NULL;
+    while (*s != '\0' && dlen && !ptoken) {
+        /*
+         * must scan the entire delimiter list
+         * ISO should have included a delimiter string limit!!
+         */
+        slen = delim_size;
+        pt = delims;
+        while (*pt != '\0' && slen--) {
+            if (*s == *pt) {
+                ptoken = NULL;
+                break;
+            } else {
+                pt++;
+                ptoken = s;
+            }
+        }
+        s++;
+        dlen--;
+    }
+
+    /*
+     * if the beginning of a token was not found, then no
+     * need to continue the scan.
+     */
+    if (ptoken == NULL) {
+        *str = s;
+        *size = dlen;
+        *token = NULL;
+        *token_size = NULL;
+        return (EOK);
+    }
+
+    /*
+     * Now we need to locate the end of the token
+     */
+    while (*s != '\0' && dlen) {
+        slen = delim_size;
+        pt = delims;
+        while (*pt != '\0' && slen--) {
+            if (*s == *pt) {
+                goto done;
+            } else {
+                /*
+                 * simply scanning through the delimiter string
+                 */
+                pt++;
+            }
+        }
+        s++;
+        dlen--;
+    }
+
+done:
+    *str = s;
+    *size = dlen;
+    *token = ptoken;
+    *token_size = s - ptoken;
+
+    return (EOK);
+}
+#include "cstr_parse.c"

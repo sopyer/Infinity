@@ -50,6 +50,12 @@
     <ClCompile Include="str.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="memory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cstr_parse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nedmalloc.h">
