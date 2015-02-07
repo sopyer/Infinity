@@ -512,10 +512,16 @@ cleanup:
                 if (cstr_comparen(name, "diffuse", &ind)==EOK && ind==0)
                 {
                     mat->diffuse = res::createTexture2D(mjson_get_string(value, ""));
+                    //TODO: temporary fix for repeated/mirrored textures!!!
+                    glTextureParameteriEXT(mat->diffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteriEXT(mat->diffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 }
                 else if (cstr_comparen(name, "normal", &ind)==EOK && ind==0)
                 {
                     mat->normal = res::createTexture2D(mjson_get_string(value, ""));
+                    //TODO: temporary fix for repeated/mirrored textures!!!
+                    glTextureParameteriEXT(mat->normal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteriEXT(mat->normal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 }
 
                 key = mjson_get_member_next(root, key, &value);
