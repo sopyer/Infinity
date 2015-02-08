@@ -1,13 +1,5 @@
 #pragma once
 
-#include <new>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <time.h>
-
-#include <string>
 #include <vector>
 
 #include <SDL2/SDL.h>

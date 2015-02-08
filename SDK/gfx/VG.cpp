@@ -8,9 +8,6 @@
 //Path rendering use 0 as base refence value - it should work fine with GL_*_WRAP stencil operations
 //Path rendering avoids explicit stencil clear - cover/paint operation resets stencil
 
-#include <stdio.h>
-#include <memory.h>
-
 namespace vg
 {
     NVGcontext*  ctx;
