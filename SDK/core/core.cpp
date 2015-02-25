@@ -166,13 +166,13 @@ namespace core
 extern "C"
 {
 #include "str.c"
-#include "memory.c"
+#include "mem_utils.c"
+#include "mem_alloc.c"
 #include "mjson.c"
 #include "Remotery.c"
 }
 
 #include "etlsf.cpp"
-#include "memory.cpp"
 #include "ml.cpp"
 #include "mt.cpp"
 #include "timer.cpp"

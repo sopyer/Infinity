@@ -4,7 +4,7 @@
 
 namespace gfx
 {
-    extern mem::arena_t  memArena;
+    extern mspace_t  memArena;
 }
 
 namespace gfx_res

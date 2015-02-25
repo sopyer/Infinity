@@ -20,7 +20,7 @@ namespace gfx
 
     gl_caps_t caps;
 
-    mem::arena_t memArena = 0;
+    mspace_t memArena = 0;
 
 //!!!!!TODO: implements proper simple caching solution with bitset
     //enum RevObjects
@@ -102,7 +102,7 @@ namespace gfx
 
     void init(int w, int h)
     {
-        memArena = mem::create_arena(512 * (1<<10), 1);
+        memArena = mem_create_space(512 * (1<<10));
 
 #ifdef _DEBUG
         glDebugMessageCallback(debugCallback, NULL);
@@ -138,7 +138,7 @@ namespace gfx
         glDeleteSync(frameSync[0]);
         glDeleteSync(frameSync[1]);
 
-        mem::destroy_arena(memArena);
+        mem_destroy_space(memArena);
     }
 
     void resize(int w, int h)

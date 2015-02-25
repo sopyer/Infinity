@@ -152,7 +152,7 @@ namespace app
     material_t* findMaterial(const char* name);
 
 
-    mem::arena_t appArena;
+    mspace_t appArena;
 
     size_t numViewLights;
     light_t  lights[MAX_LIGHTS];
@@ -212,7 +212,7 @@ namespace app
 
     void init()
     {
-        appArena = mem::create_arena(20*1024*1024, 0);
+        appArena = mem_create_space(20*1024*1024);
         staticBufferAllocated = 0;
 
         const char* version        = "#version 430\n\n";
@@ -380,7 +380,7 @@ namespace app
         destroyModels();
         destroyMaterials();
         gfx::gpu_timer_fini(&gpuTimer);
-        mem::destroy_arena(appArena);
+        mem_destroy_space(appArena);
 
         glDeleteVertexArrays(1, &vao_0x0B);
         glDeleteVertexArrays(1, &vao_0x0C);
@@ -709,7 +709,7 @@ namespace app
                 gpu_material_t* matGPU = (gpu_material_t*)(matPtr+matOffset);
 
                 size_t len = strlen(matName);
-                materialNames[numMaterials] = (const char*)mem::alloc(appArena, len+1);
+                materialNames[numMaterials] = (const char*)mem_alloc(appArena, len+1, 0);
                 strcpy_s((char*)materialNames[numMaterials], len+1, matName);
 
                 assert(mjson_get_type(dict) == MJSON_ID_DICT32);
@@ -1069,7 +1069,7 @@ namespace app
             uint32_t indexOffset  = bit_align_up(vertexOffset+verticesSize, indexSize);
 
             uint8_t* vertPtr = mem_raw_data_offset<uint8_t>(data, header->vertexOffset);
-            uint8_t* indPtr  = mem_raw_data_offset<uint8_t>(data, header->indexOffset);;
+            uint8_t* indPtr  = mem_raw_data_offset<uint8_t>(data, header->indexOffset);
 
             uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
             memcpy(ptr+(vertexOffset-baseOffset), vertPtr, verticesSize);

@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="nedmalloc">
-      <UniqueIdentifier>{8b73c858-8004-49bc-9a3e-0b261afd60da}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Public Headers">
       <UniqueIdentifier>{72fecdd3-e8dc-4268-9786-b2f5178b80c3}</UniqueIdentifier>
     </Filter>
@@ -26,9 +23,6 @@
     <ClCompile Include="mjson.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mt.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -37,9 +31,6 @@
     </ClCompile>
     <ClCompile Include="timer.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="nedmalloc.cpp">
-      <Filter>nedmalloc</Filter>
     </ClCompile>
     <ClCompile Include="etlsf.cpp">
       <Filter>Source Files</Filter>
@@ -50,20 +41,17 @@
     <ClCompile Include="str.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="memory.c">
+    <ClCompile Include="cstr_parse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cstr_parse.c">
+    <ClCompile Include="mem_alloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mem_utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="nedmalloc.h">
-      <Filter>nedmalloc</Filter>
-    </ClInclude>
-    <ClInclude Include="malloc.c.h">
-      <Filter>nedmalloc</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\core\vi.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
@@ -102,6 +90,9 @@
     </ClInclude>
     <ClInclude Include="..\include\core\debug.h">
       <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="malloc.c.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

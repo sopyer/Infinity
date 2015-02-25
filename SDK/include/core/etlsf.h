@@ -16,7 +16,7 @@
 struct   etlsf_arena_data_t;
 typedef  etlsf_arena_data_t*  etlsf_arena_t;
 
-etlsf_arena_t  etlsf_create (mem::arena_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs);
+etlsf_arena_t  etlsf_create (mspace_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs);
 void           etlsf_destroy(etlsf_arena_t arena);
 
 // All allocations are always aligned up to 256 bytes

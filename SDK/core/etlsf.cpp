@@ -64,7 +64,7 @@ struct block_t
 
 struct etlsf_arena_data_t
 {
-    mem::arena_t marena;
+    mspace_t marena;
 
     /* Bitmaps for free lists. */
     unsigned int fl_bitmap;
@@ -94,13 +94,13 @@ static  uint16_t  block_find_free      (etlsf_arena_t arena, uint32_t size);
 static  void      block_trim           (etlsf_arena_t arena, uint16_t id);
 
 //-------------------------  API implementation  ----------------------------//
-etlsf_arena_t etlsf_create(mem::arena_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs)
+etlsf_arena_t etlsf_create(mspace_t marena, uint32_t offset, uint32_t size, uint16_t max_allocs)
 {
     assert(max_allocs < BLOCK_COUNT_MAX);
     assert(size % ALIGN_SIZE == 0);
     assert(offset % ALIGN_SIZE == 0);
 
-    etlsf_arena_t arena = (etlsf_arena_t)mem::alloc(marena, arena_total_size(max_allocs + 1));
+    etlsf_arena_t arena = (etlsf_arena_t)mem_alloc(marena, arena_total_size(max_allocs + 1), 0);
 
     memset(arena, 0, sizeof(etlsf_arena_data_t)); // sets also all lists point to zero block
 
@@ -128,9 +128,9 @@ void etlsf_destroy(etlsf_arena_t arena)
 {
     assert(arena);
 
-    mem::arena_t marena = arena->marena;
+    mspace_t marena = arena->marena;
 
-    mem::free(marena, arena);
+    mem_free(marena, arena);
 }
 
 uint16_t etlsf_alloc(etlsf_arena_t arena, uint32_t size)

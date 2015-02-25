@@ -108,7 +108,7 @@ namespace app
     void generateLights(int num);
     static void assignLightsToClustersCpu(v128 modelView[4], v128 proj[4]);
 
-    mem::arena_t appArena;
+    mspace_t appArena;
 
     size_t numViewLights;
     light_t  lights[MAX_LIGHTS];
@@ -163,7 +163,7 @@ namespace app
 
     void init()
     {
-        appArena = mem::create_arena(20*1024*1024, 0);
+        appArena = mem_create_space(20*1024*1024);
         staticBufferAllocated = 0;
 
         const char* version        = "#version 430\n\n";
@@ -254,7 +254,7 @@ namespace app
         destroyModels();
         destroyMaterials();
         gfx::gpu_timer_fini(&gpuTimer);
-        mem::destroy_arena(appArena);
+        mem_destroy_space(appArena);
     }
 
     int32_t gridDimX;
@@ -442,7 +442,7 @@ namespace app
                 gpu_material_t* matGPU = (gpu_material_t*)(matPtr+matOffset);
 
                 size_t len = strlen(matName);
-                materialNames[numMaterials] = (const char*)mem::alloc(appArena, len+1);
+                materialNames[numMaterials] = (const char*)mem_alloc(appArena, len+1, 0);
                 strcpy_s((char*)materialNames[numMaterials], len+1, matName);
 
                 assert(mjson_get_type(dict) == MJSON_ID_DICT32);
