@@ -2016,7 +2016,7 @@ void bndIcon(NVGcontext *ctx, float x, float y, int iconid) {
         nvgImagePattern(ctx,x-u,y-v,
         BND_ICON_SHEET_WIDTH,
         BND_ICON_SHEET_HEIGHT,
-        0,bnd_icon_image,1,1.0f));
+        0,bnd_icon_image,1.0f));
     nvgFill(ctx);
 }
 

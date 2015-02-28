@@ -139,9 +139,6 @@
     <ClInclude Include="..\include\opengl.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
-    <ClInclude Include="nanovg.h">
-      <Filter>Public Headers</Filter>
-    </ClInclude>
     <ClInclude Include="fontstash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -149,6 +146,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\gfx\nanovg_utils.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\gfx\nanovg.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
   </ItemGroup>

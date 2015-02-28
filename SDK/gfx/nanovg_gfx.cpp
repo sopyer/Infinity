@@ -19,18 +19,6 @@
 #include <gfx/gfx.h>
 #include "gfx_res.h"
 
-// Create flags
-
-// Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).
-#define NVG_ANTIALIAS 1 	
-
-// Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
-// slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
-#define NVG_STENCIL_STROKES 2
-
-NVGcontext* nvgCreateGL3(int flags);
-void nvgDeleteGL3(NVGcontext* ctx);
-
 enum NVGLtextureflags {
     NVGL_TEXTURE_FLIP_Y = 0x01,
     NVGL_TEXTURE_NODELETE = 0x02,
@@ -147,7 +135,7 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
         tex = &gl->textures[gl->ntextures++];
     }
 
-    memset(tex, 0, sizeof(*tex));
+    mem_zero(tex);
     tex->id = ++gl->textureId;
 
     return tex;
@@ -169,7 +157,7 @@ static int glnvg__deleteTexture(GLNVGcontext* gl, int id)
         if (gl->textures[i].id == id) {
             if (gl->textures[i].tex != 0 && (gl->textures[i].flags & NVGL_TEXTURE_NODELETE) == 0)
                 glDeleteTextures(1, &gl->textures[i].tex);
-            memset(&gl->textures[i], 0, sizeof(gl->textures[i]));
+            mem_zero(&gl->textures[i]);
             return 1;
         }
     }
@@ -301,13 +289,13 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
     GLNVGtexture* tex = NULL;
     float invxform[6];
 
-    memset(frag, 0, sizeof(*frag));
+    mem_zero(frag);
 
     frag->innerCol = glnvg__premulColor(paint->innerColor);
     frag->outerCol = glnvg__premulColor(paint->outerColor);
 
     if (scissor->extent[0] < -0.5f || scissor->extent[1] < -0.5f) {
-        memset(frag->scissorMat, 0, sizeof(frag->scissorMat));
+        mem_zero(frag->scissorMat);
         frag->scissorExt[0] = 1.0f;
         frag->scissorExt[1] = 1.0f;
         frag->scissorScale[0] = 1.0f;
@@ -321,7 +309,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
         frag->scissorScale[1] = ml::sqrt(scissor->xform[1] * scissor->xform[1] + scissor->xform[3] * scissor->xform[3]) / fringe;
     }
 
-    memcpy(frag->extent, paint->extent, sizeof(frag->extent));
+    mem_copy(frag->extent, paint->extent, sizeof(frag->extent));
     frag->strokeMult = (width*0.5f + fringe*0.5f) / fringe;
     frag->strokeThr = strokeThr;
 
@@ -492,6 +480,12 @@ static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
     glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
 }
 
+static void glnvg__renderCancel(void* uptr) {
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	gl->npaths = 0;
+	gl->ncalls = 0;
+}
+
 static void glnvg__renderFlush(void* uptr)
 {
     PROFILER_CPU_TIMESLICE("NVG backend flush");
@@ -566,7 +560,7 @@ static GLNVGcall* glnvg__allocCall(GLNVGcontext* gl)
         gl->ccalls = ccalls;
     }
     ret = &gl->calls[gl->ncalls++];
-    memset(ret, 0, sizeof(GLNVGcall));
+    mem_zero(ret);
     return ret;
 }
 
@@ -615,18 +609,18 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
     for (int i = 0; i < npaths; i++) {
         GLNVGpath* copy = &gl->paths[call->pathOffset + i];
         const NVGpath* path = &paths[i];
-        memset(copy, 0, sizeof(GLNVGpath));
+        mem_zero(copy);
         if (path->nfill > 0) {
             copy->fillOffset = offset;
             copy->fillCount = path->nfill;
-            memcpy(vtx, path->fill, sizeof(NVGvertex) * path->nfill);
+            mem_copy(vtx, path->fill, sizeof(NVGvertex) * path->nfill);
             offset += path->nfill;
             vtx    += path->nfill;
         }
         if (path->nstroke > 0) {
             copy->strokeOffset = offset;
             copy->strokeCount = path->nstroke;
-            memcpy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
+            mem_copy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
             offset += path->nstroke;
             vtx    += path->nstroke;
         }
@@ -650,7 +644,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGscissor* scissor, 
         // Simple shader for stencil
         frag = (GLNVGfragUniforms*)gfx::dynbufAlloc(gl->fragSize);
         if (!frag) goto error;
-        memset(frag, 0, sizeof(*frag));
+        mem_zero(frag);
         frag->strokeThr = -1.0f;
         frag->type = NSVG_SHADER_SIMPLE;
 
@@ -698,11 +692,11 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGscissor* scissor
     for (int i = 0; i < npaths; i++) {
         GLNVGpath* copy = &gl->paths[call->pathOffset + i];
         const NVGpath* path = &paths[i];
-        memset(copy, 0, sizeof(GLNVGpath));
+        mem_zero(copy);
         if (path->nstroke) {
             copy->strokeOffset = offset;
             copy->strokeCount  = path->nstroke;
-            memcpy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
+            mem_copy(vtx, path->stroke, sizeof(NVGvertex) * path->nstroke);
             offset += path->nstroke;
             vtx    += path->nstroke;
         }
@@ -756,7 +750,7 @@ static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGscissor* scis
     if (!vtx) goto error;
 
     call->triangleCount = nverts;
-    memcpy(vtx, verts, sizeof(NVGvertex) * nverts);
+    mem_copy(vtx, verts, sizeof(NVGvertex) * nverts);
 
     gfx::dynbufAlignMem(gfx::caps.uboAlignment, &call->uniformOffset);
 
@@ -799,15 +793,16 @@ NVGcontext* nvgCreateGL3(int flags)
     NVGcontext* ctx = NULL;
     GLNVGcontext* gl = (GLNVGcontext*)malloc(sizeof(GLNVGcontext));
     if (gl == NULL) goto error;
-    memset(gl, 0, sizeof(GLNVGcontext));
+    mem_zero(gl);
 
-    memset(&params, 0, sizeof(params));
+    mem_zero(&params);
     params.renderCreate = glnvg__renderCreate;
     params.renderCreateTexture = glnvg__renderCreateTexture;
     params.renderDeleteTexture = glnvg__renderDeleteTexture;
     params.renderUpdateTexture = glnvg__renderUpdateTexture;
     params.renderGetTextureSize = glnvg__renderGetTextureSize;
     params.renderViewport = glnvg__renderViewport;
+	params.renderCancel = glnvg__renderCancel;
     params.renderFlush = glnvg__renderFlush;
     params.renderFill = glnvg__renderFill;
     params.renderStroke = glnvg__renderStroke;
