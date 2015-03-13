@@ -264,9 +264,9 @@ namespace gfx
     struct line_global_t
     {
         v128  uColor;
-        v128  uPixelScale;
         v128  uMV[4];
         v128  uProj;
+        v128  uPixelScaleZn;
     };
 
     //!!TODO: fix near plane clipping bug
@@ -277,7 +277,11 @@ namespace gfx
         line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
-        global->uPixelScale = vi_set_f000(1.0f / autoVars.projParams.x / width);
+        global->uPixelScaleZn = vi_set(
+            1.0f / autoVars.projParams.x / width,
+            1.01f * (-1.0f - autoVars.projParams.w) / autoVars.projParams.z,
+            0.0f, 0.0f
+        );
         mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 
@@ -300,7 +304,7 @@ namespace gfx
         line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
-        global->uPixelScale = vi_set_f000(ptsize / autoVars.projParams.x / width);
+        global->uPixelScaleZn = vi_set_f000(ptsize / autoVars.projParams.x / width);
         mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 

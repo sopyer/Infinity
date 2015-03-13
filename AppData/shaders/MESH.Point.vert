@@ -4,9 +4,9 @@ layout(std140, column_major) uniform;
 layout(binding = 0) uniform uniGlobal
 {
     vec4  uColor;
-    float uPixelScale;
     mat4  au_MV;
     vec4  au_Proj;
+    float uPixelScale;
 };
 
 layout(std140, binding = 1) buffer uniLines
