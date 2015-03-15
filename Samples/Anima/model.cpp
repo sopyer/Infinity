@@ -19,14 +19,10 @@ namespace Model
     gfx::ubo_desc_t ubufLighting;
     gfx::ubo_desc_t ubufGlobal;
 
-    struct mesh_t
-    {
-        GLuint    vbo;
-        GLuint    ibo;
-        GLenum    idxFormat;
-        GLsizei   idxOffset;
-        GLsizei   numIndices;
-    };
+    const size_t STATIC_BUFFER_SIZE = 2 * (1<<20);
+
+    gfx_stack_alloc32_t staticAlloc = {STATIC_BUFFER_SIZE, 0};
+    GLuint              staticBuffer;
 
     struct material_t
     {
@@ -37,7 +33,7 @@ namespace Model
 
     void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
 
-    void destroyMesh(mesh_t* mesh);
+    void destroyMesh(gfx_mesh_t* mesh);
 
     bool loadMaterial   (material_t* mat, const char* name);
     void destroyMaterial(material_t* mat);
@@ -54,6 +50,9 @@ namespace Model
 
         ubufLighting = gfx::createUBODesc(prgDefault, "uniLighting");
         ubufGlobal   = gfx::createUBODesc(prgDefault, "uniGlobal");
+
+        glGenBuffers(1, &staticBuffer);
+        glNamedBufferStorageEXT(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
 
 #ifdef _DEBUG
         {
@@ -81,6 +80,7 @@ namespace Model
 
     void fini()
     {
+        glDeleteBuffers(1, &staticBuffer);
         glDeleteProgram(prgLighting);
         glDeleteProgram(prgDefault);
 
@@ -120,14 +120,15 @@ namespace Model
         }
     }
 
-    void md5CreateMesh(mesh_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
+    void md5CreateMesh(gfx_mesh_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
     {
         vf::skinned_geom_t* vertices;
-        size_t         vertexDataSize;
 
-        vertexDataSize = sizeof(vf::skinned_geom_t)*md5Mesh->numVertices;
-        vertices = (vf::skinned_geom_t*)malloc(vertexDataSize);
-        mem_set(vertices, vertexDataSize, 0);
+        GLuint verticesSize = sizeof(vf::skinned_geom_t) * md5Mesh->numVertices;
+        GLuint indicesSize  = sizeof(uint16_t) * md5Mesh->numIndices;
+
+        vertices = (vf::skinned_geom_t*)malloc(verticesSize);
+        mem_set(vertices, verticesSize, 0);
 
         for ( int i = 0; i < md5Mesh->numVertices; ++i )
         {
@@ -212,16 +213,29 @@ namespace Model
             vertices[i].v = md5Mesh->vertices[i].v;
         }
 
-        glGenBuffers(1, &mesh->vbo);
-        glGenBuffers(1, &mesh->ibo);
+        GLuint    totalSize;
+        uint32_t  vertexOffset;
+        uint32_t  indexOffset;
 
-        glNamedBufferStorageEXT( mesh->vbo, vertexDataSize, vertices, 0 );
-        glNamedBufferStorageEXT( mesh->ibo, sizeof(uint16_t) * md5Mesh->numIndices, md5Mesh->indices, 0 ); 
+        gfx_alloc_geom(
+            &staticAlloc,
+            sizeof(vf::skinned_geom_t), md5Mesh->numVertices,
+            sizeof(uint16_t), md5Mesh->numIndices,
+            &vertexOffset, &indexOffset, &totalSize
+        );
 
-        mesh->numIndices = md5Mesh->numIndices;
-        mesh->idxFormat  = GL_UNSIGNED_SHORT;
-        mesh->idxOffset  = 0;
+        assert(vertexOffset % sizeof(vf::skinned_geom_t) == 0);
+        assert(indexOffset % sizeof(uint16_t) == 0);
 
+        uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+        mem_copy(ptr, vertices, verticesSize);
+        mem_copy(ptr+(indexOffset-vertexOffset),  md5Mesh->indices,  indicesSize);
+        glUnmapNamedBufferEXT(staticBuffer);
+
+        mesh->numIndices  = md5Mesh->numIndices;
+        mesh->idxFormat   = GL_UNSIGNED_SHORT;
+        mesh->idxOffset   = indexOffset;
+        mesh->firstVertex = vertexOffset / sizeof(vf::skinned_geom_t);
         free(vertices);
     }
 
@@ -277,7 +291,7 @@ namespace Model
             md5_model_t* md5Model = (md5_model_t*)outBinary.buffer;
 
             model->numMeshes = md5Model->numMeshes;
-            model->meshes    = (mesh_t*)    malloc(model->numMeshes*sizeof(mesh_t));
+            model->meshes    = (gfx_mesh_t*)malloc(model->numMeshes*sizeof(gfx_mesh_t));
             model->materials = (material_t*)malloc(model->numMeshes*sizeof(material_t));
 
             md5CreateSkeleton(skel, md5Model->numJoints, md5Model->joints);
@@ -397,20 +411,20 @@ cleanup:
         }
     }
 
-    void renderMesh(mesh_t* mesh, material_t* material)
+    void renderMesh(gfx_mesh_t* mesh, material_t* material)
     {
         glUseProgram(material->program);
 
         // Position data
         glBindVertexArray(vf::skinned_geom_t::vao);
-        glBindVertexBuffer(0, mesh->vbo, 0, sizeof(vf::skinned_geom_t));
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
+        glBindVertexBuffer(0, staticBuffer, 0, sizeof(vf::skinned_geom_t));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, staticBuffer);
 
         GLuint textureSet[2] = {material->diffuse, material->normal};
         glBindTextures(0, 2, textureSet);
 
         // Draw mesh from index buffer
-        glDrawElements(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset));
+        glDrawElementsBaseVertex(GL_TRIANGLES, mesh->numIndices, mesh->idxFormat, BUFFER_OFFSET(mesh->idxOffset), mesh->firstVertex);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
@@ -551,18 +565,8 @@ cleanup:
         mem_zero(mat);
     }
 
-    void destroyMesh(mesh_t* mesh)
+    void destroyMesh(gfx_mesh_t* mesh)
     {
-        if (mesh->vbo)
-        {
-            glDeleteBuffers(1, &mesh->vbo);
-        }
-
-        if (mesh->ibo)
-        {
-            glDeleteBuffers(1, &mesh->ibo);
-        }
-
         mem_zero(mesh);
     }
 

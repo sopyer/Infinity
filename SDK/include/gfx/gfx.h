@@ -104,6 +104,32 @@ namespace vf
     void set(p3uv2cu4_vertex_t* vert, float x, float y, float z, float u, float v, uint32_t c);
 }
 
+struct gfx_mesh_t
+{
+    //Temporarily
+    GLuint    vao;
+    GLuint    stride;
+
+    GLuint    firstVertex;
+    GLenum    idxFormat;
+    GLsizei   idxOffset;
+    GLsizei   numIndices;
+};
+
+struct gfx_stack_alloc32_t
+{
+    uint32_t  size;
+    uint32_t  used;
+};
+
+int gfx_alloc_geom(
+    gfx_stack_alloc32_t* alloc,
+    uint32_t  vertexSize,   uint32_t  vertexCount,
+    uint32_t  indexSize,    uint32_t  indexCount,
+    uint32_t* vertexOffset, uint32_t* indexOffset,
+    uint32_t* totalSize
+);
+
 namespace gfx
 {
     static const GLuint64   GL_TIMEOUT_INFINITE = ~0ull;

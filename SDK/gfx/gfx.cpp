@@ -755,6 +755,42 @@ namespace gfx
     }
 }
 
+int gfx_alloc_geom(
+    gfx_stack_alloc32_t* alloc,
+    uint32_t  vertexSize,   uint32_t  vertexCount,
+    uint32_t  indexSize,    uint32_t  indexCount,
+    uint32_t* vertexOffset, uint32_t* indexOffset,
+    uint32_t* totalSize
+)
+{
+    assert(alloc);
+    assert(vertexOffset);
+    assert(indexOffset);
+
+    GLuint verticesSize = vertexSize * vertexCount;
+    GLuint indicesSize  = indexSize * indexCount;
+
+    size_t voffset;
+    size_t ioffset;
+
+    voffset = core::align_up(alloc->used, vertexSize);
+    ioffset = bit_align_up(voffset+verticesSize, indexSize);
+
+    size_t used = ioffset + indicesSize;
+
+    int success = used <= alloc->size;
+
+    if (success)
+    {
+        *vertexOffset = voffset;
+        *indexOffset  = ioffset;
+        *totalSize    = used - voffset;
+        alloc->used    = used;
+    }
+
+    return success;
+}
+
 #include "DefaultFontData.cpp"
 #include "Font.cpp"
 #include "gfx_res.cpp"

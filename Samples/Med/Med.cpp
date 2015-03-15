@@ -53,18 +53,6 @@ struct mesh_header_v0
 
 #define MESH_FILE_MAGIC 'HSEM'
 
-struct mesh_t
-{
-    //Temporarily
-    GLuint    vao;
-    GLuint    stride;
-
-    GLuint    firstVertex;
-    GLenum    idxFormat;
-    GLsizei   idxOffset;
-    GLsizei   numIndices;
-};
-
 struct material_t
 {
     GLuint  program;
@@ -76,7 +64,7 @@ struct model_t
 {
     float        minx, miny, minz;
     float        maxx, maxy, maxz;
-    uint32_t     numSubsets;
+    uint32_t     numSubmeshes;
     uint16_t     gpuMemHandle;
     //uint32_t     offsetSize[16*2];
     //material_t*  materials[16];
@@ -117,7 +105,7 @@ struct gpu_material_t
     float     uMatSpecPow;
 };
 
-static_assert(sizeof(light_t)==32, "Invalid light_t size");
+static_assert(sizeof(light_t)==32, "Size of light_t shouud be 32 bytes");
 
 namespace app
 {
@@ -142,7 +130,7 @@ namespace app
     size_t  numLights;
 
     model_t      models       [MAX_MODELS];
-    mesh_t       meshes       [MAX_MESHES];
+    gfx_mesh_t   meshes       [MAX_MESHES];
     material_t*  materialRefs [MAX_MESHES];
     material_t   materials    [MAX_MATERIALS];
     const char*  materialNames[MAX_MATERIALS];
@@ -173,10 +161,10 @@ namespace app
     GLuint matBufferSize;
     GLuint materialSize;
 
-    GLuint staticBuffer;
-    GLuint staticBufferAllocated;
+    const size_t STATIC_BUFFER_SIZE = 10 * (1<<20);
 
-    const size_t staticBufferSize = 10 * (1<<20);
+    gfx_stack_alloc32_t staticAlloc = {STATIC_BUFFER_SIZE, 0};
+    GLuint              staticBuffer;
 
     GLuint vao_0x0B;
     GLuint vao_0x0C;
@@ -213,7 +201,6 @@ namespace app
     void init()
     {
         appArena = mem_create_space(20*1024*1024);
-        staticBufferAllocated = 0;
 
         const char* version        = "#version 430\n\n";
         const char* enableDebug    = "#define ENABLE_DEBUG\n";
@@ -338,7 +325,7 @@ namespace app
         glNamedBufferStorageEXT(materialUBO, matBufferSize, 0, GL_MAP_WRITE_BIT);
 
         glGenBuffers(1, &staticBuffer);
-        glNamedBufferStorageEXT(staticBuffer, staticBufferSize, 0, GL_MAP_WRITE_BIT);
+        glNamedBufferStorageEXT(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
 
         loadMaterials();
 
@@ -460,7 +447,7 @@ namespace app
     {
         numModels = 0;
         numMeshes = 0;
-        staticBufferAllocated = 0;
+        staticAlloc.used = 0;
 
         int start, end;
         start = numMeshes;
@@ -485,10 +472,10 @@ namespace app
 
         if (!ui::mouseIsCaptured())
         {
-		    if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
-			    mbut |= IMGUI_MBUT_LEFT;
-		    if (ui::mouseIsPressed(SDL_BUTTON_RIGHT))
-			    mbut |= IMGUI_MBUT_RIGHT;
+            if (ui::mouseIsPressed(SDL_BUTTON_LEFT))
+                mbut |= IMGUI_MBUT_LEFT;
+            if (ui::mouseIsPressed(SDL_BUTTON_RIGHT))
+                mbut |= IMGUI_MBUT_RIGHT;
             if (ui::mouseWasWheelUp())
                 mscroll -= 1;
             if (ui::mouseWasWheelDown())
@@ -839,7 +826,7 @@ namespace app
 
     void destroyModels()
     {
-        memset(meshes, 0, sizeof(mesh_t)*MAX_MESHES);
+        memset(meshes, 0, sizeof(gfx_mesh_t)*MAX_MESHES);
         memset(models, 0, sizeof(model_t)*MAX_MODELS);
     }
 
@@ -883,7 +870,7 @@ namespace app
                 }
     }
 
-    void renderMesh(mesh_t* mesh, material_t* material)
+    void renderMesh(gfx_mesh_t* mesh, material_t* material)
     {
         // Position data
 
@@ -928,7 +915,7 @@ namespace app
                 currentMat = mat;
             }
 
-            mesh_t& m = meshes[i];
+            gfx_mesh_t& m = meshes[i];
 
             if (currentVAO != m.vao)
             {
@@ -1056,27 +1043,29 @@ namespace app
                 return false;
             }
 
-            GLuint baseOffset = staticBufferAllocated;
-            GLuint totalSize;
+            GLuint   totalSize;
+            uint32_t vertexOffset;
+            uint32_t indexOffset;
 
-            totalSize  = stride + verticesSize;
-            totalSize += indexSize + indicesSize;
+            gfx_alloc_geom(
+                &staticAlloc,
+                stride, header->vertexCount,
+                indexSize, header->indexCount,
+                &vertexOffset, &indexOffset, &totalSize
+            );
 
-            staticBufferAllocated += totalSize;
-            assert(staticBufferAllocated<=staticBufferSize);
-
-            uint32_t vertexOffset = core::align_up(baseOffset, stride);
-            uint32_t indexOffset  = bit_align_up(vertexOffset+verticesSize, indexSize);
+            assert(vertexOffset % stride == 0);
+            assert(indexOffset % indexSize == 0);
 
             uint8_t* vertPtr = mem_raw_data_offset<uint8_t>(data, header->vertexOffset);
             uint8_t* indPtr  = mem_raw_data_offset<uint8_t>(data, header->indexOffset);
 
-            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
-            memcpy(ptr+(vertexOffset-baseOffset), vertPtr, verticesSize);
-            memcpy(ptr+(indexOffset-baseOffset),  indPtr,  indicesSize);
+            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+            memcpy(ptr, vertPtr, verticesSize);
+            memcpy(ptr+(indexOffset-vertexOffset),  indPtr,  indicesSize);
             glUnmapNamedBufferEXT(staticBuffer);
 
-            models[numModels].numSubsets = header->numSubsets;
+            models[numModels].numSubmeshes = header->numSubsets;
 
             for (size_t i = 0; i < header->numSubsets; ++i)
             {
@@ -1146,27 +1135,27 @@ namespace app
             GLuint verticesSize = sizeof(vf::static_geom_t) * header->numVertices;
             GLuint indicesSize  = sizeof(uint32_t) * header->numIndices;
 
-            GLuint baseOffset = staticBufferAllocated;
             GLuint totalSize;
 
-            totalSize  = sizeof(vf::static_geom_t) + verticesSize;
-            totalSize += sizeof(uint32_t) + indicesSize;
+            uint32_t vertexOffset;
+            uint32_t indexOffset;
 
-            staticBufferAllocated += totalSize;
-            assert(staticBufferAllocated<=staticBufferSize);
-
-            uint32_t vertexOffset = core::align_up<vf::static_geom_t>(baseOffset);
-            uint32_t indexOffset  = bit_align_up(vertexOffset+verticesSize, sizeof(uint32_t));
+            gfx_alloc_geom(
+                &staticAlloc,
+                sizeof(vf::static_geom_t), header->numVertices,
+                sizeof(uint32_t), header->numIndices,
+                &vertexOffset, &indexOffset, &totalSize
+            );
 
             assert(vertexOffset % sizeof(vf::static_geom_t) == 0);
             assert(indexOffset % sizeof(uint32_t) == 0);
 
-            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
-            memcpy(ptr+(vertexOffset-baseOffset), fvertices, verticesSize);
-            memcpy(ptr+(indexOffset-baseOffset),  findices,  indicesSize);
+            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+            mem_copy(ptr, fvertices, verticesSize);
+            mem_copy(ptr+(indexOffset-vertexOffset),  findices,  indicesSize);
             glUnmapNamedBufferEXT(staticBuffer);
 
-            models[numModels].numSubsets = header->numSubsets;
+            models[numModels].numSubmeshes = header->numSubsets;
 
             for (size_t i = 0; i < header->numSubsets; ++i)
             {

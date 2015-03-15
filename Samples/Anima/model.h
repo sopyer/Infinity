@@ -4,13 +4,12 @@
 
 namespace Model
 {
-    struct mesh_t;
     struct material_t;
     
     struct model_t
     {
         int            numMeshes;
-        mesh_t*        meshes;
+        gfx_mesh_t*    meshes;
         material_t*    materials;
     };
 
