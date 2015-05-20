@@ -129,11 +129,11 @@ namespace app
     size_t  numMaterials;
     size_t  numLights;
 
-    model_t      models       [MAX_MODELS];
-    gfx_mesh_t   meshes       [MAX_MESHES];
-    material_t*  materialRefs [MAX_MESHES];
-    material_t   materials    [MAX_MATERIALS];
-    const char*  materialNames[MAX_MATERIALS];
+    model_t         models       [MAX_MODELS];
+    gfx_geometry_t  meshes       [MAX_MESHES];
+    material_t*     materialRefs [MAX_MESHES];
+    material_t      materials    [MAX_MATERIALS];
+    const char*     materialNames[MAX_MATERIALS];
 
     void loadMesh(const char* name);
     bool loadMeshSSZ(const char* name);
@@ -826,7 +826,7 @@ namespace app
 
     void destroyModels()
     {
-        memset(meshes, 0, sizeof(gfx_mesh_t)*MAX_MESHES);
+        memset(meshes, 0, sizeof(gfx_geometry_t)*MAX_MESHES);
         memset(models, 0, sizeof(model_t)*MAX_MODELS);
     }
 
@@ -870,7 +870,7 @@ namespace app
                 }
     }
 
-    void renderMesh(gfx_mesh_t* mesh, material_t* material)
+    void renderMesh(gfx_geometry_t* mesh, material_t* material)
     {
         // Position data
 
@@ -915,7 +915,7 @@ namespace app
                 currentMat = mat;
             }
 
-            gfx_mesh_t& m = meshes[i];
+            gfx_geometry_t& m = meshes[i];
 
             if (currentVAO != m.vao)
             {

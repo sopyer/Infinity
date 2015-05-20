@@ -33,7 +33,7 @@ namespace Model
 
     void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
 
-    void destroyMesh(gfx_mesh_t* mesh);
+    void destroyMesh(gfx_geometry_t* mesh);
 
     bool loadMaterial   (material_t* mat, const char* name);
     void destroyMaterial(material_t* mat);
@@ -120,7 +120,7 @@ namespace Model
         }
     }
 
-    void md5CreateMesh(gfx_mesh_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
+    void md5CreateMesh(gfx_geometry_t* mesh, md5_mesh_t* md5Mesh, skeleton_t* skel)
     {
         vf::skinned_geom_t* vertices;
 
@@ -291,7 +291,7 @@ namespace Model
             md5_model_t* md5Model = (md5_model_t*)outBinary.buffer;
 
             model->numMeshes = md5Model->numMeshes;
-            model->meshes    = (gfx_mesh_t*)malloc(model->numMeshes*sizeof(gfx_mesh_t));
+            model->meshes    = (gfx_geometry_t*)malloc(model->numMeshes*sizeof(gfx_geometry_t));
             model->materials = (material_t*)malloc(model->numMeshes*sizeof(material_t));
 
             md5CreateSkeleton(skel, md5Model->numJoints, md5Model->joints);
@@ -411,7 +411,7 @@ cleanup:
         }
     }
 
-    void renderMesh(gfx_mesh_t* mesh, material_t* material)
+    void renderMesh(gfx_geometry_t* mesh, material_t* material)
     {
         glUseProgram(material->program);
 
@@ -565,7 +565,7 @@ cleanup:
         mem_zero(mat);
     }
 
-    void destroyMesh(gfx_mesh_t* mesh)
+    void destroyMesh(gfx_geometry_t* mesh)
     {
         mem_zero(mesh);
     }

@@ -8,9 +8,9 @@ namespace Model
     
     struct model_t
     {
-        int            numMeshes;
-        gfx_mesh_t*    meshes;
-        material_t*    materials;
+        int                numMeshes;
+        gfx_geometry_t*    meshes;
+        material_t*        materials;
     };
 
     struct skeleton_t

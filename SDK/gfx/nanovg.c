@@ -16,8 +16,6 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include <stdio.h>
-#include <math.h>
 #include <gfx/nanovg.h>
 #define FONTSTASH_IMPLEMENTATION
 #include "fontstash.h"

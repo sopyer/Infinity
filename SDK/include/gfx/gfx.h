@@ -104,7 +104,7 @@ namespace vf
     void set(p3uv2cu4_vertex_t* vert, float x, float y, float z, float u, float v, uint32_t c);
 }
 
-struct gfx_mesh_t
+struct gfx_geometry_t
 {
     //Temporarily
     GLuint    vao;
