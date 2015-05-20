@@ -134,6 +134,9 @@ void ProfilerOverlay::loadProfilerData()
     }
 
     ++numThreads;
+
+    prevMouseMoveTime = 0;
+    showTooltip = false;
 }
 
 uint32_t roundInterval(uint32_t interval)
@@ -235,20 +238,83 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     {
         PROFILER_CPU_TIMESLICE("Render Bars");
 
-        nvgTranslate(vg::ctx, tx, graphArea.y);
-        nvgScale(vg::ctx, sx, sy);
-
         size_t numRects = colors.size();
         for (size_t i=0; i<numRects; ++i)
         {
-            uint32_t c = colors[i];
-            v128 cf = vi_cvt_ubyte4_to_vec4(c);
-            nvgFillColor(vg::ctx, nvgRGBAf(cf.m128_f32[0], cf.m128_f32[1], cf.m128_f32[2], cf.m128_f32[3]));
             float x0 = rectData[i*4];
             float y0 = rectData[i*4+1];
             float x1 = rectData[i*4+2];
             float y1 = rectData[i*4+3];
+
+            x0 = x0*sx+tx;
+            y0 = y0*sy+graphArea.y;
+            x1 = x1*sx+tx;
+            y1 = y1*sy+graphArea.y;
+
+            if (x0>graphArea.x+graphArea.w || x1<graphArea.x || x1-x0<1.0f)
+                continue;
+
+            x0 = ml::clamp(x0, graphArea.x, graphArea.x+graphArea.w);
+            x1 = ml::clamp(x1, graphArea.x, graphArea.x+graphArea.w);
+            y0 = ml::clamp(y0, graphArea.y, graphArea.y+graphArea.h);
+            y1 = ml::clamp(y1, graphArea.y, graphArea.y+graphArea.h);
+
+            uint32_t c = colors[i];
+            v128 cf = vi_cvt_ubyte4_to_vec4(c);
+            nvgFillColor(vg::ctx, nvgRGBAf(cf.m128_f32[0], cf.m128_f32[1], cf.m128_f32[2], cf.m128_f32[3]));
             nvguRect(vg::ctx, x0, y0, x1-x0, y1-y0);
+        }
+    }
+
+    int x, y;
+    ui::mouseAbsOffset(&x, &y);
+
+    if (showTooltip)
+    {
+        size_t selected  = elementUnderCursor(x, y);
+
+        if (selected != INVALID_SELECTION)
+        {
+            Interval& interval = intervals[selected];
+
+            cstr1024 buffer;
+            sprintf_s(
+                buffer,
+                "name     : %s\n"
+                "duration : %.4f\n"
+                "start    : %.4f\n"
+                "end      : %.4f",
+                interval.name,
+                interval.duration,
+                interval.start,
+                interval.start+interval.duration
+            );
+
+            static const float mg = 10.0f;
+            static const float lineH = 15.0f;
+
+            float bx = x+mg+8;
+            float by = y+32;
+
+            float bounds[4];
+
+            nvgFontSize(vg::ctx, 14.0f);
+            nvgFontFace(vg::ctx, "default");
+            nvgTextAlign(vg::ctx, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+
+            nvgTextBoxBounds(vg::ctx, bx, by, FLT_MAX, buffer, buffer+cstr_len(buffer), bounds);
+
+            nvgFillColor(vg::ctx, nvgRGBA(0, 0, 67, 128));
+            nvgStrokeColor(vg::ctx, nvgRGB(0, 89, 225));
+            nvgStrokeWidth(vg::ctx, 1.0f);
+            nvgBeginPath(vg::ctx);
+            nvgRoundedRect(vg::ctx, bounds[0]-mg, bounds[1]-mg, bounds[2]-bounds[0]+2*mg, bounds[3]-bounds[1]+2*mg, 3);
+            nvgFill(vg::ctx);
+            nvgStroke(vg::ctx);
+
+            nvgFillColor(vg::ctx, nvgRGB(255, 255, 255));
+
+            nvgTextBox(vg::ctx, bx, by, FLT_MAX, buffer, buffer+cstr_len(buffer));
         }
     }
 
@@ -257,28 +323,50 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     gfx::set2DStates();
 }
 
-void ProfilerOverlay::updateUI(float delta)
+size_t ProfilerOverlay::elementUnderCursor(int x, int y)
 {
-    float keybScaleSpeed  = 0.50f; // (increase/s)
-    float mouseScaleSpeed = 0.10f; // (increase)
-
-    int x, y;
-
-    ui::mouseAbsOffset(&x, &y);
-
     point_t pt = {(x-graphArea.x-dx)/sx, (y-graphArea.y)/sy};
 
-    if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
     for (size_t i = 0; i < rectData.size(); i +=4)
     {
         rect_t rect = {rectData[i], rectData[i+1], rectData[i+2]-rectData[i], rectData[i+3]-rectData[i+1]};
 
         if (testPtInRect(pt, rect))
         {
-            mSelection = i / 4;
-            break;
+            return i / 4;
         }
     }
+
+    return INVALID_SELECTION;
+}
+
+void ProfilerOverlay::updateUI(float delta)
+{
+    float keybScaleSpeed  = 0.50f; // (increase/s)
+    float mouseScaleSpeed = 0.10f; // (increase)
+
+    int x, y;
+    int mdx, mdy;
+
+    ui::mouseAbsOffset(&x, &y);
+    ui::mouseRelOffset(&mdx, &mdy);
+
+    static const int MOUSE_MOVE_OFFSET_THRESHOLD = 5;
+    static const int MOUSE_IDLE_TIME_THRESHOLD = 1*1000*1000; //2s
+
+    if (abs(mdx)+abs(mdy)>MOUSE_MOVE_OFFSET_THRESHOLD || ui::mouseIsPressed(SDL_BUTTON_LEFT) || ui::mouseIsPressed(SDL_BUTTON_RIGHT))
+    {
+        prevMouseMoveTime = timerAbsoluteTime();
+        showTooltip = false;
+    }
+
+    if (timerAbsoluteTime()-prevMouseMoveTime>MOUSE_IDLE_TIME_THRESHOLD && !showTooltip)
+    {
+        showTooltip = true;
+    }
+
+    if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+        mSelection = elementUnderCursor(x, y);
 
     float scale = 1.0f;
 

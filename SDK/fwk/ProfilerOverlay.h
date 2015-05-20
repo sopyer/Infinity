@@ -29,6 +29,8 @@ private:
     void drawBars(uint32_t* colorArray);
 
 private:
+    size_t elementUnderCursor(int x, int y);
+
     size_t numThreads;
     std::vector<float>    rectData;
     std::vector<Interval> intervals;
@@ -48,4 +50,7 @@ private:
     size_t mSelection;
     float  sx, sy, dx;
     bool   mDoDrag;
+
+    uint64_t prevMouseMoveTime;
+    bool     showTooltip;
 };
