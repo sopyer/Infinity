@@ -182,10 +182,10 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
     char  strBuf[128];
     float tx = graphArea.x+dx;
 
+    nvgBeginFrame(vg::ctx, gfx::width, gfx::height, (float)gfx::width/gfx::height);
+
     {
         PROFILER_CPU_TIMESLICE("NanoVG");
-        nvgBeginFrame(vg::ctx, gfx::width, gfx::height, (float)gfx::width/gfx::height);
-
 
         float basey = graphArea.y+sy;
         //Bars rendering
@@ -230,33 +230,31 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
             nvgText(vg::ctx, graphArea.x+10.0f, y, strBuf, 0);
             nvguLine(vg::ctx, graphArea.x+5.0f, y, graphArea.x+graphArea.w-10.0f, y);
         }
-
-        nvgEndFrame(vg::ctx);
     }
 
-    v128 mv[4] = {
-        vi_set(  sx,        0.0f, 0.0f, 0.0f),
-        vi_set(0.0f,          sy, 0.0f, 0.0f),
-        vi_set(0.0f,        0.0f, 1.0f, 0.0f),
-        vi_set(  tx, graphArea.y, 0.0f, 1.0f),
-    };
-
-    glEnable(GL_SCISSOR_TEST);
-    glScissor((GLint)graphArea.x, (GLint)graphArea.y, (GLint)graphArea.w, (GLint)graphArea.h);
-
-    //TODO: convert to nanovg
     {
-        PROFILER_CPU_TIMESLICE("ModernGL");
+        PROFILER_CPU_TIMESLICE("Render Bars");
 
-        gfx::set2DStates();
-        gfx::setModelViewMatrix(mv);
+        nvgTranslate(vg::ctx, tx, graphArea.y);
+        nvgScale(vg::ctx, sx, sy);
 
-        gfx::drawRects(colors.size(), &rectData[0], &colors[0]);
+        size_t numRects = colors.size();
+        for (size_t i=0; i<numRects; ++i)
+        {
+            uint32_t c = colors[i];
+            v128 cf = vi_cvt_ubyte4_to_vec4(c);
+            nvgFillColor(vg::ctx, nvgRGBAf(cf.m128_f32[0], cf.m128_f32[1], cf.m128_f32[2], cf.m128_f32[3]));
+            float x0 = rectData[i*4];
+            float y0 = rectData[i*4+1];
+            float x1 = rectData[i*4+2];
+            float y1 = rectData[i*4+3];
+            nvguRect(vg::ctx, x0, y0, x1-x0, y1-y0);
+        }
     }
 
-    glDisable(GL_SCISSOR_TEST);
-    ml::make_identity_mat4(mv);
-    gfx::setModelViewMatrix(mv);
+    nvgEndFrame(vg::ctx);
+
+    gfx::set2DStates();
 }
 
 void ProfilerOverlay::updateUI(float delta)
