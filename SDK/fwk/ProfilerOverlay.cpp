@@ -21,6 +21,7 @@ void ProfilerOverlay::init()
     sx = sy =  1.0f;
     dx = 0.0f;
     mDoDrag = false;
+    ui::mouseAbsOffset(&mbx, &mby);
 }
 
 void ProfilerOverlay::resize(int w, int h)
@@ -266,12 +267,9 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         }
     }
 
-    int x, y;
-    ui::mouseAbsOffset(&x, &y);
-
     if (showTooltip)
     {
-        size_t selected  = elementUnderCursor(x, y);
+        size_t selected  = elementUnderCursor(mbx, mby);
 
         if (selected != INVALID_SELECTION)
         {
@@ -293,8 +291,8 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
             static const float mg = 10.0f;
             static const float lineH = 15.0f;
 
-            float bx = x+mg+8;
-            float by = y+32;
+            float bx = mbx+mg+8;
+            float by = mby+32;
 
             float bounds[4];
 
@@ -346,16 +344,15 @@ void ProfilerOverlay::updateUI(float delta)
     float mouseScaleSpeed = 0.10f; // (increase)
 
     int x, y;
-    int mdx, mdy;
-
     ui::mouseAbsOffset(&x, &y);
-    ui::mouseRelOffset(&mdx, &mdy);
 
     static const int MOUSE_MOVE_OFFSET_THRESHOLD = 5;
-    static const int MOUSE_IDLE_TIME_THRESHOLD = 1*1000*1000; //2s
+    static const int MOUSE_IDLE_TIME_THRESHOLD = 700*1000; //0.7s
 
-    if (abs(mdx)+abs(mdy)>MOUSE_MOVE_OFFSET_THRESHOLD || ui::mouseIsPressed(SDL_BUTTON_LEFT) || ui::mouseIsPressed(SDL_BUTTON_RIGHT))
+    if (abs(mbx-x)+abs(mby-y)>MOUSE_MOVE_OFFSET_THRESHOLD || ui::mouseIsPressed(SDL_BUTTON_LEFT) || ui::mouseIsPressed(SDL_BUTTON_RIGHT))
     {
+        mbx = x;
+        mby = y;
         prevMouseMoveTime = timerAbsoluteTime();
         showTooltip = false;
     }

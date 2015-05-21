@@ -51,6 +51,7 @@ private:
     float  sx, sy, dx;
     bool   mDoDrag;
 
+    int      mbx, mby;
     uint64_t prevMouseMoveTime;
     bool     showTooltip;
 };
