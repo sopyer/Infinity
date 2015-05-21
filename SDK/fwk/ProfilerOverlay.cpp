@@ -12,7 +12,8 @@ GLuint prgQuad;
 static const size_t MAX_STACK_DEPTH  = 8;
 static const size_t MAX_THREAD_COUNT = 8;
 static const size_t firstThreadRow = 3;
-static const float  graphMargin = 25.0f;
+static const float  overlayPadding = 25.0f;
+static const float  viewMargin = 5.0f;
 static const float  tickSize = 3;
 
 void ProfilerOverlay::init()
@@ -27,8 +28,15 @@ void ProfilerOverlay::init()
 void ProfilerOverlay::resize(int w, int h)
 {
     width = w; height = h;
+    layoutUI(w, h);
+}
 
-    graphArea = {graphMargin, graphMargin, w - 2.0f * graphMargin, h - 2.0f * graphMargin};
+void ProfilerOverlay::layoutUI(int w, int h)
+{
+    rect_t mainArea = {overlayPadding, overlayPadding, w - 2.0f * overlayPadding, h - 2.0f * overlayPadding};
+    graphArea = {mainArea.x+viewMargin, mainArea.y+viewMargin, mainArea.w - 300 - 4*viewMargin, mainArea.h - 2*viewMargin};
+    helpArea  = {graphArea.x + graphArea.w + 2*viewMargin, mainArea.y+viewMargin, 300, 100};
+    statArea  = {graphArea.x + graphArea.w + 2*viewMargin, helpArea.y + helpArea.h + 2*viewMargin, 300, mainArea.h - helpArea.h - 4*viewMargin};
 }
 
 void ProfilerOverlay::fini()
@@ -267,6 +275,23 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         }
     }
 
+    cstr1024 buffer = "Ctrl+Wheel - zoom timeline\n"
+                      "RMB - horizontal pan\n"
+                      "Point at bar to see info tooltip\n"
+                      "Click to see more info";
+
+    //Help rendring
+    nvgFillColor(vg::ctx, nvgRGB(16, 16, 16));
+    nvguRect(vg::ctx, helpArea.x, helpArea.y, helpArea.w, helpArea.h);
+    nvguRect(vg::ctx, statArea.x, statArea.y, statArea.w, statArea.h);
+
+    nvgFontSize(vg::ctx, 14.0f);
+    nvgFillColor(vg::ctx, nvgRGB(255, 255, 255));
+    nvgFontFace(vg::ctx, "default");
+    nvgTextAlign(vg::ctx, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+    nvgTextBox(vg::ctx, helpArea.x+20, helpArea.y+20, FLT_MAX, buffer, buffer+cstr_len(buffer));
+
+    //Tooltip rendering
     if (showTooltip)
     {
         size_t selected  = elementUnderCursor(mbx, mby);
@@ -275,7 +300,6 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         {
             Interval& interval = intervals[selected];
 
-            cstr1024 buffer;
             sprintf_s(
                 buffer,
                 "name     : %s\n"
@@ -421,7 +445,7 @@ void ProfilerOverlay::renderFullscreen()
     glViewport(0, 0, width, height);
 
     // Background
-    vg::drawRect(0.0f, 0.0f, (float)width, (float)height, 0xF01A1A1A, 0xF01A1A1A);
+    vg::drawRect(0.0f, 0.0f, (float)width, (float)height, 0xD01A1A1A, 0xD01A1A1A);
 
     if (!rectData.empty())
         drawBars(&colors[0]);

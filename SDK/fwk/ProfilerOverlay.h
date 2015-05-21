@@ -26,10 +26,11 @@ public:
     void updateUI(float delta);
 
 private:
-    void drawBars(uint32_t* colorArray);
+    void   layoutUI(int w, int h);
+    void   drawBars(uint32_t* colorArray);
+    size_t elementUnderCursor(int x, int y);
 
 private:
-    size_t elementUnderCursor(int x, int y);
 
     size_t numThreads;
     std::vector<float>    rectData;
@@ -40,6 +41,8 @@ private:
     int height;
     
     rect_t graphArea;
+    rect_t helpArea;
+    rect_t statArea;
 
     uint32_t    startInterval, endInterval, interval;
     uint32_t    minTime, maxTime;
