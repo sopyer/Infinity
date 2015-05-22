@@ -139,7 +139,6 @@ namespace core
     void fini()
     {
         mt::fini();
-        profilerFini();
 
         free(threadDataStackMem);
     }

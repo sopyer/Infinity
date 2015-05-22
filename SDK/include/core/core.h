@@ -9,6 +9,8 @@
 #   define CORE_ENABLE_ASSERT
 #endif
 
+typedef volatile long atomic_t;
+
 #include <core/debug.h>
 #include <core/bits.h>
 #include <core/mt.h>
@@ -47,13 +49,10 @@ struct ProfilerCPUAutoTimeslice
     }
 };
 
-typedef volatile long atomic_t;
-
 namespace core
 {
     void abort();
 }
-
 
 inline void atomicLock  (atomic_t* lock) { while (_InterlockedExchange(lock, 1) == 1); }
 inline void atomicUnlock(atomic_t* lock) { _InterlockedExchange(lock, 0); }

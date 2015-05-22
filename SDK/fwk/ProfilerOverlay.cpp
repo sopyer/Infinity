@@ -46,21 +46,13 @@ void ProfilerOverlay::fini()
 
 void ProfilerOverlay::loadProfilerData()
 {
-    size_t                  numEvents;
-    const profiler_event_t* events;
-    const char**            names;
-    profilerGetData(&numEvents, &events, &names);
+    event_capture_t* capture = profilerGetData();
+    const char**     names   = profilerGetNames();
+
+    size_t                  numEvents = capture->numEvents;
+    const profiler_event_t* events = capture->events;
 
     rectData.resize(numEvents * 4);
-
-    minTime = events[0].timestamp,
-    maxTime = events[0].timestamp;
-
-    for (size_t i = 1; i < numEvents; ++i)
-    {
-        minTime = core::min(minTime, events[i].timestamp);
-        maxTime = core::max(maxTime, events[i].timestamp);
-    }
 
     int     stackTop[MAX_THREAD_COUNT] = {-1, -1, -1, -1, -1, -1, -1, -1};
     struct
@@ -68,10 +60,6 @@ void ProfilerOverlay::loadProfilerData()
         size_t   id;
         uint32_t sliceBegin;
     } stack[MAX_THREAD_COUNT][MAX_STACK_DEPTH];
-
-    sx = graphArea.w/(maxTime - minTime);
-    sy = 20.0f;
-    dx = -sx*maxTime;
 
     core::index_t<uint16_t, ui::RAINBOW_TABLE_L_SIZE> colorMap  = {0};
     core::index_t<uint16_t, 32>                       threadMap = {0};
@@ -82,12 +70,19 @@ void ProfilerOverlay::loadProfilerData()
 
     numThreads = 0;
 
+    minTime = event_capture_time_ms(capture, 0);
+    maxTime = event_capture_time_ms(capture, 0);
+
+
     for (size_t i=0; i<numEvents; ++i)
     {
         profiler_event_t event = events[i];
         uint32_t         threadIdx;
-
+        uint32_t         ts = event_capture_time_ms(capture, i);
         threadIdx = core::index_lookup_or_add(&threadMap, event.tid);
+
+        minTime = core::min(minTime, ts);
+        maxTime = core::max(maxTime, ts);
 
         numThreads = core::max(numThreads, threadIdx);
 
@@ -98,7 +93,7 @@ void ProfilerOverlay::loadProfilerData()
             //Add event to stack
             ++top;
             stack[threadIdx][top].id         = event.id;
-            stack[threadIdx][top].sliceBegin = event.timestamp;
+            stack[threadIdx][top].sliceBegin = ts;
         }
         else if (event.phase==PROF_EVENT_PHASE_END)
         {
@@ -109,7 +104,7 @@ void ProfilerOverlay::loadProfilerData()
             assert (stack[threadIdx][top].id == event.id); //implement backtracking end fixing later
 
             float xstart = (float)stack[threadIdx][top].sliceBegin;
-            float xend   = (float)event.timestamp;
+            float xend   = (float)ts;
             float ystart = top+0.1f;
             float yend   = top+0.9f;
 
@@ -146,6 +141,10 @@ void ProfilerOverlay::loadProfilerData()
 
     prevMouseMoveTime = 0;
     showTooltip = false;
+
+    sx = graphArea.w/(maxTime - minTime);
+    sy = 20.0f;
+    dx = -sx*maxTime;
 }
 
 uint32_t roundInterval(uint32_t interval)

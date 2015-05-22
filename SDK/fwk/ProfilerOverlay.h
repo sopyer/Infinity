@@ -31,7 +31,6 @@ private:
     size_t elementUnderCursor(int x, int y);
 
 private:
-
     size_t numThreads;
     std::vector<float>    rectData;
     std::vector<Interval> intervals;
