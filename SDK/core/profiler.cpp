@@ -26,12 +26,16 @@ void event_capture_init(event_capture_t* capture, uint64_t freq, uint32_t log2re
     capture->maxPeriod  = (1ul<<TIME_BITS)<<quantShift;
 }
 
-void event_capture_reset(event_capture_t* capture, uint64_t startTime)
+void event_capture_start(event_capture_t* capture, uint64_t startTime)
 {
     capture->numEvents = 0;
     capture->startTime = startTime;
 }
 
+void event_capture_stop(event_capture_t* capture, uint64_t endTime)
+{
+    capture->endTime = (uint32_t)core::min((endTime-capture->startTime) >> capture->quantShift, (1ull<<TIME_BITS)-1);
+}
 void event_capture_add(event_capture_t* capture, uint16_t trackID, uint16_t eventID, EventPhase eventPhase, uint64_t ts)
 {
     atomic_t count = _InterlockedIncrement(&capture->numEvents);
@@ -48,11 +52,6 @@ void event_capture_add(event_capture_t* capture, uint16_t trackID, uint16_t even
         _InterlockedDecrement(&capture->numEvents);
     }
 }
-    
-uint32_t event_capture_time_ms(event_capture_t* capture, uint32_t evtIdx)
-{
-    return (uint32_t)(((uint64_t)capture->events[evtIdx].timestamp<<capture->quantShift)* 1000000 / capture->freq);
-}
 
 void profilerInit()
 {
@@ -62,12 +61,13 @@ void profilerInit()
 void profilerStartCapture()
 {
     captureActive = TRUE;
-    event_capture_reset(&capture, SDL_GetPerformanceCounter());
+    event_capture_start(&capture, SDL_GetPerformanceCounter());
 }
 
 void profilerStopCapture()
 {
     captureActive = FALSE;
+    event_capture_stop(&capture, SDL_GetPerformanceCounter());
 }
 
 int profilerIsCaptureActive()

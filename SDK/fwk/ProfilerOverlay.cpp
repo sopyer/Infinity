@@ -9,9 +9,9 @@ GLuint prgQuad;
 
 #define INVALID_SELECTION 0xFFFFFFFF
 
-static const size_t MAX_STACK_DEPTH  = 8;
-static const size_t MAX_THREAD_COUNT = 8;
-static const size_t firstThreadRow = 3;
+static const int    MAX_STACK_DEPTH  = 8;
+static const int    MAX_THREAD_COUNT = 8;
+static const int    firstThreadRow = 3;
 static const float  overlayPadding = 25.0f;
 static const float  viewMargin = 5.0f;
 static const float  tickSize = 3;
@@ -44,6 +44,35 @@ void ProfilerOverlay::fini()
     glDeleteProgram(prgQuad);
 }
 
+void ProfilerOverlay::addInterval(
+    const char* name, uint32_t colorID, 
+    uint16_t trackID, uint32_t start, 
+    uint32_t duration, int depth
+)
+{
+    float xstart   = (float)start;
+    float ystart   = depth + 0.1f + trackID * (MAX_STACK_DEPTH + 2) + firstThreadRow;
+
+    uint32_t color = ui::rainbowTableL[colorID];
+    colors.push_back(color);
+
+    rectData.emplace_back(rect_t{xstart, ystart, duration, 0.9});
+
+    Interval inter = 
+    {
+        name,
+        xstart / 1000.0f,
+        duration / 1000.0f
+    };
+
+    intervals.push_back(inter);
+}
+
+inline uint32_t convertToMs(uint64_t ms, uint64_t freq, int quantShift)
+{
+    return (uint32_t)(ms * (1ull<<quantShift) * 1000000 / freq);
+}
+
 void ProfilerOverlay::loadProfilerData()
 {
     event_capture_t* capture = profilerGetData();
@@ -70,15 +99,14 @@ void ProfilerOverlay::loadProfilerData()
 
     numThreads = 0;
 
-    minTime = event_capture_time_ms(capture, 0);
-    maxTime = event_capture_time_ms(capture, 0);
-
+    minTime = convertToMs(events[0].timestamp, capture->freq, capture->quantShift);
+    maxTime = convertToMs(events[0].timestamp, capture->freq, capture->quantShift);
 
     for (size_t i=0; i<numEvents; ++i)
     {
         profiler_event_t event = events[i];
         uint32_t         threadIdx;
-        uint32_t         ts = event_capture_time_ms(capture, i);
+        uint32_t         ts = convertToMs(events[i].timestamp, capture->freq, capture->quantShift);
         threadIdx = core::index_lookup_or_add(&threadMap, event.tid);
 
         minTime = core::min(minTime, ts);
@@ -87,6 +115,9 @@ void ProfilerOverlay::loadProfilerData()
         numThreads = core::max(numThreads, threadIdx);
 
         int& top = stackTop[threadIdx];
+
+        //ignore intervals exceeding stack depth
+        if (top >= MAX_STACK_DEPTH-1) continue;
 
         if (event.phase==PROF_EVENT_PHASE_BEGIN)
         {
@@ -97,43 +128,30 @@ void ProfilerOverlay::loadProfilerData()
         }
         else if (event.phase==PROF_EVENT_PHASE_END)
         {
+            //ignore not opened interval
+            if (top < 0 || stack[threadIdx][top].id != event.id)
+                continue;
+
             //remove item from stack and add entry
-            assert(top>=0);
-            assert(top<MAX_STACK_DEPTH);
-
-            assert (stack[threadIdx][top].id == event.id); //implement backtracking end fixing later
-
-            float xstart = (float)stack[threadIdx][top].sliceBegin;
-            float xend   = (float)ts;
-            float ystart = top+0.1f;
-            float yend   = top+0.9f;
-
-            ystart += threadIdx * (MAX_STACK_DEPTH + 2) + firstThreadRow;
-            yend   += threadIdx * (MAX_STACK_DEPTH + 2) + firstThreadRow;
-
-            uint32_t colorIdx;
-            uint32_t color;
-
-            colorIdx = core::index_lookup_or_add(&colorMap, event.id);
-            color    = ui::rainbowTableL[colorIdx];
-
-            colors.push_back(color);
-
-            rectData.push_back(xstart);
-            rectData.push_back(ystart);
-            rectData.push_back(xend);
-            rectData.push_back(yend);
-
-            Interval inter = 
-            {
-                names[event.id],
-                xstart / 1000.0f,
-                (xend-xstart) / 1000.0f
-            };
-
-            intervals.push_back(inter);
+            uint32_t colorID = core::index_lookup_or_add(&colorMap, event.id);
+            uint32_t start   = stack[threadIdx][top].sliceBegin;
+            addInterval(names[event.id], colorID, threadIdx, start, ts - start, top);
 
             --top;
+        }
+    }
+
+    //TODO: close all opened intervals
+    uint32_t endTime = capture->endTime;
+    for (size_t i = 0; i < MAX_THREAD_COUNT; ++i)
+    {
+        int top = stackTop[i];
+        for (;top>=0; --top)
+        {
+            uint16_t id      = stack[i][top].id;
+            uint32_t colorID = core::index_lookup_or_add(&colorMap, id);
+            uint32_t start   = stack[i][top].sliceBegin;
+            addInterval(names[id], colorID, i, start, endTime - start, top);
         }
     }
 
@@ -249,10 +267,10 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         size_t numRects = colors.size();
         for (size_t i=0; i<numRects; ++i)
         {
-            float x0 = rectData[i*4];
-            float y0 = rectData[i*4+1];
-            float x1 = rectData[i*4+2];
-            float y1 = rectData[i*4+3];
+            float x0 = rectData[i].x;
+            float y0 = rectData[i].y;
+            float x1 = x0 + rectData[i].w;
+            float y1 = y0 + rectData[i].h;
 
             x0 = x0*sx+tx;
             y0 = y0*sy+graphArea.y;
@@ -348,13 +366,11 @@ size_t ProfilerOverlay::elementUnderCursor(int x, int y)
 {
     point_t pt = {(x-graphArea.x-dx)/sx, (y-graphArea.y)/sy};
 
-    for (size_t i = 0; i < rectData.size(); i +=4)
+    for (size_t i = 0; i < rectData.size(); ++i)
     {
-        rect_t rect = {rectData[i], rectData[i+1], rectData[i+2]-rectData[i], rectData[i+3]-rectData[i+1]};
-
-        if (testPtInRect(pt, rect))
+        if (testPtInRect(pt, rectData[i]))
         {
-            return i / 4;
+            return i;
         }
     }
 

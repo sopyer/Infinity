@@ -29,10 +29,15 @@ private:
     void   layoutUI(int w, int h);
     void   drawBars(uint32_t* colorArray);
     size_t elementUnderCursor(int x, int y);
+    void   addInterval(
+        const char* name, uint32_t color,
+        uint16_t trackID, uint32_t start,
+        uint32_t duration, int depth
+    );
 
 private:
     size_t numThreads;
-    std::vector<float>    rectData;
+    std::vector<rect_t>   rectData;
     std::vector<Interval> intervals;
     std::vector<uint32_t> colors;
 

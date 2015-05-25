@@ -30,22 +30,22 @@ struct event_capture_t
     uint64_t  freq;
     uint64_t  startTime;
     atomic_t  numEvents;
+    uint32_t  endTime;
     uint32_t  quantShift;     //Precision shift for timestamp
     uint32_t  maxEvents;
     profiler_event_t  events[MAX_PROFILER_EVENTS];
 };
 
 void event_capture_init(event_capture_t* capture, uint64_t freq, uint32_t log2res);
-void event_capture_reset(event_capture_t* capture, uint64_t startTime);
+void event_capture_start(event_capture_t* capture, uint64_t startTime);
+void event_capture_stop(event_capture_t* capture, uint64_t endTime);
 void event_capture_add(
     event_capture_t* capture,
     uint16_t trackID, uint16_t eventID,
     EventPhase eventPhase, uint64_t ts
 );
-uint32_t event_capture_time_ms(event_capture_t* capture, uint32_t evtIdx);
 
 // CPU capture interface
-
 void profilerInit();
 
 void profilerStartCapture   ();
