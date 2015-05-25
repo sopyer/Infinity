@@ -370,6 +370,10 @@ void ProfilerOverlay::renderFullscreen()
     {
         PROFILER_CPU_TIMESLICE("Render Bars");
 
+        nvgFontSize(vg::ctx, 14.0f);
+        nvgFontFace(vg::ctx, "default");
+        nvgTextAlign(vg::ctx, NVG_ALIGN_LEFT|NVG_ALIGN_MIDDLE);
+
         size_t numRects = colors.size();
         for (size_t i=0; i<numRects; ++i)
         {
@@ -386,15 +390,19 @@ void ProfilerOverlay::renderFullscreen()
             if (x0>graphArea.x+graphArea.w || x1<graphArea.x || x1-x0<1.0f)
                 continue;
 
-            x0 = ml::clamp(x0, graphArea.x, graphArea.x+graphArea.w);
-            x1 = ml::clamp(x1, graphArea.x, graphArea.x+graphArea.w);
-            y0 = ml::clamp(y0, graphArea.y, graphArea.y+graphArea.h);
-            y1 = ml::clamp(y1, graphArea.y, graphArea.y+graphArea.h);
+            float x0c = ml::clamp(x0, graphArea.x, graphArea.x+graphArea.w);
+            float x1c = ml::clamp(x1, graphArea.x, graphArea.x+graphArea.w);
+            float y0c = ml::clamp(y0, graphArea.y, graphArea.y+graphArea.h);
+            float y1c = ml::clamp(y1, graphArea.y, graphArea.y+graphArea.h);
 
             uint32_t c = colors[i];
             v128 cf = vi_cvt_ubyte4_to_vec4(c);
             nvgFillColor(vg::ctx, nvgRGBAf(cf.m128_f32[0], cf.m128_f32[1], cf.m128_f32[2], cf.m128_f32[3]));
-            nvguRect(vg::ctx, x0, y0, x1-x0, y1-y0);
+            nvguRect(vg::ctx, x0c, y0c, x1c-x0c, y1c-y0c);
+            nvgScissor(vg::ctx, x0c, y0c, x1c-x0c, y1c-y0c);
+            nvgFillColor(vg::ctx, nvgRGB(255, 255, 255));
+            nvgText(vg::ctx, x0+5, 0.5f*(y0+y1), intervals[i].name, 0);
+            nvgResetScissor(vg::ctx);
         }
     }
 
