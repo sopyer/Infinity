@@ -27,7 +27,6 @@ public:
 
 private:
     void   layoutUI(int w, int h);
-    void   drawBars(uint32_t* colorArray);
     size_t elementUnderCursor(int x, int y);
     void   addInterval(
         const char* name, uint32_t color,
@@ -40,6 +39,8 @@ private:
     std::vector<rect_t>   rectData;
     std::vector<Interval> intervals;
     std::vector<uint32_t> colors;
+
+    std::vector<uint32_t> selection;
 
     int width;
     int height;
@@ -54,7 +55,6 @@ private:
     uint32_t    unitScale;
     float       pxIntervalStep;
 
-    size_t mSelection;
     float  sx, sy, dx;
     bool   mDoDrag;
 

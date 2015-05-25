@@ -18,7 +18,6 @@ static const float  tickSize = 3;
 
 void ProfilerOverlay::init()
 {
-    mSelection = INVALID_SELECTION;
     sx = sy =  1.0f;
     dx = 0.0f;
     mDoDrag = false;
@@ -204,14 +203,121 @@ void selectUnits(uint32_t interval, uint32_t* unitScale, const char** unitFormat
     }
 }
 
-void ProfilerOverlay::drawBars(uint32_t* colorArray)
+size_t ProfilerOverlay::elementUnderCursor(int x, int y)
 {
-    PROFILER_CPU_TIMESLICE("ProfilerOverlay::drawBars");
+    point_t pt = {(x-graphArea.x-dx)/sx, (y-graphArea.y)/sy};
+
+    for (size_t i = 0; i < rectData.size(); ++i)
+    {
+        if (testPtInRect(pt, rectData[i]))
+        {
+            return i;
+        }
+    }
+
+    return INVALID_SELECTION;
+}
+
+void ProfilerOverlay::updateUI(float delta)
+{
+    float keybScaleSpeed  = 0.50f; // (increase/s)
+    float mouseScaleSpeed = 0.10f; // (increase)
+
+    int x, y;
+    ui::mouseAbsOffset(&x, &y);
+
+    static const int MOUSE_MOVE_OFFSET_THRESHOLD = 5;
+    static const int MOUSE_IDLE_TIME_THRESHOLD = 700*1000; //0.7s
+
+    if (abs(mbx-x)+abs(mby-y)>MOUSE_MOVE_OFFSET_THRESHOLD || ui::mouseIsPressed(SDL_BUTTON_LEFT) || ui::mouseIsPressed(SDL_BUTTON_RIGHT))
+    {
+        mbx = x;
+        mby = y;
+        prevMouseMoveTime = timerAbsoluteTime();
+        showTooltip = false;
+    }
+
+    if (timerAbsoluteTime()-prevMouseMoveTime>MOUSE_IDLE_TIME_THRESHOLD && !showTooltip)
+    {
+        showTooltip = true;
+    }
+
+    if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
+    {
+        uint32_t interval = elementUnderCursor(x, y);
+        selection.clear();
+        if (interval != INVALID_SELECTION)
+            selection.push_back(interval);
+    }
+
+    float scale = 1.0f;
+
+    if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) ||
+       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelUp()))
+    {
+        scale = 1.0f + (ui::mouseWasWheelUp() ? mouseScaleSpeed : keybScaleSpeed * delta);
+    }
+    if (ui::keyIsPressed(SDL_SCANCODE_MINUS) ||
+       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelDown()))
+    {
+        scale  = 1.0f / (1.0f + (ui::mouseWasWheelDown() ? mouseScaleSpeed : keybScaleSpeed * delta));
+    }
+
+    float scaleMin = graphArea.w/(maxTime - minTime);
+    float scaleMax = 1.0f;
+    scale = ml::clamp(scale, scaleMin/sx, scaleMax/sx);
+
+    sx *= scale;
+    dx = (1.0f-scale) * (x-this->graphArea.x) + scale * dx;
+
+    if (ui::mouseWasPressed(SDL_BUTTON_RIGHT))
+    {
+        mDoDrag = true;
+    }
+    if (mDoDrag)
+    {
+        int offx;
+        ui::mouseRelOffset(&offx, NULL);
+        dx += offx;
+    }
+    if (ui::mouseWasReleased(SDL_BUTTON_RIGHT) && mDoDrag)
+    {
+        mDoDrag = false;
+    }
+
+    float    minMarkerDist = 80.0f;
+    uint32_t interval      = roundInterval(uint32_t(minMarkerDist/sx));
+
+    startInterval = minTime / interval;
+    endInterval   = (maxTime + interval - 1) / interval;
+
+    pxIntervalStep = interval * sx;
+    dx = ml::clamp(dx, graphArea.w-(endInterval*pxIntervalStep), -(startInterval*pxIntervalStep));
+
+    startInterval = (int)ml::floor(-dx/sx) / interval;
+    endInterval   = ((int)ml::ceil((graphArea.w-dx)/sx) + interval - 1) / interval;
+
+    selectUnits(interval, &unitScale, &unitFormat);
+}
+
+void ProfilerOverlay::renderFullscreen()
+{
+    PROFILER_CPU_TIMESLICE("ProfilerOverlay::renderFullscreen");
+    glViewport(0, 0, width, height);
 
     char  strBuf[128];
     float tx = graphArea.x+dx;
 
     nvgBeginFrame(vg::ctx, gfx::width, gfx::height, (float)gfx::width/gfx::height);
+    // Background
+    nvgFillColor(vg::ctx, nvgRGBA(0x1A,0x1A,0x1A,0xD0));
+    nvguRect(vg::ctx, 0.0f, 0.0f, (float)width, (float)height);
+
+    if (rectData.empty())
+    {
+        nvgEndFrame(vg::ctx);
+        return;
+    }
 
     {
         PROFILER_CPU_TIMESLICE("NanoVG");
@@ -357,130 +463,37 @@ void ProfilerOverlay::drawBars(uint32_t* colorArray)
         }
     }
 
+    //Draw selection
+    nvgFontSize(vg::ctx, 14.0f);
+    nvgFontFace(vg::ctx, "default");
+    nvgTextAlign(vg::ctx, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+    nvgFillColor(vg::ctx, nvgRGB(255, 255, 255));
+
+    float asc, desc, lineh;
+    nvgTextMetrics(vg::ctx, &asc, &desc, &lineh);
+    
+    nvgScissor(vg::ctx, statArea.x, statArea.y, statArea.w, statArea.h);
+    float y = statArea.y + 20;
+    for (size_t i = 0; i < selection.size(); ++i)
+    {
+        uint32_t  idx = selection[i];
+        Interval& interval = intervals[idx];
+
+        sprintf_s(
+            buffer,
+            "name     : %s\n"
+            "duration : %.4f\n"
+            "start    : %.4f\n"
+            "end      : %.4f",
+            interval.name,
+            interval.duration,
+            interval.start,
+            interval.start+interval.duration
+        );
+
+        nvgTextBox(vg::ctx, statArea.x+20, y, FLT_MAX, buffer, buffer+cstr_len(buffer));
+    }
+    nvgResetScissor(vg::ctx);
+
     nvgEndFrame(vg::ctx);
-
-    gfx::set2DStates();
-}
-
-size_t ProfilerOverlay::elementUnderCursor(int x, int y)
-{
-    point_t pt = {(x-graphArea.x-dx)/sx, (y-graphArea.y)/sy};
-
-    for (size_t i = 0; i < rectData.size(); ++i)
-    {
-        if (testPtInRect(pt, rectData[i]))
-        {
-            return i;
-        }
-    }
-
-    return INVALID_SELECTION;
-}
-
-void ProfilerOverlay::updateUI(float delta)
-{
-    float keybScaleSpeed  = 0.50f; // (increase/s)
-    float mouseScaleSpeed = 0.10f; // (increase)
-
-    int x, y;
-    ui::mouseAbsOffset(&x, &y);
-
-    static const int MOUSE_MOVE_OFFSET_THRESHOLD = 5;
-    static const int MOUSE_IDLE_TIME_THRESHOLD = 700*1000; //0.7s
-
-    if (abs(mbx-x)+abs(mby-y)>MOUSE_MOVE_OFFSET_THRESHOLD || ui::mouseIsPressed(SDL_BUTTON_LEFT) || ui::mouseIsPressed(SDL_BUTTON_RIGHT))
-    {
-        mbx = x;
-        mby = y;
-        prevMouseMoveTime = timerAbsoluteTime();
-        showTooltip = false;
-    }
-
-    if (timerAbsoluteTime()-prevMouseMoveTime>MOUSE_IDLE_TIME_THRESHOLD && !showTooltip)
-    {
-        showTooltip = true;
-    }
-
-    if (ui::mouseWasReleased(SDL_BUTTON_LEFT))
-        mSelection = elementUnderCursor(x, y);
-
-    float scale = 1.0f;
-
-    if (ui::keyIsPressed(SDL_SCANCODE_EQUALS) ||
-       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelUp()))
-    {
-        scale = 1.0f + (ui::mouseWasWheelUp() ? mouseScaleSpeed : keybScaleSpeed * delta);
-    }
-    if (ui::keyIsPressed(SDL_SCANCODE_MINUS) ||
-       (ui::keyIsPressed(SDL_SCANCODE_LCTRL) && ui::mouseWasWheelDown()))
-    {
-        scale  = 1.0f / (1.0f + (ui::mouseWasWheelDown() ? mouseScaleSpeed : keybScaleSpeed * delta));
-    }
-
-    float scaleMin = graphArea.w/(maxTime - minTime);
-    float scaleMax = 1.0f;
-    scale = ml::clamp(scale, scaleMin/sx, scaleMax/sx);
-
-    sx *= scale;
-    dx = (1.0f-scale) * (x-this->graphArea.x) + scale * dx;
-
-    if (ui::mouseWasPressed(SDL_BUTTON_RIGHT))
-    {
-        mDoDrag = true;
-    }
-    if (mDoDrag)
-    {
-        int offx;
-        ui::mouseRelOffset(&offx, NULL);
-        dx += offx;
-    }
-    if (ui::mouseWasReleased(SDL_BUTTON_RIGHT) && mDoDrag)
-    {
-        mDoDrag = false;
-    }
-
-    float    minMarkerDist = 80.0f;
-    uint32_t interval      = roundInterval(uint32_t(minMarkerDist/sx));
-
-    startInterval = minTime / interval;
-    endInterval   = (maxTime + interval - 1) / interval;
-
-    pxIntervalStep = interval * sx;
-    dx = ml::clamp(dx, graphArea.w-(endInterval*pxIntervalStep), -(startInterval*pxIntervalStep));
-
-    startInterval = (int)ml::floor(-dx/sx) / interval;
-    endInterval   = ((int)ml::ceil((graphArea.w-dx)/sx) + interval - 1) / interval;
-
-    selectUnits(interval, &unitScale, &unitFormat);
-}
-
-void ProfilerOverlay::renderFullscreen()
-{
-    PROFILER_CPU_TIMESLICE("ProfilerOverlay::renderFullscreen");
-    glViewport(0, 0, width, height);
-
-    // Background
-    vg::drawRect(0.0f, 0.0f, (float)width, (float)height, 0xD01A1A1A, 0xD01A1A1A);
-
-    if (!rectData.empty())
-        drawBars(&colors[0]);
-
-    if (mSelection != INVALID_SELECTION && mSelection < intervals.size())
-    {
-        char str[256];
-
-        Interval& interval = intervals[mSelection];
-
-        sprintf_s(str, "name     : %s", interval.name);
-        vg::drawString(vg::defaultFont, 50, 550, 0xFFFFFFFF, str, strlen(str));
-
-        sprintf_s(str, "duration : %.4f", interval.duration);
-        vg::drawString(vg::defaultFont, 50, 565, 0xFFFFFFFF, str, strlen(str));
-
-        sprintf_s(str, "start    : %.4f", interval.start);
-        vg::drawString(vg::defaultFont, 50, 580, 0xFFFFFFFF, str, strlen(str));
-
-        sprintf_s(str, "end      : %.4f", interval.start+interval.duration);
-        vg::drawString(vg::defaultFont, 50, 595, 0xFFFFFFFF, str, strlen(str));
-    }
 }
