@@ -85,14 +85,6 @@ void profilerStopSyncPoint()
     if (!captureActive)
     {
         doCapture = FALSE;
-
-        uint64_t ticksPerSecond = SDL_GetPerformanceFrequency();
-
-        // convert timestamps to microseconds
-        for (long i = 0; i < capture.numEvents; ++i)
-        {
-            capture.events[i].timestamp = ((uint64_t)capture.events[i].timestamp<<capture.quantShift)* 1000000 / ticksPerSecond;
-        }
     }
 }
 
