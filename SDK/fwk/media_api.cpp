@@ -5,22 +5,26 @@ extern "C"
 {
 #include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
-#include <libswscale/swscale.h>
+#include <libavutil/opt.h>
+#include <libswresample/swresample.h>
 }
 
 #include <gfx/gfx.h>
 
-#define PACKET_BUFFER_SIZE 64
+#define PACKET_BUFFER_SIZE    64
 
 struct media_player_data_t
 {
     AVFormatContext* formatContext;
-    AVCodecContext*  audioCodecContext;
-    AVCodecContext*  videoCodecContext;
+    AVCodecContext*  audioContext;
+    AVCodecContext*  videoContext;
+    SwrContext*      resamplerContext;
     unsigned int     videoStream;
     unsigned int     audioStream;
-    AVFrame*         pFrame; 
-    int              mAudioFormat;
+    AVFrame*         pVFrame; 
+    AVFrame*         pAFrame; 
+    int              audioFormat;
+    int              sampleRate;
     int              numBytes;
     int              width;
     int              height;
@@ -33,7 +37,6 @@ struct media_player_data_t
     core::ring_buffer_t<AVPacket, PACKET_BUFFER_SIZE> vPackets;
 
     uint64_t baseTime, timeShift, timeOfNextFrame, frameTime;
-    uint64_t aBufferSize;
 
     GLuint texY[2];
     GLuint texU[2];
@@ -42,9 +45,12 @@ struct media_player_data_t
     ALuint  audioSource;
     ALuint  audioBuffers[2];
 
-    int bufSize;
 
-    char __declspec(align(16)) audioBuf[AVCODEC_MAX_AUDIO_FRAME_SIZE]; // make it part of thread scratch buffer
+    int       aBufferSize;
+    int       aBufferUsed;
+    int       aSamplesCount;
+    int       aSamplesUsed;
+    uint8_t*  aBuffer;
 
     int subTasks;
     
@@ -66,50 +72,60 @@ static void closeVideoStream(media_player_t player);
 static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
 {
     AVCodec* pAudioCodec;
-    int      channels;
 
     closeAudioStream(player);
 
-    //FFMPEG always decodes to 16 PCM
-    channels = audioContext->channels;
-    if(channels == 1) player->mAudioFormat = AL_FORMAT_MONO16;
-    else if(channels == 2) player->mAudioFormat = AL_FORMAT_STEREO16;
-    else if(extAudioFormatsPresent && channels == 4) player->mAudioFormat = alGetEnumValue("AL_FORMAT_QUAD16");
-    else if(extAudioFormatsPresent && channels == 6) player->mAudioFormat = alGetEnumValue("AL_FORMAT_51CHN16");
-    else
-    {
-        //TODO: encode in AL_FORMAT_STEREO16
-        return 0;
-    }
-
     pAudioCodec=avcodec_find_decoder(audioContext->codec_id);
-    if(pAudioCodec==NULL || avcodec_open(audioContext, pAudioCodec)<0)
+    if(pAudioCodec==NULL || avcodec_open2(audioContext, pAudioCodec, NULL)<0)
     {
         return 0;
     }
 
-    player->audioCodecContext = audioContext;
+    player->audioContext = audioContext;
+
+    //TODO: add support for multichannel audio if necessary
+    player->audioFormat = AL_FORMAT_STEREO16;
+    player->sampleRate  = 44100;
+
+    player->resamplerContext = swr_alloc();
+    assert(player->resamplerContext);
+    int inLayout = (int)av_get_default_channel_layout(audioContext->channels);
+
+    av_opt_set_int       (player->resamplerContext, "in_channel_layout",     inLayout,                     0);
+    av_opt_set_int       (player->resamplerContext, "in_sample_rate",        audioContext->sample_rate,    0);
+    av_opt_set_sample_fmt(player->resamplerContext, "in_sample_fmt",         audioContext->sample_fmt,     0);
+    av_opt_set_int       (player->resamplerContext, "out_channel_layout",    AV_CH_LAYOUT_STEREO,          0);
+    av_opt_set_int       (player->resamplerContext, "out_sample_rate",       player->sampleRate, 0);
+    av_opt_set_sample_fmt(player->resamplerContext, "out_sample_fmt",        AV_SAMPLE_FMT_S16,  0);
+    int ret = swr_init(player->resamplerContext);
+    assert(ret>=0);
+
+    player->aSamplesCount = 8192;
+    player->aSamplesUsed  = 0;
+
+    ret = av_samples_alloc(&player->aBuffer, &player->aBufferSize, 2, player->aSamplesCount, AV_SAMPLE_FMT_S16, 1);
+        av_freep(player->aBuffer);
 
     alGenSources(1, &player->audioSource);
     alGenBuffers(2, player->audioBuffers);
-
-    //TODO: HARDCODE!!!!!!!
-    player->aBufferSize  = player->audioCodecContext->sample_rate / 25 * 3/*frames to buffer*/ * 2/*num channels*/ * 2/*bits per channel*/;
 
     return 1;
 }
 
 static void closeAudioStream(media_player_t player)
 {
-    if (player->audioCodecContext)
+    if (player->audioContext)
     {
-        avcodec_close(player->audioCodecContext);
+        avcodec_close(player->audioContext);
+        swr_free(&player->resamplerContext);
 
         alSourceStop(player->audioSource);
         alDeleteBuffers(2, player->audioBuffers);
         alDeleteSources(1, &player->audioSource);
 
-        player->audioCodecContext = 0;
+        player->audioContext     = 0;
+        player->resamplerContext = 0;
+        player->aBuffer          = 0;
     }
 }
 
@@ -128,16 +144,17 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     closeVideoStream(player);
 
     AVCodec* pVideoCodec=avcodec_find_decoder(videoContext->codec_id);
-    if(pVideoCodec==NULL || avcodec_open(videoContext, pVideoCodec)<0)
+    if(pVideoCodec==NULL || avcodec_open2(videoContext, pVideoCodec, NULL)<0)
         return 0;
 
     // Hack to correct wrong frame rates that seem to be generated by some codecs
     // if(pVideoCodecCtx->frame_rate>1000 && pVideoCodecCtx->frame_rate_base==1)
     //    pVideoCodecCtx->frame_rate_base=1000;
 
-    player->videoCodecContext = videoContext;
-    player->pFrame            = avcodec_alloc_frame();
-    player->numBytes          = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
+    player->videoContext = videoContext;
+    player->pVFrame      = av_frame_alloc();
+    player->pAFrame      = av_frame_alloc();
+    player->numBytes     = avpicture_get_size(PIX_FMT_YUV420P, videoContext->width, videoContext->height);
 
     player->width     = videoContext->width;
     player->height    = videoContext->height;
@@ -160,17 +177,18 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
 
 static void closeVideoStream(media_player_t player)
 {
-    if (player->videoCodecContext)
+    if (player->videoContext)
     {
-        av_free(player->pFrame);
+        av_frame_free(&player->pVFrame);
+        av_frame_free(&player->pAFrame);
 
-        avcodec_close(player->videoCodecContext);
+        avcodec_close(player->videoContext);
 
         glDeleteTextures(2, player->texY);
         glDeleteTextures(2, player->texU);
         glDeleteTextures(2, player->texV);
 
-        player->videoCodecContext = 0;
+        player->videoContext = 0;
     }
 }
 
@@ -207,35 +225,40 @@ static void decodeAudio(media_player_t player)
     int audioDataAva;
     
     audioDataAva    = 1;
-    player->bufSize = 0;
+    player->aBufferUsed = 0;
+    player->aSamplesUsed = 0;
 
-    while((player->bufSize < player->aBufferSize) && audioDataAva)
+    while((player->aSamplesUsed < player->aSamplesCount) && audioDataAva)
     {
         if (core::ring_buffer_used(player->aPackets)>0)
         {
-            AVPacket* pkt        = core::ring_buffer_back(player->aPackets);
-            uint8_t*  inData     = pkt->data;
-            int       inSize     = pkt->size;
-            int       bufSizeAva = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+            AVPacket* pkt       = core::ring_buffer_back(player->aPackets);
+            int       frameDone = 0;
 
-            while(inSize > 0)
-            {
-                int processed = avcodec_decode_audio2(player->audioCodecContext, (int16_t*)(player->audioBuf+player->bufSize), &bufSizeAva, inData, inSize);
-
-                if(processed < 0)
-                {
-                    break;
-                }
-
-                inData += processed;
-                inSize -= processed;
-
-                assert(player->bufSize+bufSizeAva<AVCODEC_MAX_AUDIO_FRAME_SIZE);
-                player->bufSize += bufSizeAva;
-            }
+            avcodec_decode_audio4(player->audioContext, player->pAFrame, &frameDone, pkt);
 
             av_free_packet(pkt);
             core::ring_buffer_pop(player->aPackets);
+
+            if(frameDone)
+            {
+                int srcRate = player->audioContext->sample_rate;
+                int srcNSamples = player->pAFrame->nb_samples;
+                int dstNSamples = (int)av_rescale_rnd(
+                    swr_get_delay(player->resamplerContext, srcRate) + srcNSamples,
+                    player->sampleRate, srcRate, AV_ROUND_UP);
+                dstNSamples = core::min(dstNSamples, player->aSamplesCount-player->aSamplesUsed);
+
+                uint8_t**  src = player->pAFrame->extended_data;
+                uint8_t*   dst = player->aBuffer+player->aBufferUsed;
+                dstNSamples = swr_convert(player->resamplerContext, &dst, dstNSamples, (const uint8_t**)src, srcNSamples);
+
+                int bufSizeAva = dstNSamples*2/*channels*/*2/*sizeof(int16_t)*/; //NOTE: hardcode!!!
+                assert(bufSizeAva>=0);
+
+                player->aBufferUsed  += bufSizeAva;
+                player->aSamplesUsed += dstNSamples;
+            }
         }
         else
             streamMediaData(player);
@@ -257,7 +280,7 @@ static void decodeVideo(media_player_t player)
             AVPacket* pkt       = core::ring_buffer_back(player->vPackets);
             int       frameDone = 0;
 
-            avcodec_decode_video(player->videoCodecContext, player->pFrame, &frameDone, pkt->data, pkt->size);
+            avcodec_decode_video2(player->videoContext, player->pVFrame, &frameDone, pkt);
 
             av_free_packet(pkt);
             core::ring_buffer_pop(player->vPackets);
@@ -279,7 +302,7 @@ static void uploadAudioData(media_player_t player, ALuint buffer)
 {
     PROFILER_CPU_TIMESLICE("uploadAudioData");
 
-    alBufferData(buffer, player->mAudioFormat, player->audioBuf, player->bufSize, player->audioCodecContext->sample_rate);
+    alBufferData(buffer, player->audioFormat, player->aBuffer, player->aBufferUsed, player->sampleRate);
     alSourceQueueBuffers(player->audioSource, 1, &buffer);
 }
 
@@ -287,14 +310,14 @@ static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLu
 {
     PROFILER_CPU_TIMESLICE("uploadVideoData");
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[0]);
-    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[0]);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[0]);
+    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[0]);
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[1]);
-    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[1]);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[1]);
+    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[1]);
 
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pFrame->linesize[2]);
-    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pFrame->data[2]);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[2]);
+    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[2]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
@@ -326,15 +349,15 @@ media_player_t mediaCreatePlayer(const char* source)
 {
     media_player_t player = (media_player_t)_aligned_malloc(sizeof(media_player_data_t), _alignof(media_player_data_t));
 
-    memset(player, 0, sizeof(media_player_data_t));
+    mem_zero(player);
 
-    if (av_open_input_file(&player->formatContext, source, NULL, 0, NULL)!=0)
+    if (avformat_open_input(&player->formatContext, source, NULL, 0)!=0)
         return 0;
 
-    if (av_find_stream_info(player->formatContext)<0)
+    if (avformat_find_stream_info(player->formatContext, NULL)<0)
         return 0 ;
 
-    dump_format(player->formatContext, 0, source, false); // Dump information about file onto standard error
+    av_dump_format(player->formatContext, 0, source, false); // Dump information about file onto standard error
 
     unsigned int  numStreams = player->formatContext->nb_streams;
     AVStream**    streams    = player->formatContext->streams;
@@ -343,7 +366,7 @@ media_player_t mediaCreatePlayer(const char* source)
     for(unsigned int i=0; i<numStreams; i++)
     {
         AVCodecContext* audioContext = streams[i]->codec;
-        if(audioContext->codec_type==CODEC_TYPE_AUDIO && openAudioStream(player, audioContext))
+        if(audioContext->codec_type==AVMEDIA_TYPE_AUDIO && openAudioStream(player, audioContext))
         {
             player->audioStream = i;
             break;
@@ -354,7 +377,7 @@ media_player_t mediaCreatePlayer(const char* source)
     for(unsigned int i=0; i<numStreams; i++)
     {
         AVCodecContext* videoContext = streams[i]->codec;
-        if(streams[i]->codec->codec_type==CODEC_TYPE_VIDEO && openVideoStream(player, videoContext))
+        if(streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO && openVideoStream(player, videoContext))
         {
             player->videoStream   = i;
             player->frameDuration = streams[i]->time_base;
@@ -384,7 +407,7 @@ void mediaDestroyPlayer(media_player_t player)
     closeAudioStream(player);
     closeVideoStream(player);
 
-    av_close_input_file(player->formatContext);
+    avformat_close_input(&player->formatContext);
     _aligned_free(player);
 }
 
