@@ -87,16 +87,14 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
     player->audioFormat = AL_FORMAT_STEREO16;
     player->sampleRate  = 44100;
 
-    player->resamplerContext = swr_alloc();
-    assert(player->resamplerContext);
     int inLayout = (int)av_get_default_channel_layout(audioContext->channels);
+    player->resamplerContext = swr_alloc_set_opts(
+        NULL, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, player->sampleRate,
+        inLayout, audioContext->sample_fmt, audioContext->sample_rate,
+        0, NULL
+    );
+    assert(player->resamplerContext);
 
-    av_opt_set_int       (player->resamplerContext, "in_channel_layout",     inLayout,                     0);
-    av_opt_set_int       (player->resamplerContext, "in_sample_rate",        audioContext->sample_rate,    0);
-    av_opt_set_sample_fmt(player->resamplerContext, "in_sample_fmt",         audioContext->sample_fmt,     0);
-    av_opt_set_int       (player->resamplerContext, "out_channel_layout",    AV_CH_LAYOUT_STEREO,          0);
-    av_opt_set_int       (player->resamplerContext, "out_sample_rate",       player->sampleRate, 0);
-    av_opt_set_sample_fmt(player->resamplerContext, "out_sample_fmt",        AV_SAMPLE_FMT_S16,  0);
     int ret = swr_init(player->resamplerContext);
     assert(ret>=0);
 
@@ -104,7 +102,6 @@ static int openAudioStream(media_player_t player, AVCodecContext* audioContext)
     player->aSamplesUsed  = 0;
 
     ret = av_samples_alloc(&player->aBuffer, &player->aBufferSize, 2, player->aSamplesCount, AV_SAMPLE_FMT_S16, 1);
-        av_freep(player->aBuffer);
 
     alGenSources(1, &player->audioSource);
     alGenBuffers(2, player->audioBuffers);
