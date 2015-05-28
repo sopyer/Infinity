@@ -239,12 +239,8 @@ static void decodeAudio(media_player_t player)
 
             if(frameDone)
             {
-                int srcRate = player->audioContext->sample_rate;
                 int srcNSamples = player->pAFrame->nb_samples;
-                int dstNSamples = (int)av_rescale_rnd(
-                    swr_get_delay(player->resamplerContext, srcRate) + srcNSamples,
-                    player->sampleRate, srcRate, AV_ROUND_UP);
-                dstNSamples = core::min(dstNSamples, player->aSamplesCount-player->aSamplesUsed);
+                int dstNSamples = player->aSamplesCount-player->aSamplesUsed;
 
                 uint8_t**  src = player->pAFrame->extended_data;
                 uint8_t*   dst = player->aBuffer+player->aBufferUsed;
