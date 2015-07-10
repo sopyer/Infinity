@@ -1,6 +1,7 @@
 #include <sput.h>
 
-#include <core/etlsf.h>
+#include <core/core.h>
+#include <etlsf.h>
 
 static const char test_str1[] = "0";
 static const char test_str2[] = "0x00";

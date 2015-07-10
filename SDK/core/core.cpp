@@ -127,6 +127,9 @@ namespace core
     static stack_mem_t mainThreadDataStack = 0;
     static uint8_t* threadDataStackMem;
 
+    static const size_t MSPACE_CORE_SIZE = 1*(1<<20);
+    static mspace_t mspace_core;
+
     void init()
     {
         threadDataStackMem = (uint8_t*)malloc(THREAD_DATA_STACK_SIZE);
@@ -134,10 +137,15 @@ namespace core
 
         profilerInit();
         mt::init(1, 128);
+
+        mspace_core = mem_create_space(MSPACE_CORE_SIZE);
     }
 
     void fini()
     {
+        mem_destroy_space(mspace_core);
+        mspace_core = 0;
+
         mt::fini();
 
         free(threadDataStackMem);
@@ -164,6 +172,15 @@ namespace core
 
 extern "C"
 {
+#define ETLSF_assert assert
+#define ETLSF_memset(ptr, size, value) mem_set(ptr, size, 0)
+#define ETLSF_alloc(size) mem_alloc(core::mspace_core, size, 0)
+#define ETLSF_free(ptr) mem_free(core::mspace_core, ptr)
+#define ETLSF_fls bit_fls
+#define ETLSF_ffs bit_ffs
+#define ETLSF_align2 bit_align_up
+#include "etlsf.c"
+
 #include "str.c"
 #include "mem_utils.c"
 #include "mem_alloc.c"
@@ -171,7 +188,6 @@ extern "C"
 #include "Remotery.c"
 }
 
-#include "etlsf.cpp"
 #include "ml.cpp"
 #include "mt.cpp"
 #include "timer.cpp"

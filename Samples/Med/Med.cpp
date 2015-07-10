@@ -485,8 +485,8 @@ namespace app
 
             imguiBeginFrame(mx,my,mbut,mscroll);
 
-            float x = gfx::width-250-20;
-            float y = 10;
+            int x = gfx::width-250-20;
+            int y = 10;
             if (imguiBeginScrollArea("Properties", x+10, y, 250, gfx::height-20, &propScroll))
                 mouseOverMenu = true;
 

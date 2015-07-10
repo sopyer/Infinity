@@ -1,6 +1,7 @@
 #include <sput.h>
 
-#include <core/etlsf.h>
+#include <core/core.h>
+#include <etlsf.h>
 
 enum test_private
 {
@@ -11,13 +12,11 @@ enum test_private
 
 void test_alloc_free()
 {
-    etlsf_arena_t  arena;
-    mspace_t  marena;
+    etlsf_t  arena;
 
     uint16_t id0, id1, id2, id3, id4, id5;
 
-    marena = mem_create_space(ARENA_SYSMEM_SIZE);
-    arena = etlsf_create(marena, 0, ARENA_EXTMEM_SIZE, 128);
+    arena = etlsf_create(ARENA_EXTMEM_SIZE, 128);
 
     id0 = etlsf_alloc(arena, ARENA_EXTMEM_SIZE);
     sput_fail_unless(id0, "Allocation succeeded");
@@ -68,18 +67,15 @@ void test_alloc_free()
     sput_fail_unless(etlsf_block_size(arena, id4) == 256, "Single allocation size test");
 
     etlsf_destroy(arena);
-    mem_destroy_space(marena);
 }
 
 void test_merge_prev()
 {
-    etlsf_arena_t  arena;
-    mspace_t  marena;
+    etlsf_t  arena;
 
     uint16_t id0, id1, id2;
 
-    marena = mem_create_space(ARENA_SYSMEM_SIZE);
-    arena = etlsf_create(marena, 0, 1024, 128);
+    arena = etlsf_create(1024, 128);
 
     id0 = etlsf_alloc(arena, 256);
     id1 = etlsf_alloc(arena, 256);
@@ -112,18 +108,15 @@ void test_merge_prev()
     sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
 
     etlsf_destroy(arena);
-    mem_destroy_space(marena);
 }
 
 void test_merge_next()
 {
-    etlsf_arena_t  arena;
-    mspace_t  marena;
+    etlsf_t  arena;
 
     uint16_t id0, id1, id2;
 
-    marena = mem_create_space(ARENA_SYSMEM_SIZE);
-    arena = etlsf_create(marena, 0, 1024, 128);
+    arena = etlsf_create(1024, 128);
 
     id0 = etlsf_alloc(arena, 256);
     id1 = etlsf_alloc(arena, 256);
@@ -156,11 +149,12 @@ void test_merge_next()
     sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
 
     etlsf_destroy(arena);
-    mem_destroy_space(marena);
 }
 
 int run_etlsf_tests()
 {
+    core::init();
+
     sput_start_testing();
 
     sput_enter_suite("ETLSF: alloc/free");
@@ -171,6 +165,8 @@ int run_etlsf_tests()
     sput_run_test(test_merge_next);
 
     sput_finish_testing();
+
+    core::fini();
 
     return sput_get_return_value();
 }

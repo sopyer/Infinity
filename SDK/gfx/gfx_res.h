@@ -26,8 +26,8 @@ namespace gfx_res
 
     extern GLuint vaoRect;
 
-    extern etlsf_arena_t vgGArena;
-    extern GLuint        buffer;
+    extern etlsf_t vgGArena;
+    extern GLuint  buffer;
 
     void init();
     void fini();

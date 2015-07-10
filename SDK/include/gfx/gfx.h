@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core/core.h>
-#include <core/etlsf.h>
+#include <etlsf.h>
 #include <opengl.h>
 #include <gfx/vg.h>
 

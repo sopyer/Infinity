@@ -146,8 +146,8 @@ namespace gfx_res
         GFX_MAX_ALLOCS = 1<<14,
     };
 
-    etlsf_arena_t vgGArena;
-    GLuint        buffer;
+    etlsf_t vgGArena;
+    GLuint  buffer;
 
     GLuint stdPrograms[STD_PROGRAM_COUNT];
 
@@ -224,7 +224,7 @@ namespace gfx_res
 
         vaoRect = gfx::createVAO(2, ve, 2, divs);
 
-        vgGArena = etlsf_create(gfx::memArena, 0, VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
+        vgGArena = etlsf_create(VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
         glGenBuffers(1, &buffer);
         glNamedBufferStorageEXT(buffer, VG_BUFFER_SIZE, 0, GL_MAP_WRITE_BIT);
 

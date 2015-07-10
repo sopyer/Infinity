@@ -1,6 +1,7 @@
 #include <sput.h>
 
-#include <core/etlsf.h>
+#include <core/core.h>
+#include <etlsf.h>
 
 void test_ffs32()
 {
