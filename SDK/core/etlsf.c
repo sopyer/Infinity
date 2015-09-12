@@ -168,8 +168,6 @@ enum etlsf_private
 
     BLOCK_SIZE_MIN = (size_t)1 << ALIGN_SIZE_LOG2,
     BLOCK_SIZE_MAX = (size_t)1 << FL_INDEX_MAX,
-
-    BLOCK_COUNT_MAX = 0xFFFE,
 };
 
 struct used_block_data_t
@@ -217,8 +215,7 @@ struct etlsf_private_t
     struct block_t  storage[1];
 };
 
-static uint32_t   arena_data_size();
-static uint32_t   arena_total_size(uint16_t max_allocs);
+static size_t     arena_total_size(size_t max_allocs);
 
 static uint16_t   storage_new_block (etlsf_t arena);
 static void       storage_free_block(etlsf_t arena, uint16_t id);
@@ -231,7 +228,7 @@ static  void      block_trim           (etlsf_t arena, uint16_t id);
 //-------------------------  API implementation  ----------------------------//
 etlsf_t etlsf_create(uint32_t size, uint16_t max_allocs)
 {
-    ETLSF_assert(max_allocs < BLOCK_COUNT_MAX);
+    ETLSF_assert(max_allocs > 0);
     ETLSF_assert(size % ALIGN_SIZE == 0);
 
     etlsf_t arena = (etlsf_t)ETLSF_alloc(arena_total_size(max_allocs + 1));
@@ -311,12 +308,12 @@ int etlsf_is_block_valid(etlsf_t arena, uint16_t block)
 
 
 //------------------------------  Arena utils  --------------------------------//
-static uint32_t arena_data_size()
+static size_t arena_data_size()
 {
     return offsetof(struct etlsf_private_t, storage);
 }
 
-static uint32_t arena_total_size(uint16_t max_allocs)
+static size_t arena_total_size(size_t max_allocs)
 {
     return arena_data_size() + max_allocs * sizeof(struct block_t);
 }
