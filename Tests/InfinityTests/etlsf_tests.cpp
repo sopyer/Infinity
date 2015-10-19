@@ -10,7 +10,7 @@ enum test_private
 };
 
 
-void test_alloc_free()
+void test_basic_alloc_free()
 {
     etlsf_t  arena;
 
@@ -151,18 +151,83 @@ void test_merge_next()
     etlsf_destroy(arena);
 }
 
+
+void test_max_allocs()
+{
+    const uint16_t  MAX_ALLOCS = 0xFFFF;
+    const uint32_t  MIN_ALLOC  = 0x100;
+    const uint32_t  MEM_SIZE   = MIN_ALLOC * MAX_ALLOCS;
+
+    static uint16_t allocs[MAX_ALLOCS];
+
+    etlsf_t  arena = etlsf_create(MEM_SIZE, MAX_ALLOCS);
+
+    bool tests_passed;
+
+    tests_passed = true;
+    for (size_t i=0; i < MAX_ALLOCS; ++i)
+    {
+        allocs[i] = etlsf_alloc(arena, MIN_ALLOC);
+
+        tests_passed &= (allocs[i] != 0);
+        tests_passed &= (etlsf_block_offset(arena, allocs[i]) == i*MIN_ALLOC);
+        tests_passed &= (etlsf_block_size(arena, allocs[i]) == MIN_ALLOC);
+    }
+    sput_fail_unless(tests_passed, "All allocation succeeded, sizes and offsets are correct");
+
+    tests_passed = true;
+    for (size_t i=0; i < 0x10001; ++i)
+    {
+        uint16_t id = etlsf_alloc(arena, MIN_ALLOC);
+        tests_passed &= (id == 0);
+    }
+    sput_fail_unless(tests_passed, "All additional 0x10001 allocation predictably failed");
+
+
+    tests_passed = true;
+    for (size_t i=0; i < MAX_ALLOCS; i+=2)
+    {
+        etlsf_free(arena, allocs[i]);
+        allocs[i] = 0;
+    }
+
+    uint32_t offset_sum = 0;
+    for (size_t i=0; i < MAX_ALLOCS; i+=2)
+    {
+        allocs[i] = etlsf_alloc(arena, MIN_ALLOC);
+
+        offset_sum += etlsf_block_offset(arena, allocs[i]) / MIN_ALLOC / 2;
+
+        tests_passed &= (allocs[i] != 0);
+        tests_passed &= (etlsf_block_offset(arena, allocs[i]) % MIN_ALLOC == 0);
+        tests_passed &= (etlsf_block_size(arena, allocs[i]) == MIN_ALLOC);
+    }
+    // All offsets after sorting should form an arithmetic progression sequence
+    // So calculate their sum divided by MIN_ALLOC*2
+    // count = (MAX_ALLOC + 1) / 2 //round count up
+    // max_offset = MIN_ALLOC * (MAX_ALLOC - 1)
+    // sum  = (0 + max_offset) / 2 * count
+    // sum /= MIN_ALLOC*2
+    const uint32_t EXPECTED_SUM = (MAX_ALLOCS-1) / 2 * (MAX_ALLOCS + 1) / 2 / 2;
+    sput_fail_unless(tests_passed && offset_sum == EXPECTED_SUM, "All allocation after every second allocation was freed(starting from first), succeeded, sizes and offsets are correct");
+
+    etlsf_destroy(arena);
+}
+
 int run_etlsf_tests()
 {
     core::init();
 
     sput_start_testing();
 
-    sput_enter_suite("ETLSF: alloc/free");
-    sput_run_test(test_alloc_free);
+    sput_enter_suite("ETLSF: basic alloc/free");
+    sput_run_test(test_basic_alloc_free);
     sput_enter_suite("ETLSF: merge prev");
     sput_run_test(test_merge_prev);
     sput_enter_suite("ETLSF: merge next");
     sput_run_test(test_merge_next);
+    sput_enter_suite("ETLSF: max allocs");
+    sput_run_test(test_max_allocs);
 
     sput_finish_testing();
 

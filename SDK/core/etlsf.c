@@ -236,7 +236,7 @@ etlsf_t etlsf_create(uint32_t size, uint16_t max_allocs)
     ETLSF_memset(arena, sizeof(struct etlsf_private_t), 0); // sets also all lists point to zero block
 
     arena->size             = size;
-    arena->total_blocks     = max_allocs + 1;
+    arena->total_blocks     = max_allocs;
     arena->unused_blocks    = max_allocs;
     arena->first_free_block = 0;
 
@@ -272,10 +272,13 @@ uint16_t etlsf_alloc(etlsf_t arena, uint32_t size)
 
     //!!!!!TODO: add support for arbitrary size and alignment
     uint16_t id = block_find_free(arena, adjust);
-    BLOCK_MEM(id, used_data.size) = adjust;
-    block_trim(arena, id);
 
-    ETLSF_assert(BLOCK_MEM(id, offset) % BLOCK_SIZE_MIN == 0);
+    if (id)
+    {
+        BLOCK_MEM(id, used_data.size) = adjust;
+        block_trim(arena, id);
+        ETLSF_assert(BLOCK_MEM(id, offset) % BLOCK_SIZE_MIN == 0);
+    }
 
     return id;
 }
@@ -324,7 +327,7 @@ static uint16_t storage_new_block(etlsf_t arena)
 {
     if (arena->first_free_block)
     {
-        ETLSF_assert(arena->first_free_block < arena->total_blocks);
+        ETLSF_assert(arena->first_free_block <= arena->total_blocks);
 
         uint16_t id = arena->first_free_block;
         arena->first_free_block = BLOCK_MEM(id, next_phys);
@@ -334,7 +337,7 @@ static uint16_t storage_new_block(etlsf_t arena)
 
     if (arena->unused_blocks > 0)
     {
-        uint16_t id = arena->total_blocks - arena->unused_blocks;
+        uint16_t id = arena->total_blocks + 1 - arena->unused_blocks;
         --arena->unused_blocks;
 
         return id;
@@ -346,10 +349,10 @@ static uint16_t storage_new_block(etlsf_t arena)
 static void storage_free_block(etlsf_t arena, uint16_t id)
 {
     ETLSF_assert(id > 0);
-    ETLSF_assert(id < arena->total_blocks);
-    ETLSF_assert(id+arena->unused_blocks < arena->total_blocks);
+    ETLSF_assert(id <= arena->total_blocks);
+    ETLSF_assert(id + arena->unused_blocks <= arena->total_blocks);
 
-    if (id + 1 + arena->unused_blocks == arena->total_blocks)
+    if (id + arena->unused_blocks == arena->total_blocks)
     {
         ++arena->unused_blocks;
     }
@@ -461,8 +464,8 @@ static void block_register_free(etlsf_t arena, uint16_t id)
     size_to_fl_sl(size, fl, sl);
 
     uint16_t next_free = arena->blocks[fl][sl];
-    ETLSF_assert(id < arena->total_blocks);
-    ETLSF_assert(next_free < arena->total_blocks);
+    ETLSF_assert(id <= arena->total_blocks);
+    ETLSF_assert(next_free <= arena->total_blocks);
 
     BLOCK_MEM(id,        free_data.prev_free)   = 0;
     BLOCK_MEM(id,        free_data.next_free)   = next_free;
@@ -489,8 +492,8 @@ static void block_unregister_free(etlsf_t arena, uint16_t id)
     uint16_t prev = BLOCK_MEM(id, free_data.prev_free);
     uint16_t next = BLOCK_MEM(id, free_data.next_free);
 
-    ETLSF_assert(prev < arena->total_blocks);
-    ETLSF_assert(next < arena->total_blocks);
+    ETLSF_assert(prev <= arena->total_blocks);
+    ETLSF_assert(next <= arena->total_blocks);
 
     BLOCK_MEM(next, free_data.prev_free) = prev;
     BLOCK_MEM(prev, free_data.next_free) = next;
