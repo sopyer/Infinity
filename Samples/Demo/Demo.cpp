@@ -334,19 +334,25 @@ namespace app
 
             assert(result && mjson_get_type(root) == MJSON_ID_ARRAY32);
 
-            mjson_element_t modelDesc, key, value;
             mjson_element_t matList, mat;
 
-            modelDesc = mjson_get_element_first(root);
-            while (modelDesc)
+            for (
+                mjson_element_t modelDesc = mjson_get_element_first(root);
+                modelDesc;
+                modelDesc = mjson_get_element_next(root, modelDesc)
+            )
             {
                 const char* model = 0;
                 const char* material = 0;
 
                 assert(mjson_get_type(modelDesc) == MJSON_ID_DICT32);
 
-                key = mjson_get_member_first(modelDesc, &value);
-                while (key)
+                mjson_element_t value;
+                for (
+                    mjson_element_t key = mjson_get_member_first(modelDesc, &value);
+                    key;
+                    key = mjson_get_member_next(modelDesc, key, &value)
+                )
                 {
                     const char* name = mjson_get_string(key, 0);
 
@@ -358,8 +364,6 @@ namespace app
                     {
                         matList = value;
                     }
-
-                    key = mjson_get_member_next(modelDesc, key, &value);
                 }
 
                 int start, end;
@@ -374,8 +378,6 @@ namespace app
                     materialRefs[i] = findMaterial(mjson_get_string(mat, ""));
                     mat = mjson_get_element_next(matList, mat);
                 }
-
-                modelDesc = mjson_get_element_next(root, modelDesc);
             }
 
             mem_free(&inText);
@@ -566,12 +568,12 @@ namespace app
 
     float randomUnitFloat()
     {
-      return float(rand()) / float(RAND_MAX);
+        return float(rand()) / float(RAND_MAX);
     }
 
     float randomRange(float low, float high)
     {
-      return low + (high - low) * randomUnitFloat();
+        return low + (high - low) * randomUnitFloat();
     }
 
     static v128 hueToRGB(float hue)
