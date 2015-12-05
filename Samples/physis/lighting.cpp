@@ -107,7 +107,7 @@ namespace lighting
     {
         for (int i = 0; i < 9; ++i)
         {
-            sh[i] = vi_set_0000();
+            sh[i] = vi_set_zero();
         }
 
         float sphereArea = 0.0f;
@@ -137,8 +137,8 @@ namespace lighting
 
                     for (int i = 0; i < 9; ++i)
                     {
-                        v128 scale = vi_set_ffff(shFunc[i] * solidAngle);
-                        v128 color = vi_cvt_ubyte4_to_vec4(texel); //TODO: add gamma correction????
+                        v128 scale = vi_set_all(shFunc[i] * solidAngle);
+                        v128 color = vi_cvt_u8x4_to_v128(texel); //TODO: add gamma correction????
 
                         sh[i] = vi_add(sh[i], vi_mul(scale, color));
                     }
@@ -156,7 +156,7 @@ namespace lighting
         env[0] = cubeProj[0];
         for (size_t i = 1; i < 9; ++i)
         {
-            env[i] = vi_mul(cubeProj[i], vi_set_ffff(Al[i]));
+            env[i] = vi_mul(cubeProj[i], vi_set_all(Al[i]));
         }
     }
 
@@ -168,19 +168,19 @@ namespace lighting
         float c4 = 0.28209480643272400f;
         float c5 = 0.31539157032966614f;
 
-        poly[0] = vi_mul(vi_set_ffff(  c1), sh[8]);
-        poly[1] = vi_mul(vi_set_ffff(  c3), sh[6]);
-        poly[2] = vi_mul(vi_set_ffff( -c1), sh[8]);
+        poly[0] = vi_mul(vi_set_all(  c1), sh[8]);
+        poly[1] = vi_mul(vi_set_all(  c3), sh[6]);
+        poly[2] = vi_mul(vi_set_all( -c1), sh[8]);
 
-        poly[3] = vi_mul(vi_set_ffff(2*c1), sh[7]);
-        poly[4] = vi_mul(vi_set_ffff(2*c1), sh[5]);
-        poly[5] = vi_mul(vi_set_ffff(2*c1), sh[4]);
+        poly[3] = vi_mul(vi_set_all(2*c1), sh[7]);
+        poly[4] = vi_mul(vi_set_all(2*c1), sh[5]);
+        poly[5] = vi_mul(vi_set_all(2*c1), sh[4]);
 
-        poly[6] = vi_mul(vi_set_ffff(  c2), sh[3]);
-        poly[7] = vi_mul(vi_set_ffff(  c2), sh[2]);
-        poly[8] = vi_mul(vi_set_ffff(  c2), sh[1]);
+        poly[6] = vi_mul(vi_set_all(  c2), sh[3]);
+        poly[7] = vi_mul(vi_set_all(  c2), sh[2]);
+        poly[8] = vi_mul(vi_set_all(  c2), sh[1]);
 
-        poly[9] = vi_sub(vi_mul(vi_set_ffff(c4), sh[0]), vi_mul(vi_set_ffff(c5), sh[6]));
+        poly[9] = vi_sub(vi_mul(vi_set_all(c4), sh[0]), vi_mul(vi_set_all(c5), sh[6]));
     }
 
     GLuint prgSkybox;

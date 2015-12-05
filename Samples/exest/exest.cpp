@@ -77,23 +77,23 @@ namespace app
         float sy = 1.0f / proj[1].m128_f32[1];
 
         v128 scale = vi_set(sx, sy, -1.0f, 0.0f);
-        v128 vzn   = vi_set_fff0(zn);
-        v128 vzf   = vi_set_fff0(zf);
+        v128 vzn   = vi_set_all(zn);
+        v128 vzf   = vi_set_all(zf);
         v128 pn    = vi_mul(vzn, scale);
         v128 pf    = vi_mul(vzf, scale);
-        v128 sign  = vi_set_i000(FLT_SIGN);
+        v128 sign  = vi_seti_x(VI_SIGN_MASK);
 
         ml::vec3 frustumPoints[8];
 
         v128 pts[8] = {
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(sign), pn),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 1)>(sign), pn),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 1)>(sign), pn),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 1)>(sign), pn),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(sign), pf),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 1)>(sign), pf),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 1)>(sign), pf),
-            vi_or(vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 1)>(sign), pf)
+            vi_or(vi_swizzle<0, 0, 1, 1>(sign), pn),
+            vi_or(vi_swizzle<1, 0, 1, 1>(sign), pn),
+            vi_or(vi_swizzle<1, 1, 1, 1>(sign), pn),
+            vi_or(vi_swizzle<0, 1, 1, 1>(sign), pn),
+            vi_or(vi_swizzle<0, 0, 1, 1>(sign), pf),
+            vi_or(vi_swizzle<1, 0, 1, 1>(sign), pf),
+            vi_or(vi_swizzle<1, 1, 1, 1>(sign), pf),
+            vi_or(vi_swizzle<0, 1, 1, 1>(sign), pf)
         };
 
         v128 pos = vi_load_v3(&VPpp);

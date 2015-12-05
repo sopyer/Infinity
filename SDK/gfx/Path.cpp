@@ -211,13 +211,13 @@ namespace vg
 
         //Transform from Bezier to power basis
         //pb[3] = { 3.0f*bb[0], -6.0f*bb[0] +  3.0f*bb[1], 3.0f*bb[0] + -3.0f*bb[1] + bb[2] };
-        v128 pb0 = vi_mul(vi_set_ffff( 3.0f), bb0);
-        v128 pb1 = vi_mad(vi_set_ffff(-6.0f), bb0, vi_mul(vi_set_ffff( 3.0f), bb1));
-        v128 pb2 = vi_mad(vi_set_ffff( 3.0f), bb0, vi_mad(vi_set_ffff(-3.0f), bb1, bb2));
+        v128 pb0 = vi_mul(vi_set_all( 3.0f), bb0);
+        v128 pb1 = vi_mad(vi_set_all(-6.0f), bb0, vi_mul(vi_set_all( 3.0f), bb1));
+        v128 pb2 = vi_mad(vi_set_all( 3.0f), bb0, vi_mad(vi_set_all(-3.0f), bb1, bb2));
 
         // make xxx and yyy
         v128 xy[2];
-        v128 m[4] = {pb0, pb1, pb2, vi_set_0000()};
+        v128 m[4] = {pb0, pb1, pb2, vi_set_zero()};
         ml::transpose_mat4x2(xy, m);
 
         //d0 =  pb[1].x*pb[2].y - pb[1].y*pb[2].x;
@@ -227,7 +227,7 @@ namespace vg
 
         // Zero values less then epsilon in order 
         // to mitigates precision issues
-        v128 mask = vi_cmp_gt(vi_abs(vd), vi_set_ffff(ML_C_EPS7));
+        v128 mask = vi_cmp_gt(vi_abs(vd), vi_set_all(ML_C_EPS7));
         vd = vi_and(vd, mask);
 
         float d0 = vi_get_x(vd);
@@ -312,15 +312,15 @@ namespace vg
         }
         else
         {
-            F0 = vi_set_0000();
-            F1 = vi_set_0000();
-            F2 = vi_set_0000();
-            F3 = vi_set_0000();
+            F0 = vi_set_zero();
+            F1 = vi_set_zero();
+            F2 = vi_set_zero();
+            F3 = vi_set_zero();
         }
 
         klm[0] = F0;
-        klm[1] = vi_mad(F1, vi_set_ffff(0.3333333333f), F0);
-        klm[2] = vi_mad(F2, vi_set_ffff(0.3333333333f), vi_mad(F1, vi_set_ffff(0.6666666667f), F0));
+        klm[1] = vi_mad(F1, vi_set_all(0.3333333333f), F0);
+        klm[2] = vi_mad(F2, vi_set_all(0.3333333333f), vi_mad(F1, vi_set_all(0.6666666667f), F0));
         klm[3] = vi_add(F3, vi_add(F2, vi_add(F1, F0)));
 
         subdPtCount = 0;

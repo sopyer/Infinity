@@ -14,8 +14,8 @@ namespace vg
     {
         PROFILER_CPU_TIMESLICE("vg::drawRect");
 
-        v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+        v128 fillColorF   = vi_cvt_u8x4_to_v128(fillColor),
+             borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
@@ -39,8 +39,8 @@ namespace vg
     {
         PROFILER_CPU_TIMESLICE("vg::drawRoundedRect");
 
-        v128 fillColorF   = vi_cvt_ubyte4_to_vec4(fillColor),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+        v128 fillColorF   = vi_cvt_u8x4_to_v128(fillColor),
+             borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
@@ -113,8 +113,8 @@ namespace vg
     {
         PROFILER_CPU_TIMESLICE("vg::drawRoundedRectOutline");
 
-        v128 translucentF = vi_cvt_ubyte4_to_vec4(0x00000000),
-             borderColorF = vi_cvt_ubyte4_to_vec4(borderColor);
+        v128 translucentF = vi_cvt_u8x4_to_v128(0x00000000),
+             borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
         glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&translucentF);

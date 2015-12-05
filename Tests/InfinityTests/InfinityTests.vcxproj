@@ -97,6 +97,7 @@
     <ClCompile Include="cstr_tests.cpp" />
     <ClCompile Include="etlsf_tests.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="math_tests.cpp" />
     <ClCompile Include="vg_tests.cpp" />
   </ItemGroup>
   <ItemGroup>

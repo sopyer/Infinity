@@ -82,7 +82,7 @@ namespace vg
 
         GLuint offset;
         v128*  colorf = (v128*)gfx::dynbufAllocMem(sizeof(v128), gfx::caps.uboAlignment, &offset);
-        *colorf = vi_cvt_ubyte4_to_vec4(color);
+        *colorf = vi_cvt_u8x4_to_v128(color);
         glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, offset, sizeof(v128));
 
         drawQuad(path->xmin, path->ymin, path->xmax, path->ymax, 0);
@@ -115,7 +115,7 @@ namespace vg
 
         GLuint offset;
         v128*  colorf = (v128*)gfx::dynbufAllocMem(sizeof(v128), gfx::caps.uboAlignment, &offset);
-        *colorf = vi_set_0000();
+        *colorf = vi_set_zero();
 
         gfx::setMVP();
         glBindBufferRange(GL_UNIFORM_BUFFER, 1, gfx::dynBuffer, offset, sizeof(v128));

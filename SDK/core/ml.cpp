@@ -6,13 +6,13 @@ namespace ml
     {                                               \
         v128 swizzle;                               \
                                                     \
-        swizzle = vi_swizzle<VI_SWIZZLE_WWWW>(v);   \
+        swizzle = vi_swizzle<3, 3, 3, 3>(v);        \
         r = vi_mul(swizzle, m3);                    \
-        swizzle = vi_swizzle<VI_SWIZZLE_ZZZZ>(v);   \
+        swizzle = vi_swizzle<2, 2, 2, 2>(v);        \
         r = vi_mad(swizzle, m2, r);                 \
-        swizzle = vi_swizzle<VI_SWIZZLE_YYYY>(v);   \
+        swizzle = vi_swizzle<1, 1, 1, 1>(v);        \
         r = vi_mad(swizzle, m1, r);                 \
-        swizzle = vi_swizzle<VI_SWIZZLE_XXXX>(v);   \
+        swizzle = vi_swizzle<0, 0, 0, 0>(v);        \
         r = vi_mad(swizzle, m0, r);                 \
     }                                               \
 
@@ -28,18 +28,18 @@ namespace ml
     {
         v128 r, m, s, m0, m1, m2;
 
-        m  = vi_set_i000(FLT_SIGN);
+        m  = vi_seti_x(VI_SIGN_MASK);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
-        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q0);
+        s  = vi_swizzle<1, 1, 0, 0>(m);
+        m0 = vi_swizzle<3, 2, 1, 0>(q0);
         m0 = vi_xor(s, m0);  
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
-        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q0);
+        s  = vi_swizzle<0, 1, 1, 0>(m);
+        m1 = vi_swizzle<2, 3, 0, 1>(q0);
         m1 = vi_xor(s, m1);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
-        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q0);
+        s  = vi_swizzle<1, 0, 1, 0>(m);
+        m2 = vi_swizzle<1, 0, 3, 2>(q0);
         m2 = vi_xor(s, m2);
 
         MUL_MAT4_VEC4(r, m0, m1, m2, q0, q1);
@@ -52,10 +52,10 @@ namespace ml
         v128 r, two, wx4;
 
         r   = vi_cross3(q, v);
-        wx4 = vi_swizzle<VI_SWIZZLE_WWWW>(q);
+        wx4 = vi_swizzle<3, 3, 3, 3>(q);
         r   = vi_mad(wx4, v, r);
         r   = vi_cross3(q, r);
-        two = vi_set_ffff(2.0f);
+        two = vi_set_all(2.0f);
         r   = vi_mad(two, r, v);
 
         return r;
@@ -65,8 +65,8 @@ namespace ml
     {
         v128 mask, r;
         
-        mask = vi_set_i000(FLT_SIGN);
-        mask = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(mask);
+        mask = vi_seti_x(VI_SIGN_MASK);
+        mask = vi_swizzle<0, 0, 0, 3>(mask);
         r    = vi_xor(mask, q);
 
         return r;
@@ -74,11 +74,9 @@ namespace ml
 
     v128 lerp_quat(v128 q0, v128 q1, float t)
     {
-        v128 r0;
-        
-        r0 = vi_dot4(q0, q1);
+        float qdot = vi_dot4(q0, q1);
 
-        if (vi_cmpx_lt(r0, vi_set_0000()))
+        if (qdot < 0)
         {
             q1 = vi_neg(q1);
         }
@@ -88,18 +86,18 @@ namespace ml
 
     v128 normalize(v128 v)
     {
-        v128 r0, r1;
+        v128 r0;
 
-        r0 = vi_dot4(v, v);
+        float norm_sq = vi_dot4(v, v);
 
-        if (vi_cmpx_lt(r0, vi_set_ffff(VI_EPS7)))
+        if (norm_sq < ml::asfloat(VI_EPS7_AS_INT))
         {
-            r0 = vi_set_0000();
+            return vi_set_zero();
         }
         else
         {
-            r1 = vi_sqrt(r0);
-            r0 = vi_div(v, r1);
+            r0 = vi_sqrt(vi_set_all(norm_sq));
+            r0 = vi_div(v, r0);
         }
 
         return r0;
@@ -107,17 +105,17 @@ namespace ml
 
     v128 length(v128 v)
     {
-        return vi_sqrt(vi_dot4(v, v));
+        return vi_sqrt(vi_set_all(vi_dot4(v, v)));
     }
 
     v128 make_p3(v128 v)
     {
-        return vi_xor(make_v3(v), vi_set_0001f());
+        return vi_shuffle<VI_AX, VI_AY, VI_AZ, VI_BX>(v, vi_seti_x(VI_ONE_ASINT));
     }
 
     v128 make_v3(v128 v)
     {
-        v128 mask = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 3)>(vi_set_i000(0xFFFFFFFF));
+        v128 mask = vi_swizzle<0, 0, 0, 3>(vi_seti_x(0xFFFFFFFF));
         return vi_and(v, mask);
     }
 
@@ -171,19 +169,20 @@ namespace ml
         v128 t, w;
 
         t = vi_cross3(rq, dq);
-        w = vi_swizzle<VI_SWIZZLE_WWWW>(rq);
+        w = vi_swizzle<3, 3, 3, 3>(rq);
         t = vi_mad(w, dq, t);
-        w = vi_swizzle<VI_SWIZZLE_WWWW>(dq);
+        w = vi_swizzle<3, 3, 3, 3>(dq);
         t = vi_sub(t, vi_mul(w, rq));
-        t = vi_mul(vi_set_ffff(2.0f), t);
+        t = vi_mul(vi_set_all(2.0f), t);
 
         return t;
     }
 
     void set_identity_dual_quat(dual_quat* dq)
     {
-        vi_storeu_v4(&dq->real, vi_set_0001f());
-        vi_storeu_v4(&dq->dual, vi_set_0000());
+        vi_storeu_v4(&dq->real, vi_set_zero());
+        vi_storeu_v4(&dq->dual, vi_set_zero());
+        dq->real.w = 1.0f;
     }
 
 #define COPY_QUAT(dst, src)                     \
@@ -202,7 +201,7 @@ namespace ml
         q = vi_loadu_v4(orient);
 
         r = mul_quat(p, q);
-        c = vi_set_ffff(0.5f);
+        c = vi_set_all(0.5f);
         vi_storeu_v4(&result->dual, vi_mul(c, r));
     }
 
@@ -327,9 +326,12 @@ namespace ml
 
     void make_translation_mat4(v128* res, float dx, float dy, float dz)
     {
-        res[0] = vi_set_1000f();
-        res[1] = vi_set_0100f();
-        res[2] = vi_set_0010f();
+        res[0] = vi_set_zero();
+        res[1] = vi_set_zero();
+        res[2] = vi_set_zero();
+        res[0].m128_f32[0] = 1.0f;
+        res[1].m128_f32[1] = 1.0f;
+        res[2].m128_f32[2] = 1.0f;
         res[3] = vi_set(dx, dy, dz, 1.0f);
     }
 
@@ -353,7 +355,10 @@ namespace ml
         res[2].m128_f32[2] = (1 - c) * axisz * axisz + c;
         res[2].m128_f32[3] = 0.0f;
 
-        res[3] = vi_set_0001f();
+        res[3].m128_f32[0] = 0.0f;
+        res[3].m128_f32[1] = 0.0f;
+        res[3].m128_f32[2] = 0.0f;
+        res[3].m128_f32[3] = 1.0f;
     }
 
     //  | a11   a12   a13  a14|   | w -z  y  x|   | w -z  y -x|
@@ -367,31 +372,31 @@ namespace ml
     {
         v128 r, m, s, m0, m1, m2, v;
 
-        m  = vi_set_i000(FLT_SIGN);
+        m  = vi_seti_x(VI_SIGN_MASK);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 0, 0)>(m);
-        m0 = vi_swizzle<VI_SWIZZLE_MASK(3, 2, 1, 0)>(q);
+        s  = vi_swizzle<1, 1, 0, 0>(m);
+        m0 = vi_swizzle<3, 2, 1, 0>(q);
         m0 = vi_xor(s, m0);  
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 1, 0)>(m);
-        m1 = vi_swizzle<VI_SWIZZLE_MASK(2, 3, 0, 1)>(q);
+        s  = vi_swizzle<0, 1, 1, 0>(m);
+        m1 = vi_swizzle<2, 3, 0, 1>(q);
         m1 = vi_xor(s, m1);
 
-        s  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 1, 0)>(m);
-        m2 = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 3, 2)>(q);
+        s  = vi_swizzle<1, 0, 1, 0>(m);
+        m2 = vi_swizzle<1, 0, 3, 2>(q);
         m2 = vi_xor(s, m2);
 
-        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        s = vi_swizzle<1, 1, 1, 0>(m);
         v = vi_xor(m0, s);
         MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
         mat[0] = r;
 
-        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        s = vi_swizzle<1, 1, 1, 0>(m);
         v = vi_xor(m1, s);
         MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
         mat[1] = r;
 
-        s = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(m);
+        s = vi_swizzle<1, 1, 1, 0>(m);
         v = vi_xor(m2, s);
         MUL_MAT4_VEC4(r, m0, m1, m2, q, v);
         mat[2] = r;
@@ -400,7 +405,7 @@ namespace ml
     void quat_to_mat4(v128* m/*[4]*/, v128 q)
     {
         quat_to_mat4x3(m, q);
-        m[3] = vi_set_0001f();
+        m[3] = vi_swizzle<1, 1, 1, 0>(vi_seti_x(VI_ONE_ASINT));
     }
 
     //  q.x = sign(m21 - m12) * 0.5 * sqrt( max( 0, 1 + m00 - m11 - m22 ) );
@@ -411,32 +416,32 @@ namespace ml
     {
         v128 s, q, sc, m00, m11, m22, ml, mr, cmp;
 
-        s = vi_set_i000(FLT_SIGN);
+        s = vi_seti_x(VI_SIGN_MASK);
 
-        q  = vi_set_iiii(FLT_1_0_ASINT);
+        q  = vi_seti_all(VI_ONE_ASINT);
 
-        sc  = vi_swizzle<VI_SWIZZLE_MASK(1, 0, 0, 1)>(s);
-        m00 = vi_set_ffff(m[0].m128_f32[0]);
+        sc  = vi_swizzle<1, 0, 0, 1>(s);
+        m00 = vi_set_all(m[0].m128_f32[0]);
         m00 = vi_xor(m00, sc);
         q   = vi_add(m00, q);
 
-        sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 1, 0, 1)>(s);
-        m11 = vi_set_ffff(m[1].m128_f32[1]);
+        sc  = vi_swizzle<0, 1, 0, 1>(s);
+        m11 = vi_set_all(m[1].m128_f32[1]);
         m11 = vi_xor(m11, sc);
         q   = vi_add(m11, q);
 
-        sc  = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 1, 1)>(s);
-        m22 = vi_set_ffff(m[2].m128_f32[2]);
+        sc  = vi_swizzle<0, 0, 1, 1>(s);
+        m22 = vi_set_all(m[2].m128_f32[2]);
         m22 = vi_xor(m22, sc);
         q   = vi_add(m22, q);
 
-        q = vi_mul(vi_set_ffff(0.5), vi_sqrt(q));
+        q = vi_mul(vi_set_all(0.5), vi_sqrt(q));
 
         ml = vi_set(m[1].m128_f32[2], m[2].m128_f32[0], m[0].m128_f32[1], 0.0f);
         mr = vi_set(m[2].m128_f32[1], m[0].m128_f32[2], m[1].m128_f32[0], 0.0f);
 
         cmp = vi_cmp_lt(ml, mr);
-        sc  = vi_and(cmp, vi_set_iiii(FLT_SIGN));
+        sc  = vi_and(cmp, vi_seti_all(VI_SIGN_MASK));
 
         q = vi_or(sc, q);
 
@@ -449,11 +454,11 @@ namespace ml
         v128  co;
         v128  si;
 
-        co = vi_set_f000(cos(a));
-        si = vi_set_f000(sin(a));
+        co = vi_set_x(cos(a));
+        si = vi_set_x(sin(a));
 
-        co = vi_swizzle<VI_SWIZZLE_MASK(1, 1, 1, 0)>(co);
-        si = vi_swizzle<VI_SWIZZLE_MASK(0, 0, 0, 1)>(si);
+        co = vi_swizzle<1, 1, 1, 0>(co);
+        si = vi_swizzle<0, 0, 0, 1>(si);
 
         return vi_xor(vi_mul(axis, si), co);
     }
@@ -462,10 +467,10 @@ namespace ml
     {
         float e = 1.0f / tan(0.5f * fovy);
 
-        mat[0] = vi_set_0000();
-        mat[1] = vi_set_0000();
-        mat[2] = vi_set_0000();
-        mat[3] = vi_set_0000();
+        mat[0] = vi_set_zero();
+        mat[1] = vi_set_zero();
+        mat[2] = vi_set_zero();
+        mat[3] = vi_set_zero();
 
         mat[0].m128_f32[0] = e / aspect;
         mat[1].m128_f32[1] = e;
@@ -476,12 +481,9 @@ namespace ml
 
     void make_inf_perspective_mat4(v128* mat/*[4]*/, float fovy, float aspect, float zn)
     {
-        float e = 1.0f / tan(0.5f * fovy);
+        mem_zero<v128>(mat, 4);
 
-        mat[0] = vi_set_0000();
-        mat[1] = vi_set_0000();
-        mat[2] = vi_set_0000();
-        mat[3] = vi_set_0000();
+        float e = 1.0f / ml::tan(0.5f * fovy);
 
         mat[0].m128_f32[0] = e / aspect;
         mat[1].m128_f32[1] = e;
@@ -492,38 +494,37 @@ namespace ml
 
     void make_ortho2D_mat4(v128* mat/*[4]*/, float left, float right, float bottom, float top)
     {
-        mat[0] = vi_set_0000();
-        mat[1] = vi_set_0000();
-        mat[2] = vi_set_0010f();
-        mat[3] = vi_set_0001f();
+        mem_zero<v128>(mat, 4);
 
         mat[0].m128_f32[0] = 2.0f / (right - left);
         mat[1].m128_f32[1] = 2.0f / (top - bottom);
+        mat[2].m128_f32[2] = 1.0f;
         mat[3].m128_f32[0] = -(right + left) / (right - left);
         mat[3].m128_f32[1] = -(top + bottom) / (top - bottom);
+        mat[3].m128_f32[3] = 1.0f;
     }
 
     void make_ortho3D_mat4(v128* mat/*[4]*/, float left, float right, float bottom, float top, float zn, float zf)
     {
-        mat[0] = vi_set_0000();
-        mat[1] = vi_set_0000();
-        mat[2] = vi_set_0010f();
-        mat[3] = vi_set_0001f();
+        mem_zero<v128>(mat, 4);
 
         mat[0].m128_f32[0] = 2.0f / (right - left);
         mat[1].m128_f32[1] = 2.0f / (top - bottom);
         mat[2].m128_f32[2] = 2.0f / (zf - zn);
+        mat[2].m128_f32[2] = 1.0f;
         mat[3].m128_f32[0] = -(right + left) / (right - left);
         mat[3].m128_f32[1] = -(top + bottom) / (top - bottom);
         mat[3].m128_f32[2] = -(zf + zn) / (zf - zn);
+        mat[3].m128_f32[3] = 1.0f;
     }
 
     void make_identity_mat4(v128* mat/*[4]*/)
     {
-        mat[0] = vi_set_1000f();
-        mat[1] = vi_set_0100f();
-        mat[2] = vi_set_0010f();
-        mat[3] = vi_set_0001f();
+        v128 one = vi_seti_x(VI_ONE_ASINT);
+        mat[0] = one;
+        mat[1] = vi_swizzle<1, 0, 1, 1>(one);
+        mat[2] = vi_swizzle<1, 1, 0, 1>(one);
+        mat[3] = vi_swizzle<1, 1, 1, 0>(one);
     }
 
     void quat_vec3_to_mat4(v128* m/*[4]*/, v128 quat, v128 pos)
@@ -539,15 +540,15 @@ namespace ml
         v128  vdist;
 
         deltaMin = vi_sub(vmin, pt);
-        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_zero());
         deltaMax = vi_sub(pt, vmax);
-        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_zero());
         vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
 
         return vdist;
     }
 
-    bool sphereAABBTest2(aabb* AABB, v128 center, float radius, v128 res)
+    bool sphereAABBTest2(aabb* AABB, v128 center, float radius, float res)
     {
         v128  deltaMin, deltaMax;
         v128  maskMin,  maskMax;
@@ -555,16 +556,15 @@ namespace ml
         float d;
 
         deltaMin = vi_sub(AABB->min, center);
-        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_zero());
         deltaMax = vi_sub(center, AABB->max);
-        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_zero());
         vdist    = vi_add(vi_and(maskMax, deltaMax), vi_and(maskMin, deltaMin));
-        vdist    = vi_dot3(vdist, vdist);
+        d        = vi_dot3(vdist, vdist);
 
-        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_0000())));
-        assert(vi_all(vi_cmp_eq(vdist, res)));
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_zero())));
+        assert(d == res);
 
-        d = _mm_cvtss_f32(vdist);
         return d<=radius*radius;
     }
 
@@ -572,21 +572,21 @@ namespace ml
     {
         v128 deltaMin, deltaMax;
         v128 maskMin, maskMax;
-        v128 res;
+        float res;
 
         deltaMin = vi_sub(AABB->min, center);
-        maskMin  = vi_cmp_gt(deltaMin, vi_set_0000());
+        maskMin  = vi_cmp_gt(deltaMin, vi_set_zero());
         deltaMin = vi_and(maskMin, deltaMin);
         res = vi_dot3(deltaMin, deltaMin);
 
         deltaMax = vi_sub(center, AABB->max);
-        maskMax  = vi_cmp_gt(deltaMax, vi_set_0000());
+        maskMax  = vi_cmp_gt(deltaMax, vi_set_zero());
         //maskMax = vi_andnot(maskMax, maskMin);
-        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_0000())));
+        assert(vi_all(vi_cmp_eq(vi_and(maskMin, maskMax), vi_set_zero())));
         deltaMax = vi_and(maskMax, deltaMax);
-        res = vi_add(res, vi_dot3(deltaMax, deltaMax));
+        res += vi_dot3(deltaMax, deltaMax);
 
-        float d2 = _mm_cvtss_f32(res);
+        float d2 = res;
 
         bool res1 = d2<=radius*radius;
         bool res2 = sphereAABBTest2(AABB, center, radius, res);
@@ -601,10 +601,10 @@ namespace ml
         v128 tmp;
 
 #define COMP(c) \
-    tmp = vi_swizzle<VI_SWIZZLE_MASK(c, c, c, c)>(matrix->r3); \
-    tmp = vi_mad(zzzz, vi_swizzle<VI_SWIZZLE_MASK(c, c, c, c)>(matrix->r2), tmp); \
-    tmp = vi_mad(yyyy, vi_swizzle<VI_SWIZZLE_MASK(c, c, c, c)>(matrix->r1), tmp); \
-    dest[c] = vi_mad(xxxx, vi_swizzle<VI_SWIZZLE_MASK(c, c, c, c)>(matrix->r0), tmp); 
+    tmp = vi_swizzle<c, c, c, c>(matrix->r3); \
+    tmp = vi_mad(zzzz, vi_swizzle<c, c, c, c>(matrix->r2), tmp); \
+    tmp = vi_mad(yyyy, vi_swizzle<c, c, c, c>(matrix->r1), tmp); \
+    dest[c] = vi_mad(xxxx, vi_swizzle<c, c, c, c>(matrix->r0), tmp); 
 
         COMP(0);
         COMP(1);
@@ -621,13 +621,11 @@ namespace ml
 
         //transform AABB vertices into SOA representation
         v128 xXxX, yyYY, zzzz, ZZZZ;
-        const int mask_xXxX = VI_SHUFFLE_MASK(VI_A_X, VI_B_X, VI_A_X, VI_B_X);
-        const int mask_yyYY = VI_SHUFFLE_MASK(VI_A_Y, VI_A_Y, VI_B_Y, VI_B_Y);
 
-        xXxX = vi_shuffle<mask_xXxX>(min, max);
-        yyYY = vi_shuffle<mask_yyYY>(min, max);
-        zzzz = vi_swizzle<VI_SWIZZLE_ZZZZ>(min);
-        ZZZZ = vi_swizzle<VI_SWIZZLE_ZZZZ>(max);
+        xXxX = vi_shuffle<VI_AX, VI_BX, VI_AX, VI_BX>(min, max);
+        yyYY = vi_shuffle<VI_AY, VI_AY, VI_BY, VI_BY>(min, max);
+        zzzz = vi_swizzle<2, 2, 2, 2>(min);
+        ZZZZ = vi_swizzle<2, 2, 2, 2>(max);
 
         v128 points_cs_0[4];
         v128 points_cs_1[4];
@@ -639,10 +637,10 @@ namespace ml
         v128 points_cs_1_negw = vi_neg(points_cs_1[3]);
 
 #define NOUT(a, b, c, d) vi_or(vi_cmp_gt(a, b), vi_cmp_gt(c, d))
-#define TEST_PLANE(a, b, c, d) \
-    testRes = NOUT(a, b, c, d);\
-    nout &= vi_any(testRes);\
-    allin &= vi_all(testRes);
+#define TEST_PLANE(a, b, c, d)           \
+            testRes = NOUT(a, b, c, d);  \
+            nout  &= vi_any(testRes);    \
+            allin &= vi_all(testRes);
 
         v128 testRes;
         bool nout=true, allin=true;

@@ -131,9 +131,7 @@ inline bool patchIntersectsCircle(v128 vmin, v128 vmax, v128 vcenter, float radi
     float d2;
 
     vdist = ml::distanceToAABB(vmin, vmax, vcenter);
-    vdist = vi_dot2(vdist, vdist);
-
-    d2 = _mm_cvtss_f32(vdist);
+    d2 = vi_dot2(vdist, vdist);
 
     return d2<=radius*radius;
 }
@@ -380,7 +378,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
         float morphStart = rangeEnd-morphRange;
 
         terrainData.uMorphParams[i] = vi_set(1.0f/morphRange, -morphStart/morphRange, 0.0f, 0.0f);
-        terrainData.uPatchScales[i] = vi_set_ffff(cellSize);
+        terrainData.uPatchScales[i] = vi_set_all(cellSize);
 
         range    *= 1.5f;
         size2    *= 4.0f;
@@ -388,7 +386,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     }
 
     //Fix unnecessary morph in last LOD level
-    terrainData.uMorphParams[LODCount-1] = vi_set_0000();
+    terrainData.uMorphParams[LODCount-1] = vi_set_zero();
 
     terrainData.uAABB        = vi_set(minX, minZ, maxX, maxZ);
     terrainData.uUVXform     = vi_set(pixelsPerMeter*du, pixelsPerMeter*dv, (-minX*pixelsPerMeter+0.5f)*du, (-minZ*pixelsPerMeter+0.5f)*dv);

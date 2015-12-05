@@ -140,7 +140,7 @@ namespace Model
 
             v128 pos;
 
-            pos = vi_set_0000();
+            pos = vi_set_zero();
 
             // Sum the position of the weights
             for ( int j = 0; j < weightCount; ++j )
@@ -158,7 +158,7 @@ namespace Model
                 t = ml::translation_dual_quat(r, d);
                 t = vi_add(v, t);
 
-                pos = vi_mad(t, vi_set_ffff(weight.bias), pos);
+                pos = vi_mad(t, vi_set_all(weight.bias), pos);
 
                 assert(weight.joint<256);
 
@@ -382,7 +382,7 @@ cleanup:
                 qr1 = vi_loadu_v4(&frame1Data[i].real);
                 qd1 = vi_loadu_v4(&frame1Data[i].dual);
 
-                if (vi_cmpx_lt(vi_dot4(qr0, qr1), vi_set_0000()))
+                if (vi_dot4(qr0, qr1) < 0.0f)
                 {
                     qr1 = vi_neg(qr1);
                     qd1 = vi_neg(qd1);

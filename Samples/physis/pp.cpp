@@ -113,7 +113,7 @@ void generateSinglePassBoxFilterBruteForce(FilterDesc* desc, int kernelWidth, fl
     assert(kernelWidth%2==1);
     desc->sampleCount = kernelWidth*kernelWidth;
 
-    v128 weight = vi_set_f000(1.0f/kernelWidth/kernelWidth);
+    v128 weight = vi_set_x(1.0f/kernelWidth/kernelWidth);
     for(int i=0; i<kernelWidth*kernelWidth; ++i)
     {
         vi_store_v4(desc->weights+i, weight);
@@ -150,19 +150,19 @@ void generateBoxFilterSinglePass(FilterDesc* desc, int kernelWidth, float texelS
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight4 = vi_set_f000(4.0f/kernelWidth/kernelWidth);
+    v128 weight4 = vi_set_x(4.0f/kernelWidth/kernelWidth);
     for(int i=0; i<samples4; ++i, ++weightPtr)
     {
         vi_store_v4(weightPtr, weight4);
     }
 
-    v128 weight2 = vi_set_f000(2.0f/kernelWidth/kernelWidth);
+    v128 weight2 = vi_set_x(2.0f/kernelWidth/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
         vi_store_v4(weightPtr, weight2);
     }
 
-    v128 weight1 = vi_set_f000(1.0f/kernelWidth/kernelWidth);
+    v128 weight1 = vi_set_x(1.0f/kernelWidth/kernelWidth);
     vi_store_v4(weightPtr, weight1);
 
 
@@ -217,13 +217,13 @@ void generateBoxFilterHPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight2 = vi_set_f000(2.0f/kernelWidth);
+    v128 weight2 = vi_set_x(2.0f/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
         vi_store_v4(weightPtr, weight2);
     }
 
-    v128 weight1 = vi_set_f000(1.0f/kernelWidth);
+    v128 weight1 = vi_set_x(1.0f/kernelWidth);
     vi_store_v4(weightPtr, weight1);
 
 
@@ -262,13 +262,13 @@ void generateBoxFilterVPass(FilterDesc* desc, int kernelWidth, float texelSizeU,
     // Calculate kernel weights
     v128* weightPtr = desc->weights;
 
-    v128 weight2 = vi_set_f000(2.0f/kernelWidth);
+    v128 weight2 = vi_set_x(2.0f/kernelWidth);
     for (int i=0; i<samples2; ++i, ++weightPtr)
     {
         vi_store_v4(weightPtr, weight2);
     }
 
-    v128 weight1 = vi_set_f000(1.0f/kernelWidth);
+    v128 weight1 = vi_set_x(1.0f/kernelWidth);
     vi_store_v4(weightPtr, weight1);
 
 

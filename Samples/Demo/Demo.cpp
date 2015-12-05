@@ -604,7 +604,7 @@ namespace app
         {
             float rad = randomRange(minRad, maxRad);
             ml::vec3 col;
-            vi_store_v3(&col, vi_mul(hueToRGB(randomUnitFloat()), vi_set_ffff(randomRange(0.4f, 0.7f))));
+            vi_store_v3(&col, vi_mul(hueToRGB(randomUnitFloat()), vi_set_all(randomRange(0.4f, 0.7f))));
             const float ind =  rad / 8.0f;
             ml::vec3 pos = { randomRange(scene_min.x + ind, scene_max.x - ind), randomRange(scene_min.y + ind, scene_max.y - ind), randomRange(scene_min.z + ind, scene_max.z - ind) };
             light_t l = { pos, rad, col };

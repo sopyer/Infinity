@@ -34,7 +34,7 @@ namespace vg
 
     Paint createSolidPaint(unsigned int color)
     {
-        v128 colorf = vi_cvt_ubyte4_to_vec4(color);
+        v128 colorf = vi_cvt_u8x4_to_v128(color);
 
         return createSolidPaint(colorf.m128_f32);
     }

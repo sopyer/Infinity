@@ -141,7 +141,7 @@
     <ClInclude Include="malloc.c.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\include\core\vi.inl" />
+    <None Include="..\include\core\vi_sse.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -304,7 +304,7 @@ namespace gfx
         line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
-        global->uPixelScaleZn = vi_set_f000(ptsize / autoVars.projParams.x / width);
+        global->uPixelScaleZn = vi_set_x(ptsize / autoVars.projParams.x / width);
         mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
         global->uProj = vi_loadu_v4(&autoVars.projParams);
 

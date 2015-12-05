@@ -26,9 +26,9 @@ const float DEFAULT_ROTATION_SPEED = 0.3f;
 
 SpectatorCamera::SpectatorCamera()
 {
-    mPos          = vi_set_0001f();
-    mOrient       = vi_set_0001f();
-    mVelocity     = vi_set_0000();
+    mPos          = vi_set(0.0f, 0.0f, 0.0f, 1.0f);
+    mOrient       = vi_set(0.0f, 0.0f, 0.0f, 1.0f);
+    mVelocity     = vi_set_zero();
     mAccumPitch   = 0.0f;
     rotationSpeed = DEFAULT_ROTATION_SPEED;
 }
@@ -41,7 +41,7 @@ void SpectatorCamera::lookAt(v128 eye, v128 dir)
 
     zaxis = ml::normalize(dir);
 
-    xaxis = vi_cross3(vi_set_0100f(), zaxis);
+    xaxis = vi_cross3(vi_set(0.0f, 1.0f, 0.0f, 0.0f), zaxis);
     xaxis = ml::normalize(xaxis);
 
     yaxis = vi_cross3(zaxis, xaxis);
@@ -78,9 +78,9 @@ void SpectatorCamera::rotateSmoothly(float heading, float pitch)
 
     // Rotate camera first around y axis, then around x axis.
     // Note the order the quaternions are multiplied. That is important!
-    r = ml::axis_angle_to_quat(vi_set_0100f(), heading);
+    r = ml::axis_angle_to_quat(vi_set(0.0f, 1.0f, 0.0f, 0.0f), heading);
     mOrient = ml::mul_quat(mOrient, r);
-    r = ml::axis_angle_to_quat(vi_set_1000f(), pitch);
+    r = ml::axis_angle_to_quat(vi_set_x(1.0f), pitch);
     mOrient = ml::mul_quat(r, mOrient);
 }
 
@@ -101,13 +101,13 @@ void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
     mv  = vi_load_v3(&maxVelocity);
     a   = vi_load_v3(&acceleration);
 
-    mask = vi_cmp_eq(dir, vi_set_0000());
+    mask = vi_cmp_eq(dir, vi_set_zero());
 
     // choose direction for deacceleration if corresponding delta==0
     dir = vi_select(dir, vi_neg(vi_sign(vp)), mask);
 
     // calculate new velocity v = dir * a * dt + pv
-    dv        = vi_mul(vi_set_fff0(dt), a);
+    dv        = vi_mul(vi_set(dt, dt, dt, 0.0f), a);
     mVelocity = vi_mad(dir, dv, vp);
 
     mask = vi_and(mask, vi_cmp_lt(vi_abs(vp), dv));
@@ -120,12 +120,13 @@ void SpectatorCamera::updatePosition(float dx, float dy, float dz, float dt)
     mVelocity = vi_clamp(mVelocity, vi_neg(mv), mv);
 
     // integrate distance using trapezoid rule(midpoint integration)
-    delta = vi_mul(vi_set_fff0(0.5f * dt), vi_add(vp, mVelocity));
+    float dt_div_2 = 0.5f * dt;
+    delta = vi_mul(vi_set(dt_div_2, dt_div_2, dt_div_2, 0.0f), vi_add(vp, mVelocity));
 
     mPos = vi_add(
         ml::rotate_vec3_quat(
             ml::conjugate_quat(mOrient),
-            vi_swizzle<VI_SWIZZLE_MASK(0, 3, 2, 3)>(delta)
+            vi_swizzle<0, 3, 2, 3>(delta)
         ),
         mPos
     );
@@ -146,7 +147,7 @@ void SpectatorCamera::setOrientation(v128 newOrient)
 void SpectatorCamera::setPosition(v128 newEye)
 {
     mPos = newEye;
-    mPos.m128_i32[3] = FLT_1_0_ASINT;
+    mPos.m128_i32[3] = VI_ONE_ASINT;
 }
 
 void SpectatorCamera::getViewMatrix(v128* mat)

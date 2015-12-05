@@ -396,7 +396,7 @@ void ProfilerOverlay::renderFullscreen()
             float y1c = ml::clamp(y1, graphArea.y, graphArea.y+graphArea.h);
 
             uint32_t c = colors[i];
-            v128 cf = vi_cvt_ubyte4_to_vec4(c);
+            v128 cf = vi_cvt_u8x4_to_v128(c);
             nvgFillColor(vg::ctx, nvgRGBAf(cf.m128_f32[0], cf.m128_f32[1], cf.m128_f32[2], cf.m128_f32[3]));
             nvguRect(vg::ctx, x0c, y0c, x1c-x0c, y1c-y0c);
             nvgScissor(vg::ctx, x0c, y0c, x1c-x0c, y1c-y0c);
