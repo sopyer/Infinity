@@ -55,7 +55,7 @@ void ProfilerOverlay::addInterval(
     uint32_t color = ui::rainbowTableL[colorID];
     colors.push_back(color);
 
-    rectData.emplace_back(rect_t{xstart, ystart, duration, 0.9});
+    rectData.emplace_back(rect_t{xstart, ystart, (float)duration, 0.9f});
 
     Interval inter = 
     {

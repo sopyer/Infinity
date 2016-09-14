@@ -1,6 +1,6 @@
 #include <gfx/gfx.h>
 #include <vector>
-#include <hash_map>
+#include <unordered_map>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -13,15 +13,15 @@ namespace vg
 
     struct GlyphData
     {
-        float        xadvance, yadvance; // The advance distance for this glyph
-        float        xmin, ymin, xmax, ymax; // The bounding box of this glyph.
-        unsigned int width, height;
-        float        xoffset, yoffset;
-        float        u0, v0, u1, v1;
-        int          glTextureID;
+        float    xadvance, yadvance; // The advance distance for this glyph
+        float    xmin, ymin, xmax, ymax; // The bounding box of this glyph.
+        uint16_t width, height;
+        float    xoffset, yoffset;
+        float    u0, v0, u1, v1;
+        int      glTextureID;
     };
 
-    typedef std::hash_map<unsigned int, GlyphData> GlyphMap;
+    typedef std::unordered_map<uint32_t, GlyphData> GlyphMap;
 
     struct  FontOpaque
     {
