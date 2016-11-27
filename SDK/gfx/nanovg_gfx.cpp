@@ -180,37 +180,35 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
     if (tex == NULL) return 0;
 
-    glGenTextures(1, &tex->tex);
+    const bool formatRGBA8 = type == NVG_TEXTURE_RGBA;
+    const bool useMipmaps = (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) != 0;
+    glCreateTextures(GL_TEXTURE_2D, 1, &tex->tex);
+    const uint32_t mipCount = useMipmaps ? bit_fls(core::max<uint32_t>(w, h)) : 1;
+    glTextureStorage2D(tex->tex, mipCount, formatRGBA8 ? GL_RGBA8 : GL_R8, w, h);
     tex->width = w;
     tex->height = h;
     tex->type = type;
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
 
-    if (type == NVG_TEXTURE_RGBA)
-        glTextureImage2DEXT(tex->tex, GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    else
-        glTextureImage2DEXT(tex->tex, GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
-
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-        glTextureParameteriEXT(tex->tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    } else {
-        glTextureParameteriEXT(tex->tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    if (data)
+    {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, tex->width);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        glTextureSubImage2D(tex->tex, 0, 0, 0, w, h, formatRGBA8 ? GL_RGBA : GL_RED, GL_UNSIGNED_BYTE, data);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
+        // The new way to build mipmaps on GLES and GL3
+        if (useMipmaps) {
+            glGenerateTextureMipmap(tex->tex);
+        }
     }
-    glTextureParameteriEXT(tex->tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
-    glPixelStorei(GL_UNPACK_SKIP_ROWS, 0);
-
-    // The new way to build mipmaps on GLES and GL3
-    if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-        glGenerateTextureMipmapEXT(tex->tex, GL_TEXTURE_2D);
-    }
+    glTextureParameteri(tex->tex, GL_TEXTURE_MIN_FILTER, useMipmaps ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+    glTextureParameteri(tex->tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     return tex->id;
 }
@@ -235,9 +233,9 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
     glPixelStorei(GL_UNPACK_SKIP_ROWS, y);
 
     if (tex->type == NVG_TEXTURE_RGBA)
-        glTextureSubImage2DEXT(tex->tex, GL_TEXTURE_2D, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(tex->tex, 0, x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
     else
-        glTextureSubImage2DEXT(tex->tex, GL_TEXTURE_2D, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(tex->tex, 0, x, y, w, h, GL_RED, GL_UNSIGNED_BYTE, data);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -351,9 +349,9 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 
     if (image != 0) {
         GLNVGtexture* tex = glnvg__findTexture(gl, image);
-        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, tex != NULL ? tex->tex : 0);
+        glBindTextureUnit(0, tex ? tex->tex : 0);
     } else {
-        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, 0);
+        glBindTextureUnit(0, 0);
     }
 }
 
@@ -496,7 +494,8 @@ static void glnvg__renderFlush(void* uptr)
     if (gl->ncalls > 0) {
 
         // Setup require GL state.
-        glUseProgram((gl->flags & NVG_ANTIALIAS) ? gfx_res::prgNanoVGAA : gfx_res::prgNanoVG);
+        GLuint prg = (gl->flags & NVG_ANTIALIAS) ? gfx_res::prgNanoVGAA : gfx_res::prgNanoVG;
+        glUseProgram(prg);
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_CULL_FACE);
@@ -515,7 +514,7 @@ static void glnvg__renderFlush(void* uptr)
         glBindVertexBuffer(0, gfx::dynBuffer, 0, sizeof(NVGvertex));
 
         // Set view and texture just once per frame.
-        glUniform2fv(GFX_NVG_LOC_VIEWSIZE, 1, gl->view);
+        glProgramUniform2fv(prg, GFX_NVG_LOC_VIEWSIZE, 1, gl->view);
 
         for (i = 0; i < gl->ncalls; i++) {
             GLNVGcall* call = &gl->calls[i];

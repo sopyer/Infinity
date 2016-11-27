@@ -51,14 +51,12 @@ void CDLODTerrain::initialize()
     }
 #endif
 
-    glGenTextures(1, &mHeightmapTex);
-
-    glGenTextures(1, &mipTexture);
-    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteriEXT(mipTexture, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureStorage2DEXT(mipTexture, GL_TEXTURE_2D, 6, GL_RGBA8, 32, 32);
+    glCreateTextures(GL_TEXTURE_2D, 1, &mipTexture);
+    glTextureStorage2D(mipTexture, 6, GL_RGBA8, 32, 32);
+    glTextureParameteri(mipTexture, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(mipTexture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(mipTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(mipTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     uint32_t levelColor[6] = 
     {
@@ -75,7 +73,7 @@ void CDLODTerrain::initialize()
         glClearTexImage(mipTexture, i, GL_RGBA, GL_UNSIGNED_BYTE, &levelColor[i]);
     }
 
-    glGenBuffers(1, &ibo);
+    glCreateBuffers(1, &ibo);
 
     gfx::vertex_element_t ve[2] = {
         {0, 0, ATTR_PATCH_BASE, GL_INT,   2, GL_TRUE,  GL_FALSE},
@@ -90,8 +88,8 @@ void CDLODTerrain::initialize()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBindVertexArray(0);
 
-    glGenBuffers(1, &ubo);
-    glNamedBufferStorageEXT(ubo, sizeof(TerrainData), 0, GL_MAP_WRITE_BIT);
+    glCreateBuffers(1, &ubo);
+    glNamedBufferStorage(ubo, sizeof(TerrainData), 0, GL_MAP_WRITE_BIT);
 
     ubufView = gfx::createUBODesc(prgTerrain, "uniView");
 
@@ -206,8 +204,8 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
     size_t quadsInRow = (vertexCount-1);
 
     idxCount = quadsInRow*quadsInRow*6;
-    glNamedBufferDataEXT(ibo, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
-    uint16_t* ptr2 = (uint16_t*)glMapNamedBufferRangeEXT(ibo, 0, sizeof(uint16_t)*idxCount, GL_MAP_WRITE_BIT);
+    glNamedBufferData(ibo, sizeof(uint16_t)*idxCount, 0, GL_STATIC_DRAW);
+    uint16_t* ptr2 = (uint16_t*)glMapNamedBufferRange(ibo, 0, sizeof(uint16_t)*idxCount, GL_MAP_WRITE_BIT);
     uint16_t vtx0 = 0;
     uint16_t vtx1 = 1;
     uint16_t vtx2 = vertexCount;
@@ -239,7 +237,7 @@ void CDLODTerrain::generateGeometry(size_t vertexCount)
 
 #undef INDEX_FOR_LOCATION
 
-    glUnmapNamedBufferEXT(ibo);
+    glUnmapNamedBuffer(ibo);
 }
 
 void CDLODTerrain::drawTerrain()
@@ -357,7 +355,7 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
 
     generateGeometry(patchDim+1);
 
-    TerrainData& terrainData = *(TerrainData*) glMapNamedBufferRangeEXT(ubo, 0, sizeof(TerrainData), GL_MAP_WRITE_BIT);
+    TerrainData& terrainData = *(TerrainData*) glMapNamedBufferRange(ubo, 0, sizeof(TerrainData), GL_MAP_WRITE_BIT);
 
     assert(LODCount<=MAX_LOD_COUNT);
 
@@ -393,13 +391,15 @@ void CDLODTerrain::setHeightmap(uint16_t* data, size_t width, size_t height)
     terrainData.uHeightXform = vi_set(heightScale, minY, 0.0f, 0.0f);
     mem_copy(terrainData.uColors, colors, sizeof(terrainData.uColors));
 
-    glUnmapNamedBufferEXT(ubo);
+    glUnmapNamedBuffer(ubo);
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTextureImage2DEXT(mHeightmapTex, GL_TEXTURE_2D, 0, GL_R16, width, height, 0, GL_RED, GL_UNSIGNED_SHORT, data);
-    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTextureParameteriEXT(mHeightmapTex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glCreateTextures(GL_TEXTURE_2D, 1, &mHeightmapTex);
+    glTextureStorage2D(mHeightmapTex, 1, GL_R16, width, height);
+    glTextureSubImage2D(mHeightmapTex, 0, 0, 0, width, height, GL_RED, GL_UNSIGNED_SHORT, data);
+    glTextureParameteri(mHeightmapTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(mHeightmapTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(mHeightmapTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(mHeightmapTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(mHeightmapTex, GL_TEXTURE_MAX_LEVEL, 0);
 }

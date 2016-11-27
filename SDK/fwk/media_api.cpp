@@ -128,12 +128,12 @@ static void closeAudioStream(media_player_t player)
 
 static void initTexture(GLuint tex, GLuint width, GLuint height)
 {
-    glTextureImage2DEXT(tex, GL_TEXTURE_2D, 0, GL_R8, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureStorage2D(tex, 1, GL_R8, width, height);
+    glTextureParameteri(tex, GL_TEXTURE_MAX_LEVEL, 0);
+    glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 }
 
 static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
@@ -158,9 +158,9 @@ static int openVideoStream(media_player_t player, AVCodecContext* videoContext)
     player->srcFormat = videoContext->pix_fmt;
     assert(player->srcFormat == PIX_FMT_YUV420P);
 
-    glGenTextures(2, player->texY);
-    glGenTextures(2, player->texU);
-    glGenTextures(2, player->texV);
+    glCreateTextures(GL_TEXTURE_2D, 2, player->texY);
+    glCreateTextures(GL_TEXTURE_2D, 2, player->texU);
+    glCreateTextures(GL_TEXTURE_2D, 2, player->texV);
 
     initTexture(player->texY[0], player->width,   player->height  );
     initTexture(player->texY[1], player->width,   player->height  );
@@ -304,13 +304,13 @@ static void uploadVideoData(media_player_t player, GLuint texY, GLuint texU, GLu
     PROFILER_CPU_TIMESLICE("uploadVideoData");
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[0]);
-    glTextureSubImage2DEXT(texY, GL_TEXTURE_2D, 0, 0, 0, player->width, player->height, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[0]);
+    glTextureSubImage2D(texY, 0, 0, 0, player->width, player->height, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[0]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[1]);
-    glTextureSubImage2DEXT(texU, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[1]);
+    glTextureSubImage2D(texU, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[1]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, player->pVFrame->linesize[2]);
-    glTextureSubImage2DEXT(texV, GL_TEXTURE_2D, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[2]);
+    glTextureSubImage2D(texV, 0, 0, 0, player->width/2, player->height/2, GL_RED, GL_UNSIGNED_BYTE, player->pVFrame->data[2]);
 
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 

@@ -18,9 +18,9 @@ namespace vg
              borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
-        glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
-        glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
-        glUniform2f (UNI_SIMPLE_UI_ZONES, 0, 0);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
+        glProgramUniform2f (gfx_res::prgUI, UNI_SIMPLE_UI_ZONES, 0, 0);
         gfx::setMVP();
 
         GLuint baseVertex;
@@ -43,9 +43,9 @@ namespace vg
              borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
-        glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
-        glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
-        glUniform2f (UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&fillColorF);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
+        glProgramUniform2f (gfx_res::prgUI, UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
         gfx::setMVP();
 
         float xb = cx;
@@ -117,9 +117,9 @@ namespace vg
              borderColorF = vi_cvt_u8x4_to_v128(borderColor);
 
         glUseProgram(gfx_res::prgUI);
-        glUniform4fv(UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&translucentF);
-        glUniform4fv(UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
-        glUniform2f (UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_FILL_COLOR, 1, (float*)&translucentF);
+        glProgramUniform4fv(gfx_res::prgUI, UNI_SIMPLE_UI_BORDER_COLOR, 1, (float*)&borderColorF);
+        glProgramUniform2f (gfx_res::prgUI, UNI_SIMPLE_UI_ZONES, cx - 1, cx - 2);
         gfx::setMVP();
 
         float xb = cx;
@@ -193,9 +193,9 @@ namespace vg
         gfx::setStdProgram(gfx::STD_FEATURE_TEXTURE);
         gfx::setMVP();
 
-        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, texture);
-        glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glMultiTexParameteriEXT(GL_TEXTURE0, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTextureUnit(0, texture);
 
         GLuint baseVertex;
 

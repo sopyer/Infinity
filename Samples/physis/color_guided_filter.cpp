@@ -55,7 +55,7 @@ void colorGuidedFilterAB(GLuint ABx, GLuint ABy, GLuint ABz,
     glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_COLOR_GUIDED_AB]);
-    glUniform1f(0, eps);
+    glProgramUniform1f(programs[PRG_COLOR_GUIDED_AB], 0, eps);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ABx, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, ABy, 0);

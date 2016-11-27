@@ -26,13 +26,17 @@ inline unsigned int duLerpCol(unsigned int ca, unsigned int cb, unsigned int u)
     return duRGBA(r,g,b,a);
 }
 
-void genCheckerTexture(GLuint tex)
+GLuint genCheckerTexture()
 {
+    GLuint tex = 0;
     // Create checker pattern.
     const unsigned int col0 = duRGBA(215,215,215,255);
     const unsigned int col1 = duRGBA(255,255,255,255);
     static const int TSIZE = 64;
     unsigned int data[TSIZE*TSIZE];
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &tex);
+    glTextureStorage2D(tex, 7, GL_RGBA8, TSIZE, TSIZE);
 
     int level = 0;
     int size = TSIZE;
@@ -41,13 +45,15 @@ void genCheckerTexture(GLuint tex)
         for (int y = 0; y < size; ++y)
             for (int x = 0; x < size; ++x)
                 data[x+y*size] = (x==0 || y==0) ? col0 : col1;
-        glTextureImage2DEXT(tex, GL_TEXTURE_2D, level, GL_RGBA, size,size, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(tex, level, 0, 0, size, size, GL_RGBA, GL_UNSIGNED_BYTE, data);
         size /= 2;
         level++;
     }
 
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-    glTextureParameteriEXT(tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+    glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return tex;
 }
 
 void duDebugDrawTriMeshSlope(const float* verts, int /*nverts*/,
@@ -127,8 +133,7 @@ namespace app
         camera.acceleration.x = camera.acceleration.y = camera.acceleration.z = 150;
         camera.maxVelocity.x = camera.maxVelocity.y = camera.maxVelocity.z = 60;
 
-        glGenTextures(1, &debugTex);
-        genCheckerTexture(debugTex);
+        debugTex = genCheckerTexture();
 
         geom = new rcMeshLoaderObj();
         geom->load("dungeon.obj");
@@ -178,7 +183,7 @@ namespace app
 
         glEnable(GL_CULL_FACE);
 
-        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, debugTex);
+        glBindTextureUnit(0, debugTex);
         duDebugDrawTriMeshSlope(geom->getVerts(), geom->getVertCount(),
             geom->getTris(), geom->getNormals(), geom->getTriCount(),
             45.0f, 0.33333f);

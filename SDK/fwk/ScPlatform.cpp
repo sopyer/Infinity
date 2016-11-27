@@ -316,21 +316,18 @@ void UpdatePixmap(Pixmap pixmap, int w, int h, int* data)
 {
     if (!pixmap->initialised)
     {
-        glGenTextures(1, &pixmap->tex);
-        glTextureParameteriEXT(pixmap->tex, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteriEXT(pixmap->tex, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTextureParameteriEXT(pixmap->tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
-        glTextureParameteriEXT(pixmap->tex, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
-    }
-    else
-    {
-        glBindTexture(GL_TEXTURE_2D, pixmap->tex);
+        glCreateTextures(GL_TEXTURE_2D, 1, &pixmap->tex);
+        glTextureStorage2D(pixmap->tex, 1, GL_RGBA8, w, h);
+        glTextureParameteri(pixmap->tex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(pixmap->tex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteri(pixmap->tex, GL_TEXTURE_WRAP_S,     GL_REPEAT);
+        glTextureParameteri(pixmap->tex, GL_TEXTURE_WRAP_T,     GL_REPEAT);
     }
 
     pixmap->initialised = true;
     pixmap->scalex = 1.0f/w;
     pixmap->scaley = 1.0f/h;
-    glTextureImage2DEXT(pixmap->tex, GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTextureSubImage2D(pixmap->tex, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
 void SurfaceImpl::DrawPixmap(PRectangle rc, Point offset, Pixmap pixmap)
@@ -341,7 +338,7 @@ void SurfaceImpl::DrawPixmap(PRectangle rc, Point offset, Pixmap pixmap)
     gfx::setStdProgram(gfx::STD_FEATURE_TEXTURE);
     gfx::setMVP();
 
-    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, pixmap->tex);
+    glBindTextureUnit(0, pixmap->tex);
 
     GLuint baseVertex;
 

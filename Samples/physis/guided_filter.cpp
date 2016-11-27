@@ -30,7 +30,7 @@ void guidedFilterAB(GLuint A, GLuint B, GLuint src, GLuint guide, float eps, GLs
     glBindTextures(0, ARRAY_SIZE(textures), textures);
 
     glUseProgram(programs[PRG_GUIDED_AB]);
-    glUniform1f(0, eps);
+    glProgramUniform1f(programs[PRG_GUIDED_AB], 0, eps);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, A, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, B, 0);

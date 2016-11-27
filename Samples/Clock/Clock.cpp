@@ -55,7 +55,7 @@ namespace app
         mIsDragging = false;
 #ifdef RASTER_ACTORS
         mScale = 1.0f;
-        glGenTextures(IMG_COUNT, mTextures);
+        glCreateTextures(IMG_COUNT, mTextures);
 
         for (int i=0; i<IMG_COUNT; ++i)
         {

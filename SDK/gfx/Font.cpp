@@ -89,17 +89,16 @@ namespace vg
     GLuint createTexture()
     {   
         GLuint textID;
-        glGenTextures(1, (GLuint*)&textID);
+        glCreateTextures(GL_TEXTURE_2D, 1, (GLuint*)&textID);
+        glTextureStorage2D(textID, 1, GL_R8, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTextureParameteriEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-        glTextureImage2DEXT(textID, GL_TEXTURE_2D, 0, GL_R8, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+        glTextureParameteri(textID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(textID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(textID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(textID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
         GLint swizzle[4] = {GL_ONE, GL_ONE, GL_ONE, GL_RED};
-        glTextureParameterivEXT(textID, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+        glTextureParameteriv(textID, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
         return textID;
     }
@@ -160,10 +159,9 @@ namespace vg
                     if( tempGlyph->width && tempGlyph->height)
                     {
                         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                        glTextureSubImage2DEXT(
+                        glTextureSubImage2D(
                             tempGlyph->glTextureID,
-                            GL_TEXTURE_2D, 0,
-                            font->xOffset, font->yOffset,
+                            0, font->xOffset, font->yOffset,
                             tempGlyph->width, tempGlyph->height,
                             GL_RED, GL_UNSIGNED_BYTE,
                             bitmap.buffer
@@ -286,7 +284,7 @@ namespace vg
 
                 if (font->activeTextureID != glyph->glTextureID)
                 {
-                    glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_2D, (GLuint)glyph->glTextureID);
+                    glBindTextureUnit(0, (GLuint)glyph->glTextureID);
                     font->activeTextureID = glyph->glTextureID;
                 }
 

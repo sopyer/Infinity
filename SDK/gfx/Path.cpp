@@ -95,7 +95,7 @@ namespace vg
         path->gpuMemHandle = etlsf_alloc(gfx_res::vgGArena, totalSize);
         uint32_t  baseOffset = etlsf_block_offset(gfx_res::vgGArena, path->gpuMemHandle);
 
-        uint8_t*  basePtr    = (uint8_t*)glMapNamedBufferRangeEXT(gfx_res::buffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
+        uint8_t*  basePtr    = (uint8_t*)glMapNamedBufferRange(gfx_res::buffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
 
         assert ((baseOffset&0x01) == 0);
 
@@ -138,7 +138,7 @@ namespace vg
             path->numB3Indices    = numB3Indices;
         }
 
-        glUnmapNamedBufferEXT(gfx_res::buffer);
+        glUnmapNamedBuffer(gfx_res::buffer);
 
         return path;
     }

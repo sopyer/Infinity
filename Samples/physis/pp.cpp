@@ -30,7 +30,7 @@ GLuint fbo;
 
 void ppInit()
 {
-    glGenFramebuffers(1, &fbo);
+    glCreateFramebuffers(1, &fbo);
 
     GLuint vert = res::createShaderFromFile(GL_VERTEX_SHADER, "Mesh.ScreenTri.UV.vert");
 
@@ -47,7 +47,7 @@ void ppInit()
 
     ppOnShaderReload();
 
-    glGenSamplers(1, &samLinearClamp);
+    glCreateSamplers(1, &samLinearClamp);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glSamplerParameteri(samLinearClamp, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE );

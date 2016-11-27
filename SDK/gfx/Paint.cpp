@@ -25,9 +25,9 @@ namespace vg
 
         assert(newPaint->offset%gfx::caps.uboAlignment == 0);
 
-        v128* udata = (v128*)glMapNamedBufferRangeEXT(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
+        v128* udata = (v128*)glMapNamedBufferRange(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
         memcpy(udata, color4f, sizeof(v128));
-        glUnmapNamedBufferEXT(gfx_res::buffer);
+        glUnmapNamedBuffer(gfx_res::buffer);
 
         return newPaint;
     }
@@ -43,10 +43,11 @@ namespace vg
     {
         Paint  newPaint = mem::alloc<PaintOpaque>(gfx::memArena);
 
-        glGenTextures(1, &newPaint->texture);
-        glTextureImage1DEXT(newPaint->texture, GL_TEXTURE_1D, 0, GL_RGBA8, stopCount, 0, GL_RGBA, GL_UNSIGNED_BYTE, colorRamp);
-        glTextureParameteriEXT(newPaint->texture, GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTextureParameteriEXT(newPaint->texture, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glCreateTextures(GL_TEXTURE_1D, 1, &newPaint->texture);
+        glTextureStorage1D(newPaint->texture, 1, GL_RGBA8, stopCount);
+        glTextureSubImage1D(newPaint->texture, 0, 0, stopCount, GL_RGBA, GL_UNSIGNED_BYTE, colorRamp);
+        glTextureParameteri(newPaint->texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTextureParameteri(newPaint->texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
         newPaint->program = gfx_res::prgPaintLinGradient;
 
@@ -56,7 +57,7 @@ namespace vg
 
         assert(newPaint->offset%gfx::caps.uboAlignment == 0);
  
-        uPaintLinGradient* udata = (uPaintLinGradient*)glMapNamedBufferRangeEXT(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
+        uPaintLinGradient* udata = (uPaintLinGradient*)glMapNamedBufferRange(gfx_res::buffer, newPaint->offset, newPaint->size, GL_MAP_WRITE_BIT);
         
         float stopsData[8*4], scalesData[8*4];
 
@@ -86,7 +87,7 @@ namespace vg
         udata->uDirection.y = scale?dy/scale:FLT_MAX;
         udata->uInvStopCount = 1.0f/stopCount;
 
-        glUnmapNamedBufferEXT(gfx_res::buffer);
+        glUnmapNamedBuffer(gfx_res::buffer);
 
         return newPaint;
     }

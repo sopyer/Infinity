@@ -164,7 +164,7 @@ namespace app
 
     void allocTextures()
     {
-        glGenTextures(TEX_ID_COUNT, mTextures);
+        glCreateTextures(GL_TEXTURE_2D, TEX_ID_COUNT, mTextures);
 
         for (size_t i=0; i<ARRAY_SIZE(rtDesc); ++i)
         {
@@ -172,9 +172,7 @@ namespace app
 
             assert(desc.width!=0 && desc.height!=0);
 
-            glTextureImage2DEXT(mTextures[desc.id], GL_TEXTURE_2D, 0, desc.internalFmt,
-                                desc.width, desc.height, 0,
-                                desc.channels, desc.type, 0);
+            glTextureStorage2D(mTextures[desc.id], 1, desc.internalFmt, desc.width, desc.height);
         }
     }
 
@@ -193,17 +191,19 @@ namespace app
         uniFreq      = glGetUniformLocation(perlinGtorProg, "uFreq");
         uniFreqScale = glGetUniformLocation(perlinGtorProg, "uFreqScale");
 
-        glProgramUniform1fEXT(perlinGtorProg, uniInvTexDim, 1.0f/PERMUTATION_DIM);
+        glProgramUniform1f(perlinGtorProg, uniInvTexDim, 1.0f/PERMUTATION_DIM);
 
         //Gen perlin permutation and gradient textures
-        glGenTextures(9, permTex);
+        glCreateTextures(GL_TEXTURE_1D, 9, permTex);
         for (size_t i=0; i<9; ++i)
         {
-            glTextureImage1DEXT(permTex[i], GL_TEXTURE_1D, 0, GL_R8, PERMUTATION_DIM, 0, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
+            glTextureStorage1D(permTex[i], 1, GL_R8, PERMUTATION_DIM);
+            glTextureSubImage1D(permTex[i], 0, 0, PERMUTATION_DIM, GL_RED, GL_UNSIGNED_BYTE, permutation256[i]);
         }
 
-        glGenTextures(1, &gradTex);
-        glTextureImage1DEXT(gradTex, GL_TEXTURE_1D, 0, GL_RG32F, 8, 0, GL_RG, GL_FLOAT, gradients2D[0]);
+        glCreateTextures(GL_TEXTURE_1D, 1, &gradTex);
+        glTextureStorage1D(gradTex, 1, GL_R8, 8);
+        glTextureSubImage1D(gradTex, 0, 0, 8, GL_RG, GL_FLOAT, gradients2D[0]);
 
         ui::debugAddPrograms(PRG_ID_COUNT, programs);
         ui::debugAddPrograms(1, &perlinGtorProg);
@@ -235,7 +235,7 @@ namespace app
 
         CreatePerlinNoiseGtor();
 
-        glGenSamplers(1, &samNearestRepeat);
+        glCreateSamplers(1, &samNearestRepeat);
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glSamplerParameteri(samNearestRepeat, GL_TEXTURE_WRAP_S,     GL_REPEAT );
@@ -307,11 +307,11 @@ namespace app
 
         glUseProgram(perlinGtorProg);
 
-        glUniform1i(uniOctaves,   octaves);
-        glUniform1f(uniAmp,       amp);
-        glUniform1f(uniAmpScale,  ampScale);
-        glUniform1f(uniFreq,      freq);
-        glUniform1f(uniFreqScale, freqScale);
+        glProgramUniform1i(perlinGtorProg, uniOctaves,   octaves);
+        glProgramUniform1f(perlinGtorProg, uniAmp,       amp);
+        glProgramUniform1f(perlinGtorProg, uniAmpScale,  ampScale);
+        glProgramUniform1f(perlinGtorProg, uniFreq,      freq);
+        glProgramUniform1f(perlinGtorProg, uniFreqScale, freqScale);
 
         generateTexture(mTextures[dest], texSize);
     }
@@ -412,7 +412,7 @@ namespace app
         glEnable(GL_FRAMEBUFFER_SRGB);
         for (size_t i = 0; i < count; ++i)
         {
-            glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
+            glTextureParameteriv(images[i].tex, GL_TEXTURE_SWIZZLE_RGBA, images[i].swizzle);
 
             vg::drawImage(
                 images[i].x, images[i].y,
@@ -421,7 +421,7 @@ namespace app
                 images[i].tex
             );
 
-            glTextureParameterivEXT(images[i].tex, GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
+            glTextureParameteriv(images[i].tex, GL_TEXTURE_SWIZZLE_RGBA, swizzleRGBA);
         }
         glDisable(GL_FRAMEBUFFER_SRGB);
     }

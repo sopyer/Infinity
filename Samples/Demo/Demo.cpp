@@ -199,17 +199,17 @@ namespace app
 
         //convertOBJ();
 
-        glGenTextures(1, &texClusterData);
-        glGenTextures(1, &texLightListData);
-        glGenTextures(1, &texLightData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &texClusterData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &texLightListData);
+        glCreateTextures(GL_TEXTURE_BUFFER, 1, &texLightData);
 
         materialSize  = bit_align_up(sizeof(gpu_material_t), gfx::caps.uboAlignment);
         matBufferSize = materialSize*MAX_MATERIALS;
-        glGenBuffers(1, &materialUBO);
-        glNamedBufferStorageEXT(materialUBO, matBufferSize, 0, GL_MAP_WRITE_BIT);
+        glCreateBuffers(1, &materialUBO);
+        glNamedBufferStorage(materialUBO, matBufferSize, 0, GL_MAP_WRITE_BIT);
 
-        glGenBuffers(1, &staticBuffer);
-        glNamedBufferStorageEXT(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
+        glCreateBuffers(1, &staticBuffer);
+        glNamedBufferStorage(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
 
         loadMaterials();
         loadModels();
@@ -412,7 +412,7 @@ namespace app
 
             mjson_element_t material, dict, key, value;
 
-            uint8_t* matPtr = (uint8_t*)glMapNamedBufferRangeEXT(materialUBO, 0, matBufferSize, GL_MAP_WRITE_BIT);
+            uint8_t* matPtr = (uint8_t*)glMapNamedBufferRange(materialUBO, 0, matBufferSize, GL_MAP_WRITE_BIT);
             GLuint matOffset = 0;
 
             material = mjson_get_member_first(root, &dict);
@@ -487,8 +487,8 @@ namespace app
                 if (dmap)
                 {
                     GLuint texDiffuse = res::createTexture2D(dmap, TRUE);
-                    glTextureParameteriEXT(texDiffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(texDiffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTextureParameteri(texDiffuse, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteri(texDiffuse, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     mat.textures[0] = texDiffuse;
                 }
                 else
@@ -499,8 +499,8 @@ namespace app
                 if (nmap)
                 {
                     GLuint texNormal = res::createTexture2D(nmap);
-                    glTextureParameteriEXT(texNormal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(texNormal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTextureParameteri(texNormal, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteri(texNormal, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     mat.textures[2] = texNormal;
                 }
                 else
@@ -509,8 +509,8 @@ namespace app
                 if (smap)
                 {
                     GLuint texSpecular = res::createTexture2D(smap);
-                    glTextureParameteriEXT(texSpecular, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(texSpecular, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTextureParameteri(texSpecular, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteri(texSpecular, GL_TEXTURE_WRAP_T, GL_REPEAT);
                     mat.textures[1] = texSpecular;
                 }
                 else
@@ -529,7 +529,7 @@ namespace app
                 matOffset+=materialSize;
             }
 
-            glUnmapNamedBufferEXT(materialUBO);
+            glUnmapNamedBuffer(materialUBO);
 
             assert(matOffset<=matBufferSize);
 
@@ -742,10 +742,10 @@ namespace app
             assert(vertexOffset % sizeof(vf::static_geom_t) == 0);
             assert(indexOffset % sizeof(uint32_t) == 0);
 
-            uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+            uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
             mem_copy(ptr, fvertices, verticesSize);
             mem_copy(ptr+(indexOffset-vertexOffset),  findices,  indicesSize);
-            glUnmapNamedBufferEXT(staticBuffer);
+            glUnmapNamedBuffer(staticBuffer);
 
             models[numModels].numSubmeshes = header->numSubsets;
 
@@ -1074,7 +1074,7 @@ namespace app
 
         light_t* data = (light_t*)gfx::dynbufAllocMem(lightSize, gfx::caps.tboAlignment, &lightOffset);
         memcpy(data, lightsView, numViewLights*sizeof(light_t));
-        glTextureBufferRangeEXT(texLightData, GL_TEXTURE_BUFFER, GL_RGBA32F, gfx::dynBuffer, lightOffset, lightSize);
+        glTextureBufferRange(texLightData, GL_RGBA32F, gfx::dynBuffer, lightOffset, lightSize);
 
         assert(lightSize % (sizeof(float)*8) == 0);
 
@@ -1192,7 +1192,7 @@ namespace app
                     }
                 }
             }
-            glTextureBufferRangeEXT(texLightListData, GL_TEXTURE_BUFFER, GL_R16I, gfx::dynBuffer, lightListOffset, lightListSize);
+            glTextureBufferRange(texLightListData, GL_R16I, gfx::dynBuffer, lightListOffset, lightListSize);
         }
         {
             PROFILER_CPU_TIMESLICE("copyGridFromHost");
@@ -1225,7 +1225,7 @@ namespace app
                 clusterData[2*i+1] = counts [i];
                 assert(offsets[i]+counts [i]<=totalus);
             }
-            glTextureBufferRangeEXT(texClusterData, GL_TEXTURE_BUFFER, GL_RG32I, gfx::dynBuffer, clusterDataOffset, clusterDataSize);
+            glTextureBufferRange(texClusterData, GL_RG32I, gfx::dynBuffer, clusterDataOffset, clusterDataSize);
         }
         mem::free(appArena, offsets);
         mem::free(appArena, counts);

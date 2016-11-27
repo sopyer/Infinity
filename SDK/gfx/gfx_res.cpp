@@ -176,7 +176,7 @@ namespace gfx_res
         vf::p3_vertex_t::vao       = createVAO(ARRAY_SIZE(vf::fmtdesc_p3),       vf::fmtdesc_p3,       0, NULL);
         vf::p3cu4_vertex_t::vao    = createVAO(ARRAY_SIZE(vf::fmtdesc_p3cu4),    vf::fmtdesc_p3cu4,    0, NULL);
         vf::p3uv2cu4_vertex_t::vao = createVAO(ARRAY_SIZE(vf::fmtdesc_p3uv2cu4), vf::fmtdesc_p3uv2cu4, 0, NULL);
-        glGenVertexArrays(1, &vf::empty_geom_t::vao);
+        glCreateVertexArrays(1, &vf::empty_geom_t::vao);
 
         prgUI               = res::createProgramFromFiles("UI.vert",         "UI.frag");
         prgRasterCubic      = res::createProgramFromFiles("VG.Cubic.vert",   "VG.Mask.Cubic.frag");
@@ -225,8 +225,8 @@ namespace gfx_res
         vaoRect = gfx::createVAO(2, ve, 2, divs);
 
         vgGArena = etlsf_create(VG_BUFFER_SIZE, GFX_MAX_ALLOCS);
-        glGenBuffers(1, &buffer);
-        glNamedBufferStorageEXT(buffer, VG_BUFFER_SIZE, 0, GL_MAP_WRITE_BIT);
+        glCreateBuffers(1, &buffer);
+        glNamedBufferStorage(buffer, VG_BUFFER_SIZE, 0, GL_MAP_WRITE_BIT);
 
         vg::defaultFont = vg::createFont(anonymousProBTTF, sizeof(anonymousProBTTF), 16);
         vg::nvgDefFont  = nvgCreateFontMem(vg::ctx, "default", anonymousProBTTF, sizeof(anonymousProBTTF), 0);

@@ -120,9 +120,9 @@ namespace gfx
         GLsizeiptr size  = DYNAMIC_BUFFER_FRAME_SIZE * NUM_FRAMES_DELAY;
         GLbitfield flags = GL_MAP_WRITE_BIT|GL_MAP_PERSISTENT_BIT|GL_MAP_COHERENT_BIT;
 
-        glGenBuffers(1, &dynBuffer);
-        glNamedBufferStorageEXT(dynBuffer, size, 0, flags);
-        dynBufBasePtr = (uint8_t*)glMapNamedBufferRangeEXT(dynBuffer, 0, size, flags);
+        glCreateBuffers(1, &dynBuffer);
+        glNamedBufferStorage(dynBuffer, size, 0, flags);
+        dynBufBasePtr = (uint8_t*)glMapNamedBufferRange(dynBuffer, 0, size, flags);
 
         vg::init();
 
@@ -173,6 +173,7 @@ namespace gfx
 
         glViewport(0, 0, width, height);
 
+        glUseProgram(0);
         glClearColor   (0.0f, 0.0f, 0.0f, 0.0f);
         glClearDepthf  (1.0f);
         glClearStencil (0x00);
@@ -197,25 +198,25 @@ namespace gfx
     {
         GLuint vao;
 
-        glGenVertexArrays(1, &vao);
+        glCreateVertexArrays(1, &vao);
         for (GLuint i = 0; i < numEntries; ++i)
         {
             const vertex_element_t& e = entries[i];
             if (e.integer)
             {
-                glVertexArrayVertexAttribIFormatEXT (vao, e.attrib, e.size, e.type, e.offset);
+                glVertexArrayAttribIFormat(vao, e.attrib, e.size, e.type, e.offset);
             }
             else
             {
-                glVertexArrayVertexAttribFormatEXT  (vao, e.attrib, e.size, e.type, e.normalized, e.offset);
+                glVertexArrayAttribFormat(vao, e.attrib, e.size, e.type, e.normalized, e.offset);
             }
-            glVertexArrayVertexAttribBindingEXT (vao, e.attrib, e.stream);
-            glEnableVertexArrayAttribEXT(vao, e.attrib);
+            glVertexArrayAttribBinding(vao, e.attrib, e.stream);
+            glEnableVertexArrayAttrib(vao, e.attrib);
         }
 
         for (GLuint i = 0; i < numStreams; ++i)
         {
-            glVertexArrayVertexBindingDivisorEXT(vao, i, streamDivisors ? streamDivisors[i] : 0);
+            glVertexArrayBindingDivisor(vao, i, streamDivisors ? streamDivisors[i] : 0);
         }
 
         return vao;
@@ -722,7 +723,7 @@ namespace gfx
 
     void gpu_timer_init(gpu_timer_t* timer)
     {
-        glGenQueries(NUM_FRAMES_DELAY, timer->queries);
+        glCreateQueries(GL_TIME_ELAPSED, NUM_FRAMES_DELAY, timer->queries);
         //Work around in order to avoid getting GL error when querying timer before it was issued
         for (size_t i = 0; i < NUM_FRAMES_DELAY; ++i)
         {

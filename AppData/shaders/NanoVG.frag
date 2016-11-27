@@ -41,7 +41,7 @@ float strokeMask() {
 #endif
 
 void main(void) {
-    vec4 result;
+    vec4 result = vec4(1,1,1,1);
     float scissor = scissorMask(fpos);
     #ifdef EDGE_AA
     float strokeAlpha = strokeMask();
@@ -67,9 +67,9 @@ void main(void) {
         // Combine alpha
         color *= strokeAlpha * scissor;
         result = color;
-    } else if (type == 2) {        // Stencil fill
+    } /*else if (type == 2) {        // Stencil fill
         result = vec4(1,1,1,1);
-    } else if (type == 3) {        // Textured tris
+    }*/ else if (type == 3) {        // Textured tris
         vec4 color = texture(tex, ftcoord);
         if (texType == 1) color = vec4(color.xyz*color.w,color.w);
         if (texType == 2) color = vec4(color.x);

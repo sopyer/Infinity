@@ -264,12 +264,12 @@ namespace lighting
         mem_free(&dataNegY);
         mem_free(&dataNegZ);
 
-        glGenBuffers(1, &ubo);
+        glCreateBuffers(1, &ubo);
         glBindBuffer(GL_UNIFORM_BUFFER, ubo);
         glBufferData(GL_UNIFORM_BUFFER, 256, 0, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-        glGenSamplers(1, &smpSkybox);
+        glCreateSamplers(1, &smpSkybox);
         glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glSamplerParameteri(smpSkybox, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -331,9 +331,8 @@ namespace lighting
         gfx::setModelViewMatrix(modelView);
         gfx::setMVP();
 
+        glNamedBufferSubData(ubo, 0, 160, shPoly);
         glBindBufferRange(GL_UNIFORM_BUFFER, 2, ubo, 0, 160);
-        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
-        glBufferSubData(GL_UNIFORM_BUFFER, 0, 160, shPoly);
         glUseProgram(prgSH);
         drawBox();
 
@@ -373,7 +372,7 @@ namespace lighting
         glUseProgram(prgSkybox);
 
         glBindSampler(0, smpSkybox);
-        glBindMultiTextureEXT(GL_TEXTURE0, GL_TEXTURE_CUBE_MAP, cubemap);
+        glBindTextureUnit(0, cubemap);
 
         drawBox();
 

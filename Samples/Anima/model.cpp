@@ -51,8 +51,8 @@ namespace Model
         ubufLighting = gfx::createUBODesc(prgDefault, "uniLighting");
         ubufGlobal   = gfx::createUBODesc(prgDefault, "uniGlobal");
 
-        glGenBuffers(1, &staticBuffer);
-        glNamedBufferStorageEXT(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
+        glCreateBuffers(1, &staticBuffer);
+        glNamedBufferStorage(staticBuffer, staticAlloc.size, 0, GL_MAP_WRITE_BIT);
 
 #ifdef _DEBUG
         {
@@ -227,10 +227,10 @@ namespace Model
         assert(vertexOffset % sizeof(vf::skinned_geom_t) == 0);
         assert(indexOffset % sizeof(uint16_t) == 0);
 
-        uint8_t* ptr = (uint8_t*)glMapNamedBufferRangeEXT(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+        uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
         mem_copy(ptr, vertices, verticesSize);
         mem_copy(ptr+(indexOffset-vertexOffset),  md5Mesh->indices,  indicesSize);
-        glUnmapNamedBufferEXT(staticBuffer);
+        glUnmapNamedBuffer(staticBuffer);
 
         mesh->numIndices  = md5Mesh->numIndices;
         mesh->idxFormat   = GL_UNSIGNED_SHORT;
@@ -527,15 +527,15 @@ cleanup:
                 {
                     mat->diffuse = res::createTexture2D(mjson_get_string(value, ""));
                     //TODO: temporary fix for repeated/mirrored textures!!!
-                    glTextureParameteriEXT(mat->diffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(mat->diffuse, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTextureParameteri(mat->diffuse, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteri(mat->diffuse, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 }
                 else if (cstr_comparen(name, "normal", &ind)==EOK && ind==0)
                 {
                     mat->normal = res::createTexture2D(mjson_get_string(value, ""));
                     //TODO: temporary fix for repeated/mirrored textures!!!
-                    glTextureParameteriEXT(mat->normal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTextureParameteriEXT(mat->normal, GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTextureParameteri(mat->normal, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                    glTextureParameteri(mat->normal, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 }
 
                 key = mjson_get_member_next(root, key, &value);

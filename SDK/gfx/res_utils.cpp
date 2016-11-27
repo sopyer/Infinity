@@ -251,14 +251,14 @@ namespace res
             int imgWidth, imgHeight;
 
             texture = SOIL_load_OGL_texture_from_memory(texData.buffer, texData.size, 0, 0, SOIL_FLAG_DDS_LOAD_DIRECT | (forceSRGB ? SOIL_FLAG_FORCE_SRGB : 0));
-            if (genMipmap) glGenerateTextureMipmapEXT(texture, GL_TEXTURE_2D);
-            glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
-            glTextureParameteriEXT(texture, GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+            if (genMipmap) glGenerateTextureMipmap(texture);
+            glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, minFilter);
+            glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, magFilter);
 
             mem_free(&texData);
 
-            glGetTextureLevelParameterivEXT(texture, GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &imgWidth);
-            glGetTextureLevelParameterivEXT(texture, GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &imgHeight);
+            glGetTextureLevelParameteriv(texture, 0, GL_TEXTURE_WIDTH,  &imgWidth);
+            glGetTextureLevelParameteriv(texture, 0, GL_TEXTURE_HEIGHT, &imgHeight);
 
             if (width)  *width  = imgWidth;
             if (height) *height = imgHeight;
@@ -278,13 +278,14 @@ namespace res
     {
         GLuint texture;
 
-        glGenTextures(1, &texture);
+        glCreateTextures(GL_TEXTURE_1D, 1, &texture);
+        glTextureStorage1D(texture, 1, internalFormat, width);
 
-        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MAX_LEVEL, 0);
-        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTextureParameteriEXT(texture, GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTextureImage1DEXT(texture, GL_TEXTURE_1D, 0, internalFormat, width, 0, format, type, pixels);
+        glTextureParameteri(texture, GL_TEXTURE_MAX_LEVEL, 0);
+        glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureSubImage1D(texture, 0, 0, width, format, type, pixels);
 
         return texture;
     }
@@ -306,8 +307,8 @@ namespace res
     GLuint createRenderbuffer(GLenum type, GLsizei width, GLsizei height)
     {
         GLuint rbo;
-        glGenRenderbuffers(1, &rbo);
-        glNamedRenderbufferStorageEXT(rbo, type, width, height);
+        glCreateRenderbuffers(1, &rbo);
+        glNamedRenderbufferStorage(rbo, type, width, height);
 
         return rbo;
     }

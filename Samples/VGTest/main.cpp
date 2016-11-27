@@ -308,7 +308,7 @@ void addDistanceTransformCubic(glm::vec3 cp[4], Geometry<RCubicVertex>& distTran
 GLuint createRenderbuffer(GLenum type, GLuint samples, GLsizei width, GLsizei height)
 {
     GLuint rbo;
-    glGenRenderbuffers(1, &rbo);
+    glCreateRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, type, width, height);
     //glRenderbufferStorage(GL_RENDERBUFFER, type, width, height);
@@ -321,7 +321,7 @@ GLuint createRenderbuffer(GLenum type, GLuint samples, GLsizei width, GLsizei he
 GLuint createFramebuffer(GLuint colorRenderbuffer, GLuint depthRenderbuffer)
 {
     GLuint fbo;
-    glGenFramebuffers(1, &fbo);
+    glCreateFramebuffers(1, &fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
     glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, colorRenderbuffer);

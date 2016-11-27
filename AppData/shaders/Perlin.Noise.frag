@@ -7,12 +7,12 @@ uniform float invTexDim;
 
 float perm(float x)
 {
-    return texture1D(samPerm, x).r;
+    return texture(samPerm, x).r;
 }
 
 float grad(float x, vec2 p)
 {
-    return dot(texture1D(samGrad, x*8).rg, p);
+    return dot(texture(samGrad, x*8).rg, p);
 }
 
 vec2 fade(vec2 x)
