@@ -681,12 +681,12 @@ namespace ml
 
     float exp  (float x)
     {
-        return ::exp(x);
+        return ::expf(x);
     }
 
     float pow  (float x, float y)
     {
-        return ::pow(x, y);
+        return ::powf(x, y);
     }
 
     float ln(float x)
@@ -736,7 +736,7 @@ namespace ml
 
     float tan(float x)
     {
-        return ::tan(x);
+        return ::tanf(x);
     }
 
     float asin(float x)
@@ -746,6 +746,6 @@ namespace ml
 
     float atan2(float y, float x)
     {
-        return ::atan2(y, x);
+        return ::atan2f(y, x);
     }
 }
