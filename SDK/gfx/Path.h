@@ -20,7 +20,7 @@ namespace vg
     {
         float xmin, ymin, xmax, ymax;
 
-        uint16_t  gpuMemHandle;
+        etlsf_alloc_t  gpuMemHandle;
 
         uint32_t  baseVertex;
         uint32_t  offsetIndices;

@@ -14,57 +14,57 @@ void test_basic_alloc_free()
 {
     etlsf_t  arena;
 
-    uint16_t id0, id1, id2, id3, id4, id5;
+    etlsf_alloc_t id0, id1, id2, id3, id4, id5;
 
     arena = etlsf_create(ARENA_EXTMEM_SIZE, 128);
 
-    id0 = etlsf_alloc(arena, ARENA_EXTMEM_SIZE);
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id0) == 0, "Single allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id0) == ARENA_EXTMEM_SIZE, "Single allocation size test");
-    etlsf_free(arena, id0);
+    id0 = etlsf_alloc_range(arena, ARENA_EXTMEM_SIZE);
+    sput_fail_unless(id0.value, "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) == 0, "Single allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == ARENA_EXTMEM_SIZE, "Single allocation size test");
+    etlsf_free_range(arena, id0);
 
-    id0 = etlsf_alloc(arena, 2 * 1024);
-    id1 = etlsf_alloc(arena, 2 * 1024);
-    id2 = etlsf_alloc(arena, 4 * 1024);
-    id3 = etlsf_alloc(arena, 3 * 1024);
-    id4 = etlsf_alloc(arena, 5 * 1024);
-    id5 = etlsf_alloc(arena, 4 * 1024);
+    id0 = etlsf_alloc_range(arena, 2 * 1024);
+    id1 = etlsf_alloc_range(arena, 2 * 1024);
+    id2 = etlsf_alloc_range(arena, 4 * 1024);
+    id3 = etlsf_alloc_range(arena, 3 * 1024);
+    id4 = etlsf_alloc_range(arena, 5 * 1024);
+    id5 = etlsf_alloc_range(arena, 4 * 1024);
 
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(id1, "Allocation succeeded");
-    sput_fail_unless(id2, "Allocation succeeded");
-    sput_fail_unless(id3, "Allocation succeeded");
-    sput_fail_unless(id4, "Allocation succeeded");
-    sput_fail_unless(id5, "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id3), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id4), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id5), "Allocation succeeded");
 
-    sput_fail_unless(etlsf_block_offset(arena, id0) ==  0 * 1024, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id1) ==  2 * 1024, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id2) ==  4 * 1024, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id3) ==  8 * 1024, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id4) == 11 * 1024, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id5) == 16 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) ==  0 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id1) ==  2 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id2) ==  4 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id3) ==  8 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id4) == 11 * 1024, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id5) == 16 * 1024, "Allocation offset test");
 
-    sput_fail_unless(etlsf_block_size(arena, id0) == 2 * 1024, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id1) == 2 * 1024, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id2) == 4 * 1024, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id3) == 3 * 1024, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id4) == 5 * 1024, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id5) == 4 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 2 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id1) == 2 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id2) == 4 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id3) == 3 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id4) == 5 * 1024, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id5) == 4 * 1024, "Allocation size test");
 
-    etlsf_free(arena, id2);
-    etlsf_free(arena, id4);
+    etlsf_free_range(arena, id2);
+    etlsf_free_range(arena, id4);
 
-    id2 = etlsf_alloc(arena, 4*1024+512);
-    id4 = etlsf_alloc(arena, 256);
+    id2 = etlsf_alloc_range(arena, 4*1024+512);
+    id4 = etlsf_alloc_range(arena, 256);
 
-    sput_fail_unless(id2, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id2) == 11*1024, "Single allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id2) == 4*1024+512, "Single allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id2) == 11*1024, "Single allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id2) == 4*1024+512, "Single allocation size test");
 
-    sput_fail_unless(id4, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id4) == 11*1024 + 4*1024+512, "Single allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id4) == 256, "Single allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id4), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id4) == 11*1024 + 4*1024+512, "Single allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id4) == 256, "Single allocation size test");
 
     etlsf_destroy(arena);
 }
@@ -73,39 +73,39 @@ void test_merge_prev()
 {
     etlsf_t  arena;
 
-    uint16_t id0, id1, id2;
+    etlsf_alloc_t id0, id1, id2;
 
     arena = etlsf_create(1024, 128);
 
-    id0 = etlsf_alloc(arena, 256);
-    id1 = etlsf_alloc(arena, 256);
-    id2 = etlsf_alloc(arena, 256);
+    id0 = etlsf_alloc_range(arena, 256);
+    id1 = etlsf_alloc_range(arena, 256);
+    id2 = etlsf_alloc_range(arena, 256);
 
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(id1, "Allocation succeeded");
-    sput_fail_unless(id2, "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
 
-    sput_fail_unless(etlsf_block_offset(arena, id0) ==    0, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id1) ==  256, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id2) ==  512, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) ==    0, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id1) ==  256, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id2) ==  512, "Allocation offset test");
 
-    sput_fail_unless(etlsf_block_size(arena, id0) == 256, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id2) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id2) == 256, "Allocation size test");
 
-    etlsf_free(arena, id0);
-    etlsf_free(arena, id1);
+    etlsf_free_range(arena, id0);
+    etlsf_free_range(arena, id1);
 
-    id0 = etlsf_alloc(arena, 512);
-    id1 = etlsf_alloc(arena, 256);
+    id0 = etlsf_alloc_range(arena, 512);
+    id1 = etlsf_alloc_range(arena, 256);
 
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id0) == 0, "Allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id0) == 512, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) == 0, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 512, "Allocation size test");
 
-    sput_fail_unless(id1, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id1) == 768, "Allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id1) == 768, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id1) == 256, "Allocation size test");
 
     etlsf_destroy(arena);
 }
@@ -114,39 +114,39 @@ void test_merge_next()
 {
     etlsf_t  arena;
 
-    uint16_t id0, id1, id2;
+    etlsf_alloc_t id0, id1, id2;
 
     arena = etlsf_create(1024, 128);
 
-    id0 = etlsf_alloc(arena, 256);
-    id1 = etlsf_alloc(arena, 256);
-    id2 = etlsf_alloc(arena, 256);
+    id0 = etlsf_alloc_range(arena, 256);
+    id1 = etlsf_alloc_range(arena, 256);
+    id2 = etlsf_alloc_range(arena, 256);
 
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(id1, "Allocation succeeded");
-    sput_fail_unless(id2, "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
 
-    sput_fail_unless(etlsf_block_offset(arena, id0) ==    0, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id1) ==  256, "Allocation offset test");
-    sput_fail_unless(etlsf_block_offset(arena, id2) ==  512, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) ==    0, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id1) ==  256, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_offset(arena, id2) ==  512, "Allocation offset test");
 
-    sput_fail_unless(etlsf_block_size(arena, id0) == 256, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
-    sput_fail_unless(etlsf_block_size(arena, id2) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_size(arena, id2) == 256, "Allocation size test");
 
-    etlsf_free(arena, id1);
-    etlsf_free(arena, id0);
+    etlsf_free_range(arena, id1);
+    etlsf_free_range(arena, id0);
 
-    id0 = etlsf_alloc(arena, 512);
-    id1 = etlsf_alloc(arena, 256);
+    id0 = etlsf_alloc_range(arena, 512);
+    id1 = etlsf_alloc_range(arena, 256);
 
-    sput_fail_unless(id0, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id0) == 0, "Allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id0) == 512, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) == 0, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 512, "Allocation size test");
 
-    sput_fail_unless(id1, "Allocation succeeded");
-    sput_fail_unless(etlsf_block_offset(arena, id1) == 768, "Allocation offset test");
-    sput_fail_unless(etlsf_block_size(arena, id1) == 256, "Allocation size test");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_offset(arena, id1) == 768, "Allocation offset test");
+    sput_fail_unless(etlsf_alloc_size(arena, id1) == 256, "Allocation size test");
 
     etlsf_destroy(arena);
 }
@@ -158,7 +158,7 @@ void test_max_allocs()
     const uint32_t  MIN_ALLOC  = 0x100;
     const uint32_t  MEM_SIZE   = MIN_ALLOC * MAX_ALLOCS;
 
-    static uint16_t allocs[MAX_ALLOCS];
+    static etlsf_alloc_t allocs[MAX_ALLOCS];
 
     etlsf_t  arena = etlsf_create(MEM_SIZE, MAX_ALLOCS);
 
@@ -167,19 +167,19 @@ void test_max_allocs()
     tests_passed = true;
     for (size_t i=0; i < MAX_ALLOCS; ++i)
     {
-        allocs[i] = etlsf_alloc(arena, MIN_ALLOC);
+        allocs[i] = etlsf_alloc_range(arena, MIN_ALLOC);
 
-        tests_passed &= (allocs[i] != 0);
-        tests_passed &= (etlsf_block_offset(arena, allocs[i]) == i*MIN_ALLOC);
-        tests_passed &= (etlsf_block_size(arena, allocs[i]) == MIN_ALLOC);
+        tests_passed &= (allocs[i].value != 0);
+        tests_passed &= (etlsf_alloc_offset(arena, allocs[i]) == i*MIN_ALLOC);
+        tests_passed &= (etlsf_alloc_size(arena, allocs[i]) == MIN_ALLOC);
     }
     sput_fail_unless(tests_passed, "All allocation succeeded, sizes and offsets are correct");
 
     tests_passed = true;
     for (size_t i=0; i < 0x10001; ++i)
     {
-        uint16_t id = etlsf_alloc(arena, MIN_ALLOC);
-        tests_passed &= (id == 0);
+        etlsf_alloc_t id = etlsf_alloc_range(arena, MIN_ALLOC);
+        tests_passed &= (id.value == 0);
     }
     sput_fail_unless(tests_passed, "All additional 0x10001 allocation predictably failed");
 
@@ -187,20 +187,20 @@ void test_max_allocs()
     tests_passed = true;
     for (size_t i=0; i < MAX_ALLOCS; i+=2)
     {
-        etlsf_free(arena, allocs[i]);
-        allocs[i] = 0;
+        etlsf_free_range(arena, allocs[i]);
+        allocs[i] = { 0 };
     }
 
     uint32_t offset_sum = 0;
     for (size_t i=0; i < MAX_ALLOCS; i+=2)
     {
-        allocs[i] = etlsf_alloc(arena, MIN_ALLOC);
+        allocs[i] = etlsf_alloc_range(arena, MIN_ALLOC);
 
-        offset_sum += etlsf_block_offset(arena, allocs[i]) / MIN_ALLOC / 2;
+        offset_sum += etlsf_alloc_offset(arena, allocs[i]) / MIN_ALLOC / 2;
 
-        tests_passed &= (allocs[i] != 0);
-        tests_passed &= (etlsf_block_offset(arena, allocs[i]) % MIN_ALLOC == 0);
-        tests_passed &= (etlsf_block_size(arena, allocs[i]) == MIN_ALLOC);
+        tests_passed &= (allocs[i].value != 0);
+        tests_passed &= (etlsf_alloc_offset(arena, allocs[i]) % MIN_ALLOC == 0);
+        tests_passed &= (etlsf_alloc_size(arena, allocs[i]) == MIN_ALLOC);
     }
     // All offsets after sorting should form an arithmetic progression sequence
     // So calculate their sum divided by MIN_ALLOC*2

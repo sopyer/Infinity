@@ -127,7 +127,6 @@
   <ItemGroup>
     <ClInclude Include="..\include\core\core.h" />
     <ClInclude Include="..\include\core\debug.h" />
-    <ClInclude Include="..\include\core\etlsf.h" />
     <ClInclude Include="..\include\core\memory.h" />
     <ClInclude Include="..\include\core\ml.h" />
     <ClInclude Include="..\include\core\mt.h" />
@@ -135,6 +134,7 @@
     <ClInclude Include="..\include\core\str.h" />
     <ClInclude Include="..\include\core\timer.h" />
     <ClInclude Include="..\include\core\vi.h" />
+    <ClInclude Include="..\include\etlsf.h" />
     <ClInclude Include="..\include\mjson.h" />
     <ClInclude Include="..\include\Remotery.h" />
     <ClInclude Include="bits.h" />

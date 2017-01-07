@@ -92,8 +92,8 @@ namespace vg
         totalSize += verticesSize + sizeof(vf::p2_vertex_t);
         totalSize += b3verticesSize + sizeof(vf::p2uv3_vertex_t);
 
-        path->gpuMemHandle = etlsf_alloc(gfx_res::vgGArena, totalSize);
-        uint32_t  baseOffset = etlsf_block_offset(gfx_res::vgGArena, path->gpuMemHandle);
+        path->gpuMemHandle = etlsf_alloc_range(gfx_res::vgGArena, totalSize);
+        uint32_t  baseOffset = etlsf_alloc_offset(gfx_res::vgGArena, path->gpuMemHandle);
 
         uint8_t*  basePtr    = (uint8_t*)glMapNamedBufferRange(gfx_res::buffer, baseOffset, totalSize, GL_MAP_WRITE_BIT);
 
@@ -612,7 +612,7 @@ namespace vg
 
     void destroyPath(Path path)
     {
-        etlsf_free(gfx_res::vgGArena, path->gpuMemHandle);
+        etlsf_free_range(gfx_res::vgGArena, path->gpuMemHandle);
         mem::free(gfx::memArena, path);
     }
 }

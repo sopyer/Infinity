@@ -18,8 +18,8 @@ namespace vg
         Paint  newPaint = mem::alloc<PaintOpaque>(gfx::memArena);
 
         newPaint->program       = gfx_res::prgPaintSolid;
-        newPaint->allocUniforms = etlsf_alloc(gfx_res::vgGArena, sizeof(v128));
-        newPaint->offset        = etlsf_block_offset(gfx_res::vgGArena, newPaint->allocUniforms);
+        newPaint->allocUniforms = etlsf_alloc_range(gfx_res::vgGArena, sizeof(v128));
+        newPaint->offset        = etlsf_alloc_offset(gfx_res::vgGArena, newPaint->allocUniforms);
         newPaint->size          = sizeof(v128);
         newPaint->texture       = 0;
 
@@ -51,8 +51,8 @@ namespace vg
 
         newPaint->program = gfx_res::prgPaintLinGradient;
 
-        newPaint->allocUniforms = etlsf_alloc(gfx_res::vgGArena, sizeof(uPaintLinGradient));
-        newPaint->offset        = etlsf_block_offset(gfx_res::vgGArena, newPaint->allocUniforms);
+        newPaint->allocUniforms = etlsf_alloc_range(gfx_res::vgGArena, sizeof(uPaintLinGradient));
+        newPaint->offset        = etlsf_alloc_offset(gfx_res::vgGArena, newPaint->allocUniforms);
         newPaint->size          = sizeof(uPaintLinGradient);
 
         assert(newPaint->offset%gfx::caps.uboAlignment == 0);
@@ -106,7 +106,7 @@ namespace vg
     void destroyPaint(Paint paint)
     {
         if (paint->texture) glDeleteTextures(1, &paint->texture);
-        etlsf_free(gfx_res::vgGArena, paint->allocUniforms);
+        etlsf_free_range(gfx_res::vgGArena, paint->allocUniforms);
 
         mem::free(gfx::memArena, paint);
     }

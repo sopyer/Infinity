@@ -19,19 +19,21 @@ extern "C" {
 
 struct etlsf_private_t;
 typedef struct etlsf_private_t*  etlsf_t;
+typedef struct { uint16_t value; } etlsf_alloc_t;
+
 
 etlsf_t  etlsf_create (uint32_t size, uint16_t max_allocs);
 void     etlsf_destroy(etlsf_t arena);
 
 // All allocations are always aligned up to 256 bytes
-uint16_t  etlsf_alloc  (etlsf_t arena, uint32_t size);
-void      etlsf_free   (etlsf_t arena, uint16_t block);
+etlsf_alloc_t etlsf_alloc_range(etlsf_t arena, uint32_t size);
+void          etlsf_free_range (etlsf_t arena, etlsf_alloc_t id);
 
 /* Returns internal block size, not original request size */
-uint32_t  etlsf_block_size  (etlsf_t arena, uint16_t block);
-uint32_t  etlsf_block_offset(etlsf_t arena, uint16_t block);
+uint32_t etlsf_alloc_size  (etlsf_t arena, etlsf_alloc_t id);
+uint32_t etlsf_alloc_offset(etlsf_t arena, etlsf_alloc_t id);
 
-int  etlsf_is_block_valid(etlsf_t arena, uint16_t block);
+int etlsf_alloc_is_valid(etlsf_t arena, etlsf_alloc_t id);
 
 #ifdef __cplusplus
 }

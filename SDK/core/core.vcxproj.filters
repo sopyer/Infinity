@@ -79,9 +79,6 @@
     <ClInclude Include="..\include\core\mt.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\core\etlsf.h">
-      <Filter>Public Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\Remotery.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
@@ -93,6 +90,9 @@
     </ClInclude>
     <ClInclude Include="malloc.c.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\etlsf.h">
+      <Filter>Public Headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

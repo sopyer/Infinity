@@ -6,10 +6,10 @@ namespace vg
 {
     struct PaintOpaque
     {
-        GLuint    program;
-        uint16_t  allocUniforms;
-        GLsizei   size;
-        GLsizei   offset;
-        GLuint    texture;
+        GLuint        program;
+        etlsf_alloc_t allocUniforms;
+        GLsizei       size;
+        GLsizei       offset;
+        GLuint        texture;
     };
 }
