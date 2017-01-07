@@ -19,7 +19,7 @@ void test_basic_alloc_free()
     arena = etlsf_create(ARENA_EXTMEM_SIZE, 128);
 
     id0 = etlsf_alloc_range(arena, ARENA_EXTMEM_SIZE);
-    sput_fail_unless(id0.value, "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
     sput_fail_unless(etlsf_alloc_offset(arena, id0) == 0, "Single allocation offset test");
     sput_fail_unless(etlsf_alloc_size(arena, id0) == ARENA_EXTMEM_SIZE, "Single allocation size test");
     etlsf_free_range(arena, id0);
@@ -65,6 +65,43 @@ void test_basic_alloc_free()
     sput_fail_unless(etlsf_alloc_is_valid(arena, id4), "Allocation succeeded");
     sput_fail_unless(etlsf_alloc_offset(arena, id4) == 11*1024 + 4*1024+512, "Single allocation offset test");
     sput_fail_unless(etlsf_alloc_size(arena, id4) == 256, "Single allocation size test");
+
+    etlsf_destroy(arena);
+}
+
+void test_alloc_free_corner_cases()
+{
+    etlsf_t  arena;
+
+    etlsf_alloc_t id0 = { 0 };
+
+    etlsf_alloc_range(nullptr, 1);
+    etlsf_free_range(nullptr, id0);
+
+    sput_fail_unless(!etlsf_alloc_is_valid(nullptr, id0), "Id should be invalid");
+    sput_fail_unless(etlsf_alloc_offset(nullptr, id0) == 0, "Offset should be 0 for invalid id");
+    sput_fail_unless(etlsf_alloc_size(nullptr, id0) == 0, "Size should be 0 for invalid id");
+
+    arena = etlsf_create(ARENA_EXTMEM_SIZE, 128);
+
+    id0.value = 10;
+
+    etlsf_free_range(arena, id0);
+
+    sput_fail_unless(!etlsf_alloc_is_valid(arena, id0), "Id should be invalid");
+    sput_fail_unless(etlsf_alloc_offset(arena, id0) == 0, "Offset should be 0 for invalid id");
+    sput_fail_unless(etlsf_alloc_size(arena, id0) == 0, "Size should be 0 for invalid id");
+
+    etlsf_free_range(arena, id0);
+
+    id0 = etlsf_alloc_range(arena, 0);
+    sput_fail_unless(!etlsf_alloc_is_valid(arena, id0), "Allocation should fail");
+
+    id0 = etlsf_alloc_range(arena, UINT32_MAX - 256);
+    sput_fail_unless(!etlsf_alloc_is_valid(arena, id0), "Allocation should fail");
+
+    id0 = etlsf_alloc_range(arena, UINT32_MAX);
+    sput_fail_unless(!etlsf_alloc_is_valid(arena, id0), "Allocation should fail");
 
     etlsf_destroy(arena);
 }
@@ -151,7 +188,6 @@ void test_merge_next()
     etlsf_destroy(arena);
 }
 
-
 void test_max_allocs()
 {
     const uint16_t  MAX_ALLOCS = 0xFFFF;
@@ -214,21 +250,85 @@ void test_max_allocs()
     etlsf_destroy(arena);
 }
 
+void test_bug_no_suitable_range_assert()
+{
+    etlsf_t  arena;
+
+    etlsf_alloc_t id0, id1, id2, id3;
+
+    arena = etlsf_create(0x10000, 128);
+
+    id0 = etlsf_alloc_range(arena, 256);
+    id1 = etlsf_alloc_range(arena, 4096);
+    id2 = etlsf_alloc_range(arena, 4096);
+    id3 = etlsf_alloc_range(arena, 4096);
+
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id3), "Allocation succeeded");
+
+    etlsf_free_range(arena, id0);
+    etlsf_free_range(arena, id2);
+
+    id0 = etlsf_alloc_range(arena, 512);
+
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+
+    etlsf_destroy(arena);
+}
+
+void test_bug_unsuitable_range_assert()
+{
+    etlsf_t  arena;
+
+    etlsf_alloc_t id0, id1, id2;
+
+    arena = etlsf_create(0x100000, 128);
+
+    id0 = etlsf_alloc_range(arena, 256);
+    id1 = etlsf_alloc_range(arena, 43520);
+    id2 = etlsf_alloc_range(arena, 256);
+
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id1), "Allocation succeeded");
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id2), "Allocation succeeded");
+
+    etlsf_free_range(arena, id1);
+
+    id0 = etlsf_alloc_range(arena, 43600);
+
+    sput_fail_unless(etlsf_alloc_is_valid(arena, id0), "Allocation succeeded");
+
+    etlsf_destroy(arena);
+}
+
 int run_etlsf_tests()
 {
     core::init();
 
+    //align tests pow2 npow2
+    //alloc 1, 255, 256, tests
+
     sput_start_testing();
+    
+    //// align offset if necessary
+    //uint32_t rem = align ? ETLSF_range(index).offset % align : 0;
+    //ETLSF_range(index).offset += rem ? align - rem : 0;
+    //ETLSF_range(index).size = size;
 
     sput_enter_suite("ETLSF: basic alloc/free");
     sput_run_test(test_basic_alloc_free);
+    sput_run_test(test_alloc_free_corner_cases);
     sput_enter_suite("ETLSF: merge prev");
     sput_run_test(test_merge_prev);
     sput_enter_suite("ETLSF: merge next");
     sput_run_test(test_merge_next);
     sput_enter_suite("ETLSF: max allocs");
     sput_run_test(test_max_allocs);
-
+    sput_enter_suite("ETLSF: bugs");
+    sput_run_test(test_bug_no_suitable_range_assert);
+    sput_run_test(test_bug_unsuitable_range_assert);
     sput_finish_testing();
 
     core::fini();

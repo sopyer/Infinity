@@ -21,6 +21,7 @@ struct etlsf_private_t;
 typedef struct etlsf_private_t*  etlsf_t;
 typedef struct { uint16_t value; } etlsf_alloc_t;
 
+static const etlsf_alloc_t ETLSF_INVALID_ID = { 0 };
 
 etlsf_t  etlsf_create (uint32_t size, uint16_t max_allocs);
 void     etlsf_destroy(etlsf_t arena);
