@@ -8,63 +8,63 @@ struct md5_anim_data_t;
 
 struct md5_model_t
 {
-    int version;
-    int numJoints;
-    int numMeshes;
+    uint32_t  version;
+    uint32_t  numJoints;
+    uint32_t  numMeshes;
 
-    md5_joint_t*    joints;
-    md5_mesh_t*     meshes;
+    md5_joint_t*  joints;
+    md5_mesh_t*   meshes;
 };
 
 struct md5_joint_t
 {
-    char     name[64];
-    int      parent;
-    ml::vec3 location;
-    ml::quat rotation;
+    char      name[64];
+    int32_t   parent;
+    ml::vec3  location;
+    ml::quat  rotation;
 };
 
 struct md5_mesh_t
 {
-    char            shader[128];
+    char           shader[128];
 
-    int             numVertices;
-    int             numIndices;
-    int             numWeights;
+    uint32_t       numVertices;
+    uint32_t       numIndices;
+    uint32_t       numWeights;
 
-    md5_vertex_t*   vertices;
-    md5_weight_t*   weights;
-    uint16_t*       indices;
+    md5_vertex_t*  vertices;
+    md5_weight_t*  weights;
+    uint16_t*      indices;
 };
 
 struct md5_weight_t
 {
-    int         joint;
-    float       bias;
-    ml::vec3    location;
+    int32_t   joint;
+    float     bias;
+    ml::vec3  location;
 };
 
 struct md5_vertex_t
 {
-    float   u, v;
-    int     start;
-    int     count;
+    float     u, v;
+    uint32_t  start;
+    uint32_t  count;
 };
 
 struct md5_anim_t
 {
-    int              version;
-    int              numFrames;
-    int              numJoints;
-    int              frameRate;
-    md5_anim_data_t* frameData;
+    uint32_t          version;
+    uint32_t          numFrames;
+    uint32_t          numJoints;
+    uint32_t          frameRate;
+    md5_anim_data_t*  frameData;
 };
 
 struct md5_anim_data_t
 {
-    ml::quat rotation;
-    ml::vec3 location;
+    ml::quat  rotation;
+    ml::vec3  location;
 };
 
-bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary);
-bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary);
+bool md5meshConvertToBinary(blob32_t inText, blob32_t outBinary);
+bool md5animConvertToBinary(blob32_t inText, blob32_t outBinary);

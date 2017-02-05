@@ -21,6 +21,8 @@ namespace Model
 
     const size_t STATIC_BUFFER_SIZE = 2 * (1<<20);
 
+    mspace_t loadingArena;
+
     gfx_stack_alloc32_t staticAlloc = {STATIC_BUFFER_SIZE, 0};
     GLuint              staticBuffer;
 
@@ -31,7 +33,7 @@ namespace Model
         GLuint          normal;
     };
 
-    void RenderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
+    void renderSkeleton(int numJoints, int* hierarchy, ml::dual_quat* joints);
 
     void destroyMesh(gfx_geometry_t* mesh);
 
@@ -40,6 +42,8 @@ namespace Model
 
     void init()
     {
+        loadingArena = mem_create_space(20 * 1024 * 1024);
+
         prgDefault = res::createProgramFromFiles("MESH.Wireframe.Skinning4.vert", "MESH.Wireframe.geom", "MESH.Wireframe.SHLighting.frag");
 
         mWireframe = (material_t*)malloc(sizeof(material_t));
@@ -88,6 +92,8 @@ namespace Model
         gfx::destroyUBODesc(ubufGlobal);
 
         free(mWireframe);
+
+        mem_destroy_space(loadingArena);
     }
 
     static ml::quat rotx = {-0.7071067812f, 0.0f, 0.0f, 0.7071067812f};
@@ -130,7 +136,7 @@ namespace Model
         vertices = (vf::skinned_geom_t*)malloc(verticesSize);
         mem_set(vertices, verticesSize, 0);
 
-        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        for ( uint32_t i = 0; i < md5Mesh->numVertices; ++i )
         {
             vf::skinned_geom_t& vert        = vertices[i];
             int                 weightCount = md5Mesh->vertices[i].count;
@@ -170,7 +176,7 @@ namespace Model
         }
 
         // Loop through all triangles and calculate the normal of each triangle
-        for ( int i = 0; i < md5Mesh->numIndices/3; ++i )
+        for ( uint32_t i = 0; i < md5Mesh->numIndices/3; ++i )
         {
             v128 v0, v1, v2;
             v128 n0, n1, n2;
@@ -196,7 +202,7 @@ namespace Model
         }
 
         // Now normalize all the normals
-        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        for ( uint32_t i = 0; i < md5Mesh->numVertices; ++i )
         {
             v128                n;
             vf::skinned_geom_t& vert = vertices[i];
@@ -207,7 +213,7 @@ namespace Model
         }
 
         // Copy texture coordinates
-        for ( int i = 0; i < md5Mesh->numVertices; ++i )
+        for ( uint32_t i = 0; i < md5Mesh->numVertices; ++i )
         {
             vertices[i].u = md5Mesh->vertices[i].u;
             vertices[i].v = md5Mesh->vertices[i].v;
@@ -253,7 +259,7 @@ namespace Model
 
         while(numFrames--)
         {
-            for (int i=0; i<skel->numJoints; ++i)
+            for (uint32_t i=0; i<skel->numJoints; ++i)
             {
                 ml::make_dual_quat(&framePoses[i], &animData[i].rotation, &animData[i].location);
 
@@ -276,19 +282,23 @@ namespace Model
     
     bool loadModel(const char* name, model_t* model, skeleton_t* skel)
     {
-        memory_t inText    = {0, 0, 0};
-        memory_t outBinary = {0, 0, 0};
+        blob32_t inText    = {0};
+        blob32_t outBinary = {0};
 
         mem_zero(model);
         mem_zero(skel);
 
-        if (mem_area(&outBinary, 4*1024*1024) &&
-            mem_file(&inText, name)           &&
-            md5meshConvertToBinary(&inText, &outBinary))
-        {
-            mem_free(&inText);
+        bool data_read = 
+            (inText = read_file_to_blob32(loadingArena, name, 0xFFFF)) &&
+            (outBinary = blob32_alloc(loadingArena, 4 * 1024 * 1024)) &&
+            md5meshConvertToBinary(inText, outBinary);
 
-            md5_model_t* md5Model = (md5_model_t*)outBinary.buffer;
+        mem_free(loadingArena, inText);
+
+        if (data_read)
+        {
+            uint8_t* outData = blob32_data(outBinary);
+            md5_model_t* md5Model = mem_as_ptr<md5_model_t>(outData, 0);
 
             model->numMeshes = md5Model->numMeshes;
             model->meshes    = (gfx_geometry_t*)malloc(model->numMeshes*sizeof(gfx_geometry_t));
@@ -297,7 +307,7 @@ namespace Model
             md5CreateSkeleton(skel, md5Model->numJoints, md5Model->joints);
 
             md5_mesh_t* md5Mesh = md5Model->meshes;
-            for (int i=0; i<model->numMeshes; ++i)
+            for (uint32_t i=0; i<model->numMeshes; ++i)
             {
                 md5CreateMesh(&model->meshes[i], md5Mesh, skel);
 
@@ -307,48 +317,39 @@ namespace Model
 
                 ++md5Mesh;
             }
-
-            mem_free(&outBinary);
-
-            return true;
         }
 
-        mem_free(&inText);
-        mem_free(&outBinary);
+        mem_free(loadingArena, outBinary);
 
-        return false;
+        return data_read;
     }
 
     bool loadAnimation(const char *name, animation_t* anim, skeleton_t* skel)
     {
-        memory_t inText    = {0, 0, 0};
-        memory_t outBinary = {0, 0, 0};
+        blob32_t inText = {0};
+        blob32_t outBinary = {0};
 
         mem_zero(anim);
 
-        if (mem_file(&inText, name)            &&
-            mem_area(&outBinary, 4*1024*1024)  &&
-            md5animConvertToBinary(&inText, &outBinary))
+        bool data_read = 
+            (inText = read_file_to_blob32(loadingArena, name, 0xFFFF)) &&
+            (outBinary = blob32_alloc(loadingArena, 4 * 1024 * 1024)) &&
+            md5animConvertToBinary(inText, outBinary);
+
+        mem_free(loadingArena, inText);
+
+        uint8_t* outData = blob32_data(outBinary);
+        md5_anim_t* md5Anim = mem_as_ptr<md5_anim_t>(outData, 0);
+        data_read = data_read && (skel->numJoints == md5Anim->numJoints);
+
+        if (data_read)
         {
-            mem_free( &inText );
-
-            md5_anim_t* md5Anim = (md5_anim_t*)outBinary.buffer;
-
-            if (skel->numJoints != md5Anim->numJoints) goto cleanup;
-
-
             md5CreateAnimation(anim, md5Anim, skel);
-
-            mem_free(&outBinary);
-
-            return true;
         }
 
-cleanup:
-        mem_free(&inText);
-        mem_free(&outBinary);
+        mem_free(loadingArena, outBinary);
 
-        return false;
+        return data_read;
     }
 
     void update(float fDeltaTime, animation_t* anim, skeleton_t* skel, pose_t* pose)
@@ -375,7 +376,7 @@ cleanup:
             ml::dual_quat* frame0Data = anim->framePoses + frame0*skel->numJoints; 
             ml::dual_quat* frame1Data = anim->framePoses + frame1*skel->numJoints; 
 
-            for ( int i = 0; i < skel->numJoints; ++i )
+            for ( uint32_t i = 0; i < skel->numJoints; ++i )
             {
                 qr0 = vi_loadu_v4(&frame0Data[i].real);
                 qd0 = vi_loadu_v4(&frame0Data[i].dual);
@@ -404,7 +405,7 @@ cleanup:
         {
             // No animation. Just use identity quaternions for each bone.
             ml::dual_quat* bone = pose->boneTransforms;
-            for (int i = 0; i < skel->numJoints; ++i, ++bone)
+            for (uint32_t i = 0; i < skel->numJoints; ++i, ++bone)
             {
                 ml::set_identity_dual_quat(bone);
             }
@@ -482,7 +483,7 @@ cleanup:
         glBindBufferRange(GL_UNIFORM_BUFFER,        UNI_LIGHTING, gfx::dynBuffer, offsetLighting, sizeLighting);
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, UNI_BONES,    gfx::dynBuffer, offsetBones,    sizeBones);
 
-        for (int i=0; i<model->numMeshes; ++i)
+        for (uint32_t i=0; i<model->numMeshes; ++i)
         {
             renderMesh( &model->meshes[i], &model->materials[i] );
         }
@@ -572,7 +573,7 @@ cleanup:
 
     void destroyModel(model_t* model)
     {
-        for (int i = 0; i < model->numMeshes; ++i)
+        for (uint32_t i = 0; i < model->numMeshes; ++i)
         {
             destroyMesh    (&model->meshes   [i]);
             destroyMaterial(&model->materials[i]);

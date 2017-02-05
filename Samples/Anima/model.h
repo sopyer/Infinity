@@ -8,23 +8,23 @@ namespace Model
     
     struct model_t
     {
-        int                numMeshes;
+        uint32_t           numMeshes;
         gfx_geometry_t*    meshes;
         material_t*        materials;
     };
 
     struct skeleton_t
     {
-        int            numJoints;
-        int*           boneHierarchy;
+        uint32_t       numJoints;
+        int32_t*       boneHierarchy;
         ml::dual_quat* bindPose;
         ml::dual_quat* invBindPose;
     };
     
     struct animation_t
     {
-        int            numFrames;
-        int            frameRate;
+        uint32_t       numFrames;
+        uint32_t       frameRate;
         ml::dual_quat* framePoses;
     };
 

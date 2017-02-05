@@ -110,136 +110,154 @@ struct rect_t
 bool testPtInRect(const point_t& pt, const rect_t& rect);
 bool testPtInRect(float xp, float yp, float xr, float yr, float wr, float hr);
 
+//--------------------------------------------------------------------------
+
 struct memory_t
 {
     uint8_t* buffer;
     size_t   size;
     size_t   allocated;
-};
+}; 
+
+bool mem_thread_stack_init(memory_t* mem, size_t size);
 
 bool mem_area(memory_t* mem, size_t size);
 bool mem_file(memory_t* mem, const char* name);
 void mem_free(memory_t* mem);
 
-bool mem_thread_stack_init(memory_t* mem, size_t size);
+//--------------------------------------------------------------------------
 
-template <typename type>
-type mem_read(memory_t* mem)
+struct blob32_data_t
 {
-    type* value = (type*)(mem->buffer + mem->allocated);
+    uint32_t size;
+};
 
-    mem->allocated += sizeof(type);
-    assert(mem->allocated<=mem->size);
+typedef blob32_data_t* blob32_t;
 
-    return *value;
+blob32_t blob32_alloc(mspace_t arena, uint32_t size);
+
+static inline uint8_t* blob32_data(blob32_t blob, uint32_t offset = 0)
+{
+    return (uint8_t*)(&blob[1]) + offset;
 }
 
-template <typename type>
-type* mem_raw_array(memory_t* mem, size_t count)
-{
-    uint8_t* var = mem->buffer + mem->allocated;
+blob32_t read_file_to_blob32(mspace_t arena, const char* name, size_t name_len);
 
-    mem->allocated += sizeof(type)*count;
-    assert(mem->allocated<=mem->size);
+//--------------------------------------------------------------------------
 
-    return (type*)var;
-}
+static inline bool mem_space_available(size_t max_size, size_t offset, size_t size);
 
 template <typename type>
-type* mem_raw_data(memory_t* mem)
-{
-    uint8_t* var = mem->buffer + mem->allocated;
-
-    mem->allocated += sizeof(type);
-    assert(mem->allocated<=mem->size);
-
-    return (type*)var;
-}
-
-//////////////////////////////////////////////////////////////
+static inline bool mem_value_available(size_t max_size, size_t offset);
 
 template <typename type>
-type* mem_raw_data(memory_t& mem, size_t size)
-{
-    uint8_t* var = mem.buffer + mem.allocated;
-
-    mem.allocated += size;
-    assert(mem.allocated<=mem.size);
-
-    return (type*)var;
-}
+static inline bool mem_array_available(size_t max_size, size_t offset, size_t count);
 
 template <typename type>
-type* mem_raw_data_offset(memory_t& mem, size_t offset)
-{
-    assert(offset<mem.size);
-
-    return (type*)(mem.buffer + offset);
-}
+static inline type mem_as_value(uint8_t* mem, size_t offset);
 
 template <typename type>
-type* mem_raw_array(memory_t& mem, size_t count)
+static inline type* mem_as_ptr(uint8_t* mem, size_t offset);
+
+template <typename type>
+static inline type& mem_as_ref(uint8_t* mem, size_t offset);
+
+template <typename type>
+static inline type mem_as_value_advance(uint8_t* mem, size_t& offset);
+
+template <typename type>
+static inline type* mem_as_ptr_advance(uint8_t* mem, size_t& offset);
+
+template <typename type>
+static inline type& mem_as_ref_advance(uint8_t* mem, size_t& offset);
+
+template <typename type>
+static inline type* mem_as_array_advance(uint8_t* mem, size_t count, size_t& offset);
+
+void read_file_to_mem(mspace_t arena, const char* name, size_t name_len, uint8_t** mem, size_t& size);
+
+//--------------------------------------------------------------------------
+
+static inline bool mem_space_available(size_t max_size, size_t offset, size_t size)
 {
-    uint8_t* var = mem.buffer + mem.allocated;
-
-    mem.allocated += sizeof(type)*count;
-    assert(mem.allocated <= mem.size);
-
-    return (type*)var;
+    return offset + size <= max_size;
 }
 
 template <typename type>
-type mem_read(memory_t& mem)
+static inline bool mem_value_available(size_t max_size, size_t offset)
 {
-    type* value = (type*)(mem.buffer + mem.allocated);
-
-    mem.allocated += sizeof(type);
-    assert(mem.allocated <= mem.size);
-
-    return *value;
+    return mem_space_available(max_size, offset, sizeof(type));
 }
 
 template <typename type>
-type* mem_raw_data(memory_t& mem)
+static inline bool mem_array_available(size_t max_size, size_t offset, size_t count)
 {
-    uint8_t* var = mem.buffer + mem.allocated;
-
-    mem.allocated += sizeof(type);
-    assert(mem.allocated <= mem.size);
-
-    return (type*)var;
+    return mem_space_available(max_size, offset, count * sizeof(type));
 }
 
-template<typename T>
-void mem_skip(memory_t& mem)
+template <typename type>
+static inline type mem_as_value(uint8_t* mem, size_t offset)
 {
-    assert(mem.allocated + sizeof(T) <= mem.size);
-    mem.allocated += sizeof(T);
+    assert(mem);
+    return *(type*)(mem + offset);
 }
 
-template<typename T>
-void mem_skip_array(memory_t& mem, size_t count)
+template <typename type>
+static inline type* mem_as_ptr(uint8_t* mem, size_t offset)
 {
-    assert(mem.allocated + sizeof(T)*count <= mem.size);
-    mem.allocated += sizeof(T)*count;
+    assert(mem);
+    return (type*)(mem + offset);
 }
 
-inline void mem_skip(memory_t& mem, size_t size)
+template <typename type>
+static inline type& mem_as_ref(uint8_t* mem, size_t offset)
 {
-    assert(mem.allocated+size<=mem.size);
-    mem.allocated += size;
+    assert(mem);
+    return *(type*)(mem + offset);
 }
 
-inline memory_t mem_submem(memory_t& mem, size_t offset, size_t size)
+template <typename type>
+static inline type mem_as_value_advance(uint8_t* mem, size_t& offset)
 {
-    assert(offset + size <= mem.size);
-    return { mem.buffer + offset, size, 0 };
+    assert(mem);
+    const size_t data_offset = offset;
+    const size_t size = sizeof(type);
+    offset += size;
+    return *(type*)(mem + data_offset);
 }
 
-inline void mem_rewind(memory_t& mem)
+template <typename type>
+static inline type* mem_as_ptr_advance(uint8_t* mem, size_t& offset)
 {
-    mem.allocated = 0;
+    assert(mem);
+    const size_t data_offset = offset;
+    const size_t size = sizeof(type);
+    offset += size;
+    return (type*)(mem + data_offset);
 }
+
+template <typename type>
+static inline type& mem_as_ref_advance(uint8_t* mem, size_t& offset)
+{
+    assert(mem);
+    const size_t data_offset = offset;
+    const size_t size = sizeof(type);
+    offset += size;
+    return *(type*)(mem + data_offset);
+}
+
+template <typename type>
+static inline type* mem_as_array_advance(uint8_t* mem, size_t count, size_t& offset)
+{
+    assert(mem);
+    const size_t data_offset = offset;
+    const size_t size = count * sizeof(type);
+    offset += size;
+    return (type*)(mem + data_offset);
+}
+
+//--------------------------------------------------------------------------
+
 
 #define TRUE  1
 #define FALSE 0

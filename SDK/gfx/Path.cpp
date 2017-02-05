@@ -500,7 +500,7 @@ namespace vg
             else if (segment==VG_MOVE_TO)
             {
                 isContourStarted = false;
-                o = p = mem_read<ml::vec2>(&mem) + origin;
+                o = p = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
             }
             else
             {
@@ -515,39 +515,39 @@ namespace vg
                 switch (segment)
                 {
                     case VG_LINE_TO:
-                        o = p = mem_read<ml::vec2>(&mem) + origin;
+                        o = p = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
                         break;
 
                     case VG_HLINE_TO:
-                        o.x = p.x = mem_read<float>(&mem) + origin.x;
+                        o.x = p.x = mem_as_value_advance<float>(mem.buffer, mem.allocated) + origin.x;
                         break;
 
                     case VG_VLINE_TO:
-                        o.y = p.y = mem_read<float>(&mem) + origin.y;
+                        o.y = p.y = mem_as_value_advance<float>(mem.buffer, mem.allocated) + origin.y;
                         break;
 
                     case VG_QUAD_TO:
-                        p = mem_read<ml::vec2>(&mem) + origin;
-                        o = mem_read<ml::vec2>(&mem) + origin;
+                        p = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
+                        o = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
                         break;
 
                     case VG_SQUAD_TO:
                         p = 2.0f*o - p;
-                        o = mem_read<ml::vec2>(&mem) + origin;
+                        o = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
                         break;
 
                     case VG_CUBIC_TO:
                         cp0 = o;
-                        cp1 = mem_read<ml::vec2>(&mem) + origin;
-                        p   = mem_read<ml::vec2>(&mem) + origin;
-                        o   = mem_read<ml::vec2>(&mem) + origin;
+                        cp1 = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
+                        p   = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
+                        o   = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
                         break;
 
                     case VG_SCUBIC_TO:
                         cp0 = o;
                         cp1 = 2.0f*o - p;
-                        p   = mem_read<ml::vec2>(&mem) + origin;
-                        o   = mem_read<ml::vec2>(&mem) + origin;
+                        p   = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
+                        o   = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
                         break;
 
                     case VG_SCWARC_TO:
@@ -558,9 +558,9 @@ namespace vg
                             ml::vec2 r, c;
                             float a;
 
-                            r = mem_read<ml::vec2>(&mem);
-                            a = mem_read<float>(&mem);
-                            c = mem_read<ml::vec2>(&mem) + origin;
+                            r = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated);
+                            a = mem_as_value_advance<float>(mem.buffer, mem.allocated);
+                            c = mem_as_value_advance<ml::vec2>(mem.buffer, mem.allocated) + origin;
 
                             o = p = c;
                         }

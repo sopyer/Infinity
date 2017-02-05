@@ -14,3 +14,8 @@ temp
 *.exp
 *.idb
 Tools/generated
+Tools/Remotery
+Tools/microprofile
+AppData/*/sponza
+AppData/SSZ
+*.bak

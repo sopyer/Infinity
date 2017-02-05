@@ -136,7 +136,7 @@ namespace app
     const char*     materialNames[MAX_MATERIALS];
 
     void loadMesh(const char* name);
-    bool loadMeshSSZ(const char* name);
+    bool loadMeshSSZ(blob32_t dataBlob);
     material_t* findMaterial(const char* name);
 
 
@@ -451,7 +451,11 @@ namespace app
 
         int start, end;
         start = numMeshes;
-        bool loaded = loadMeshSSZ(path);
+
+        blob32_t data = read_file_to_blob32(appArena, path, 0xFFFF);
+        bool loaded = data && loadMeshSSZ(data);
+        mem_free(appArena, data);
+
         end = numMeshes;
 
         if (loaded)
@@ -948,20 +952,20 @@ namespace app
         return 0;
     }
 
-    bool loadMeshSSZ(const char* name)
+    bool loadMeshSSZ(blob32_t dataBlob)
     {
-        memory_t  data = { 0, 0, 0 };
+        uint8_t* data = blob32_data(dataBlob);
+        size_t size = dataBlob->size;
 
-        if (mem_file(&data, name))
+        if (data)
         {
-            if (data.size < sizeof(ssz_mesh_header_t))
+            if (size < sizeof(ssz_mesh_header_t))
             {
-                mem_free(&data);
                 //Not enough data
                 return false;
             }
 
-            ssz_mesh_header_t* header = mem_raw_data<ssz_mesh_header_t>(data);
+            ssz_mesh_header_t* header = mem_as_ptr<ssz_mesh_header_t>(data, 0);
 
             size_t stride = 0;
             size_t indexSize = 0;
@@ -1023,7 +1027,7 @@ namespace app
 
             if (validated)
             {
-                validated &= data.size == sizeof(ssz_mesh_header_t)+indicesSize+verticesSize;
+                validated &= size == sizeof(ssz_mesh_header_t)+indicesSize+verticesSize;
                 validated &= header->indexOffset  == sizeof(ssz_mesh_header_t);
                 validated &= header->vertexOffset == sizeof(ssz_mesh_header_t)+indicesSize;
 
@@ -1038,7 +1042,6 @@ namespace app
             
             if (!validated)
             {
-                mem_free(&data);
                 //failed validation
                 return false;
             }
@@ -1057,8 +1060,8 @@ namespace app
             assert(vertexOffset % stride == 0);
             assert(indexOffset % indexSize == 0);
 
-            uint8_t* vertPtr = mem_raw_data_offset<uint8_t>(data, header->vertexOffset);
-            uint8_t* indPtr  = mem_raw_data_offset<uint8_t>(data, header->indexOffset);
+            uint8_t* vertPtr = mem_as_ptr<uint8_t>(data, header->vertexOffset);
+            uint8_t* indPtr  = mem_as_ptr<uint8_t>(data, header->indexOffset);
 
             uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
             memcpy(ptr, vertPtr, verticesSize);
@@ -1094,8 +1097,6 @@ namespace app
 
             ++numModels;
 
-            mem_free(&data);
-
             return true;
         }
 
@@ -1109,9 +1110,9 @@ namespace app
 
         if (mem_file(&data, name))
         {
-            mesh_header_v0*    header    = mem_raw_data<mesh_header_v0>(&data);
-            vf::static_geom_t* fvertices = mem_raw_array<vf::static_geom_t>(&data, header->numVertices);
-            uint32_t*          findices  = mem_raw_array<uint32_t>(&data, header->numIndices);
+            mesh_header_v0*    header    = mem_as_ptr_advance<mesh_header_v0>(data.buffer, data.allocated);
+            vf::static_geom_t* fvertices = mem_as_array_advance<vf::static_geom_t>(data.buffer, header->numVertices, data.allocated);
+            uint32_t*          findices  = mem_as_array_advance<uint32_t>(data.buffer, header->numIndices, data.allocated);
 
             if (!numModels)
             {

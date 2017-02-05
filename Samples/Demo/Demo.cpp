@@ -701,9 +701,9 @@ namespace app
 
         if (mem_file(&data, name))
         {
-            mesh_header_v0*    header    = mem_raw_data<mesh_header_v0>(&data);
-            vf::static_geom_t* fvertices = mem_raw_array<vf::static_geom_t>(&data, header->numVertices);
-            uint32_t*          findices  = mem_raw_array<uint32_t>(&data, header->numIndices);
+            mesh_header_v0*    header = mem_as_ptr_advance<mesh_header_v0>(data.buffer, data.allocated);
+            vf::static_geom_t* fvertices = mem_as_array_advance<vf::static_geom_t>(data.buffer, header->numVertices, data.allocated);
+            uint32_t*          findices = mem_as_array_advance<uint32_t>(data.buffer, header->numIndices, data.allocated);
 
             if (!numModels)
             {

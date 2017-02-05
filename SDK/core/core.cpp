@@ -10,6 +10,66 @@ bool testPtInRect(float xp, float yp, float xr, float yr, float wr, float hr)
     return (xr<=xp) && (xp<xr+wr) && (yr<=yp) && (yp<yr+hr);
 }
 
+blob32_t blob32_alloc(mspace_t arena, uint32_t size)
+{
+    blob32_t blob = (blob32_t)mem_alloc(arena, sizeof(blob32_data_t) + size, 0);
+    blob->size = size;
+    return blob;
+}
+
+blob32_t read_file_to_blob32(mspace_t arena, const char* name, size_t)
+{
+    PHYSFS_File* src = PHYSFS_openRead(name);
+
+    blob32_t blob = nullptr;
+
+    if (src)
+    {
+        uint64_t size = PHYSFS_fileLength(src);
+
+        if (size <= UINT32_MAX)
+        {
+            blob = blob32_alloc(arena, (uint32_t)size);
+
+            if (blob)
+            {
+                PHYSFS_read(src, blob32_data(blob), (uint32_t)size, 1);
+            }
+        }
+
+        PHYSFS_close(src);
+    }
+
+    return blob;
+}
+
+void read_file_to_mem(mspace_t arena, const char* name, size_t name_len, uint8_t*& mem, size_t& size)
+{
+    PHYSFS_File* src = PHYSFS_openRead(name);
+
+    mem = nullptr;
+    size = 0;
+
+    if (src)
+    {
+        uint64_t file_size = PHYSFS_fileLength(src);
+
+        if (file_size <= UINT32_MAX)
+        {
+            size = (size_t)file_size;
+            mem = (uint8_t*)mem_alloc(arena, size, 0);
+        }
+
+        if (mem)
+        {
+            PHYSFS_read(src, mem, (uint32_t)file_size, 1);
+        }
+
+        PHYSFS_close(src);
+    }
+}
+
+
 bool mem_area(memory_t* mem, size_t size)
 {
     mem->allocated = 0;

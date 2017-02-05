@@ -15,13 +15,15 @@ void build_w_quat( ml::quat& quat )
     }
 }
 
-bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
+bool md5meshConvertToBinary(blob32_t inText, blob32_t outBinary)
 {
-    md5_model_t* model = mem_raw_data<md5_model_t>(outBinary);
+    size_t write_offset = 0;
+    uint8_t* outData = blob32_data(outBinary);
+    md5_model_t* model = mem_as_ptr_advance<md5_model_t>(outData, write_offset);
 
-    mem_set(outBinary->buffer, outBinary->size, 0);
+    mem_set(outData, outBinary->size, 0);
 
-    const char* str = (char*)inText->buffer;
+    const char* str = (const char*)blob32_data(inText);
     rsize_t     str_size = inText->size;
     const char* line = NULL;
     rsize_t     line_size = 0;
@@ -44,13 +46,13 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
         else if (cstr_scanf(line, line_size, "numJoints %d", &int_val) == 1)
         {
             model->numJoints = int_val;
-            model->joints    = mem_raw_array<md5_joint_t>(outBinary, model->numJoints);
+            model->joints    = mem_as_array_advance<md5_joint_t>(outData, model->numJoints, write_offset);
         }
 
         else if(cstr_scanf(line, line_size, "numMeshes %d", &int_val) == 1)
         {
             model->numMeshes = int_val;
-            model->meshes    = mem_raw_array<md5_mesh_t>(outBinary, model->numMeshes);
+            model->meshes    = mem_as_array_advance<md5_mesh_t>(outData, model->numMeshes, write_offset);
         }
 
         else if (cstr_compare(line, 8, "joints {", &ind) == EOK && ind == 0)
@@ -109,7 +111,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (cstr_scanf(line, line_size, " numverts %d", &int_val) == 1)
                 {
                     mesh->numVertices = int_val;
-                    mesh->vertices    = mem_raw_array<md5_vertex_t>(outBinary, mesh->numVertices);
+                    mesh->vertices    = mem_as_array_advance<md5_vertex_t>(outData, mesh->numVertices, write_offset);
                 }
 
                 else if (cstr_scanf(line, line_size, " vert %d ( %f %f ) %d %d",
@@ -124,7 +126,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (cstr_scanf(line, line_size, " numtris %d", &int_val) == 1)
                 {
                     mesh->numIndices = int_val * 3;
-                    mesh->indices    = mem_raw_array<uint16_t>(outBinary, mesh->numIndices);
+                    mesh->indices    = mem_as_array_advance<uint16_t>(outData, mesh->numIndices, write_offset);
                 }
 
                 else if (cstr_scanf(line, line_size, " tri %d %hu %hu %hu",
@@ -139,7 +141,7 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
                 else if (cstr_scanf(line, line_size, " numweights %d", &int_val) == 1)
                 {
                     mesh->numWeights = int_val;
-                    mesh->weights    = mem_raw_array<md5_weight_t>(outBinary, mesh->numWeights);
+                    mesh->weights    = mem_as_array_advance<md5_weight_t>(outData, mesh->numWeights, write_offset);
                 }
 
                 else if (cstr_scanf(line, line_size, " weight %d %d %f ( %f %f %f )",
@@ -163,14 +165,20 @@ bool md5meshConvertToBinary(memory_t* inText, memory_t* outBinary)
         cstr_tokenize(endl, &str, &str_size, &line, &line_size);
     }
 
+    assert(write_offset < outBinary->size);
+
     return true;
 }
 
-bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
+bool md5animConvertToBinary(blob32_t inText, blob32_t outBinary)
 {
-    md5_anim_t* anim = mem_raw_data<md5_anim_t>(outBinary);
+    size_t write_offset = 0;
+    uint8_t* outData = blob32_data(outBinary);
+    md5_anim_t* anim = mem_as_ptr_advance<md5_anim_t>(outData, write_offset);
 
-    const char* str = (char*)inText->buffer;
+    mem_set(outData, outBinary->size, 0);
+
+    const char* str = (const char*)blob32_data(inText);
     rsize_t     str_size = inText->size;
     const char* line = NULL;
     rsize_t     line_size = 0;
@@ -195,7 +203,7 @@ bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
         else if (cstr_scanf(line, line_size, "numJoints %d", &int_val) == 1)
         {
             anim->numJoints = int_val;
-            anim->frameData = mem_raw_array<md5_anim_data_t>(outBinary, 0); // get current pointer without incrementing allocated size
+            anim->frameData = mem_as_ptr<md5_anim_data_t>(outData, write_offset); // get current pointer without incrementing allocated size
         }
 
         else if (cstr_scanf(line, line_size, "frameRate %d", &int_val) == 1)
@@ -205,7 +213,7 @@ bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
 
         else if (cstr_scanf(line, line_size, "frame %d", &int_val))
         {
-            md5_anim_data_t* data = mem_raw_array<md5_anim_data_t>(outBinary, anim->numJoints);
+            md5_anim_data_t* data = mem_as_array_advance<md5_anim_data_t>(outData, anim->numJoints, write_offset);
 
             cstr_tokenize(endl, &str, &str_size, &line, &line_size);
 
@@ -235,6 +243,8 @@ bool md5animConvertToBinary(memory_t* inText, memory_t* outBinary)
 
         cstr_tokenize(endl, &str, &str_size, &line, &line_size);
     }
+
+    assert(write_offset < outBinary->size);
 
     return true;
 }
