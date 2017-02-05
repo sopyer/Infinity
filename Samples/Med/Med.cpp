@@ -1,4 +1,5 @@
 #include <fwk/fwk.h>
+#include <datafmt/md5.h>
 #include <Remotery.h>
 #include "imgui.h"
 #include "imguiRenderNVG.h"
@@ -135,8 +136,9 @@ namespace app
     material_t      materials    [MAX_MATERIALS];
     const char*     materialNames[MAX_MATERIALS];
 
-    void loadMesh(const char* name);
+    bool loadMesh(blob32_t dataBlob);
     bool loadMeshSSZ(blob32_t dataBlob);
+    bool loadModelMD5(blob32_t dataBlob);
     material_t* findMaterial(const char* name);
 
 
@@ -452,8 +454,9 @@ namespace app
         int start, end;
         start = numMeshes;
 
-        blob32_t data = read_file_to_blob32(appArena, path, 0xFFFF);
-        bool loaded = data && loadMeshSSZ(data);
+        bool loaded = false;
+        blob32_t data = read_file_to_blob32(appArena, path, 0);
+        loaded = data && (loadModelMD5(data) || loadMesh(data) || loadMeshSSZ(data));
         mem_free(appArena, data);
 
         end = numMeshes;
@@ -635,7 +638,9 @@ namespace app
                 int start, end;
 
                 start = numMeshes;
-                loadMesh(model);
+                blob32_t data = read_file_to_blob32(appArena, model, 0);
+                loadMesh(data);
+                mem_free(appArena, data);
                 end = numMeshes;
 
                 mat = mjson_get_element_first(matList);
@@ -886,7 +891,9 @@ namespace app
     {
         PROFILER_CPU_TIMESLICE("renderModels");
 
-        glEnable(GL_CULL_FACE);
+        //TODO:fix MD5 and enable backface culling
+        //glEnable(GL_CULL_FACE);
+        glDisable(GL_CULL_FACE);
 
         gfx::setStdTransforms();
         glBindBufferRange(GL_UNIFORM_BUFFER, 2, gfx::dynBuffer, clusterListOffset, clusterListSize);
@@ -954,226 +961,442 @@ namespace app
 
     bool loadMeshSSZ(blob32_t dataBlob)
     {
-        uint8_t* data = blob32_data(dataBlob);
-        size_t size = dataBlob->size;
-
-        if (data)
+        if (!dataBlob)
         {
-            if (size < sizeof(ssz_mesh_header_t))
-            {
-                //Not enough data
-                return false;
-            }
-
-            ssz_mesh_header_t* header = mem_as_ptr<ssz_mesh_header_t>(data, 0);
-
-            size_t stride = 0;
-            size_t indexSize = 0;
-            GLenum idxFmt;
-            GLuint vao;
-            bool   validated = true;
-
-            switch (header->vertexFormat)
-            {
-                case 0x0B:
-                    stride = 14*4;
-                    vao    = vao_0x0B;
-                    break;
-                case 0x0C:
-                    stride = 15*4;
-                    vao    = vao_0x0C;
-                    break;
-                case 0x0D:
-                    stride = 16*4;
-                    vao    = vao_0x0D;
-                    break;
-                case 0x0E:
-                    stride = 17*4;
-                    vao    = vao_0x0E;
-                    break;
-                case 0x19:
-                    stride = 16*4;
-                    vao    = vao_0x19;
-                    break;
-                case 0x1A:
-                    stride = 17*4;
-                    vao    = vao_0x1A;
-                    break;
-                case 0x1C:
-                    stride = 19*4;
-                    vao    = vao_0x1C;
-                    break;
-                default:
-                    validated = false;
-                    break;
-            }
-            switch (header->indexFormat)
-            {
-                case 1:
-                    indexSize = sizeof(uint16_t);
-                    idxFmt    = GL_UNSIGNED_SHORT;
-                    break;
-                case 2:
-                    indexSize = sizeof(uint32_t);
-                    idxFmt    = GL_UNSIGNED_INT;
-                    break;
-                default:
-                    validated = false;
-                    break;
-            }
-
-            GLuint verticesSize = stride * header->vertexCount;
-            GLuint indicesSize  = indexSize * header->indexCount;
-
-            if (validated)
-            {
-                validated &= size == sizeof(ssz_mesh_header_t)+indicesSize+verticesSize;
-                validated &= header->indexOffset  == sizeof(ssz_mesh_header_t);
-                validated &= header->vertexOffset == sizeof(ssz_mesh_header_t)+indicesSize;
-
-                size_t indicesStart = header->indexOffset;
-                size_t indicesEnd   = indicesStart+indicesSize;
-
-                for (size_t i=0, count=header->numSubsets; i<count; ++i)
-                {
-                    validated &= header->meshSubsets[2*i]+3*header->meshSubsets[2*i+1] <= header->indexCount;
-                }
-            }
-            
-            if (!validated)
-            {
-                //failed validation
-                return false;
-            }
-
-            GLuint   totalSize;
-            uint32_t vertexOffset;
-            uint32_t indexOffset;
-
-            gfx_alloc_geom(
-                &staticAlloc,
-                stride, header->vertexCount,
-                indexSize, header->indexCount,
-                &vertexOffset, &indexOffset, &totalSize
-            );
-
-            assert(vertexOffset % stride == 0);
-            assert(indexOffset % indexSize == 0);
-
-            uint8_t* vertPtr = mem_as_ptr<uint8_t>(data, header->vertexOffset);
-            uint8_t* indPtr  = mem_as_ptr<uint8_t>(data, header->indexOffset);
-
-            uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
-            memcpy(ptr, vertPtr, verticesSize);
-            memcpy(ptr+(indexOffset-vertexOffset),  indPtr,  indicesSize);
-            glUnmapNamedBuffer(staticBuffer);
-
-            models[numModels].numSubmeshes = header->numSubsets;
-
-            for (size_t i = 0; i < header->numSubsets; ++i)
-            {
-                meshes[numMeshes].vao         = vao;
-                meshes[numMeshes].stride      = stride;
-
-                meshes[numMeshes].firstVertex = vertexOffset / stride;
-                meshes[numMeshes].idxFormat   = idxFmt;
-                meshes[numMeshes].idxOffset   = indexOffset + header->meshSubsets[i*2]*indexSize;
-                meshes[numMeshes].numIndices  = 3*header->meshSubsets[i*2+1];
-
-                ++numMeshes;
-            }
-
-            //Move outside
-            if (!numModels)
-            {
-                scene_min = header->centerBB - header->extentBB;
-                scene_max = header->centerBB + header->extentBB;
-            }
-            else
-            {
-                scene_min = ml::min(scene_min, header->centerBB - header->extentBB);
-                scene_max = ml::max(scene_max, header->centerBB + header->extentBB);
-            }
-
-            ++numModels;
-
-            return true;
+            return false;
         }
 
-        return false;
+        size_t size = dataBlob->size;
+        if (size < sizeof(ssz_mesh_header_t))
+        {
+            //Not enough data
+            return false;
+        }
+
+        uint8_t* data = blob32_data(dataBlob);
+        ssz_mesh_header_t* header = mem_as_ptr<ssz_mesh_header_t>(data, 0);
+
+        size_t stride = 0;
+        size_t indexSize = 0;
+        GLenum idxFmt;
+        GLuint vao;
+        bool   validated = true;
+
+        switch (header->vertexFormat)
+        {
+        case 0x0B:
+            stride = 14 * 4;
+            vao = vao_0x0B;
+            break;
+        case 0x0C:
+            stride = 15 * 4;
+            vao = vao_0x0C;
+            break;
+        case 0x0D:
+            stride = 16 * 4;
+            vao = vao_0x0D;
+            break;
+        case 0x0E:
+            stride = 17 * 4;
+            vao = vao_0x0E;
+            break;
+        case 0x19:
+            stride = 16 * 4;
+            vao = vao_0x19;
+            break;
+        case 0x1A:
+            stride = 17 * 4;
+            vao = vao_0x1A;
+            break;
+        case 0x1C:
+            stride = 19 * 4;
+            vao = vao_0x1C;
+            break;
+        default:
+            validated = false;
+            break;
+        }
+        switch (header->indexFormat)
+        {
+        case 1:
+            indexSize = sizeof(uint16_t);
+            idxFmt = GL_UNSIGNED_SHORT;
+            break;
+        case 2:
+            indexSize = sizeof(uint32_t);
+            idxFmt = GL_UNSIGNED_INT;
+            break;
+        default:
+            validated = false;
+            break;
+        }
+
+        GLuint verticesSize = stride * header->vertexCount;
+        GLuint indicesSize = indexSize * header->indexCount;
+
+        if (validated)
+        {
+            validated &= size == sizeof(ssz_mesh_header_t) + indicesSize + verticesSize;
+            validated &= header->indexOffset == sizeof(ssz_mesh_header_t);
+            validated &= header->vertexOffset == sizeof(ssz_mesh_header_t) + indicesSize;
+
+            size_t indicesStart = header->indexOffset;
+            size_t indicesEnd = indicesStart + indicesSize;
+
+            for (size_t i = 0, count = header->numSubsets; i < count; ++i)
+            {
+                validated &= header->meshSubsets[2 * i] + 3 * header->meshSubsets[2 * i + 1] <= header->indexCount;
+            }
+        }
+
+        if (!validated)
+        {
+            //failed validation
+            return false;
+        }
+
+        GLuint   totalSize;
+        uint32_t vertexOffset;
+        uint32_t indexOffset;
+
+        gfx_alloc_geom(
+            &staticAlloc,
+            stride, header->vertexCount,
+            indexSize, header->indexCount,
+            &vertexOffset, &indexOffset, &totalSize
+        );
+
+        assert(vertexOffset % stride == 0);
+        assert(indexOffset % indexSize == 0);
+
+        uint8_t* vertPtr = mem_as_ptr<uint8_t>(data, header->vertexOffset);
+        uint8_t* indPtr = mem_as_ptr<uint8_t>(data, header->indexOffset);
+
+        uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+        memcpy(ptr, vertPtr, verticesSize);
+        memcpy(ptr + (indexOffset - vertexOffset), indPtr, indicesSize);
+        glUnmapNamedBuffer(staticBuffer);
+
+        models[numModels].numSubmeshes = header->numSubsets;
+
+        for (size_t i = 0; i < header->numSubsets; ++i)
+        {
+            meshes[numMeshes].vao = vao;
+            meshes[numMeshes].stride = stride;
+
+            meshes[numMeshes].firstVertex = vertexOffset / stride;
+            meshes[numMeshes].idxFormat = idxFmt;
+            meshes[numMeshes].idxOffset = indexOffset + header->meshSubsets[i * 2] * indexSize;
+            meshes[numMeshes].numIndices = 3 * header->meshSubsets[i * 2 + 1];
+
+            ++numMeshes;
+        }
+
+        //Move outside
+        if (!numModels)
+        {
+            scene_min = header->centerBB - header->extentBB;
+            scene_max = header->centerBB + header->extentBB;
+        }
+        else
+        {
+            scene_min = ml::min(scene_min, header->centerBB - header->extentBB);
+            scene_max = ml::max(scene_max, header->centerBB + header->extentBB);
+        }
+
+        ++numModels;
+
+        return true;
     }
 
-    void loadMesh(const char* name)
+    bool  loadMesh(blob32_t dataBlob)
     {
-        memory_t  data = {0, 0, 0};
-
-
-        if (mem_file(&data, name))
+        if (!dataBlob)
         {
-            mesh_header_v0*    header    = mem_as_ptr_advance<mesh_header_v0>(data.buffer, data.allocated);
-            vf::static_geom_t* fvertices = mem_as_array_advance<vf::static_geom_t>(data.buffer, header->numVertices, data.allocated);
-            uint32_t*          findices  = mem_as_array_advance<uint32_t>(data.buffer, header->numIndices, data.allocated);
+            return false;
+        }
 
-            if (!numModels)
+        size_t size = dataBlob->size;
+        if (size < sizeof(mesh_header_v0))
+        {
+            //Not enough data
+            return false;
+        }
+
+        uint8_t* data = blob32_data(dataBlob);
+        size_t read_offset = 0;
+        mesh_header_v0* header = mem_as_ptr_advance<mesh_header_v0>(data, read_offset);
+
+        if (header->magic != MESH_FILE_MAGIC || header->version != 0)
+        {
+            return false;
+        }
+
+        GLuint verticesSize = sizeof(vf::static_geom_t) * header->numVertices;
+        GLuint indicesSize = sizeof(uint32_t) * header->numIndices;
+
+        bool validated = size == sizeof(mesh_header_v0) + indicesSize + verticesSize;
+
+        for (size_t i = 0, count = header->numSubsets; i < count; ++i)
+        {
+            validated &= header->meshSubsets[2 * i] + header->meshSubsets[2 * i + 1] <= header->numIndices;
+        }
+
+        if (!validated)
+        {
+            //failed validation
+            return false;
+        }
+
+        vf::static_geom_t* fvertices = mem_as_array_advance<vf::static_geom_t>(data, header->numVertices, read_offset);
+        uint32_t*          findices = mem_as_array_advance<uint32_t>(data, header->numIndices, read_offset);
+
+        if (!numModels)
+        {
+            scene_min.x = header->minx;
+            scene_min.y = header->miny;
+            scene_min.z = header->minz;
+            scene_max.x = header->maxx;
+            scene_max.y = header->maxy;
+            scene_max.z = header->maxz;
+        }
+        else
+        {
+            scene_min.x = core::min(scene_min.x, header->minx);
+            scene_min.y = core::min(scene_min.y, header->miny);
+            scene_min.z = core::min(scene_min.z, header->minz);
+            scene_max.x = core::max(scene_max.x, header->maxx);
+            scene_max.y = core::max(scene_max.y, header->maxy);
+            scene_max.z = core::max(scene_max.z, header->maxz);
+        }
+
+        GLuint totalSize;
+
+        uint32_t vertexOffset;
+        uint32_t indexOffset;
+
+        gfx_alloc_geom(
+            &staticAlloc,
+            sizeof(vf::static_geom_t), header->numVertices,
+            sizeof(uint32_t), header->numIndices,
+            &vertexOffset, &indexOffset, &totalSize
+        );
+
+        assert(vertexOffset % sizeof(vf::static_geom_t) == 0);
+        assert(indexOffset % sizeof(uint32_t) == 0);
+
+        uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+        mem_copy(ptr, fvertices, verticesSize);
+        mem_copy(ptr + (indexOffset - vertexOffset), findices, indicesSize);
+        glUnmapNamedBuffer(staticBuffer);
+
+        models[numModels].numSubmeshes = header->numSubsets;
+
+        for (size_t i = 0; i < header->numSubsets; ++i)
+        {
+            meshes[numMeshes].vao = vf::static_geom_t::vao;
+            meshes[numMeshes].stride = sizeof(vf::static_geom_t);
+
+            meshes[numMeshes].firstVertex = vertexOffset / sizeof(vf::static_geom_t);
+            meshes[numMeshes].idxFormat = GL_UNSIGNED_INT;
+            meshes[numMeshes].idxOffset = indexOffset + header->meshSubsets[i * 2] * sizeof(uint32_t);
+            meshes[numMeshes].numIndices = header->meshSubsets[i * 2 + 1];
+
+            ++numMeshes;
+        }
+
+        ++numModels;
+
+        return true;
+    }
+
+    void md5CreateMesh(gfx_geometry_t* mesh, md5_mesh_t* md5Mesh, md5_joint_t* joints)
+    {
+        vf::skinned_geom_t* vertices;
+
+        GLuint verticesSize = sizeof(vf::skinned_geom_t) * md5Mesh->numVertices;
+        GLuint indicesSize = sizeof(uint16_t) * md5Mesh->numIndices;
+
+        vertices = (vf::skinned_geom_t*)mem_alloc(appArena, verticesSize, 0);
+        mem_set(vertices, verticesSize, 0);
+
+        for (uint32_t i = 0; i < md5Mesh->numVertices; ++i)
+        {
+            vf::skinned_geom_t& vert = vertices[i];
+            int                 weightCount = md5Mesh->vertices[i].count;
+            int                 startWeight = md5Mesh->vertices[i].start;
+
+            assert(weightCount <= 4);
+
+            v128 pos;
+
+            pos = vi_set_zero();
+
+            // Sum the position of the weights
+            for (int j = 0; j < weightCount; ++j)
             {
-                scene_min.x = header->minx;
-                scene_min.y = header->miny;
-                scene_min.z = header->minz;
-                scene_max.x = header->maxx;
-                scene_max.y = header->maxy;
-                scene_max.z = header->maxz;
+                md5_weight_t&  weight = md5Mesh->weights[startWeight + j];
+                md5_joint_t& joint = joints[weight.joint];
+
+                v128 r, v, t;
+
+                r = vi_loadu_v4(&joint.rotation);
+                t = vi_load_v3(&joint.location);
+                v = vi_load_v3(&weight.location);
+
+                v = ml::rotate_vec3_quat(r, v);
+                t = vi_add(v, t);
+
+                pos = vi_mad(t, vi_set_all(weight.bias), pos);
+
+                assert(weight.joint<256);
+
+                vert.b[j] = (uint8_t)weight.joint;
+                vert.w[j] = weight.bias;
             }
-            else
+
+            pos = vi_swizzle<VI_X, VI_Z, VI_Y, VI_W>(pos);
+            vi_store_v3(&vert.px, pos);
+        }
+
+        // Loop through all triangles and calculate the normal of each triangle
+        for (uint32_t i = 0; i < md5Mesh->numIndices / 3; ++i)
+        {
+            v128 v0, v1, v2;
+            v128 n0, n1, n2;
+            v128 n;
+
+            v0 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 0]].px);
+            v1 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 1]].px);
+            v2 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 2]].px);
+
+            n = vi_cross3(vi_sub(v2, v0), vi_sub(v1, v0));
+
+            n0 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 0]].nx);
+            n1 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 1]].nx);
+            n2 = vi_load_v3(&vertices[md5Mesh->indices[i * 3 + 2]].nx);
+
+            n0 = vi_add(n0, n);
+            n1 = vi_add(n1, n);
+            n2 = vi_add(n2, n);
+
+            vi_store_v3(&vertices[md5Mesh->indices[i * 3 + 0]].nx, n0);
+            vi_store_v3(&vertices[md5Mesh->indices[i * 3 + 1]].nx, n1);
+            vi_store_v3(&vertices[md5Mesh->indices[i * 3 + 2]].nx, n2);
+        }
+
+        // Now normalize all the normals
+        for (uint32_t i = 0; i < md5Mesh->numVertices; ++i)
+        {
+            v128                n;
+            vf::skinned_geom_t& vert = vertices[i];
+
+            n = vi_load_v3(&vert.nx);
+            n = ml::normalize(n);
+            vi_store_v3(&vert.nx, n);
+        }
+
+        float minx, miny, minz, maxx, maxy, maxz;
+        minx = maxx = vertices[0].px;
+        miny = maxy = vertices[0].py;
+        minz = maxz = vertices[0].pz;
+        for (uint32_t i = 1; i < md5Mesh->numVertices; ++i)
+        {
+            minx = core::min(minx, vertices[i].px);
+            miny = core::min(miny, vertices[i].py);
+            minz = core::min(minz, vertices[i].pz);
+
+            maxx = core::max(maxx, vertices[i].px);
+            maxy = core::max(maxy, vertices[i].px);
+            maxz = core::max(maxz, vertices[i].px);
+        }
+
+        if (!numModels)
+        {
+            scene_min.x = minx;
+            scene_min.y = miny;
+            scene_min.z = minz;
+            scene_max.x = maxx;
+            scene_max.y = maxy;
+            scene_max.z = maxz;
+        }
+        else
+        {
+            scene_min.x = core::min(scene_min.x, minx);
+            scene_min.y = core::min(scene_min.y, miny);
+            scene_min.z = core::min(scene_min.z, minz);
+            scene_max.x = core::max(scene_max.x, maxx);
+            scene_max.y = core::max(scene_max.y, maxy);
+            scene_max.z = core::max(scene_max.z, maxz);
+        }
+
+        // Copy texture coordinates
+        for (uint32_t i = 0; i < md5Mesh->numVertices; ++i)
+        {
+            vertices[i].u = md5Mesh->vertices[i].u;
+            vertices[i].v = md5Mesh->vertices[i].v;
+        }
+
+        GLuint    totalSize;
+        uint32_t  vertexOffset;
+        uint32_t  indexOffset;
+
+        gfx_alloc_geom(
+            &staticAlloc,
+            sizeof(vf::skinned_geom_t), md5Mesh->numVertices,
+            sizeof(uint16_t), md5Mesh->numIndices,
+            &vertexOffset, &indexOffset, &totalSize
+        );
+
+        assert(vertexOffset % sizeof(vf::skinned_geom_t) == 0);
+        assert(indexOffset % sizeof(uint16_t) == 0);
+
+        uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
+        mem_copy(ptr, vertices, verticesSize);
+        mem_copy(ptr + (indexOffset - vertexOffset), md5Mesh->indices, indicesSize);
+        glUnmapNamedBuffer(staticBuffer);
+
+        mesh->vao = vf::skinned_geom_t::vao;
+        mesh->stride = sizeof(vf::skinned_geom_t);
+        mesh->numIndices = md5Mesh->numIndices;
+        mesh->idxFormat = GL_UNSIGNED_SHORT;
+        mesh->idxOffset = indexOffset;
+        mesh->firstVertex = vertexOffset / sizeof(vf::skinned_geom_t);
+        mem_free(appArena, vertices);
+    }
+
+    bool loadModelMD5(blob32_t dataBlob)
+    {
+        if (!dataBlob)
+        {
+            return false;
+        }
+
+        blob32_t outBinary = { 0 };
+
+        bool data_read = (outBinary = blob32_alloc(appArena, 4 * 1024 * 1024)) &&
+            md5meshConvertToBinary(dataBlob, outBinary);
+
+        if (data_read)
+        {
+            uint8_t* outData = blob32_data(outBinary);
+            md5_model_t* md5Model = mem_as_ptr<md5_model_t>(outData, 0);
+
+            models[numModels].numSubmeshes = md5Model->numMeshes;
+
+            for (size_t i = 0; i < md5Model->numMeshes; ++i)
             {
-                scene_min.x = core::min(scene_min.x, header->minx);
-                scene_min.y = core::min(scene_min.y, header->miny);
-                scene_min.z = core::min(scene_min.z, header->minz);
-                scene_max.x = core::max(scene_max.x, header->maxx);
-                scene_max.y = core::max(scene_max.y, header->maxy);
-                scene_max.z = core::max(scene_max.z, header->maxz);
-            }
-
-            GLuint verticesSize = sizeof(vf::static_geom_t) * header->numVertices;
-            GLuint indicesSize  = sizeof(uint32_t) * header->numIndices;
-
-            GLuint totalSize;
-
-            uint32_t vertexOffset;
-            uint32_t indexOffset;
-
-            gfx_alloc_geom(
-                &staticAlloc,
-                sizeof(vf::static_geom_t), header->numVertices,
-                sizeof(uint32_t), header->numIndices,
-                &vertexOffset, &indexOffset, &totalSize
-            );
-
-            assert(vertexOffset % sizeof(vf::static_geom_t) == 0);
-            assert(indexOffset % sizeof(uint32_t) == 0);
-
-            uint8_t* ptr = (uint8_t*)glMapNamedBufferRange(staticBuffer, vertexOffset, totalSize, GL_MAP_WRITE_BIT);
-            mem_copy(ptr, fvertices, verticesSize);
-            mem_copy(ptr+(indexOffset-vertexOffset),  findices,  indicesSize);
-            glUnmapNamedBuffer(staticBuffer);
-
-            models[numModels].numSubmeshes = header->numSubsets;
-
-            for (size_t i = 0; i < header->numSubsets; ++i)
-            {
-                meshes[numMeshes].vao         = vf::static_geom_t::vao;
-                meshes[numMeshes].stride      = sizeof(vf::static_geom_t);
-
-                meshes[numMeshes].firstVertex = vertexOffset / sizeof(vf::static_geom_t);
-                meshes[numMeshes].idxFormat   = GL_UNSIGNED_INT;
-                meshes[numMeshes].idxOffset   = indexOffset + header->meshSubsets[i*2]*sizeof(uint32_t);
-                meshes[numMeshes].numIndices  = header->meshSubsets[i*2+1];
+                md5CreateMesh(&meshes[numMeshes], &md5Model->meshes[i], md5Model->joints);
 
                 ++numMeshes;
             }
 
             ++numModels;
-            mem_free(&data);
         }
+
+        mem_free(appArena, outBinary);
+
+        return data_read;
     }
 
     struct ScreenRect3D

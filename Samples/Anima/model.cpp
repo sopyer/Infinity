@@ -1,6 +1,6 @@
 #include "model.h"
 
-#include "md5.h"
+#include "datafmt/md5.h"
 #include "mjson.h"
 
 #define MAX_BONES 128

@@ -13,6 +13,8 @@ temp
 *.sdf
 *.exp
 *.idb
+*.opendb
+*.db
 Tools/generated
 Tools/Remotery
 Tools/microprofile

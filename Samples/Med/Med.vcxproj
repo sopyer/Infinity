@@ -63,7 +63,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>core_d.lib;gfx_d.lib;fwk_d.lib;scintilla_d.lib;zlib_d.lib;physfs_d.lib;freetype_d.lib;sdl2_d.lib;sdl2main_d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>core_d.lib;datafmt_d.lib;gfx_d.lib;fwk_d.lib;scintilla_d.lib;zlib_d.lib;physfs_d.lib;freetype_d.lib;sdl2_d.lib;sdl2main_d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
     </Link>
@@ -83,7 +83,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>core.lib;gfx.lib;fwk.lib;scintilla.lib;zlib.lib;physfs.lib;freetype.lib;sdl2.lib;sdl2main.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>core.lib;datafmt.lib;gfx.lib;fwk.lib;scintilla.lib;zlib.lib;physfs.lib;freetype.lib;sdl2.lib;sdl2main.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
