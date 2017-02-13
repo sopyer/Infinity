@@ -113,6 +113,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Med", "Samples\Med\Med.vcxp
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "datafmt", "SDK\datafmt\datafmt.vcxproj", "{FADD8902-91E5-4E06-BD40-56E9EF211390}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MiCo", "Samples\MiCo\MiCo.vcxproj", "{93819462-229A-4983-81A3-6039681EC8BD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -231,6 +233,14 @@ Global
 		{FADD8902-91E5-4E06-BD40-56E9EF211390}.Release|Win32.Build.0 = Release|Win32
 		{FADD8902-91E5-4E06-BD40-56E9EF211390}.Release|x64.ActiveCfg = Release|x64
 		{FADD8902-91E5-4E06-BD40-56E9EF211390}.Release|x64.Build.0 = Release|x64
+		{93819462-229A-4983-81A3-6039681EC8BD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{93819462-229A-4983-81A3-6039681EC8BD}.Debug|Win32.Build.0 = Debug|Win32
+		{93819462-229A-4983-81A3-6039681EC8BD}.Debug|x64.ActiveCfg = Debug|x64
+		{93819462-229A-4983-81A3-6039681EC8BD}.Debug|x64.Build.0 = Debug|x64
+		{93819462-229A-4983-81A3-6039681EC8BD}.Release|Win32.ActiveCfg = Release|Win32
+		{93819462-229A-4983-81A3-6039681EC8BD}.Release|Win32.Build.0 = Release|Win32
+		{93819462-229A-4983-81A3-6039681EC8BD}.Release|x64.ActiveCfg = Release|x64
+		{93819462-229A-4983-81A3-6039681EC8BD}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
