@@ -294,7 +294,7 @@ namespace gfx
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
 
         glBindVertexArray(vf::empty_geom_t::vao);
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+        glDrawArrays(GL_TRIANGLES, 0, 6 * count);
     }
 
     void drawPoints(float ptsize, v128 color, GLsizei count, GLuint buffer, GLintptr offset, GLsizeiptr size)
@@ -320,7 +320,7 @@ namespace gfx
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, 1, buffer,    offset,       size);
 
         glBindVertexArray(vf::empty_geom_t::vao);
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, count);
+        glDrawArrays(GL_TRIANGLES, 0, 6*count);
     }
 
     void drawXZGrid(float x0, float z0, float x1, float z1, int numQuads, v128 color)

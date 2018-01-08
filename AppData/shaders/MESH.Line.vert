@@ -25,9 +25,11 @@ const float THRESHOLD = 1e-3;
 
 void main()
 {
-    bool doSwap = bool(gl_VertexID & 1);
-    vec3 w0 = doSwap ? uLines[gl_InstanceID].p1 : uLines[gl_InstanceID].p0;
-    vec3 w1 = doSwap ? uLines[gl_InstanceID].p0 : uLines[gl_InstanceID].p1;
+    uint lineIndex = gl_VertexID / 6;
+    uint vertexIndex = abs(3 - gl_VertexID % 6);
+    bool doSwap = bool(vertexIndex & 1);
+    vec3 w0 = doSwap ? uLines[lineIndex].p1 : uLines[lineIndex].p0;
+    vec3 w1 = doSwap ? uLines[lineIndex].p0 : uLines[lineIndex].p1;
     
     vec4 p0 = au_MVP * vec4(w0, 1.0);
     vec4 p1 = au_MVP * vec4(w1, 1.0);
@@ -42,7 +44,7 @@ void main()
     vec2 n = p1.xy/p1.w - p0.xy/p0.w;
     
     n = normalize(vec2(-n.y, n.x * uA));
-    float s = bool(gl_VertexID & 2) ? p0.w : -p0.w; // undo perspective and choose direction
+    float s = bool(vertexIndex & 2) ? p0.w : -p0.w; // undo perspective and choose direction
     
     p0.xy += s * uPxScale * n;
 
