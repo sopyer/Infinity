@@ -8,11 +8,10 @@ layout(std140, column_major) uniform;
 
 layout(binding = 0) uniform uniGlobal
 {
+    mat4  au_MVP;
     vec4  uColor;
-    mat4  au_MV;
-    vec4  au_Proj;
-    float uPixelScale;
-    float uZn;
+    vec2  uPxScale;
+    float uA;
 };
 
 layout(std140, binding = 1) buffer uniLines
@@ -26,27 +25,27 @@ const float THRESHOLD = 1e-3;
 
 void main()
 {
-    vec3 p0 = (au_MV * vec4(uLines[gl_InstanceID].p0, 1.0)).xyz;
-    vec3 p1 = (au_MV * vec4(uLines[gl_InstanceID].p1, 1.0)).xyz;
-
-    vec3 v = p1 - p0;
-
-    vec3 viewPos =  bool(gl_VertexID & 1) ? p0 : p1;
+    bool doSwap = bool(gl_VertexID & 1);
+    vec3 w0 = doSwap ? uLines[gl_InstanceID].p1 : uLines[gl_InstanceID].p0;
+    vec3 w1 = doSwap ? uLines[gl_InstanceID].p0 : uLines[gl_InstanceID].p1;
+    
+    vec4 p0 = au_MVP * vec4(w0, 1.0);
+    vec4 p1 = au_MVP * vec4(w1, 1.0);
 
     //Fix near plane intersection - place point on near plane if it is behind it;
-    if (viewPos.z>0 && p0.z*p1.z<0)
+    //Works only for non-reverse, non-infinite projection
+    if (p0.z<0 && p1.z>0)
     {
-        v /= v.z;
-        viewPos -= (viewPos.z - uZn) * v;
+        p0 = mix(p0, p1, abs(p0.z)/(abs(p0.z)+abs(p1.z)));
     }
+    
+    vec2 n = p1.xy/p1.w - p0.xy/p0.w;
+    
+    n = normalize(vec2(-n.y, n.x * uA));
+    float s = bool(gl_VertexID & 2) ? p0.w : -p0.w; // undo perspective and choose direction
+    
+    p0.xy += s * uPxScale * n;
 
-    //normalize on square
-    float s = max(abs(v.x), abs(v.y));
-    s = (s>0.0) ? 1.0/s : 1.0;
-
-    vec2 n = s * vec2(-v.y, v.x);
-    viewPos.xy += (bool(gl_VertexID & 2) ? -n : n) * (uPixelScale * -viewPos.z); //undo perspective
-
-    gl_Position = vec4(viewPos.xy * au_Proj.xy, au_Proj.z*viewPos.z+au_Proj.w, -viewPos.z); //projection
+    gl_Position = p0;
     faColor = uColor;
 }

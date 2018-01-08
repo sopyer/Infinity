@@ -264,10 +264,9 @@ namespace gfx
 
     struct line_global_t
     {
+        v128  uMVP[4];
         v128  uColor;
-        v128  uMV[4];
-        v128  uProj;
-        v128  uPixelScaleZn;
+        v128  uData;
     };
 
     //!!TODO: fix near plane clipping bug
@@ -277,14 +276,14 @@ namespace gfx
         GLsizeiptr     sizeGlobal = sizeof(line_global_t);
         line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
+        const float w = 2.0f;
         global->uColor = color;
-        global->uPixelScaleZn = vi_set(
-            1.0f / autoVars.projParams.x / width,
-            1.01f * (-1.0f - autoVars.projParams.w) / autoVars.projParams.z,
-            0.0f, 0.0f
-        );
-        mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
-        global->uProj = vi_loadu_v4(&autoVars.projParams);
+        global->uData = vi_set(
+            w / (float)width,
+            w / (float)height,
+            width / (float)height,
+            0.0);
+        mem_copy(&global->uMVP, &autoVars.matMVP, sizeof(ml::mat4x4));
 
         assert(sizeof(line_t)*count <= (size_t)size);
         assert(offset % caps.ssboAlignment == 0);
@@ -305,9 +304,12 @@ namespace gfx
         line_global_t* global     = (line_global_t*)dynbufAllocMem(sizeGlobal, caps.uboAlignment, &offsetGlobal);
 
         global->uColor = color;
-        global->uPixelScaleZn = vi_set_x(ptsize / autoVars.projParams.x / width);
-        mem_copy(&global->uMV, &autoVars.matMV, sizeof(ml::mat4x4));
-        global->uProj = vi_loadu_v4(&autoVars.projParams);
+        global->uData = vi_set(
+            ptsize / (float)width,
+            ptsize / (float)height,
+            0.0f, 0.0f
+        );
+        mem_copy(&global->uMVP, &autoVars.matMVP, sizeof(ml::mat4x4));
 
         assert(sizeof(point_t)*count <= (size_t)size);
         assert(offset % caps.ssboAlignment == 0);

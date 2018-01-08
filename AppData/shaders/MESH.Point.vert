@@ -3,10 +3,9 @@ layout(std140, column_major) uniform;
 
 layout(binding = 0) uniform uniGlobal
 {
+    mat4  au_MVP;
     vec4  uColor;
-    mat4  au_MV;
-    vec4  au_Proj;
-    float uPixelScale;
+    vec2  uPxScale;
 };
 
 layout(std140, binding = 1) buffer uniLines
@@ -18,13 +17,13 @@ out vec4 faColor;
 
 void main()
 {
-    vec3 viewPos = (au_MV * vec4(uPoints[gl_InstanceID], 1.0)).xyz;
+    vec4 p0 = au_MVP * vec4(uPoints[gl_InstanceID], 1.0);
 
-    float scale = uPixelScale * -viewPos.z; //undo perspective
+    vec2 offset = uPxScale * -p0.w; //undo perspective
 
-    viewPos.x += bool(gl_VertexID & 1) ? -scale : scale;
-    viewPos.y += bool(gl_VertexID & 2) ? -scale : scale;
+    p0.x += bool(gl_VertexID & 1) ? -offset.x : offset.x;
+    p0.y += bool(gl_VertexID & 2) ? -offset.y : offset.y;
 
-    gl_Position = vec4(viewPos.xy * au_Proj.xy, au_Proj.z*viewPos.z+au_Proj.w, -viewPos.z); //projection
+    gl_Position = p0;
     faColor = uColor;
 }
