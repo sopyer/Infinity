@@ -282,7 +282,7 @@ namespace gfx
             w / (float)width,
             w / (float)height,
             width / (float)height,
-            0.0);
+            1.01f * (-1.0f - autoVars.projParams.w) / autoVars.projParams.z);
         mem_copy(&global->uMVP, &autoVars.matMVP, sizeof(ml::mat4x4));
 
         assert(sizeof(line_t)*count <= (size_t)size);

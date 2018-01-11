@@ -11,7 +11,7 @@ layout(binding = 0) uniform uniGlobal
     mat4  au_MVP;
     vec4  uColor;
     vec2  uPxScale;
-    float uA;
+    float uA, uClipDist;
 };
 
 layout(std140, binding = 1) buffer uniLines
@@ -36,9 +36,9 @@ void main()
 
     //Fix near plane intersection - place point on near plane if it is behind it;
     //Works only for non-reverse, non-infinite projection
-    if (p0.z<0 && p1.z>0)
+    if (p0.w<uClipDist)
     {
-        p0 = mix(p0, p1, abs(p0.z)/(abs(p0.z)+abs(p1.z)));
+        p0 = mix(p0, p1, (uClipDist - p0.w)/(p1.w - p0.w));
     }
     
     vec2 n = p1.xy/p1.w - p0.xy/p0.w;
