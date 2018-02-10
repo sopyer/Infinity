@@ -2,105 +2,82 @@
 /* WARNING: This file was automatically generated */
 /* Do not edit. */
 
-#ifndef __gl_h_
-#define __gl_h_
+#pragma once
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Function declaration macros - to move into glplatform.h */
-
-#if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
-#define WIN32_LEAN_AND_MEAN 1
-#ifndef WINAPI
-#define WINAPI __stdcall
-#endif
-#define APIENTRY WINAPI
-#endif
-
-#ifndef APIENTRY
-#define APIENTRY
-#endif
-#ifndef APIENTRYP
-#define APIENTRYP APIENTRY *
-#endif
-#ifndef GLAPI
-#define GLAPI extern
-#endif
-
 /* -------------------------------- DATA TYPES ------------------------------- */
 
-@passthru
+#if defined(_WIN32)
+#define GLAPICALL __stdcall
+typedef int (GLAPICALL * PGLAPI_PROC)();
+#else
+#define GLAPICALL
+typedef void (* PGLAPI_PROC)();
+#endif
+
+typedef unsigned int GLenum;
+typedef unsigned char GLboolean;
+typedef unsigned int GLbitfield;
+typedef void GLvoid;
+typedef signed char GLbyte;
+typedef short GLshort;
+typedef int GLint;
+typedef unsigned char GLubyte;
+typedef unsigned short GLushort;
+typedef unsigned int GLuint;
+typedef int GLsizei;
+typedef float GLfloat;
+typedef float GLclampf;
+typedef double GLdouble;
+typedef double GLclampd;
+typedef char GLchar;
+typedef unsigned short GLhalf;
+typedef ptrdiff_t GLintptr;
+typedef ptrdiff_t GLsizeiptr;
+typedef int64_t GLint64;
+typedef uint64_t GLuint64;
+typedef struct __GLsync *GLsync;
+typedef void (GLAPICALL *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
 
 /* ----------------------------------- ENUMS --------------------------------- */
 
 @enums
 
-/* --------------------------- FUNCTION PROTOTYPES --------------------------- */
+/* --------------------------------- FUNCTIONS ------------------------------- */
 
+enum {
 @for cat,funcs in functions:
-
-/* GL_@cat */
-
-    @if cat in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED']:
-        @for f in funcs:
-GLAPI @f.returntype APIENTRY gl@f.name (@f.param_list_string());
-        @end
-    @else:
-        @for f in funcs:
-typedef @f.returntype (APIENTRY PFNGL@f.name.upper()_PROC (@f.param_list_string()));
-        @end
+    @for f in funcs:
+    EGLAPI_gl@f.name,
     @end
 @end
+    EGLAPI_COUNT
+};
 
-typedef union {
-    void* fp[@str(sum((len(f) if c not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED' ] else 0) for c, f in functions))];
-    struct {
-@for cat,funcs in functions:
-    @if cat not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED']:
-        @for f in funcs:
-        PFNGL@f.name.upper()_PROC *@f.name;
-        @end
-    @end
-@end
-    } fns;
-} GLFP;
-extern GLFP glfp;
+typedef union {char* n; PGLAPI_PROC f;} GLAPI[EGLAPI_COUNT];
+extern GLAPI glapi;
 
-@for cat,funcs in functions:
-    @if cat not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED']:
-        @for f in funcs:
-#define gl@f.name glfp.fns.@f.name
-        @end
-    @end
-
-@end
-
-/* --------------------------- CATEGORY DEFINES ------------------------------ */
 
 @for cat,funcs in functions:
 #define GL_@cat
+
+    @for f in funcs:
+typedef @f.returntype (GLAPICALL * PGLAPI@f.name.upper()_PROC)(@f.param_list_string());
+    @end
+
+    @for f in funcs:
+#define gl@f.name ((PGLAPI@f.name.upper()_PROC)glapi[EGLAPI_gl@f.name].f)
+    @end
+
 @end
 
-/* ---------------------- Flags for optional extensions ---------------------- */
-
-@for extension,required in extensions:
-extern int GLEXT_@extension;
-@end
-
-int importOpenGL(void);
-
-#define GLEXT_MAJOR_VERSION @version.major!s
-#define GLEXT_MINOR_VERSION @version.minor!s
-@if version.profile == 'core':
-#define GLEXT_CORE_PROFILE 1
-@else:
-#define GLEXT_CORE_PROFILE 0
-@end
+void importOpenGL(void);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _gl_h_ */

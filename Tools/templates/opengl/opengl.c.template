@@ -4,152 +4,21 @@
 
 #include "opengl.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static void   glextLoadFunctions(void);
-static void   glextLoadModule(void);
-static void   glextUnloadModule(void);
-static void*  glextGetProc(const char *proc);
-static void   glextAddExtension(const char* extension);
-
-int importOpenGL(void)
-{
-    GLint minor, major;
-    @if version.major >= 3:
-    GLint num_extensions;
-    int i;
-    @else:
-    const char* p;
-    GLubyte* extensions;
-    GLubyte* i;
-    @end
-    @if version.int_value() >= 32 and not version.profile == 'core':
-    GLint profile;
-    @end
-
-    glextLoadModule();
-    glextLoadFunctions();
-    glextUnloadModule();
-
-    @if version.major >= 3:
-    glGetIntegerv(GL_MAJOR_VERSION, &major);
-    glGetIntegerv(GL_MINOR_VERSION, &minor);
-    @else:
-    p = (const char *) glGetString(GL_VERSION);
-    if (p == NULL) {
-        return GL_FALSE;
-    }
-
-    for (major = 0; *p >= '0' && *p <= '9'; p++) {
-        major = 10 * major + *p - '0';
-    }
-
-    for (minor = 0, p++; *p >= '0' && *p <= '9'; p++) {
-        minor = 10 * minor + *p - '0';
-    }
-    @end
-
-    /* --- Check for minimal version and profile --- */
-    if (10 * major + minor < @version.int_value()!s) {
-        fprintf(stderr, "Error: OpenGL version @version.major!s.@version.minor!s not supported.\n");
-        fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-
-    @if version.int_value() >= 32 and not version.profile == 'core':
-    
-    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
-
-    if ((profile & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) == 0) {
-        fprintf(stderr, "Error: This application requires a compatibility profile\n");
-        return GL_FALSE;
-    }
-    @end
-    
-    /* --- Check for extensions --- */
-
-    @if version.major < 3:
-    extensions = strdup(glGetString(GL_EXTENSIONS));
-    i = extensions;
-
-    while (*i != '\0') {
-        GLubyte *ext = i;
-        while (*i != ' ' && *i != '\0') {
-            ++i;
-        }
-        while (*i == ' ') {
-            *i = '\0';
-            ++i;
-        }
-
-        glextAddExtension(ext);
-    }
-
-    free(extensions);
-    @else:
-    glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
-    
-    for (i = 0; i < num_extensions; i++) {
-        glextAddExtension((const char*)glGetStringi(GL_EXTENSIONS, i));
-    }
-    @end
-
-    @for extension,required in extensions:
-    @if required:
-    if (!GLEXT_@extension) {
-        fprintf(stderr, "Error: OpenGL extension GL_@extension not supported.\n");
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-    @end
-    @end
-
-    return GL_TRUE;
-}
-
-/* ----------------------- Extension flag definitions ---------------------- */
-@for extension,required in extensions:
-int GLEXT_@extension = GL_FALSE;
-@end
 
 /* ---------------------- Function pointer definitions --------------------- */
-GLFP glfp = {
+GLAPI glapi = {
 @for category,funcs in functions:
-@if len(funcs) > 0 and category not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED' ]:
 /* GL_@category */
 /* @str(len(funcs)) functions */
 @for f in funcs:
     "gl@f.name",
 @end
 @end
-@end
 };
-
-void glextLoadFunctions(void)
-{
-    /* --- Function pointer loading --- */
-    int i;
-    for(i = 0 ; i < @str(sum((len(f) if c not in ['VERSION_1_0', 'VERSION_1_1','VERSION_1_0_DEPRECATED', 'VERSION_1_1_DEPRECATED' ] else 0) for c, f in functions)) ; i++){
-        glfp.fp[i] = glextGetProc((const char*)glfp.fp[i]);
-    }
-}
-
-static void glextAddExtension(const char* extension)
-{
-@for extension,required in extensions:
-    if (strcmp("GL_@extension", extension) == 0) {
-        GLEXT_@extension = GL_TRUE;
-    }
-@end
-}
 
 /* ------------------ code from Slavomir Kaslev's gl3w ----------------- */
 
@@ -157,96 +26,68 @@ static void glextAddExtension(const char* extension)
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 
-static HMODULE libgl;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    HMODULE libgl;
+    
     libgl = LoadLibraryA("opengl32.dll");
-}
-
-static void glextUnloadModule(void)
-{
-    FreeLibrary(libgl);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res = wglGetProcAddress(proc);
-    if (!res)
-        res = GetProcAddress(libgl, proc);
-    return res;
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res = wglGetProcAddress(glapi[i].n);
+        if (!res) {res = GetProcAddress(libgl, glapi[i].n);}
+        glapi[i].f = res;
+    }
 }
 #elif defined(__APPLE__) || defined(__APPLE_CC__)
 #include <Carbon/Carbon.h>
 
-CFBundleRef bundle;
-CFURLRef bundleURL;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    CFBundleRef bundle;
+    CFURLRef bundleURL;
+
     bundleURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
                 CFSTR("/System/Library/Frameworks/OpenGL.framework"),
                 kCFURLPOSIXPathStyle, true);
-
     bundle = CFBundleCreate(kCFAllocatorDefault, bundleURL);
-    assert(bundle != NULL);
-}
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res;
 
-static void glextUnloadModule(void)
-{
+        CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, glapi[i].n,
+                    kCFStringEncodingASCII);
+        glapi[i].f = CFBundleGetFunctionPointerForName(bundle, procname);
+        CFRelease(procname);
+    }
     CFRelease(bundle);
     CFRelease(bundleURL);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res;
-
-    CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, proc,
-                kCFStringEncodingASCII);
-    res = CFBundleGetFunctionPointerForName(bundle, procname);
-    CFRelease(procname);
-    return res;
 }
 #elif defined(ANDROID)
 #include <EGL/egl.h>
 
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
-    // nothing to do
-}
+    uintptr_t i;
 
-static void glextUnloadModule(void)
-{
-    // nothing to do
-}
-
-static void* glextGetProc(const char *proc)
-{
-    return eglGetProcAddress((const char *) proc);
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        glapi[i].f = eglGetProcAddress(glapi[i].n);
+    }
 }
 #else
 #include <dlfcn.h>
 #include <GL/glx.h>
 
-static void *libgl;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    void *libgl;
+    
     libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
-}
-
-static void glextUnloadModule(void)
-{
-    dlclose(libgl);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res = glXGetProcAddress((const GLubyte *) proc);
-    if (!res)
-        res = dlsym(libgl, proc);
-    return res;
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res = glXGetProcAddress((const GLubyte *) glapi[i].n);
+        if (!res) {res = dlsym(libgl, glapi[i].n);}
+        glapi[i].f = res;
+    }
 }
 #endif
 

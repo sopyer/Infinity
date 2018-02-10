@@ -3,59 +3,59 @@
 
 #include "opengl.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static void   glextLoadFunctions(void);
-static void   glextLoadModule(void);
-static void   glextUnloadModule(void);
-static void*  glextGetProc(const char *proc);
-static void   glextAddExtension(const char* extension);
-
-int importOpenGL(void)
-{
-    GLint minor, major;
-    GLint num_extensions;
-    int i;
-
-    glextLoadModule();
-    glextLoadFunctions();
-    glextUnloadModule();
-
-    glGetIntegerv(GL_MAJOR_VERSION, &major);
-    glGetIntegerv(GL_MINOR_VERSION, &minor);
-
-    /* --- Check for minimal version and profile --- */
-    if (10 * major + minor < 45) {
-        fprintf(stderr, "Error: OpenGL version 4.5 not supported.\n");
-        fprintf(stderr, "       Your version is %d.%d.\n", major, minor);
-        fprintf(stderr, "       Try updating your graphics driver.\n");
-        return GL_FALSE;
-    }
-
-    
-    /* --- Check for extensions --- */
-
-    glGetIntegerv(GL_NUM_EXTENSIONS, &num_extensions);
-    
-    for (i = 0; i < num_extensions; i++) {
-        glextAddExtension((const char*)glGetStringi(GL_EXTENSIONS, i));
-    }
-
-
-    return GL_TRUE;
-}
-
-/* ----------------------- Extension flag definitions ---------------------- */
 
 /* ---------------------- Function pointer definitions --------------------- */
-GLFP glfp = {
+GLAPI glapi = {
+/* GL_VERSION_1_0 */
+/* 37 functions */
+    "glBlendFunc",
+    "glClear",
+    "glClearColor",
+    "glClearDepth",
+    "glClearStencil",
+    "glColorMask",
+    "glCullFace",
+    "glDepthFunc",
+    "glDepthMask",
+    "glDepthRange",
+    "glDisable",
+    "glDrawBuffer",
+    "glEnable",
+    "glFinish",
+    "glFlush",
+    "glFrontFace",
+    "glGetBooleanv",
+    "glGetDoublev",
+    "glGetError",
+    "glGetFloatv",
+    "glGetIntegerv",
+    "glGetString",
+    "glHint",
+    "glIsEnabled",
+    "glLineWidth",
+    "glLogicOp",
+    "glPixelStoref",
+    "glPixelStorei",
+    "glPointSize",
+    "glPolygonMode",
+    "glReadBuffer",
+    "glReadPixels",
+    "glScissor",
+    "glStencilFunc",
+    "glStencilMask",
+    "glStencilOp",
+    "glViewport",
+/* GL_VERSION_1_1 */
+/* 5 functions */
+    "glDeleteTextures",
+    "glDrawArrays",
+    "glDrawElements",
+    "glIsTexture",
+    "glPolygonOffset",
 /* GL_VERSION_1_2 */
 /* 1 functions */
     "glDrawRangeElements",
@@ -126,6 +126,8 @@ GLFP glfp = {
     "glStencilOpSeparate",
     "glUseProgram",
     "glValidateProgram",
+/* GL_VERSION_2_1 */
+/* 0 functions */
 /* GL_VERSION_3_0 */
 /* 55 functions */
     "glBeginConditionalRender",
@@ -359,7 +361,7 @@ GLFP glfp = {
     "glGetInternalformativ",
     "glMemoryBarrier",
 /* GL_VERSION_4_3 */
-/* 42 functions */
+/* 41 functions */
     "glBindVertexBuffer",
     "glClearBufferData",
     "glClearBufferSubData",
@@ -395,7 +397,6 @@ GLFP glfp = {
     "glPopDebugGroup",
     "glPushDebugGroup",
     "glShaderStorageBlockBinding",
-    "glTexBufferRange",
     "glTextureView",
     "glVertexAttribBinding",
     "glVertexAttribFormat",
@@ -527,115 +528,74 @@ GLFP glfp = {
     "glVertexArrayVertexBuffers",
 };
 
-void glextLoadFunctions(void)
-{
-    /* --- Function pointer loading --- */
-    int i;
-    for(i = 0 ; i < 439 ; i++){
-        glfp.fp[i] = glextGetProc((const char*)glfp.fp[i]);
-    }
-}
-
-static void glextAddExtension(const char* extension)
-{
-}
-
 /* ------------------ code from Slavomir Kaslev's gl3w ----------------- */
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN 1
 #include <windows.h>
 
-static HMODULE libgl;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    HMODULE libgl;
+    
     libgl = LoadLibraryA("opengl32.dll");
-}
-
-static void glextUnloadModule(void)
-{
-    FreeLibrary(libgl);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res = wglGetProcAddress(proc);
-    if (!res)
-        res = GetProcAddress(libgl, proc);
-    return res;
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res = wglGetProcAddress(glapi[i].n);
+        if (!res) {res = GetProcAddress(libgl, glapi[i].n);}
+        glapi[i].f = res;
+    }
 }
 #elif defined(__APPLE__) || defined(__APPLE_CC__)
 #include <Carbon/Carbon.h>
 
-CFBundleRef bundle;
-CFURLRef bundleURL;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    CFBundleRef bundle;
+    CFURLRef bundleURL;
+
     bundleURL = CFURLCreateWithFileSystemPath(kCFAllocatorDefault,
                 CFSTR("/System/Library/Frameworks/OpenGL.framework"),
                 kCFURLPOSIXPathStyle, true);
-
     bundle = CFBundleCreate(kCFAllocatorDefault, bundleURL);
-    assert(bundle != NULL);
-}
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res;
 
-static void glextUnloadModule(void)
-{
+        CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, glapi[i].n,
+                    kCFStringEncodingASCII);
+        glapi[i].f = CFBundleGetFunctionPointerForName(bundle, procname);
+        CFRelease(procname);
+    }
     CFRelease(bundle);
     CFRelease(bundleURL);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res;
-
-    CFStringRef procname = CFStringCreateWithCString(kCFAllocatorDefault, proc,
-                kCFStringEncodingASCII);
-    res = CFBundleGetFunctionPointerForName(bundle, procname);
-    CFRelease(procname);
-    return res;
 }
 #elif defined(ANDROID)
 #include <EGL/egl.h>
 
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
-    // nothing to do
-}
+    uintptr_t i;
 
-static void glextUnloadModule(void)
-{
-    // nothing to do
-}
-
-static void* glextGetProc(const char *proc)
-{
-    return eglGetProcAddress((const char *) proc);
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        glapi[i].f = eglGetProcAddress(glapi[i].n);
+    }
 }
 #else
 #include <dlfcn.h>
 #include <GL/glx.h>
 
-static void *libgl;
-
-static void glextLoadModule(void)
+void importOpenGL(void)
 {
+    uintptr_t i;
+    void *libgl;
+    
     libgl = dlopen("libGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
-}
-
-static void glextUnloadModule(void)
-{
-    dlclose(libgl);
-}
-
-static void* glextGetProc(const char *proc)
-{
-    void* res = glXGetProcAddress((const GLubyte *) proc);
-    if (!res)
-        res = dlsym(libgl, proc);
-    return res;
+    for(i = 0 ; i < EGLAPI_COUNT; i++){
+        PGLAPI_PROC res = glXGetProcAddress((const GLubyte *) glapi[i].n);
+        if (!res) {res = dlsym(libgl, glapi[i].n);}
+        glapi[i].f = res;
+    }
 }
 #endif
 

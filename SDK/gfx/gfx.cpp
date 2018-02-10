@@ -82,7 +82,7 @@ namespace gfx
         return "UNKNOWN";
     }
 
-    void APIENTRY debugCallback(
+    void GLAPICALL debugCallback(
         GLenum source, GLenum type,
         GLuint id, GLenum severity,
         GLsizei length, const GLchar *message,
@@ -415,10 +415,10 @@ namespace gfx
     static const size_t AUTO_VARS_COUNT = 4;
 
     var_desc_t autoVarDesc[AUTO_VARS_COUNT] = {
-        { "au_Proj",   GL_FLOAT_VEC4,  1, offsetof(auto_vars_t, projParams) },
-        { "au_MV",     GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMV)      },
-        { "au_MVP",    GL_FLOAT_MAT4,  1, offsetof(auto_vars_t, matMVP)     },
-        { "au_SHcoef", GL_FLOAT_VEC3, 10, offsetof(auto_vars_t, shCoef)     }
+        { "au_Proj",   GL_FLOAT_VEC4,  1, CORE_OFFSETOF(auto_vars_t, projParams) },
+        { "au_MV",     GL_FLOAT_MAT4,  1, CORE_OFFSETOF(auto_vars_t, matMV)      },
+        { "au_MVP",    GL_FLOAT_MAT4,  1, CORE_OFFSETOF(auto_vars_t, matMVP)     },
+        { "au_SHcoef", GL_FLOAT_VEC3, 10, CORE_OFFSETOF(auto_vars_t, shCoef)     }
     };
 
     GLuint auto_var_get_index(size_t nameLen, const char* uname, GLenum type, GLint arraySize)
@@ -808,5 +808,4 @@ extern "C"
 {
 #include "nanovg.c"
 #include "nanovg_utils.c"
-#include "opengl.c"
 }

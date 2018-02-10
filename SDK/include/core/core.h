@@ -28,6 +28,8 @@ typedef volatile long atomic_t;
 #define PP_CAT_I(a, b) PP_CAT_II(a ## b)
 #define PP_CAT_II(res) res
 
+#define CORE_OFFSETOF(s,m) ((size_t)&(((s*)0)->m))
+
 #define CORE_UNIQUE_NAME(base) PP_CAT(base, __LINE__)
 
 typedef unsigned char uchar;
