@@ -1,4 +1,4 @@
-#include <core/str.h>
+#include <core/cstr.h>
 #include <limits.h>
 
 /*
@@ -597,4 +597,3 @@ done:
 
     return (EOK);
 }
-#include "cstr_parse.c"

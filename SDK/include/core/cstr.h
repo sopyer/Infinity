@@ -55,6 +55,9 @@ errno_t cstr_tokenize(
 int cstr_scanf(const char *inbuf, rsize_t bsize, const char *fmt, ...);
 int cstr_vscanf(const char *inbuf, rsize_t bsize, char const *fmt, va_list ap);
 
+int cstr_printf(char *str, size_t size, const char *format, ...);
+int cstr_vprintf(char *str, size_t size, const char *format, va_list ap);
+
 #ifdef __cplusplus
 }
 #endif
@@ -142,6 +145,25 @@ errno_t cstr_tokenize(
 )
 {
     return cstr_tokenize(delims, N, str, size, token, token_size);
+}
+
+template<size_t N>
+int cstr_printf(char (&str)[N], const char *fmt, ...)
+{
+    va_list ap;
+    int ret;
+
+    va_start(ap, fmt);
+    ret = cstr_vprintf(str, N, fmt, ap);
+    va_end(ap);
+
+    return ret;
+}
+
+template<size_t N>
+int cstr_vprintf(char (&str)[N], const char *fmt, va_list ap)
+{
+    return cstr_vprintf(str, N, fmt, ap);
 }
 
 #endif

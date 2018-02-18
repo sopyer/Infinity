@@ -214,7 +214,7 @@ extern "C" int assert_handler(const char* cond, const char* file, int line)
 
     cstr1024 msg;
 
-    sprintf_s(msg, "Assertion:(%s) failed in %s:%d", cond, file, line);
+    cstr_printf(msg, "Assertion:(%s) failed in %s:%d", cond, file, line);
 
     SDL_MessageBoxData data = {
         SDL_MESSAGEBOX_INFORMATION,

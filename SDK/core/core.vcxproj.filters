@@ -35,9 +35,6 @@
     <ClCompile Include="Remotery.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="str.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cstr_parse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -48,6 +45,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="etlsf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cstr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cstr_printf.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -82,9 +85,6 @@
     <ClInclude Include="..\include\Remotery.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\core\str.h">
-      <Filter>Public Headers</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\core\debug.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
@@ -92,6 +92,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\etlsf.h">
+      <Filter>Public Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\core\cstr.h">
       <Filter>Public Headers</Filter>
     </ClInclude>
   </ItemGroup>

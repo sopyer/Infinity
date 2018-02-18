@@ -241,7 +241,9 @@ extern "C"
 #define ETLSF_align2 bit_align_up
 #include "etlsf.c"
 
-#include "str.c"
+#include "cstr.c"
+#include "cstr_parse.c"
+#include "cstr_printf.c"
 #include "mem_utils.c"
 #include "mem_alloc.c"
 #include "mjson.c"

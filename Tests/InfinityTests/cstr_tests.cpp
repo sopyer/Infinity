@@ -3,6 +3,8 @@
 #include <core/core.h>
 #include <etlsf.h>
 
+#include <math.h>
+
 static const char test_str1[] = "0";
 static const char test_str2[] = "0x00";
 static const char test_str3[] = "0xfF";
@@ -221,6 +223,58 @@ void test_cstr_tokenize()
     }
 }
 
+void test_cstr_printf()
+{
+#include "cstr_printf_test_cases.inc"
+
+    char str[1024];
+    int res;
+
+#define TEST(type)                                                          \
+    do                                                                      \
+    {                                                                       \
+        for (size_t i = 0; i < type##_fmt_count; i++)                       \
+        {                                                                   \
+            for (size_t j = 0; j < type##_val_count; j++)                   \
+            {                                                               \
+                int r1 = cstr_printf(str, type##_fmt[i], type##_val[j]);    \
+                sput_fail_unless(                                           \
+                    (!str[0] && !string_results[i][j].r[0]) ||              \
+                    ((cstr_compare(                                         \
+                        type##_results[i][j].r,                             \
+                        type##_results[i][j].l,                             \
+                        str, &res                                           \
+                    )==EOK) && (res==0)),                                   \
+                    "Test case "#type                                       \
+                );                                                          \
+            }                                                               \
+        }                                                                   \
+    } while (0)
+
+    TEST(float);
+    TEST(long);
+    TEST(ulong);
+    TEST(llong);
+    TEST(string);
+    TEST(pointer);
+
+    //for (size_t i = 0; i < string_fmt_count; i++)
+    //{
+    //    for (size_t j = 0; j < string_val_count; j++)
+    //    {
+    //        int r1 = cstr_printf(str, string_fmt[i], string_val[j]);
+    //        bool test = (!str[0] && !string_results[i][j].r[0]) || ( (cstr_compare(
+    //            string_results[i][j].r,
+    //            string_results[i][j].l,
+    //            str, &res
+    //        ) == EOK) && (res == 0));
+    //        sput_fail_unless(
+    //            test,
+    //            "Test case string"
+    //        );
+    //    }
+    //}
+}
 
 int run_cstr_tests()
 {
@@ -236,6 +290,8 @@ int run_cstr_tests()
     sput_run_test(test_cstr_scanf);
     sput_enter_suite("CSTR: test cstr_tokenize");
     sput_run_test(test_cstr_tokenize);
+    sput_enter_suite("CSTR: test cstr_printf");
+    sput_run_test(test_cstr_printf);
 
     sput_finish_testing();
 

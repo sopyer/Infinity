@@ -1,7 +1,6 @@
 //
 // based on NanoVG's example code by Mikko Mononen
 
-#include <stdio.h>
 #include "gfx/gfx.h"
 
 #define BLENDISH_IMPLEMENTATION
@@ -138,7 +137,7 @@ void draw_demostuff(NVGcontext *vg, int x, int y, float w, float h) {
     y += 40;
     float progress_value = fmodf(timerAbsoluteTime()/1000000.0/10,1.0);
     char progress_label[32];
-    sprintf(progress_label, "%d%%", int(progress_value*100+0.5f));
+    cstr_printf(progress_label, "%d%%", int(progress_value*100+0.5f));
     bndSlider(vg,x,y,240,BND_WIDGET_HEIGHT,BND_CORNER_NONE,BND_DEFAULT,
         progress_value,"Default",progress_label);
     y += 25;

@@ -103,6 +103,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\SDK\include\sput.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cstr_printf_test_cases.inc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

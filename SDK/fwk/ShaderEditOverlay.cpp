@@ -436,7 +436,7 @@ void ShaderEditOverlay::fillListWithShaders()
         char str[128];
         GLint type;
         glGetShaderiv(mAttachedShaders[i], GL_SHADER_TYPE, &type);
-        _snprintf(str, sizeof(str), "%s%s #%d",
+        cstr_printf(str, "%s%s #%d",
             (i==0)?"":"\n",
             type==GL_VERTEX_SHADER?"GL_VERTEX_SHADER":"GL_FRAGMENT_SHADER",
             mAttachedShaders[i]);
@@ -451,7 +451,7 @@ void ShaderEditOverlay::fillListWithPrograms()
     for (size_t i=0; i<mPrograms.size(); ++i)
     {
         char str[128];
-        _snprintf(str, 128, "%sProgram #%d", (i==0)?"":"\n", mPrograms[i]);
+        cstr_printf(str, "%sProgram #%d", (i==0)?"":"\n", mPrograms[i]);
         mSelectionList.Command(SCI_ADDTEXT, strlen(str), reinterpret_cast<sptr_t>(str));
     }
     mSelectionList.Command(SCI_GOTOLINE, 0);

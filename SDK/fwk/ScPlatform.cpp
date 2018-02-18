@@ -43,8 +43,7 @@ bool Platform::MouseButtonBounce() {
 
 void Platform::Assert(const char *c, const char *file, int line) {
     char buffer[2000];
-    sprintf(buffer, "Assertion [%s] failed at %s %d", c, file, line);
-    strcat(buffer, "\r\n");
+    sprintf(buffer, "Assertion [%s] failed at %s %d\r\n", c, file, line);
     assert(false);
 }
 

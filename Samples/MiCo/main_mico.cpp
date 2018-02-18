@@ -265,20 +265,20 @@ void renderGraph(NVGcontext* vg, float x, float y, PerfGraph* fps)
         nvgFontSize(vg, 18.0f);
         nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
         nvgFillColor(vg, nvgRGBA(240, 240, 240, 255));
-        sprintf(str, "%.2f FPS", 1.0f / avg);
+        cstr_printf(str, "%.2f FPS", 1.0f / avg);
         nvgText(vg, x + w - 3, y + 1, str, NULL);
 
         nvgFontSize(vg, 15.0f);
         nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_BOTTOM);
         nvgFillColor(vg, nvgRGBA(240, 240, 240, 160));
-        sprintf(str, "%.2f ms", avg * 1000.0f);
+        cstr_printf(str, "%.2f ms", avg * 1000.0f);
         nvgText(vg, x + w - 3, y + h - 1, str, NULL);
     }
     else {
         nvgFontSize(vg, 18.0f);
         nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
         nvgFillColor(vg, nvgRGBA(240, 240, 240, 255));
-        sprintf(str, "%.2f ms", avg * 1000.0f);
+        cstr_printf(str, "%.2f ms", avg * 1000.0f);
         nvgText(vg, x + w - 3, y + 1, str, NULL);
     }
 }
@@ -295,10 +295,6 @@ void renderDemo(NVGcontext* vg, float mx, float my, float width, float height, f
 
 void saveScreenShot(int w, int h, int premult, const char* name);
 
-
-#ifdef _MSC_VER
-#define snprintf _snprintf
-#endif
 
 #define ICON_SEARCH 0x1F50D
 #define ICON_CIRCLED_CROSS 0x2716
@@ -1094,7 +1090,7 @@ int loadDemoData(NVGcontext* vg, DemoData* data)
     for (size_t i = 0; i < 12; i++)
     {
         char file[128];
-        _snprintf(file, 128, "uidemo/images/image%d.jpg", i + 1);
+        cstr_printf(file, "uidemo/images/image%d.jpg", i + 1);
         data->images[i] = res::createNVGImage(vg::ctx, file);
 
         if (data->images[i] == 0)
@@ -1197,7 +1193,7 @@ void drawParagraph(NVGcontext* vg, float x, float y, float width, float height, 
 
     if (gutter) {
         char txt[16];
-        snprintf(txt, sizeof(txt), "%d", gutter);
+        cstr_printf(txt, "%d", gutter);
         nvgFontSize(vg, 13.0f);
         nvgTextAlign(vg, NVG_ALIGN_RIGHT | NVG_ALIGN_MIDDLE);
 

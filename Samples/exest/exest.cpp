@@ -1,5 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
-
 #include <fwk/fwk.h>
 
 #include "CDLODTerrain.h"
@@ -260,15 +258,15 @@ namespace app
 
         char str[256];
 
-        _snprintf(str, 256, "CPU select time - %f ms", cpu_timer_measured(&terrain.cpuSelectTimer) / 1000.0f);
+        cstr_printf(str, "CPU select time - %.3f ms", cpu_timer_measured(&terrain.cpuSelectTimer) / 1000.0f);
         vg::drawString(vg::defaultFont, 25.0f, 83.0f, 0xFFFFFFFF, str, strlen(str));
 
-        _snprintf(str, 256, "CPU draw time - %f ms", cpu_timer_measured(&terrain.cpuRenderTimer) / 1000.0f);
+        cstr_printf(str, "CPU draw time - %.3f ms", cpu_timer_measured(&terrain.cpuRenderTimer) / 1000.0f);
         vg::drawString(vg::defaultFont, 25.0f, 101.0f, 0xFFFFFFFF, str, strlen(str));
 
         int patches = terrain.patchCount;
         int vtx = patches*terrain.patchDim*terrain.patchDim;
-        _snprintf(str, 256, "Patches: %d, Vtx: %d", patches, vtx);
+        cstr_printf(str, "Patches: %d, Vtx: %d", patches, vtx);
         vg::drawString(vg::defaultFont, 25.0f, 119.0f, 0xFFFFFFFF, str, strlen(str));
     }
 

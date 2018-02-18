@@ -345,7 +345,7 @@ void ProfilerOverlay::renderFullscreen()
             if (x<graphArea.x || x>graphArea.x+graphArea.w)
                 continue;
             nvguLine(vg::ctx, x, basey, x, basey+tickSize);
-            sprintf_s(strBuf, unitFormat, i*unitScale);
+            cstr_printf(strBuf, unitFormat, i*unitScale);
             nvgText(vg::ctx, x, basey-tickSize, strBuf, 0);
         }
         nvguLine(vg::ctx, graphArea.x, basey, graphArea.x+graphArea.w, basey);
@@ -361,7 +361,7 @@ void ProfilerOverlay::renderFullscreen()
         float y = graphArea.y + firstThreadRow*sy-2;
         for (size_t i = 0; i<numThreads; ++i, y+=dy)
         {
-            sprintf_s(strBuf, "Thread%d", i);
+            cstr_printf(strBuf, "Thread%d", i);
             nvgText(vg::ctx, graphArea.x+10.0f, y, strBuf, 0);
             nvguLine(vg::ctx, graphArea.x+5.0f, y, graphArea.x+graphArea.w-10.0f, y);
         }
@@ -431,7 +431,7 @@ void ProfilerOverlay::renderFullscreen()
         {
             Interval& interval = intervals[selected];
 
-            sprintf_s(
+            cstr_printf(
                 buffer,
                 "name     : %s\n"
                 "duration : %.4f\n"
@@ -487,7 +487,7 @@ void ProfilerOverlay::renderFullscreen()
         uint32_t  idx = selection[i];
         Interval& interval = intervals[idx];
 
-        sprintf_s(
+        cstr_printf(
             buffer,
             "name     : %s\n"
             "duration : %.4f\n"

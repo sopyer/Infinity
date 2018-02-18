@@ -444,10 +444,10 @@ namespace ui
         gpuName = (char*)glGetString(GL_RENDERER);
         vg::drawString(vg::defaultFont, x+15.0f, y+18.0f, 0xFFFFFFFF, gpuName, strlen(gpuName));
 
-        _snprintf(str, 256, "CPU time - %f ms", cpuTime);
+        cstr_printf(str, "CPU time - %.3f ms", cpuTime);
         vg::drawString(vg::defaultFont, x+15.0f, y+37.0f, 0xFFFFFFFF, str, strlen(str));
 
-        _snprintf(str, 256, "GPU time - %f ms", gpuTime);
+        cstr_printf(str, "GPU time - %.3f ms", gpuTime);
         vg::drawString(vg::defaultFont, x+15.0f, y+55.0f, 0xFFFFFFFF, str, strlen(str));
     }
 

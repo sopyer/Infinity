@@ -39,4 +39,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cstr_printf_test_cases.inc">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
